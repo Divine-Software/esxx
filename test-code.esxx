@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE esxx PUBLIC "-//Martin Blom//DTD ESXX Application 1.0//EN"
+                      "http://martin.blom.org/esxx/1.0/dtd/" [
+<!ENTITY olle SYSTEM "http://martin.blom.org/">
+]>
+
+<!-- Server-side stylesheet, which will be applied to the result -->
+<?esxx-stylesheet href="test.xsl"   type="text/xsl" ?>
+
+<!-- Load a few external files -->
+<?esxx-import href="test.js" ?>
+
+<?esxx 
+
+// Inline code is totally fine here.  The recommended way is to just
+// set up the environment and nothing else. The rest should be loaded
+// using the "esxx-import" PI.
+
+// Note that when using sessions, this code and all code modules
+// will only be executed once during the session life-time.
+
+var myapp = new MyApp(esxx.env, main_template);
+
+?>
+
+<esxx xmlns="http://martin.blom.org/esxx/1.0/">
+&olle;
+    <!-- First some information about the application -->
+    <info>
+      <title>ESXX test application</title>
+      <version>1.0</version>
+      <vendor>Divine Software</vendor>
+      <copyright>2007 Martin Blom</copyright>
+      <author>Martin Blom</author>
+      <author>You!</author>
+      <description>This file demonstrates how a basic ESXX application
+is launched.</description>
+    </info>
+
+    <!-- Application settings -->
+    <settings>
+      <!-- Handlers for HTTP GET/POST/PUT/DELETE -->
+      <handler type="GET" function="myapp.handleGet" />
+      <handler type="PUT" function="myapp.handlePut" />
+      <handler type="POST" function="myapp.handlePost" />
+      <handler type="DELETE" function="myapp.handleDelete" />
+      <!-- etc ... -->
+
+      <!-- Handler for any kind of error -->
+      <error-handler function="myapp.handleError" />
+
+      <!-- This might work one day too ...
+      <service type="SOAP" class="myapp.rpcClass" />
+      -->
+
+    </settings>
+</esxx>

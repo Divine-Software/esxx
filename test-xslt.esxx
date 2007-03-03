@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Document is XHTML 1.1 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<!-- Server-side stylesheet -->
+<?esxx-stylesheet href="test.xsl" type="text/xsl" ?>
+
+<!-- Optinal JavaScript modules referred to in the stylesheet -->
+<?esxx-import href="test.js" ?>
+<?esxx 
+// Inline JavaScript code works too, but is not recommended here
+// A better place would be in the XSLT stylesheet or in an external
+// file.
+
+function test() { 
+  // "esxx:test()" is now available in XPath expressions if you bind the
+  // "esxx" namespace prefix to "http://martin.blom.org/esxx/1.0/" in your stylesheet
+  return "Test"; 
+}
+?>
+
+<!-- Client-side stylesheet -->
+<?xml-stylesheet href="test.css"    type="text/css" ?>
+
+<!-- Document starts -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
+
+ <head>
+  <title>ESXX XSLT test page</title>
+  <link href="mailto:martin@blom.org" rev="made" />
+ </head>
+
+ <body>
+  <h1>ESXX XSLT test page</h1>
+
+  <p>This is an ESXX XSLT test page. In addition to parsing and
+validating the document, this page will also apply a server-side XSLT
+transform before sending the result to the client.</p>
+
+  <p>The XSLT stylesheet has full access to the ESXX runtime via the
+<code>esxx</code> namespace.</p>
+
+ </body>
+</html>
+<!-- Document ends -->

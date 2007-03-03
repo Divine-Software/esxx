@@ -1,0 +1,134 @@
+
+What it is
+**********
+
+ESXX (pronounced "Essex") is a rather silly acronym and stands for
+"ECMAScript, SQL, XML and XSLT". It's a very simple and easy-to-use,
+yet powerful, XML Application Server written in Java (6) and utilizing
+FastCGI for web server communication.
+
+It's built around an E4X-enabled JavaScript run-time (Mozilla's
+Rhino), Java 6's JDBC API for SQL queries and JAXP API, providing the
+bytecode-translating XSLT stylesheet processor.
+
+The JavaScript code has full access to all Java APIs, which means that
+anything that can be done using Java, can be done with ESXX too.
+
+You can use it in anyway you want, but there are three main use-cases,
+presented here in order of increasing level of usefulness:
+
+1) As a document validator. All documents loaded by the ESXX run-time
+are loaded as XML using full DTD validation and are then cached in
+memory. You might use it to ensure that your static web pages or
+published XML are fully valid.
+
+2) As a server-side XSLT processor. By using the <?esxx-stylesheet?>
+PI, you can instruct the run-time to apply an XSLT transformation to a
+document before it's sent to the client. JavaScript (and Java) can be
+used to enhance the capabilities of the XSLT processor.
+
+3) As a web service or web application server. ESXX can manage
+sessions using cookies and keep the sessions in a separate back-end
+service, allowing the ESXX run-time itself to be fully stateless and
+thus scalable.
+
+The intended work-flow goes like this:
+
+1a) An HTTP method handler in the ESXX run-time invokes a method in a
+JavaScript object, which performs all logic operations. This could,
+for example, include authentication, disk access, database queries or
+remote server communication using HTTP/Ice/SOAP etc. If the logic is
+complicated, you'll probably want to implement it in Java, instead of
+JavaScript, or as a remote service. The handler returns an XML
+document (in some unspecified format), that contains all data that is
+to be returned or presented to the client.
+
+1b) Alternatively, ESXX is simply invoked on a plain static file,
+containing an XML document (and one or more ESXX PIs). For example,
+the document could be a DocBook XML document that is to be presented
+to the user.
+
+2) A server-side XSLT stylesheet, backed by JavaScript code if
+required, is used to transform the XML document from step 1a/1b into a
+format the client understands, usually XHTML (un-styled, but with
+basic layout so it renders correctly in old browsers). Plain text,
+some other XML format, SOAP or JSON are other possibilities for AJAX
+clients.
+
+3) The client receives the document and performs further processing,
+if required. If the client is a web browser, this would be something
+like like final layout and presentation using client-side XSLT, CSS
+and JavaScript.
+
+This work-flow ensures a complete separation between logic, client
+data format and layout. However, there is nothing in ESXX that forces
+you to design your web applications in this manner.
+
+
+License
+*******
+
+ESXX is available under the GPL version 2 license. It uses code
+licensed under the GPL version 2, the Apache License 2.0 and the
+Mozilla Public License 1.1.
+
+The Ice source code is available from ZeroC's download page,
+<URL:http://www.zeroc.com/download.html#src>, or by request from the
+ESXX author.
+
+
+Requirements
+************
+
+* Java 6
+* A web server supporting FastCGI, such as Apache or Lighttpd
+
+These required components are distributed with ESXX:
+
+* Rhino ("js.jar" from the Mozilla project)
+* XMLBeans ("xbean.jar" from the Apache project)
+* Ice (Ice.jar from ZeroC), which is only required if using multiple
+front-ends and a separate back-end service
+
+You will probably want a database to, like PostgreSQL, MySQL or the
+included Derby ("derby.jar" from the Apache project; note that you
+can't use Derby in embedded mode when running multiple ESXX
+front-ends).
+
+
+How it works
+************
+
+1) The document requested is loaded and parsed as XML, validated if a
+DTD is present. [Cached]
+
+2) The top-level esxx JavaScript object is initialized and the
+document loaded is added to it.
+
+3) All <?esxx-* ?> PIs are evaluated. [Compiled]
+
+4) If the document element is {http://martin.blom.org/esxx/1.0/}:esxx,
+the appropriate handler is invoked (arguments?).
+
+5) If there is an server-side XSL stylesheet installed:
+
+ 5a) The stylesheet is loaded and parsed as XML, validated if a DTD is
+ present. [Cached, compiled]
+
+ 5b) All new <?esxx-* ?> PIs from the stylesheet are
+ evaluated. [Compiled]
+
+ 5c) The result document from step 2 or 4 is transformed using the
+ stylesheet. Extension elements in the form of "javascript:" URI's are
+ evaluated as a post-processing step. The JavaScript function is
+ called with an E4X XML node as argument, containing the extension
+ elements attributes and contents, plus a boolean flag indicating if
+ this is the start-tag or the end-tag.
+
+6) That's it.
+
+
+The author
+**********
+
+ESXX was written by Martin Blom <martin@blom.org>.

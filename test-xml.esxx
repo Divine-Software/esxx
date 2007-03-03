@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Document is XHTML 1.1 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<!-- Client-side stylesheets -->
+<?xml-stylesheet type="text/css" href="test.css"?>
+<?xml-stylesheet type="text/xsl" href="test.xsl"?>
+
+<!-- Document starts -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
+
+ <head>
+  <title>ESXX XML test page</title>
+  <link href="mailto:martin@blom.org" rev="made" />
+ </head>
+
+ <body>
+  <h1>ESXX XML test page</h1>
+
+  <p>This is an ESXX XML test page. It includes nothing but pure XML and
+involves no server-side processing except parsing, validation and caching.</p>
+
+ </body>
+</html>
+<!-- Document ends -->
