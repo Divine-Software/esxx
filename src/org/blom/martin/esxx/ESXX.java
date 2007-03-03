@@ -90,11 +90,12 @@ public class ESXX {
 	    ESXXParser parser  = new ESXXParser(workload.getInputStream(), workload.getURL());
 	    Scriptable scope   = new ImporterTopLevel(cx, true);
 	    JSESXX     js_esxx = new JSESXX(cx, scope, workload, 
-					    parser.getXML(), parser.getStylesheet().toString());
+					    parser.getXML(), parser.getStylesheet());
 	    Object     esxx    = Context.javaToJS(js_esxx, scope);
 	    ScriptableObject.putProperty(scope, "esxx", esxx);
 
 	    for (ESXXParser.Code c : parser.getCodeList()) {
+	      System.out.println(c);
 	      cx.evaluateString(scope, c.code, c.url.toString(), c.line, null);
 	    }
 

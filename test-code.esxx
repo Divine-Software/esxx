@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE esxx PUBLIC "-//Martin Blom//DTD ESXX Application 1.0//EN"
                       "http://martin.blom.org/esxx/1.0/dtd/" [
-<!ENTITY olle SYSTEM "http://martin.blom.org/">
 ]>
 
 <!-- Server-side stylesheet, which will be applied to the result -->
@@ -24,7 +23,6 @@ var myapp = new MyApp(esxx.env, main_template);
 ?>
 
 <esxx xmlns="http://martin.blom.org/esxx/1.0/">
-&olle;
     <!-- First some information about the application -->
     <info>
       <title>ESXX test application</title>

@@ -61,7 +61,7 @@ public class ESXXParser {
 		    return new URL(new URL(baseURI), systemID).openStream();
 		  }
 		  else {
-		    return new URL(systemID).openStream();
+		    return new URL(ESXXParser.this.baseURL, systemID).openStream();
 		  }
 		}
 		return null;
@@ -88,6 +88,11 @@ public class ESXXParser {
 	      int rc = super.next();
 	      
 	      switch (rc) {
+		case XMLStreamConstants.COMMENT: {
+		  // Hide all comments
+		  return next();
+		}
+		
 		case XMLStreamConstants.START_ELEMENT: {
 		  String namespace = getNamespaceURI();
 		  String element   = getLocalName();

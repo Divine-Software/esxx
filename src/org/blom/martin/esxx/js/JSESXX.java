@@ -2,6 +2,7 @@
 package org.blom.martin.esxx.js;
 
 import java.io.PrintStream;
+import java.net.URL;
 import java.util.Enumeration;
 import java.util.Properties;
 import org.blom.martin.esxx.Workload;
@@ -11,7 +12,7 @@ import org.apache.xmlbeans.XmlException;
 
 public class JSESXX {
     public JSESXX(Context cx, Scriptable scope, Workload workload,
-		  XmlObject document, String stylesheet) {
+		  XmlObject document, URL stylesheet) {
       this.error      = workload.getErrorStream();
       this.properties = cx.newObject(scope, "Object");
       for (String name :  workload.getProperties().stringPropertyNames()) {
@@ -32,7 +33,7 @@ public class JSESXX {
       ScriptableObject.putProperty(this.headers, "Status", "200 OK");
       ScriptableObject.putProperty(this.headers, "Cookies", cx.newObject(scope, "Object"));
 
-      this.stylesheet = stylesheet;
+      this.stylesheet = (stylesheet != null ? stylesheet.toString() : "");
     }
 
     public PrintStream error;
