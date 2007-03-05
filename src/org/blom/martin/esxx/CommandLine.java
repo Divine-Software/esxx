@@ -60,16 +60,16 @@ public class CommandLine {
 	}
       }
 
-      try {
-	System.err.flush();
+//      try {
+//	System.err.flush();
 
-	result.headers.store(new OutputStreamWriter(System.out), "ESXX Output Headers");
-	System.out.println("");
-	System.out.println(result.body.toString());
+// 	result.headers.store(new OutputStreamWriter(System.out), "ESXX Output Headers");
+// 	System.out.println("");
+// 	System.out.println(result.body.toString());
 	System.exit(result.rc);
-      }
-      catch (IOException ex) {
-	ex.printStackTrace();
-      }
+//      }
+//       catch (IOException ex) {
+// 	ex.printStackTrace();
+//       }
     }
 };

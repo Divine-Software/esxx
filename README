@@ -107,7 +107,7 @@ document loaded is added to it.
 
 3) All <?esxx-* ?> PIs are evaluated. [Compiled]
 
-4) If the document element is {http://martin.blom.org/esxx/1.0/}:esxx,
+4) If the element {http://martin.blom.org/esxx/1.0/}:esxx was found,
 the appropriate handler is invoked (arguments?).
 
 5) If there is an server-side XSL stylesheet installed:

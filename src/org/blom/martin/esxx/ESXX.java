@@ -10,11 +10,16 @@ import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.blom.martin.esxx.js.JSESXX;
 import org.mozilla.javascript.*;
+import org.apache.xmlbeans.XmlObject;
 
 
 public class ESXX {
     public static final String NAMESPACE = "http://martin.blom.org/esxx/1.0/";
 
+    public class ESXXException 
+      extends Exception {
+	public ESXXException(String why) { super(why); }
+    }
 
     public ESXX(Properties p) {
       settings = p;
@@ -85,32 +90,95 @@ public class ESXX {
       while (true) {
 	try {
 	  Workload workload = workloadQueue.take();
-
+	  String method = "GET";
+	  
 	  try {
-	    ESXXParser parser  = new ESXXParser(workload.getInputStream(), workload.getURL());
+	    ESXXParser parser = new ESXXParser(workload.getInputStream(), workload.getURL());
+
 	    Scriptable scope   = new ImporterTopLevel(cx, true);
 	    JSESXX     js_esxx = new JSESXX(cx, scope, workload, 
 					    parser.getXML(), parser.getStylesheet());
 	    Object     esxx    = Context.javaToJS(js_esxx, scope);
 	    ScriptableObject.putProperty(scope, "esxx", esxx);
+	    
+	    Object result = null;
+	    Exception error = null;
 
-	    for (ESXXParser.Code c : parser.getCodeList()) {
-	      System.out.println(c);
-	      cx.evaluateString(scope, c.code, c.url.toString(), c.line, null);
+	    try {
+	      for (ESXXParser.Code c : parser.getCodeList()) {
+		cx.evaluateString(scope, c.code, c.url.toString(), c.line, null);
+	      }
+
+	      if (parser.hasHandlers()) {
+		String handler = parser.getHandlerFunction(method);
+		Object fobj = cx.evaluateString(scope, handler,
+						"<handler/>", 1, null);
+		if (fobj == null || 
+		    fobj == ScriptableObject.NOT_FOUND) {
+		  throw new ESXXException("'" + method + "' handler '" + handler + 
+					  "' not found.");
+		}
+		else if (!(fobj instanceof Function)) {
+		  // Error handler is not a function
+		  throw new ESXXException("'" + method + "' handler '" + handler + 
+					  "' is not a valid function.");
+		} 
+		else {
+//		  Object args[] = { cx.javaToJS(ex, scope) };
+		  Function f = (Function) fobj;
+		  result = f.call(cx, scope, scope, null);
+		}
+	      }
+	    }
+	    catch (org.mozilla.javascript.RhinoException ex) {
+	      error = ex;
 	    }
 
-// 	    Object result = cx.evaluateReader(scope, 
-// 					      new InputStreamReader(workload.getCodeStream()),
-// 					      workload.getURL().toString(), 1, null);
-// 	    System.err.println(cx.toString(result));	
+	    if (error != null) {
+	      if (parser.hasHandlers()) {
+//		Object fobj = scope.get(parser.getErrorHandlerFunction(), scope);
+		Object fobj = cx.evaluateString(scope, parser.getErrorHandlerFunction(),
+						"<error-handler/>", 1, null);
+
+		if (fobj == null || 
+		    fobj == ScriptableObject.NOT_FOUND ||
+		    !(fobj instanceof Function)) {
+		  // Error handler is not a function
+		  throw error;
+		} 
+		else {
+		  Object args[] = { cx.javaToJS(error, scope) };
+		  Function f = (Function) fobj;
+		  result = f.call(cx, scope, scope, args);
+		}
+	      }
+	    }
+	    
+	    Class cp = result.getClass();
+	    while (cp != null) {
+	      System.err.println(cp + ":");
+	      for (Class c : cp.getInterfaces()) {
+		System.err.println(" " + c);
+	      }
+	      cp = cp.getSuperclass();
+	    }
+	    try {
+	      XmlObject xo = org.mozilla.javascript.xmlimpl.UglyHack.getXmlObject(
+		(org.mozilla.javascript.xml.XMLObject) result);
+	      xo.save(workload.getErrorStream());
+	    }
+	    catch (ClassCastException ex) {
+	      System.err.println("apan");
+	    }
 	  }
 	  catch (Exception ex) {
 	    ex.printStackTrace();
 	  }
 
+
 	  Properties p = new Properties();
-	  p.setProperty("Status", "200 OK");
-	  p.setProperty("Content-Type",  "text/plain");
+// 	  p.setProperty("Status", "200 OK");
+// 	  p.setProperty("Content-Type",  "text/plain");
 	  workload.finished(0, p);
 	}
 	catch (InterruptedException ex) {

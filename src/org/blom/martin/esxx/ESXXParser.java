@@ -26,6 +26,10 @@ public class ESXXParser {
 	  code = c;
 	}
 
+	public String toString() {
+	  return url.toString() + "::" + line + ": " + code;
+	}
+
 	public URL url;
 	public int line;
 	public String code;
@@ -51,10 +55,10 @@ public class ESXXParser {
 					String baseURI,
 					String namespace)
 	      throws XMLStreamException {
-	      System.out.println("p: " + publicID);
-	      System.out.println("s: " + systemID);
-	      System.out.println("b: " + baseURI);
-	      System.out.println("n: " + namespace);
+// 	      System.out.println("p: " + publicID);
+// 	      System.out.println("s: " + systemID);
+// 	      System.out.println("b: " + baseURI);
+// 	      System.out.println("n: " + namespace);
 	      try {
 		if (systemID != null) {
 		  if (baseURI != null) {
@@ -71,15 +75,14 @@ public class ESXXParser {
 					     systemID + ": " + ex.getMessage());
 	      }
 	      catch (IOException ex) {
-		throw new XMLStreamException("I/O error for system ID " +
-					     systemID + ": " + ex.getMessage());
+		return null;
+// 		throw new XMLStreamException("I/O error for system ID " +
+// 					     systemID + ": " + ex.getMessage());
 	      }
 	    }
 	});
 
-      final LineNumberInputStream lis = new LineNumberInputStream(is);
-      lis.setLineNumber(1);
-      XMLStreamReader xsr = new StreamReaderDelegate(xmlInputFactory.createXMLStreamReader(lis)) {
+      XMLStreamReader xsr = new StreamReaderDelegate(xmlInputFactory.createXMLStreamReader(is)) {
 	    private boolean insideESXX = false;
 	    private boolean insideSettings = false;
 
@@ -146,7 +149,7 @@ public class ESXXParser {
 		    return next();
 		  }
 		  else if (target.equals("esxx")) {
-		    handleCode(url, lis.getLineNumber(), getPIData());
+		    handleCode(url, 0, getPIData());
 		    // Hide this PI
 		    return next();
 		  }
@@ -301,13 +304,28 @@ public class ESXXParser {
       codeList.add(new Code(url, line, data));
     }
 
-    private void handleHandler(XMLStreamReader xsr) {
-      handlers.put(xsr.getAttributeValue(null, "type"),
-		   xsr.getAttributeValue(null, "function"));
+    private void handleHandler(XMLStreamReader xsr) 
+      throws XMLStreamException {
+      String handler = xsr.getAttributeValue(null, "function").trim();
+
+      if (handler.endsWith(")")) {
+	throw new XMLStreamException("In <handler>: handler names " +
+				     "should not include parentheses");
+      }
+
+      handlers.put(xsr.getAttributeValue(null, "type"), handler);
     }
 
-    private void handleErrorHandler(XMLStreamReader xsr) {
-      errorHandler = xsr.getAttributeValue(null, "function");
+    private void handleErrorHandler(XMLStreamReader xsr)
+      throws XMLStreamException {
+      String handler = xsr.getAttributeValue(null, "function").trim();
+
+      if (handler.endsWith(")")) {
+	throw new XMLStreamException("In <error-handler>: handler names " +
+				     "should not include parentheses");
+      }
+
+      errorHandler = handler;
     }
 
 

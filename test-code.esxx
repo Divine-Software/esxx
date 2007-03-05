@@ -18,8 +18,9 @@
 // Note that when using sessions, this code and all code modules
 // will only be executed once during the session life-time.
 
-var myapp = new MyApp(esxx.env, main_template);
+var myapp = new MyApp(esxx);
 
+//kalle();
 ?>
 
 <esxx xmlns="http://martin.blom.org/esxx/1.0/">
