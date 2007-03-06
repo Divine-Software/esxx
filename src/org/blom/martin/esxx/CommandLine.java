@@ -17,7 +17,8 @@ public class CommandLine {
 
 	private WL(String file_name, ByteArrayOutputStream b) {
 	  super(new File(file_name),
-		new PrintStream(b), System.err, System.getProperties(), null);
+		b, new StringWriter(), new PrintWriter(System.err), 
+		System.getProperties(), null);
 	  body = b;
 	}
 
@@ -65,8 +66,14 @@ public class CommandLine {
 
 // 	result.headers.store(new OutputStreamWriter(System.out), "ESXX Output Headers");
 // 	System.out.println("");
-// 	System.out.println(result.body.toString());
-	System.exit(result.rc);
+      try {
+	w.getErrorWriter().flush();
+	w.getDebugWriter().flush();
+      }
+      catch (IOException ex) {
+      }
+      System.out.println(result.body.toString());
+      System.exit(result.rc);
 //      }
 //       catch (IOException ex) {
 // 	ex.printStackTrace();

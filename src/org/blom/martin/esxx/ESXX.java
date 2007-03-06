@@ -4,14 +4,15 @@ package org.blom.martin.esxx;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.util.LinkedList;
 import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.blom.martin.esxx.js.JSESXX;
 import org.mozilla.javascript.*;
+import org.mozilla.javascript.xml.XMLObject;
 import org.apache.xmlbeans.XmlObject;
 
+import javax.xml.transform.*;
+import javax.xml.transform.stream.*;
 
 public class ESXX {
     public static final String NAMESPACE = "http://martin.blom.org/esxx/1.0/";
@@ -95,7 +96,7 @@ public class ESXX {
 	  try {
 	    ESXXParser parser = new ESXXParser(workload.getInputStream(), workload.getURL());
 
-	    Scriptable scope   = new ImporterTopLevel(cx, true);
+	    Scriptable scope   = new ImporterTopLevel(cx, false);
 	    JSESXX     js_esxx = new JSESXX(cx, scope, workload, 
 					    parser.getXML(), parser.getStylesheet());
 	    Object     esxx    = Context.javaToJS(js_esxx, scope);
@@ -129,46 +130,74 @@ public class ESXX {
 		  result = f.call(cx, scope, scope, null);
 		}
 	      }
+	      else {
+		// No handlers; the document is the result
+		result = js_esxx.document;
+	      }
 	    }
 	    catch (org.mozilla.javascript.RhinoException ex) {
 	      error = ex;
 	    }
 
+	    // On errors, invoke error handler
 	    if (error != null) {
 	      if (parser.hasHandlers()) {
-//		Object fobj = scope.get(parser.getErrorHandlerFunction(), scope);
-		Object fobj = cx.evaluateString(scope, parser.getErrorHandlerFunction(),
-						"<error-handler/>", 1, null);
+		String handler = parser.getErrorHandlerFunction();
 
-		if (fobj == null || 
-		    fobj == ScriptableObject.NOT_FOUND ||
-		    !(fobj instanceof Function)) {
-		  // Error handler is not a function
-		  throw error;
-		} 
-		else {
-		  Object args[] = { cx.javaToJS(error, scope) };
-		  Function f = (Function) fobj;
-		  result = f.call(cx, scope, scope, args);
+		try {
+		  Object fobj = cx.evaluateString(scope, handler, "<error-handler/>", 1, null);
+
+		  if (fobj == null || 
+		      fobj == ScriptableObject.NOT_FOUND ||
+		      !(fobj instanceof Function)) {
+		    // Error handler is not a function
+		    throw new ESXXException("Error handler '" + handler + 
+					    "' is not a valid function.");
+		  } 
+		  else {
+		    Object args[] = { cx.javaToJS(error, scope) };
+		    Function f = (Function) fobj;
+		    result = f.call(cx, scope, scope, args);
+		  }
+		}	
+		catch (Exception errex) {
+		  throw new ESXXException("Failed to handle error '" + error.toString() + 
+					  "': Error handler '" + handler + 
+					  "' failed with message '" + 
+					  errex.getMessage() + "'");
 		}
 	      }
+	      else {
+		// No error handler installed: throw away
+		throw error;
+	      }
+	    }
+
+	    // No error or error handled: Did we get a valid result?
+	    if (result == null) {
+	      throw new ESXXException("No result from '" + workload.getURL() + "'");
 	    }
 	    
-	    Class cp = result.getClass();
-	    while (cp != null) {
-	      System.err.println(cp + ":");
-	      for (Class c : cp.getInterfaces()) {
-		System.err.println(" " + c);
-	      }
-	      cp = cp.getSuperclass();
-	    }
+	    workload.getErrorWriter().write(result.toString());
+
+// 	    Wrapper wrap = (Wrapper) 
+// 	      ScriptableObject.callMethod((XMLObject) result, "getXmlObject",  new Object[0]);
+// 	    XmlObject xmlObj = (XmlObject) wrap.unwrap();
+
+// 	    org.w3c.dom.Node foo = xmlObj.getDomNode(); 
+// 	    System.out.println(foo);
+
 	    try {
-	      XmlObject xo = org.mozilla.javascript.xmlimpl.UglyHack.getXmlObject(
-		(org.mozilla.javascript.xml.XMLObject) result);
-	      xo.save(workload.getErrorStream());
+	      TransformerFactory tf = TransformerFactory.newInstance();
+	      Transformer        tr = tf.newTransformer();
+
+	      StreamSource src = new StreamSource(new StringReader(result.toString()));
+	      StreamResult dst = new StreamResult(workload.getErrorWriter());
+
+	      tr.transform(src, dst);
 	    }
-	    catch (ClassCastException ex) {
-	      System.err.println("apan");
+	    catch (TransformerException ex) {
+	      ex.printStackTrace();
 	    }
 	  }
 	  catch (Exception ex) {

@@ -6,7 +6,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.OutputStream;
+import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -16,13 +17,14 @@ public abstract class Workload {
     public abstract void finished(int rc, Properties headers);
 
     public Workload(InputStream code, URL url, 
-		    PrintStream out, PrintStream error,
+		    OutputStream out, Writer debug, Writer error,
 		    Properties properties, byte[] data) {
       inputStream  = new BufferedInputStream(code);
       streamURL    = url;
       lastModified = System.currentTimeMillis();
 
       this.out        = out;
+      this.debug      = debug;
       this.error      = error;
       this.properties = properties;
       this.data       = data;
@@ -30,7 +32,7 @@ public abstract class Workload {
 
 
     public Workload(File code,
-		    PrintStream out, PrintStream error,
+		    OutputStream out, Writer debug, Writer error,
 		    Properties properties, byte[] data) {
       try {
 	file         = code;
@@ -38,6 +40,7 @@ public abstract class Workload {
 	lastModified = file.lastModified();
 
 	this.out        = out;
+	this.debug      = debug;
 	this.error      = error;
 	this.properties = properties;
 	this.data       = data;
@@ -51,13 +54,14 @@ public abstract class Workload {
 
 
     public Workload(URLConnection code,
-		    PrintStream out, PrintStream error,
+		    OutputStream out, Writer debug, Writer error,
 		    Properties properties, byte[] data) {
       urlConnection = code;
       streamURL     = urlConnection.getURL();
       lastModified  = urlConnection.getLastModified();
 
       this.out        = out;
+      this.debug      = debug;
       this.error      = error;
       this.properties = properties;
       this.data       = data;
@@ -93,12 +97,16 @@ public abstract class Workload {
     }
 
 
-    public PrintStream getOutStream() {
+    public OutputStream getOutStream() {
       return out;
     }
 
 
-    public PrintStream getErrorStream() {
+    public Writer getDebugWriter() {
+      return debug;
+    }
+
+    public Writer getErrorWriter() {
       return error;
     }
 
@@ -119,8 +127,9 @@ public abstract class Workload {
     private URL streamURL;
     private long lastModified;
 
-    private PrintStream out;
-    private PrintStream error;
+    private OutputStream out;
+    private Writer debug;
+    private Writer error;
     private Properties properties;
     private byte data[];
 };

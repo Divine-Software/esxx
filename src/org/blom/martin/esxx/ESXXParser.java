@@ -164,37 +164,6 @@ public class ESXXParser {
 
       xml = XmlObject.Factory.parse(xsr);
       xsr.close();
-
-//       try {
-// 	XMLOutputFactory xof = XMLOutputFactory.newInstance();
-      
-// 	XMLStreamReader xr = xml.newXMLStreamReader();
-
-// 	while (xr.hasNext()) {
-// 	  int ev = xr.next();
-// 	  System.out.println("ev: " + ev);
-// 	}
-	
-
-// 	TransformerFactory tf = TransformerFactory.newInstance();
-// 	Transformer        tr = tf.newTransformer();
-	
-// 	XMLStreamWriter xw = xof.createXMLStreamWriter(System.out);
-	
-// 	tr.transform(new StAXSource(xr), new StAXResult(xw));
-//       }
-//       catch (TransformerException ex) {
-// 	ex.printStackTrace();
-//       }
-
-//       System.out.println("Code: " + getCode());
-//       System.out.println("GET: " + getHandlerFunction("GET"));
-//       System.out.println("Error: " + getErrorHandlerFunction());
-//       System.out.println("Stylesheet: " + getStylesheet());
-
-//       for(URL i : getDependencies()) {
-// 	System.out.println(i);
-//       }
     }
 
 

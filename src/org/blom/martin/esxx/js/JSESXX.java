@@ -1,19 +1,20 @@
 
 package org.blom.martin.esxx.js;
 
-import java.io.PrintStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.URL;
-import java.util.Enumeration;
 import java.util.Properties;
+import org.apache.xmlbeans.XmlException;
+import org.apache.xmlbeans.XmlObject;
 import org.blom.martin.esxx.Workload;
 import org.mozilla.javascript.*;
-import org.apache.xmlbeans.XmlObject;
-import org.apache.xmlbeans.XmlException;
 
 public class JSESXX {
     public JSESXX(Context cx, Scriptable scope, Workload workload,
 		  XmlObject document, URL stylesheet) {
-      this.error      = workload.getErrorStream();
+      this.debug      = new PrintWriter(workload.getDebugWriter());
+      this.error      = new PrintWriter(workload.getErrorWriter());
       this.properties = cx.newObject(scope, "Object");
       for (String name :  workload.getProperties().stringPropertyNames()) {
 	ScriptableObject.putProperty(this.properties, name, 
@@ -36,7 +37,8 @@ public class JSESXX {
       this.stylesheet = (stylesheet != null ? stylesheet.toString() : "");
     }
 
-    public PrintStream error;
+    public PrintWriter error;
+    public PrintWriter debug;
 
     public Scriptable properties;
     public Scriptable headers;
