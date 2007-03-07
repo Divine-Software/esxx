@@ -1,18 +1,17 @@
 
 package org.blom.martin.esxx;
 
+import org.blom.martin.esxx.js.JSESXX;
+
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
-import org.blom.martin.esxx.js.JSESXX;
-import org.mozilla.javascript.*;
-import org.mozilla.javascript.xml.XMLObject;
-import org.apache.xmlbeans.XmlObject;
-
 import javax.xml.transform.*;
+import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
+import org.mozilla.javascript.*;
 
 public class ESXX {
     public static final String NAMESPACE = "http://martin.blom.org/esxx/1.0/";
@@ -66,6 +65,31 @@ public class ESXX {
       }
     }
 
+
+    public static String serializeNode(org.w3c.dom.Node node, boolean omit_xml_declaration) {
+      try {
+	StringWriter sw = new StringWriter();
+
+	TransformerFactory tf = TransformerFactory.newInstance();
+	Transformer        tr = tf.newTransformer();
+
+	tr.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION,
+			     omit_xml_declaration ? "yes" : "no");
+
+	DOMSource src = new DOMSource(node);
+	StreamResult  dst = new StreamResult(sw);
+
+	tr.transform(src, dst);
+	return sw.toString();
+      }
+      catch (TransformerException ex) {
+	ex.printStackTrace();
+	return "";
+      }
+    }
+
+
+
     private void workerThread(Context cx) {
       // Provide a better mapping for primitive types on this context
       cx.getWrapFactory().setJavaPrimitiveWrap(false);
@@ -106,9 +130,13 @@ public class ESXX {
 	    Exception error = null;
 
 	    try {
+	      // Execute all <?esxx and <?esxx-import PIs
+
 	      for (ESXXParser.Code c : parser.getCodeList()) {
 		cx.evaluateString(scope, c.code, c.url.toString(), c.line, null);
 	      }
+
+	      // Execute the HTTP handler (if available)
 
 	      if (parser.hasHandlers()) {
 		String handler = parser.getHandlerFunction(method);
@@ -132,6 +160,7 @@ public class ESXX {
 	      }
 	      else {
 		// No handlers; the document is the result
+
 		result = js_esxx.document;
 	      }
 	    }
@@ -140,12 +169,13 @@ public class ESXX {
 	    }
 
 	    // On errors, invoke error handler
+
 	    if (error != null) {
 	      if (parser.hasHandlers()) {
 		String handler = parser.getErrorHandlerFunction();
 
 		try {
-		  Object fobj = cx.evaluateString(scope, handler, "<error-handler/>", 1, null);
+		  Object fobj = cx.evaluateString(scope, handler, "<error-handler/>", 0, null);
 
 		  if (fobj == null || 
 		      fobj == ScriptableObject.NOT_FOUND ||
@@ -178,23 +208,30 @@ public class ESXX {
 	      throw new ESXXException("No result from '" + workload.getURL() + "'");
 	    }
 	    
-	    workload.getErrorWriter().write(result.toString());
-
-// 	    Wrapper wrap = (Wrapper) 
-// 	      ScriptableObject.callMethod((XMLObject) result, "getXmlObject",  new Object[0]);
-// 	    XmlObject xmlObj = (XmlObject) wrap.unwrap();
-
-// 	    org.w3c.dom.Node foo = xmlObj.getDomNode(); 
-// 	    System.out.println(foo);
-
 	    try {
+	      Source src;
+
+	      try {
+		src = new DOMSource(org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result));
+	      }
+	      catch (Exception ex) {
+		src = new StreamSource(new StringReader(result.toString()));
+	      }
+	    
 	      TransformerFactory tf = TransformerFactory.newInstance();
-	      Transformer        tr = tf.newTransformer();
+	      Transformer        tr;
 
-	      StreamSource src = new StreamSource(new StringReader(result.toString()));
-	      StreamResult dst = new StreamResult(workload.getErrorWriter());
+	      if (js_esxx.stylesheet != null && !js_esxx.stylesheet.equals("")) {
+		URL stylesheet = new URL(workload.getURL(), js_esxx.stylesheet);
+		tr = tf.newTransformer(new StreamSource(stylesheet.openStream()));
+	      }
+	      else {
+		// Identity transformer
 
-	      tr.transform(src, dst);
+		tr = tf.newTransformer();
+	      }
+
+	      tr.transform(src, new StreamResult(workload.getOutStream()));
 	    }
 	    catch (TransformerException ex) {
 	      ex.printStackTrace();

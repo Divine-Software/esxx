@@ -1,21 +1,16 @@
 
 package org.blom.martin.esxx;
 
-import org.apache.xmlbeans.XmlObject;
-import org.apache.xmlbeans.XmlException;
-
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.TreeMap;
-
+import javax.xml.parsers.*;
 import javax.xml.stream.*;
-import javax.xml.stream.events.*;
-import javax.xml.stream.util.*;
-import javax.xml.transform.*;
-import javax.xml.transform.stax.*;
+import javax.xml.xpath.*;
+import org.w3c.dom.*;
 
 public class ESXXParser {
 
@@ -36,138 +31,135 @@ public class ESXXParser {
     };
 
     public ESXXParser(URL url)
-      throws java.io.IOException, XmlException, XMLStreamException {
+      throws java.io.IOException, XMLStreamException {
       this(url.openStream(), url);
     }
 
     public ESXXParser(InputStream is, final URL url)
-      throws XmlException, XMLStreamException {
+      throws XMLStreamException {
       
       baseURL = url;
-
       xmlInputFactory = XMLInputFactory.newInstance();
-      
-//      xmlInputFactory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.TRUE);
-      xmlInputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
-      xmlInputFactory.setXMLResolver(new XMLResolver() {
-	    public Object resolveEntity(String publicID,
-					String systemID,
-					String baseURI,
-					String namespace)
-	      throws XMLStreamException {
-// 	      System.out.println("p: " + publicID);
-// 	      System.out.println("s: " + systemID);
-// 	      System.out.println("b: " + baseURI);
-// 	      System.out.println("n: " + namespace);
-	      try {
-		if (systemID != null) {
-		  if (baseURI != null) {
-		    return new URL(new URL(baseURI), systemID).openStream();
+
+      // Load and parse the document
+
+      try {
+	DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+
+	dbf.setExpandEntityReferences(true);
+	dbf.setNamespaceAware(true);
+	dbf.setValidating(true);
+	dbf.setXIncludeAware(true);
+
+	DocumentBuilder db = dbf.newDocumentBuilder();
+
+	db.setEntityResolver(new org.xml.sax.EntityResolver() {
+	      public org.xml.sax.InputSource resolveEntity (String publicID, 
+							    String systemID) 
+		throws org.xml.sax.SAXException {
+		System.out.println("s: " + systemID);
+
+		try {
+		  if (systemID != null) {
+		    URL url = new URL(ESXXParser.this.baseURL, systemID);
+
+		    org.xml.sax.InputSource src = new org.xml.sax.InputSource(url.openStream());
+		    src.setSystemId(url.toString());
+		    return src;
 		  }
 		  else {
-		    return new URL(ESXXParser.this.baseURL, systemID).openStream();
+		    throw new org.xml.sax.SAXException("Missing system ID");
 		  }
 		}
-		return null;
+		catch (MalformedURLException ex) {
+		  throw new org.xml.sax.SAXException("Malformed URL for system ID " + 
+						     systemID + ": " + ex.getMessage());
+		}
+		catch (IOException ex) {
+		  throw new org.xml.sax.SAXException("Unable to load resource for system ID " +
+						     systemID + ": " + ex.getMessage());
+		}
 	      }
-	      catch (MalformedURLException ex) {
-		throw new XMLStreamException("Malformed URL for system ID " + 
-					     systemID + ": " + ex.getMessage());
+	  });
+
+	xml = db.parse(is, url.toString());
+
+
+	// Extract ESXX information, if any
+
+	try { 
+	  XPath xpath = XPathFactory.newInstance().newXPath();
+	  xpath.setNamespaceContext(new javax.xml.namespace.NamespaceContext() {
+		public String getNamespaceURI(String prefix) {
+		  if (prefix.equals("esxx")) {
+		    return ESXX.NAMESPACE;
+		  }
+		  else {
+		    return javax.xml.XMLConstants.NULL_NS_URI;
+		  }
+		}
+
+		public String getPrefix(String uri) {
+		  throw new UnsupportedOperationException();
+		}
+
+		public java.util.Iterator getPrefixes(String uri) {
+		  throw new UnsupportedOperationException();
+		}
+	    });
+
+	  NodeList r = (NodeList) xpath.evaluate("processing-instruction() | " +
+						 "esxx:esxx/esxx:settings/esxx:*", 
+						 xml, XPathConstants.NODESET);
+	  
+	  for (int i = 0; i < r.getLength(); ++i) {
+	    Node n = r.item(i);
+	    
+	    if (n.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE) {
+	      String name = n.getNodeName();
+	      if (name.equals("esxx-stylesheet")) {
+		handleStylesheet(n.getNodeValue());
 	      }
-	      catch (IOException ex) {
-		return null;
-// 		throw new XMLStreamException("I/O error for system ID " +
-// 					     systemID + ": " + ex.getMessage());
+	      else if (name.equals("esxx-import")) {
+		handleImport(n.getNodeValue());
+	      }
+	      else if (name.equals("esxx")) {
+		handleCode(url, 0, n.getNodeValue());
 	      }
 	    }
-	});
+	    else if (n.getNodeType() == Node.ELEMENT_NODE) {
+	      Element e = (Element) n;
+	      String name = e.getLocalName();
 
-      XMLStreamReader xsr = new StreamReaderDelegate(xmlInputFactory.createXMLStreamReader(is)) {
-	    private boolean insideESXX = false;
-	    private boolean insideSettings = false;
+	      // esxx/settings/* matched.
+	      gotESXX = true;
 
-	    public int next()
-	      throws XMLStreamException {
-	      int rc = super.next();
-	      
-	      switch (rc) {
-		case XMLStreamConstants.COMMENT: {
-		  // Hide all comments
-		  return next();
-		}
-		
-		case XMLStreamConstants.START_ELEMENT: {
-		  String namespace = getNamespaceURI();
-		  String element   = getLocalName();
-		  
-		  if (namespace.equals(ESXX.NAMESPACE)) {
-		    if (!insideESXX && element.equals("esxx")) {
-		      insideESXX = true;
-		      gotESXX = true;
-		    }
-		    else if (insideESXX && element.equals("settings")) {
-		      insideSettings = true;
-		    }
-		    else if (insideSettings) {
-		      if (element.equals("handler")) {
-			handleHandler(this);
-		      }
-		      else if (element.equals("error-handler")) {
-			handleErrorHandler(this);
-		      }
-		    }
-		  }
-		  break;
-		}
-		  
-		case XMLStreamConstants.END_ELEMENT: {
-		  String namespace = getNamespaceURI();
-		  String element   = getLocalName();
-		  
-		  if (namespace.equals(ESXX.NAMESPACE)) {
-		    if (insideSettings && element.equals("settings")) {
-		      insideSettings = false;
-		    }
-		    else if (insideESXX && element.equals("esxx")) {
-		      insideESXX = false;
-		    }
-		  }
-		  break;
-		}
-		  
-		case XMLStreamConstants.PROCESSING_INSTRUCTION: {
-		  String target = getPITarget();
-
-		  if (target.equals("esxx-stylesheet")) {
-		    handleStylesheet(getPIData());
-		    // Hide this PI
-		    return next();
-		  }
-		  else if (target.equals("esxx-import")) {
-		    handleImport(getPIData());
-		    // Hide this PI
-		    return next();
-		  }
-		  else if (target.equals("esxx")) {
-		    handleCode(url, 0, getPIData());
-		    // Hide this PI
-		    return next();
-		  }
-
-		  break;
-		}
+	      if (name.equals("handler")) {
+		handleHandler(e);
 	      }
-
-	      return rc;
+	      else if (name.equals("error-handler")) {
+		handleErrorHandler(e);
+	      }
 	    }
-	};
-
-      xml = XmlObject.Factory.parse(xsr);
-      xsr.close();
+	  }
+	}
+	catch(XPathExpressionException ex) {
+	  ex.printStackTrace();
+	}
+      }
+      catch (ParserConfigurationException ex) {
+	ex.printStackTrace();
+      }
+      catch (org.xml.sax.SAXException ex) {
+	ex.printStackTrace();
+      }
+      catch (IOException ex) {
+	ex.printStackTrace();
+      }
     }
 
 
-    public XmlObject getXML() {
+    public Document getXML() {
       return xml;
     }
 
@@ -273,25 +265,25 @@ public class ESXXParser {
       codeList.add(new Code(url, line, data));
     }
 
-    private void handleHandler(XMLStreamReader xsr) 
-      throws XMLStreamException {
-      String handler = xsr.getAttributeValue(null, "function").trim();
+    private void handleHandler(Element e) 
+      throws org.xml.sax.SAXException {
+      String handler = e.getAttributeNS(null, "function").trim();
 
       if (handler.endsWith(")")) {
-	throw new XMLStreamException("In <handler>: handler names " +
-				     "should not include parentheses");
+	throw new org.xml.sax.SAXException("In <handler>: handler names " +
+					   "should not include parentheses");
       }
 
-      handlers.put(xsr.getAttributeValue(null, "type"), handler);
+      handlers.put(e.getAttributeNS(null, "type"), handler);
     }
 
-    private void handleErrorHandler(XMLStreamReader xsr)
-      throws XMLStreamException {
-      String handler = xsr.getAttributeValue(null, "function").trim();
+    private void handleErrorHandler(Element e)
+      throws org.xml.sax.SAXException {
+      String handler = e.getAttributeNS(null, "function").trim();
 
       if (handler.endsWith(")")) {
-	throw new XMLStreamException("In <error-handler>: handler names " +
-				     "should not include parentheses");
+	throw new org.xml.sax.SAXException("In <error-handler>: handler names " +
+					   "should not include parentheses");
       }
 
       errorHandler = handler;
@@ -303,7 +295,7 @@ public class ESXXParser {
 
     private boolean gotESXX;
 
-    private XmlObject xml;
+    private Document xml;
     private StringBuilder code = new StringBuilder();
     private URL stylesheet;
     private LinkedList<Code> codeList = new LinkedList<Code>();

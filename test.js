@@ -20,29 +20,27 @@ function MyApp(e) {
     esxx.error.println("**** START GET HANDLER ****");
 
     XML.ignoreComments = false;
+
+    a = <apa>data<a/> <!-- apa --></apa>;
+
     XML.prettyPrinting = false;
+    esxx.error.println(a);
 
-    a = <?xml version="1.0"?>
-        <!DOCTYPE html PUBLIC "-//W3C/DTD HTML 3.0 Transitional//EN" "">
+    XML.prettyPrinting = true;
+    esxx.error.println(a);
 
-    <!-- apa -->
-    <html>data<a/>
+    var html = <html>
+    <body><p>Hej här är en banan till dig!</p>
+    </body>
     </html>;
+
+    html.body.*[0] = <address name="Martin Blom"/> + html.body.*[0];
+    html.body.* += <address name="Martin Blom"/>;
 
     esxx.error.println("**** END GET HANDLER ****");
 
-//     var html = <!DOCTYPE html PUBLIC "-//W3C/DTD HTML 3.0 Transitional//EN" "" [
-//       <!ENTITY nbsp '&#xa0;'>
-//       ]>
-//     <html>
-//     <body><p>Hej här är en banan till&nbsp;dig!</p>
-//     </body>
-//     </html>;
-
-//     html.body.*[0] = <address name="Martin Blom"/> + html.body.*[0];
-//     html.body.* += <address name="Martin Blom"/>;
-
-    return esxx.document;
+    return html;
+//    return esxx.document;
   }
 }
 
@@ -50,4 +48,4 @@ function MyApp(e) {
 
 default xml namespace = new Namespace("http://martin.blom.org/esxx/1.0/");
 esxx.error.println(esxx.document.info.author[0]);
-//default xml namespace = new Namespace("");
+default xml namespace = new Namespace("");

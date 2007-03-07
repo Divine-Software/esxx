@@ -22,7 +22,7 @@
   </target>
 
   <target name="compile" depends="init" description="compile everything">
-    <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath"/>
+    <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" debug="true" />
   </target>
 
   <target name="dist" depends="compile" description="generate the distribution" >
