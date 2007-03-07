@@ -25,9 +25,8 @@ public class JSESXX {
 
 //      this.document = cx.newObject(scope, "XML", new Object[] { cx.javaToJS(document, scope) });
 
-      try { 
-	String cmd = "<>" + ESXX.serializeNode(document, true) + "</>;";
-	this.document = (Scriptable) cx.evaluateString(scope, cmd, "<esxx.document>", 0, null);
+      String cmd = "<>" + ESXX.serializeNode(document, true) + "</>;";
+      this.document = (Scriptable) cx.evaluateString(scope, cmd, "<esxx.document>", 0, null);
 // 	String cmd = ("s=XML.settings();" +
 // 		      "XML.ignoreComments=false;" +
 // 		      "XML.ignoreProcessingInstructions=false;" +
@@ -35,10 +34,6 @@ public class JSESXX {
 // 		      "XML.setSettings(s);" +
 // 		      "delete s;");
 // 	cx.evaluateString(scope, cmd, "<esxx.document>", 0, null);
-      }
-      catch (javax.xml.transform.TransformerException ex) {
-	ex.printStackTrace();
-      }
 
       this.headers = cx.newObject(scope, "Object");
       ScriptableObject.putProperty(this.headers, "Status", "200 OK");

@@ -209,10 +209,22 @@ public class ESXX {
 	    }
 	    
 	    try {
+	      String public_id = null;
+	      String system_id = null;
 	      Source src;
 
 	      try {
-		src = new DOMSource(org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result));
+		org.w3c.dom.Node node = org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result);
+		if (node instanceof org.w3c.dom.Document) {
+		  org.w3c.dom.DocumentType dt = ((org.w3c.dom.Document) node).getDoctype();
+
+		  if (dt != null) {
+		    public_id = dt.getPublicId();
+		    system_id = dt.getSystemId();
+		  }
+		}
+
+		src = new DOMSource(node);
 	      }
 	      catch (Exception ex) {
 		src = new StreamSource(new StringReader(result.toString()));
@@ -229,6 +241,14 @@ public class ESXX {
 		// Identity transformer
 
 		tr = tf.newTransformer();
+	      }
+
+	      if (public_id != null) {
+		tr.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC, public_id);
+	      }
+
+	      if (system_id != null) {
+		tr.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, system_id);
 	      }
 
 	      tr.transform(src, new StreamResult(workload.getOutStream()));
