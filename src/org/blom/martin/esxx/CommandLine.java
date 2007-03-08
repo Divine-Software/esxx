@@ -14,15 +14,16 @@ public class CommandLine {
       extends Workload {
 	public WL(String file_name)
 	  throws MalformedURLException {
-	  this(file_name, new ByteArrayOutputStream());
+	  this(file_name, new ByteArrayOutputStream(), new StringWriter());
 	}
 
-	private WL(String file_name, ByteArrayOutputStream b)
+	private WL(String file_name, ByteArrayOutputStream b, StringWriter d)
 	  throws MalformedURLException {
 	  super(new URL("file", "", file_name),
-		b, new StringWriter(), new PrintWriter(System.err), 
+		b, d, new PrintWriter(System.err), 
 		System.getProperties(), null);
 	  body = b;
+	  debug = d;
 	}
 
 	public void finished(int rc, Properties headers) {
@@ -37,6 +38,7 @@ public class CommandLine {
 	public int rc;
 	public Properties headers;
 	public ByteArrayOutputStream body;
+	public StringWriter debug;
     }
 
 
@@ -76,7 +78,12 @@ public class CommandLine {
 	}
 	catch (IOException ex) {
 	}
+	System.out.println("Body:");
 	System.out.println(result.body.toString());
+
+	System.out.println("Debug:");
+	System.out.println(result.debug.toString());
+
 	System.exit(result.rc);
       }
       catch (MalformedURLException ex) {
