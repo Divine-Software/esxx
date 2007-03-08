@@ -2,6 +2,7 @@
 package org.blom.martin.esxx;
 
 import java.io.*;
+import java.net.*;
 import java.util.Properties;
 
 public class CommandLine {
@@ -11,12 +12,14 @@ public class CommandLine {
 
     static private class WL 
       extends Workload {
-	public WL(String file_name) {
+	public WL(String file_name)
+	  throws MalformedURLException {
 	  this(file_name, new ByteArrayOutputStream());
 	}
 
-	private WL(String file_name, ByteArrayOutputStream b) {
-	  super(new File(file_name),
+	private WL(String file_name, ByteArrayOutputStream b)
+	  throws MalformedURLException {
+	  super(new URL("file", "", file_name),
 		b, new StringWriter(), new PrintWriter(System.err), 
 		System.getProperties(), null);
 	  body = b;
@@ -41,39 +44,44 @@ public class CommandLine {
       Properties p = new Properties();
 
       ESXX esxx = new ESXX(p);
-      
-      WL w = new WL(args[0]);
 
-      esxx.addWorkload(w);
+      try {
+	WL w = new WL(args[0]);
 
-      while (true) {
-	synchronized (mutex) {
-	  if (result != null) {
-	    break;
+	esxx.addWorkload(w);
+
+	while (true) {
+	  synchronized (mutex) {
+	    if (result != null) {
+	      break;
+	    }
+	  }
+
+	  try {
+	    Thread.sleep(100);
+	  }
+	  catch (Exception ex) {
+	    ex.printStackTrace();
 	  }
 	}
-
-	try {
-	  Thread.sleep(100);
-	}
-	catch (Exception ex) {
-	  ex.printStackTrace();
-	}
-      }
 
 //      try {
 //	System.err.flush();
 
 // 	result.headers.store(new OutputStreamWriter(System.out), "ESXX Output Headers");
 // 	System.out.println("");
-      try {
-	w.getErrorWriter().flush();
-	w.getDebugWriter().flush();
+	try {
+	  w.getErrorWriter().flush();
+	  w.getDebugWriter().flush();
+	}
+	catch (IOException ex) {
+	}
+	System.out.println(result.body.toString());
+	System.exit(result.rc);
       }
-      catch (IOException ex) {
+      catch (MalformedURLException ex) {
+	ex.printStackTrace();
       }
-      System.out.println(result.body.toString());
-      System.exit(result.rc);
 //      }
 //       catch (IOException ex) {
 // 	ex.printStackTrace();

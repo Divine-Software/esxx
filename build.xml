@@ -53,7 +53,7 @@
 
   <target name="run" depends="compile">
     <java classname="${main-class}" fork="true" classpathref="classpath">
-      <arg file="test-xslt.esxx" />
+      <arg file="test-code.esxx" />
     </java>
 
 <!--

@@ -13,7 +13,7 @@ import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 
 public class JSESXX {
-    public JSESXX(Context cx, Scriptable scope, Workload workload,
+    public JSESXX(ESXX esxx, Context cx, Scriptable scope, Workload workload,
 		  Document document, URL stylesheet) {
       this.debug      = new PrintWriter(workload.getDebugWriter());
       this.error      = new PrintWriter(workload.getErrorWriter());
@@ -25,7 +25,7 @@ public class JSESXX {
 
 //      this.document = cx.newObject(scope, "XML", new Object[] { cx.javaToJS(document, scope) });
 
-      String cmd = "<>" + ESXX.serializeNode(document, true) + "</>;";
+      String cmd = "<>" + esxx.serializeNode(document, true) + "</>;";
       this.document = (Scriptable) cx.evaluateString(scope, cmd, "<esxx.document>", 0, null);
 // 	String cmd = ("s=XML.settings();" +
 // 		      "XML.ignoreComments=false;" +

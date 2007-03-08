@@ -30,14 +30,11 @@ public class ESXXParser {
 	public String code;
     };
 
-    public ESXXParser(URL url)
-      throws java.io.IOException, XMLStreamException {
-      this(url.openStream(), url);
-    }
 
-    public ESXXParser(InputStream is, final URL url)
-      throws XMLStreamException {
+    public ESXXParser(ESXX esxx, URL url)
+      throws IOException, XMLStreamException {
       
+      esxxObject = esxx;
       baseURL = url;
       xmlInputFactory = XMLInputFactory.newInstance();
 
@@ -57,14 +54,17 @@ public class ESXXParser {
 	      public org.xml.sax.InputSource resolveEntity (String publicID, 
 							    String systemID) 
 		throws org.xml.sax.SAXException {
-		System.out.println("s: " + systemID);
 
 		try {
 		  if (systemID != null) {
-		    URL url = new URL(ESXXParser.this.baseURL, systemID);
+		    URL url = new URL(baseURL, systemID);
 
-		    org.xml.sax.InputSource src = new org.xml.sax.InputSource(url.openStream());
+		    org.xml.sax.InputSource src = new org.xml.sax.InputSource(
+		      esxxObject.openCachedURL(url));
 		    src.setSystemId(url.toString());
+		    
+		    externalURLs.add(url);
+
 		    return src;
 		  }
 		  else {
@@ -82,7 +82,7 @@ public class ESXXParser {
 	      }
 	  });
 
-	xml = db.parse(is, url.toString());
+	xml = db.parse(esxxObject.openCachedURL(url), url.toString());
 
 
 	// Extract ESXX information, if any
@@ -144,20 +144,24 @@ public class ESXXParser {
 	  }
 	}
 	catch(XPathExpressionException ex) {
+	  // Should never happen
 	  ex.printStackTrace();
+	  throw new XMLStreamException(ex.getMessage());
 	}
       }
       catch (ParserConfigurationException ex) {
+	// Should never happen
 	ex.printStackTrace();
+	throw new XMLStreamException(ex.getMessage());
       }
       catch (org.xml.sax.SAXException ex) {
-	ex.printStackTrace();
-      }
-      catch (IOException ex) {
-	ex.printStackTrace();
+	throw new XMLStreamException(ex.getMessage());
       }
     }
 
+    public Collection<URL> getExternalURLs() {
+      return externalURLs;
+    }
 
     public Document getXML() {
       return xml;
@@ -236,7 +240,8 @@ public class ESXXParser {
 
 	  try {
 	    URL url = new URL(baseURL, href);
-	    BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
+	    BufferedReader br = new BufferedReader(new InputStreamReader(
+						     esxxObject.openCachedURL(url)));
 	    StringBuilder code = new StringBuilder();
 	    String line;
 
@@ -246,6 +251,8 @@ public class ESXXParser {
 	    }
 
 	    handleCode(url, 1, code.toString());
+
+	    externalURLs.add(url);
 	  }
 	  catch (MalformedURLException ex) {
 	    throw new XMLStreamException("<?esxx-import?> attribute 'href' is invalid: "
@@ -289,9 +296,11 @@ public class ESXXParser {
       errorHandler = handler;
     }
 
-
-    private URL baseURL;
     private XMLInputFactory xmlInputFactory;
+
+    private ESXX esxxObject;
+    private URL baseURL;
+    private LinkedList<URL> externalURLs = new LinkedList<URL>();
 
     private boolean gotESXX;
 

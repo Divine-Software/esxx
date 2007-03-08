@@ -1,33 +1,35 @@
 
 
 for (var h in esxx.headers) {
-  esxx.error.println(h + ": " + esxx.headers[h] + " (" + typeof esxx.headers[h] + ")");
+  esxx.debug.println(h + ": " + esxx.headers[h] + " (" + typeof esxx.headers[h] + ")");
 }
 
-esxx.error.println(esxx.headers.Status);
+esxx.debug.println(esxx.headers.Status);
 
-esxx.error.println(esxx.document);
+esxx.debug.println(esxx.document);
 
 function MyApp(e) {
 
   this.handleError = function(ex) {
-	esxx.error.println("**** START ERROR HANDLER ****");
-	esxx.error.println(ex);
-	esxx.error.println("**** END ERROR HANDLER ****");
+	esxx.debug.println("**** START ERROR HANDLER ****");
+	esxx.debug.println(ex);
+	esxx.debug.println("**** END ERROR HANDLER ****");
     };
 
   this.handleGet = function() {
-    esxx.error.println("**** START GET HANDLER ****");
+    esxx.debug.println("**** START GET HANDLER ****");
 
     XML.ignoreComments = false;
 
     a = <apa>data<a/> <!-- apa --></apa>;
 
     XML.prettyPrinting = false;
-    esxx.error.println(a);
+    esxx.debug.println(a);
 
     XML.prettyPrinting = true;
-    esxx.error.println(a);
+    esxx.debug.println(a);
+
+    default xml namespace = new Namespace("http://www.w3.org/1999/xhtml");
 
     var html = <html>
     <body><p>Hej här är en banan till dig!</p>
@@ -37,15 +39,14 @@ function MyApp(e) {
     html.body.*[0] = <address name="Martin Blom"/> + html.body.*[0];
     html.body.* += <address name="Martin Blom"/>;
 
-    esxx.error.println("**** END GET HANDLER ****");
+    esxx.debug.println("**** END GET HANDLER ****");
 
     return html;
-//    return esxx.document;
   }
 }
 
 
 
 default xml namespace = new Namespace("http://martin.blom.org/esxx/1.0/");
-esxx.error.println(esxx.document.info.author[0]);
+esxx.debug.println(esxx.document.info.author[0]);
 default xml namespace = new Namespace("");

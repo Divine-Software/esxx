@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
@@ -23,6 +24,23 @@ public class ESXX {
 
     public ESXX(Properties p) {
       settings = p;
+
+      transformerFactory = TransformerFactory.newInstance();
+      transformerFactory.setURIResolver(new URIResolver() {
+	    public Source resolve(String href,
+				  String base)
+	      throws TransformerException {
+	      try {
+		return new StreamSource(openCachedURL(new URL(new URL(base), href)));
+	      }
+	      catch (MalformedURLException ex) {
+		throw new TransformerException("MalformedURLException: " + ex.getMessage());
+	      }
+	      catch (IOException ex) {
+		throw new TransformerException("IOException: " + ex.getMessage());
+	      }
+	    }
+	});
 
       workerThreads = new ThreadGroup("ESXX worker threads");
       workloadQueue = new LinkedBlockingQueue<Workload>(MAX_WORKLOADS);
@@ -66,12 +84,11 @@ public class ESXX {
     }
 
 
-    public static String serializeNode(org.w3c.dom.Node node, boolean omit_xml_declaration) {
+    public String serializeNode(org.w3c.dom.Node node, boolean omit_xml_declaration) {
       try {
 	StringWriter sw = new StringWriter();
 
-	TransformerFactory tf = TransformerFactory.newInstance();
-	Transformer        tr = tf.newTransformer();
+	Transformer tr = transformerFactory.newTransformer();
 
 	tr.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION,
 			     omit_xml_declaration ? "yes" : "no");
@@ -89,25 +106,36 @@ public class ESXX {
     }
 
 
+    public InputStream openCachedURL(URL url) 
+      throws IOException {
+      System.out.println("Fetching " + url);
+      return url.openStream();
+    }
+
+
+    public ESXXParser getCachedESXXParser(URL url)
+      throws XMLStreamException, IOException {
+      return new ESXXParser(this, url);
+    }
+
+
+    public Transformer getCachedStylesheet(URL url)
+      throws ESXXException, XMLStreamException, IOException {
+      try {
+	Templates t = transformerFactory.newTemplates(new StreamSource(openCachedURL(url)));
+
+	return t.newTransformer();
+      }
+      catch (TransformerConfigurationException ex) {
+	throw new ESXXException("TransformerConfigurationException: " + ex.getMessage());
+      }
+    }
+
 
     private void workerThread(Context cx) {
       // Provide a better mapping for primitive types on this context
-      cx.getWrapFactory().setJavaPrimitiveWrap(false);
 
-//       cx.setWrapFactory(new WrapFactory() {
-// 	    public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
-// 	      if (obj instanceof String || obj instanceof Number || obj instanceof Boolean) {
-// 		return obj;
-// 	      } 
-// 	      else if (obj instanceof Character) {
-// 		char[] a = { ((Character) obj).charValue() };
-// 		return new String(a);
-// 	      }
-// 	      else {
-// 		return super.wrap(cx, scope, obj, staticType);
-// 	      }
-// 	    }	    
-// 	});
+      cx.getWrapFactory().setJavaPrimitiveWrap(false);
 
 
       // Now wait for workloads and execute them
@@ -118,10 +146,10 @@ public class ESXX {
 	  String method = "GET";
 	  
 	  try {
-	    ESXXParser parser = new ESXXParser(workload.getInputStream(), workload.getURL());
+	    ESXXParser parser = getCachedESXXParser(workload.getURL());
 
 	    Scriptable scope   = new ImporterTopLevel(cx, false);
-	    JSESXX     js_esxx = new JSESXX(cx, scope, workload, 
+	    JSESXX     js_esxx = new JSESXX(this, cx, scope, workload, 
 					    parser.getXML(), parser.getStylesheet());
 	    Object     esxx    = Context.javaToJS(js_esxx, scope);
 	    ScriptableObject.putProperty(scope, "esxx", esxx);
@@ -230,17 +258,18 @@ public class ESXX {
 		src = new StreamSource(new StringReader(result.toString()));
 	      }
 	    
-	      TransformerFactory tf = TransformerFactory.newInstance();
-	      Transformer        tr;
+
+	      Transformer tr;
 
 	      if (js_esxx.stylesheet != null && !js_esxx.stylesheet.equals("")) {
 		URL stylesheet = new URL(workload.getURL(), js_esxx.stylesheet);
-		tr = tf.newTransformer(new StreamSource(stylesheet.openStream()));
+		
+		tr = getCachedStylesheet(stylesheet);
 	      }
 	      else {
 		// Identity transformer
 
-		tr = tf.newTransformer();
+		tr = transformerFactory.newTransformer();
 	      }
 
 	      if (public_id != null) {
@@ -280,6 +309,7 @@ public class ESXX {
     private static final int MAX_WORKLOADS = 16;
 
     private Properties settings;
+    private TransformerFactory  transformerFactory;
     private ThreadGroup workerThreads;
     private LinkedBlockingQueue<Workload> workloadQueue;
 };
