@@ -108,7 +108,7 @@ public class ESXX {
 
     public InputStream openCachedURL(URL url) 
       throws IOException {
-      System.out.println("Fetching " + url);
+//      System.out.println("Fetching " + url);
       return url.openStream();
     }
 
@@ -143,7 +143,7 @@ public class ESXX {
       while (true) {
 	try {
 	  Workload workload = workloadQueue.take();
-	  String method = "GET";
+	  String method = workload.getProperties().getProperty("REQUEST_METHOD");
 	  
 	  try {
 	    ESXXParser parser = getCachedESXXParser(workload.getURL());
@@ -168,6 +168,11 @@ public class ESXX {
 
 	      if (parser.hasHandlers()) {
 		String handler = parser.getHandlerFunction(method);
+
+		if (handler == null) {
+		  throw new ESXXException("'" + method + "' handler not defined.");
+		}
+
 		Object fobj = cx.evaluateString(scope, handler,
 						"<handler/>", 1, null);
 		if (fobj == null || 
@@ -193,6 +198,9 @@ public class ESXX {
 	      }
 	    }
 	    catch (org.mozilla.javascript.RhinoException ex) {
+	      error = ex;
+	    }
+	    catch (ESXXException ex) {
 	      error = ex;
 	    }
 
@@ -232,7 +240,7 @@ public class ESXX {
 	    }
 
 	    // No error or error handled: Did we get a valid result?
-	    if (result == null) {
+	    if (result == null || result instanceof org.mozilla.javascript.Undefined) {
 	      throw new ESXXException("No result from '" + workload.getURL() + "'");
 	    }
 	    
@@ -280,21 +288,46 @@ public class ESXX {
 		tr.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, system_id);
 	      }
 
-	      tr.transform(src, new StreamResult(workload.getOutStream()));
+	      tr.transform(src, new StreamResult(workload.getOutWriter()));
 	    }
 	    catch (TransformerException ex) {
 	      ex.printStackTrace();
 	    }
+
+	    Properties p = new Properties();
+	  
+	    for (Object o : js_esxx.headers.getIds()) {
+	      if (o instanceof String) {
+		String id = (String) o;
+
+		if (id.equals("Cookies")) {
+		}
+		else {
+		  p.setProperty(id, ScriptableObject.getProperty(js_esxx.headers, id).toString());
+		}
+	      }
+	      else if (o instanceof Integer) {
+		Integer id = (Integer) o;
+		String value = ScriptableObject.getProperty(js_esxx.headers, id).toString();
+
+		String[] kv = value.split(":", 2);
+		
+		if (kv.length == 2) {
+		  p.setProperty(kv[0], kv[1]);
+		}
+	      }
+	    }
+
+// 	  p.setProperty("Status", "200 OK");
+// 	  p.setProperty("Content-Type",  "text/plain");
+	    workload.finished(0, p);
+
 	  }
 	  catch (Exception ex) {
 	    ex.printStackTrace();
+	    // What to do
+	    workload.finished(-1, new Properties());
 	  }
-
-
-	  Properties p = new Properties();
-// 	  p.setProperty("Status", "200 OK");
-// 	  p.setProperty("Content-Type",  "text/plain");
-	  workload.finished(0, p);
 	}
 	catch (InterruptedException ex) {
 	  // Don't know what to do here ... die?

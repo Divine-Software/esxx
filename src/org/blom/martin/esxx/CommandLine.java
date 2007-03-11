@@ -4,94 +4,182 @@ package org.blom.martin.esxx;
 import java.io.*;
 import java.net.*;
 import java.util.Properties;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import org.bumblescript.jfast.*;
 
 public class CommandLine {
-    static private Object mutex = new Object();
+    static private Integer cgiResult = null;
+    static private Object cgiMutex = new Object();
 
-    static private WL result;
-
-    static private class WL 
+    static private class CGIWorkload
       extends Workload {
-	public WL(String file_name)
+
+	public CGIWorkload(Properties cgi)
 	  throws MalformedURLException {
-	  this(file_name, new ByteArrayOutputStream(), new StringWriter());
+	  this(cgi, 
+	       createReader(System.in, cgi), 
+	       new StringWriter(), 
+	       new StringWriter(), 
+	       new OutputStreamWriter(System.err),
+	       System.out);
 	}
 
-	private WL(String file_name, ByteArrayOutputStream b, StringWriter d)
+
+	public CGIWorkload(JFastRequest jfast)
 	  throws MalformedURLException {
-	  super(new URL("file", "", file_name),
-		b, d, new PrintWriter(System.err), 
-		System.getProperties(), null);
-	  body = b;
-	  debug = d;
+	  this(jfast.properties,
+	       createReader(new ByteArrayInputStream(jfast.data), jfast.properties),
+	       new StringWriter(), 
+	       new StringWriter(), 
+	       new OutputStreamWriter(System.err),
+	       jfast.out);
+	  jFast = jfast;
 	}
+
+
+	private CGIWorkload(Properties   cgi,
+			    Reader       in,
+			    StringWriter body,
+			    StringWriter debug, 
+			    Writer       error,
+			    OutputStream out_stream)
+	  throws MalformedURLException {
+	  super(new URL("file", "", cgi.getProperty("PATH_TRANSLATED", "default.esxx")),
+		cgi,
+		in, body, debug, error);
+	  this.body  = body;
+	  this.debug = debug;
+	  outStream  = out_stream;
+	}
+
 
 	public void finished(int rc, Properties headers) {
-	  this.rc = rc;
-	  this.headers = headers;
+	  try {
+	    getErrorWriter().flush();
+	    getDebugWriter().flush();
 
-	  synchronized (mutex) {
-	    result = this;
+	    PrintWriter out = createWriter(outStream, headers);
+
+	    // Output HTTP headers
+
+	    for (Map.Entry<Object, Object> h : headers.entrySet()) {
+	      out.println(h.getKey() + ": " + h.getValue());
+	    }
+
+	    // Output body
+	    out.println("");
+	    out.println(body);
+
+	    // Output debug log as XML comment, if non-empty.
+	    String dstr = debug.toString();
+	    
+	    if (dstr.length() != 0) {
+	      out.println("<!-- Start ESXX Debug Log");
+	      out.println(dstr.replaceAll("-->", "--\u00bb"));
+	      out.println("End ESXX Debug Log -->");
+	    }
+
+	    out.flush();
+	
+	    if (jFast == null) {
+	      synchronized (cgiMutex) {
+		cgiResult = rc;
+		cgiMutex.notify();
+	      }
+	    }
+	    else {
+	      jFast.end();
+	    }
 	  }
+	  catch (IOException ex) {
+	    ex.printStackTrace();
+	  }
+
 	}
 
-	public int rc;
-	public Properties headers;
-	public ByteArrayOutputStream body;
-	public StringWriter debug;
+	static Reader createReader(InputStream is, Properties headers) {
+	  return new InputStreamReader(is);
+	}
+
+	static PrintWriter createWriter(OutputStream os, Properties headers) {
+	  return new PrintWriter(os);
+	}
+
+	private StringWriter body;
+	private StringWriter debug;
+	private OutputStream outStream;
+
+	JFastRequest jFast;
     }
 
 
     public static void main(String[] args) {
-      Properties p = new Properties();
+      Properties settings = new Properties();
 
-      ESXX esxx = new ESXX(p);
+      JFast fastcgi  = null;
+      Properties cgi = null;
 
       try {
-	WL w = new WL(args[0]);
+	fastcgi = new JFast(Integer.parseInt(System.getenv().get("FCGI_PORT")));
+      }
+      catch (Exception ex) {
+	// FCGI not available, try plain CGI
 
-	esxx.addWorkload(w);
+	if (System.getenv().get("REQUEST_METHOD") != null) {
+	  cgi = new Properties();
+	  cgi.putAll(System.getenv());
+	}
+	else {
+	  // CGI is not available either, use command line
+	  cgi = new Properties();
+	  
+	  cgi.setProperty("REQUEST_METHOD", args[0]);
+	  cgi.setProperty("PATH_TRANSLATED", new File(args[1]).getAbsolutePath());
+	}
+      }
 
+      ESXX esxx = new ESXX(settings);
+
+      if (fastcgi != null) {
 	while (true) {
-	  synchronized (mutex) {
-	    if (result != null) {
-	      break;
+	  try {
+	    JFastRequest req = fastcgi.acceptRequest();
+
+	    esxx.addWorkload(new CGIWorkload(req));
+	  }
+	  catch (MalformedURLException ex) {
+	    ex.printStackTrace();
+	  }
+	  catch (JFastException ex) {
+	    ex.printStackTrace();
+	  }
+	  catch (IOException ex) {
+	    ex.printStackTrace();
+	    System.exit(10);
+	  }
+	}
+      }
+      else {
+	try {
+	  esxx.addWorkload(new CGIWorkload(cgi));
+	
+	  synchronized (cgiMutex) {
+	    while (cgiResult == null) {
+	      try {
+		cgiMutex.wait();
+	      }
+	      catch (InterruptedException ex) {
+	      }
 	    }
 	  }
 
-	  try {
-	    Thread.sleep(100);
-	  }
-	  catch (Exception ex) {
-	    ex.printStackTrace();
-	  }
+	  System.exit(cgiResult);
 	}
-
-//      try {
-//	System.err.flush();
-
-// 	result.headers.store(new OutputStreamWriter(System.out), "ESXX Output Headers");
-// 	System.out.println("");
-	try {
-	  w.getErrorWriter().flush();
-	  w.getDebugWriter().flush();
+	catch (MalformedURLException ex) {
+	  ex.printStackTrace();
 	}
-	catch (IOException ex) {
-	}
-	System.out.println("Body:");
-	System.out.println(result.body.toString());
-
-	System.out.println("Debug:");
-	System.out.println(result.debug.toString());
-
-	System.exit(result.rc);
       }
-      catch (MalformedURLException ex) {
-	ex.printStackTrace();
-      }
-//      }
-//       catch (IOException ex) {
-// 	ex.printStackTrace();
-//       }
     }
 };

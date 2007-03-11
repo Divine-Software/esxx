@@ -3,8 +3,8 @@ package org.blom.martin.esxx.js;
 
 import org.blom.martin.esxx.ESXX;
 
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.net.URL;
 import java.util.Properties;
 import org.blom.martin.esxx.Workload;
@@ -15,8 +15,11 @@ import org.w3c.dom.Document;
 public class JSESXX {
     public JSESXX(ESXX esxx, Context cx, Scriptable scope, Workload workload,
 		  Document document, URL stylesheet) {
+
+      this.in         = workload.getInReader();
       this.debug      = new PrintWriter(workload.getDebugWriter());
       this.error      = new PrintWriter(workload.getErrorWriter());
+
       this.properties = cx.newObject(scope, "Object");
       for (String name :  workload.getProperties().stringPropertyNames()) {
 	ScriptableObject.putProperty(this.properties, name, 
@@ -42,6 +45,7 @@ public class JSESXX {
       this.stylesheet = (stylesheet != null ? stylesheet.toString() : "");
     }
 
+    public Reader      in;
     public PrintWriter error;
     public PrintWriter debug;
 

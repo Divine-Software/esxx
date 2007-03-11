@@ -4,9 +4,18 @@ for (var h in esxx.headers) {
   esxx.debug.println(h + ": " + esxx.headers[h] + " (" + typeof esxx.headers[h] + ")");
 }
 
+for (var h in esxx.properties) {
+  esxx.debug.println(h + ": " + esxx.properties[h] + " (" + typeof esxx.properties[h] + ")");
+}
+
 esxx.debug.println(esxx.headers.Status);
+esxx.headers[0] =  "Apa: kalle";
+esxx.headers[1] =  "Apa2; kalle";
 
 esxx.debug.println(esxx.document);
+default xml namespace = new Namespace("http://martin.blom.org/esxx/1.0/");
+esxx.debug.println(esxx.document.info.author[0]);
+default xml namespace = new Namespace("");
 
 function MyApp(e) {
 
@@ -17,6 +26,7 @@ function MyApp(e) {
     };
 
   this.handleGet = function() {
+    esxx.headers.Status = "201 OK";
     esxx.debug.println("**** START GET HANDLER ****");
 
     XML.ignoreComments = false;
@@ -44,9 +54,3 @@ function MyApp(e) {
     return html;
   }
 }
-
-
-
-default xml namespace = new Namespace("http://martin.blom.org/esxx/1.0/");
-esxx.debug.println(esxx.document.info.author[0]);
-default xml namespace = new Namespace("");
