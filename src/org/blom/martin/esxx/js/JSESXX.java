@@ -20,9 +20,9 @@ public class JSESXX {
       this.debug      = new PrintWriter(workload.getDebugWriter());
       this.error      = new PrintWriter(workload.getErrorWriter());
 
-      this.properties = cx.newObject(scope, "Object");
+      this.env = cx.newObject(scope, "Object");
       for (String name :  workload.getProperties().stringPropertyNames()) {
-	ScriptableObject.putProperty(this.properties, name, 
+	ScriptableObject.putProperty(this.env, name, 
 				     workload.getProperties().getProperty(name));
       }
 
@@ -40,6 +40,8 @@ public class JSESXX {
 
       this.headers = cx.newObject(scope, "Object");
       ScriptableObject.putProperty(this.headers, "Status", "200 OK");
+//      ScriptableObject.putProperty(this.headers, "Content-Type",  "text/html");
+
       ScriptableObject.putProperty(this.headers, "Cookies", cx.newObject(scope, "Object"));
 
       this.stylesheet = (stylesheet != null ? stylesheet.toString() : "");
@@ -49,7 +51,7 @@ public class JSESXX {
     public PrintWriter error;
     public PrintWriter debug;
 
-    public Scriptable properties;
+    public Scriptable env;
     public Scriptable headers;
     public Scriptable document;
 
