@@ -16,8 +16,7 @@ public class CommandLine {
     static private class CGIWorkload
       extends Workload {
 
-	public CGIWorkload(Properties cgi)
-	  throws MalformedURLException {
+	public CGIWorkload(Properties cgi) {
 	  this(cgi, 
 	       createReader(System.in, cgi), 
 	       new StringWriter(), 
@@ -27,8 +26,7 @@ public class CommandLine {
 	}
 
 
-	public CGIWorkload(JFastRequest jfast)
-	  throws MalformedURLException {
+	public CGIWorkload(JFastRequest jfast) {
 	  this(jfast.properties,
 	       createReader(new ByteArrayInputStream(jfast.data), jfast.properties),
 	       new StringWriter(), 
@@ -44,9 +42,8 @@ public class CommandLine {
 			    StringWriter body,
 			    StringWriter debug, 
 			    Writer       error,
-			    OutputStream out_stream)
-	  throws MalformedURLException {
-	  super(new URL("file", "", cgi.getProperty("PATH_TRANSLATED", "default.esxx")),
+			    OutputStream out_stream) {
+	  super(createURL(cgi),
 		cgi,
 		in, body, debug, error);
 	  this.body  = body;
@@ -65,7 +62,14 @@ public class CommandLine {
 	    // Output HTTP headers
 
 	    for (Map.Entry<Object, Object> h : headers.entrySet()) {
-	      out.println(h.getKey() + ": " + h.getValue());
+	      String name  = (String) h.getKey();
+	      String value = (String) h.getValue();
+
+	      if (name.equals("Content-Type")) {
+		value = value + "; charset=" +  java.nio.charset.Charset.defaultCharset().name();
+	      }
+
+	      out.println(name + ": " + value);
 	    }
 
 	    // Output body
@@ -77,7 +81,7 @@ public class CommandLine {
 	    
 	    if (dstr.length() != 0) {
 	      out.println("<!-- Start ESXX Debug Log");
-	      out.println(dstr.replaceAll("-->", "--\u00bb"));
+	      out.print(dstr.replaceAll("-->", "--\u00bb"));
 	      out.println("End ESXX Debug Log -->");
 	    }
 
@@ -104,7 +108,23 @@ public class CommandLine {
 	}
 
 	static PrintWriter createWriter(OutputStream os, Properties headers) {
-	  return new PrintWriter(os);
+	  return new PrintWriter(new OutputStreamWriter(os));
+	}
+
+	static URL createURL(Properties headers) {
+	  try {
+	    File file = new File(headers.getProperty("PATH_TRANSLATED"));
+
+	    while (file != null && !file.exists()) {
+	      file = file.getParentFile();
+	    }
+
+	    return new URL("file", "", file.getAbsolutePath());
+	  }
+	  catch (MalformedURLException ex) {
+	    ex.printStackTrace();
+	    return null;
+	  }
 	}
 
 	private StringWriter body;
@@ -137,6 +157,7 @@ public class CommandLine {
 	  
 	  cgi.setProperty("REQUEST_METHOD", args[0]);
 	  cgi.setProperty("PATH_TRANSLATED", new File(args[1]).getAbsolutePath());
+	  cgi.setProperty("PATH_INFO", args[1]);
 	}
       }
 
@@ -149,9 +170,6 @@ public class CommandLine {
 
 	    esxx.addWorkload(new CGIWorkload(req));
 	  }
-	  catch (MalformedURLException ex) {
-	    ex.printStackTrace();
-	  }
 	  catch (JFastException ex) {
 	    ex.printStackTrace();
 	  }
@@ -162,24 +180,19 @@ public class CommandLine {
 	}
       }
       else {
-	try {
-	  esxx.addWorkload(new CGIWorkload(cgi));
+	esxx.addWorkload(new CGIWorkload(cgi));
 	
-	  synchronized (cgiMutex) {
-	    while (cgiResult == null) {
-	      try {
-		cgiMutex.wait();
-	      }
-	      catch (InterruptedException ex) {
-	      }
+	synchronized (cgiMutex) {
+	  while (cgiResult == null) {
+	    try {
+	      cgiMutex.wait();
+	    }
+	    catch (InterruptedException ex) {
 	    }
 	  }
+	}
 
-	  System.exit(cgiResult);
-	}
-	catch (MalformedURLException ex) {
-	  ex.printStackTrace();
-	}
+	System.exit(cgiResult);
       }
     }
 };
