@@ -244,58 +244,44 @@ public class ESXX {
 	      throw new ESXXException("No result from '" + workload.getURL() + "'");
 	    }
 	    
+	    Source src;
+
 	    try {
-	      String public_id = null;
-	      String system_id = null;
-	      Source src;
-
-	      try {
-		org.w3c.dom.Node node = org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result);
-		if (node instanceof org.w3c.dom.Document) {
-		  org.w3c.dom.DocumentType dt = ((org.w3c.dom.Document) node).getDoctype();
-
-		  if (dt != null) {
-		    public_id = dt.getPublicId();
-		    system_id = dt.getSystemId();
-		  }
-		}
-
-		src = new DOMSource(node);
-	      }
-	      catch (Exception ex) {
-		src = new StreamSource(new StringReader(result.toString()));
-	      }
+	      src = new DOMSource(org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result));
+	    }
+	    catch (Exception ex) {
+	      src = new StreamSource(new StringReader(result.toString()));
+	    }
 	    
 
-	      Transformer tr;
+	    Transformer tr;
 
-	      if (js_esxx.stylesheet != null && !js_esxx.stylesheet.equals("")) {
-		URL stylesheet = new URL(workload.getURL(), js_esxx.stylesheet);
-		
+	    if (js_esxx.stylesheet != null && !js_esxx.stylesheet.equals("")) {
+	      URL stylesheet = new URL(workload.getURL(), js_esxx.stylesheet);
+	      
+	      try {
 		tr = getCachedStylesheet(stylesheet);
 	      }
-	      else {
-		// Identity transformer
-
-		tr = transformerFactory.newTransformer();
+	      catch (IOException ex) {
+		throw new ESXXException("Unable to load stylesheet: " + ex.getMessage());
 	      }
-
-	      if (public_id != null) {
-		tr.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC, public_id);
-	      }
-
-	      if (system_id != null) {
-		tr.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, system_id);
-	      }
-
-	      tr.transform(src, new StreamResult(workload.getOutWriter()));
 	    }
-	    catch (TransformerException ex) {
-	      ex.printStackTrace();
+	    else {
+	      // Identity transformer
+
+	      tr = transformerFactory.newTransformer();
 	    }
 
-	    Properties p = new Properties();
-	  
+	    tr.transform(src, new StreamResult(workload.getOutWriter()));
+
+ 	    Properties p = new Properties();
+
+	    for (String s : tr.getOutputProperties().stringPropertyNames()) {
+	      p.setProperty("_" + s, tr.getOutputProperties().getProperty(s));
+	    }
+
+	    // Copy headers from the JS object
+
 	    for (Object o : js_esxx.headers.getIds()) {
 	      if (o instanceof String) {
 		String id = (String) o;
@@ -318,15 +304,36 @@ public class ESXX {
 	      }
 	    }
 
-// 	  p.setProperty("Status", "200 OK");
-// 	  p.setProperty("Content-Type",  "text/plain");
 	    workload.finished(0, p);
-
 	  }
 	  catch (Exception ex) {
-	    ex.printStackTrace();
-	    // What to do
-	    workload.finished(-1, new Properties());
+	    Properties h = new Properties();
+	    String title = "ESXX Server Error";
+
+	    h.setProperty("Status", "500 " + title);
+	    h.setProperty("Content-Type", "text/html");
+
+	    PrintWriter out = new PrintWriter(workload.getOutWriter());
+
+	    out.println("<?xml version='1.0'?>");
+	    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" " +
+			"\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">");
+	    out.println("<html><head><title>" + title + "</title></head><body>");
+	    out.println("<h1>ESXX Server Error</h1>");
+	    out.println("<h2>Unhandled exception</h2>");
+	    if (ex instanceof ESXXException ||
+		ex instanceof XMLStreamException ||
+		ex instanceof TransformerException) {
+	      out.println("<p><tt>" + ex.getMessage() + "</tt></p>");
+	    }
+	    else {
+	      out.println("<pre>");
+	      ex.printStackTrace(out);
+	      out.println("</pre>");
+	    }
+	    out.println("</body></html>");
+
+	    workload.finished(500, h);
 	  }
 	}
 	catch (InterruptedException ex) {
