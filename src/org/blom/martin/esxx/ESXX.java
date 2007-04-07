@@ -7,8 +7,10 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Properties;
+import java.util.TreeMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.xml.stream.XMLStreamException;
+import javax.xml.soap.*;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
@@ -24,6 +26,11 @@ public class ESXX {
 
     public ESXX(Properties p) {
       settings = p;
+
+      // Custom CGI-to-HTTP translations
+      cgiToHTTPMap.put("HTTP_SOAPACTION", "SOAPAction");
+      cgiToHTTPMap.put("CONTENT_TYPE", "Content-Type");
+      cgiToHTTPMap.put("CONTENT_LENGTH", "Content-Length");
 
       transformerFactory = TransformerFactory.newInstance();
       transformerFactory.setURIResolver(new URIResolver() {
@@ -41,6 +48,7 @@ public class ESXX {
 	      }
 	    }
 	});
+
 
       workerThreads = new ThreadGroup("ESXX worker threads");
       workloadQueue = new LinkedBlockingQueue<Workload>(MAX_WORKLOADS);
@@ -106,9 +114,74 @@ public class ESXX {
     }
 
 
+    public Scriptable domToE4X(org.w3c.dom.Node node, Context cx, Scriptable scope) {
+//      String cmd = "<>" + serializeNode(node, true) + "</>;";
+      String cmd = serializeNode(node, true);
+      return (Scriptable) cx.evaluateString(scope, cmd, "<domToE4X>", 0, null);
+    }
+
+
+    public org.w3c.dom.Node e4xToDOM(Scriptable node) {
+      try {
+	return org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(node);
+      }
+      catch (Exception ex) {
+	// Use Transformation API to convert node
+      }
+
+      try {
+	Source      src = new StreamSource(new StringReader(node.toString()));
+	Transformer tr  = transformerFactory.newTransformer();
+	DOMResult   res = new DOMResult();
+
+	tr.transform(src, res);
+	return res.getNode();
+      }
+      catch (Exception ex) {
+	return null;
+      }
+    }
+
+    public String cgiToHTTP(String name) {
+      String h = cgiToHTTPMap.get(name);
+
+      // If there was a mapping, use it
+
+      if (h != null) {
+	return h;
+      }
+
+      if (name.startsWith("HTTP_")) {
+	// "Guess" the name by capitalizing the variable name
+
+	StringBuilder str = new StringBuilder();
+
+	boolean cap = true;
+	for (int i = 5; i < name.length(); ++i) {
+	  char c = name.charAt(i);
+
+	  if (c == '_') {
+	    str.append('-');
+	    cap = true;
+	  }
+	  else if (cap) {
+	    str.append(Character.toUpperCase(c));
+	    cap = false;
+	  }
+	  else {
+	    str.append(Character.toLowerCase(c));
+	  }
+	}
+
+	return str.toString();
+      }
+      else {
+	return null;
+      }
+    }
+
     public InputStream openCachedURL(URL url) 
       throws IOException {
-//      System.out.println("Fetching " + url);
       return url.openStream();
     }
 
@@ -131,6 +204,25 @@ public class ESXX {
       }
     }
 
+
+    private void parseSOAPMessage(JSESXX js_esxx) 
+      throws ESXXException {
+      
+      // Consume SOAP message, if any
+      if (js_esxx.soapAction != null) {
+	try {
+	  js_esxx.soapMessage = MessageFactory.newInstance(
+	    SOAPConstants.DYNAMIC_SOAP_PROTOCOL).createMessage(js_esxx.mimeHeaders, js_esxx.in);
+	  js_esxx.in = null;
+	}
+	catch (IOException ex) {
+	  throw new ESXXException("Unable to read SOAP message stream: " + ex.getMessage());
+	}
+	catch (SOAPException ex) {
+	  throw new ESXXException("Invalid SOAP message: " + ex.getMessage());
+	}
+      }
+    }
 
     private void workerThread(Context cx) {
       // Provide a better mapping for primitive types on this context
@@ -164,9 +256,49 @@ public class ESXX {
 		cx.evaluateString(scope, c.code, c.url.toString(), c.line, null);
 	      }
 
-	      // Execute the HTTP handler (if available)
+	      // Parse SOAP message, if any
+	      parseSOAPMessage(js_esxx);
 
-	      if (parser.hasHandlers()) {
+	      // Execute the SOAP or HTTP handler (if available)
+
+	      if (js_esxx.soapMessage != null) {
+		String object = parser.getSOAPObject(js_esxx.soapAction);
+
+		if (object == null) {
+		  // Try default action object
+		  object = parser.getSOAPObject("");
+		}
+		
+		if (object == null) {
+		  throw new ESXXException("'" + js_esxx.soapAction + "' SOAP action not defined.");
+		}
+
+		SOAPBody body = js_esxx.soapMessage.getSOAPBody();
+		
+		org.w3c.dom.Document doc  = body.extractContentAsDocument();
+		org.w3c.dom.Element  root = doc.getDocumentElement();
+
+		String handler = object + "." + root.getLocalName();
+
+		Object fobj = cx.evaluateString(scope, handler,
+						"<soap/>", 1, null);
+		
+		if (fobj == null || 
+		    fobj == ScriptableObject.NOT_FOUND) {
+		  throw new ESXXException("SOAP method '" + handler + "' not found.");
+		}
+		else if (!(fobj instanceof Function)) {
+		  throw new ESXXException("SOAP method '" + handler + 
+					  "' is not a valid function.");
+		} 
+		else {
+		  Object args[] = { domToE4X(doc, cx, scope) };
+		  Function f = (Function) fobj;
+		  result = f.call(cx, scope, scope, args);
+		}
+
+	      }
+	      else if (parser.hasHandlers()) {
 		String handler = parser.getHandlerFunction(method);
 
 		if (handler == null) {
@@ -181,7 +313,6 @@ public class ESXX {
 					  "' not found.");
 		}
 		else if (!(fobj instanceof Function)) {
-		  // Error handler is not a function
 		  throw new ESXXException("'" + method + "' handler '" + handler + 
 					  "' is not a valid function.");
 		} 
@@ -228,7 +359,8 @@ public class ESXX {
 		}	
 		catch (Exception errex) {
 		  throw new ESXXException("Failed to handle error '" + error.toString() + 
-					  "': Error handler '" + handler + 
+					  "':\n" +
+					  "Error handler '" + handler + 
 					  "' failed with message '" + 
 					  errex.getMessage() + "'");
 		}
@@ -352,4 +484,5 @@ public class ESXX {
     private TransformerFactory  transformerFactory;
     private ThreadGroup workerThreads;
     private LinkedBlockingQueue<Workload> workloadQueue;
+    private TreeMap<String,String> cgiToHTTPMap = new TreeMap<String,String>();
 };

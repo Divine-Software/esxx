@@ -18,7 +18,8 @@ public class CommandLine {
 
 	public CGIWorkload(Properties cgi) {
 	  this(cgi, 
-	       createReader(System.in, cgi), 
+//	       createReader(System.in, cgi), 
+	       System.in,
 	       new StringWriter(), 
 	       new StringWriter(), 
 	       new OutputStreamWriter(System.err),
@@ -28,7 +29,8 @@ public class CommandLine {
 
 	public CGIWorkload(JFastRequest jfast) {
 	  this(jfast.properties,
-	       createReader(new ByteArrayInputStream(jfast.data), jfast.properties),
+//	       createReader(new ByteArrayInputStream(jfast.data), jfast.properties),
+	       new ByteArrayInputStream(jfast.data),
 	       new StringWriter(), 
 	       new StringWriter(), 
 	       new OutputStreamWriter(System.err),
@@ -38,7 +40,8 @@ public class CommandLine {
 
 
 	private CGIWorkload(Properties   cgi,
-			    Reader       in,
+//			    Reader       in,
+			    InputStream  in,
 			    StringWriter body,
 			    StringWriter debug, 
 			    Writer       error,

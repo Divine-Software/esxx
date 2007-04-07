@@ -6,7 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.TreeMap;
+import java.util.HashMap;
 import javax.xml.parsers.*;
 import javax.xml.stream.*;
 import javax.xml.xpath.*;
@@ -137,6 +137,9 @@ public class ESXXParser {
 	      if (name.equals("handler")) {
 		handleHandler(e);
 	      }
+	      else if (name.equals("soap")) {
+		handleSOAP(e);
+	      }
 	      else if (name.equals("error-handler")) {
 		handleErrorHandler(e);
 	      }
@@ -183,6 +186,9 @@ public class ESXXParser {
       return handlers.get(http_method);
     }
 
+    public String getSOAPObject(String action) {
+      return soapActions.get(action);
+    }
 
     public String getErrorHandlerFunction() {
       return errorHandler;
@@ -284,6 +290,13 @@ public class ESXXParser {
       handlers.put(e.getAttributeNS(null, "type"), handler);
     }
 
+    private void handleSOAP(Element e) 
+      throws org.xml.sax.SAXException {
+      String object = e.getAttributeNS(null, "object").trim();
+
+      soapActions.put(e.getAttributeNS(null, "action"), object);
+    }
+
     private void handleErrorHandler(Element e)
       throws org.xml.sax.SAXException {
       String handler = e.getAttributeNS(null, "function").trim();
@@ -309,6 +322,7 @@ public class ESXXParser {
     private URL stylesheet;
     private LinkedList<Code> codeList = new LinkedList<Code>();
 
-    private TreeMap<String,String> handlers = new TreeMap<String,String>();
+    private HashMap<String,String> handlers = new HashMap<String,String>();
+    private HashMap<String,String> soapActions = new HashMap<String,String>();
     private String errorHandler;
 };
