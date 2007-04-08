@@ -115,6 +115,10 @@ public class ESXX {
 
 
     public Scriptable domToE4X(org.w3c.dom.Node node, Context cx, Scriptable scope) {
+      if (node == null) {
+	return null;
+      }
+
 //      String cmd = "<>" + serializeNode(node, true) + "</>;";
       String cmd = serializeNode(node, true);
       return (Scriptable) cx.evaluateString(scope, cmd, "<domToE4X>", 0, null);
@@ -211,9 +215,12 @@ public class ESXX {
       // Consume SOAP message, if any
       if (js_esxx.soapAction != null) {
 	try {
-	  js_esxx.soapMessage = MessageFactory.newInstance(
-	    SOAPConstants.DYNAMIC_SOAP_PROTOCOL).createMessage(js_esxx.mimeHeaders, js_esxx.in);
+	  InputStream in = js_esxx.in;
 	  js_esxx.in = null;
+
+	  js_esxx.soapMessage = MessageFactory.newInstance(
+	    SOAPConstants.DYNAMIC_SOAP_PROTOCOL).createMessage(js_esxx.mimeHeaders, in);
+
 	}
 	catch (IOException ex) {
 	  throw new ESXXException("Unable to read SOAP message stream: " + ex.getMessage());
@@ -273,12 +280,19 @@ public class ESXX {
 		  throw new ESXXException("'" + js_esxx.soapAction + "' SOAP action not defined.");
 		}
 
-		SOAPBody body = js_esxx.soapMessage.getSOAPBody();
-		
-		org.w3c.dom.Document doc  = body.extractContentAsDocument();
-		org.w3c.dom.Element  root = doc.getDocumentElement();
+		org.w3c.dom.Node     soap_header = null;
+		org.w3c.dom.Document soap_body   = null;
 
-		String handler = object + "." + root.getLocalName();
+		try { 
+		  soap_header = js_esxx.soapMessage.getSOAPHeader();
+		}
+		catch (SOAPException ex) {
+		  // The header is optional
+		}
+
+		soap_body = js_esxx.soapMessage.getSOAPBody().extractContentAsDocument();
+	
+		String handler = object + "." + soap_body.getDocumentElement().getLocalName();
 
 		Object fobj = cx.evaluateString(scope, handler,
 						"<soap/>", 1, null);
@@ -292,7 +306,8 @@ public class ESXX {
 					  "' is not a valid function.");
 		} 
 		else {
-		  Object args[] = { domToE4X(doc, cx, scope) };
+		  Object args[] = { domToE4X(soap_header, cx, scope),
+				    domToE4X(soap_body, cx, scope) };
 		  Function f = (Function) fobj;
 		  result = f.call(cx, scope, scope, args);
 		}
