@@ -15,6 +15,10 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
 import org.mozilla.javascript.*;
+import java.util.Collection;
+import org.w3c.dom.Document;
+import javax.xml.parsers.*;
+
 
 public class ESXX {
     public static final String NAMESPACE = "http://martin.blom.org/esxx/1.0/";
@@ -24,13 +28,21 @@ public class ESXX {
 	public ESXXException(String why) { super(why); }
     }
 
-    public ESXX(Properties p) {
+    public ESXX(Properties p) 
+      throws ParserConfigurationException {
       settings = p;
 
       // Custom CGI-to-HTTP translations
       cgiToHTTPMap.put("HTTP_SOAPACTION", "SOAPAction");
       cgiToHTTPMap.put("CONTENT_TYPE", "Content-Type");
       cgiToHTTPMap.put("CONTENT_LENGTH", "Content-Length");
+
+      documentBuilderFactory = DocumentBuilderFactory.newInstance();
+
+      documentBuilderFactory.setExpandEntityReferences(true);
+      documentBuilderFactory.setNamespaceAware(true);
+      documentBuilderFactory.setValidating(true);
+      documentBuilderFactory.setXIncludeAware(true);
 
       transformerFactory = TransformerFactory.newInstance();
       transformerFactory.setURIResolver(new URIResolver() {
@@ -184,6 +196,53 @@ public class ESXX {
       }
     }
 
+    public Document parseXML(InputStream is, final URL is_url, 
+			     final Collection<URL> external_urls) 
+      throws org.xml.sax.SAXException, IOException {
+      try {
+	DocumentBuilder db = documentBuilderFactory.newDocumentBuilder();
+
+	db.setEntityResolver(new org.xml.sax.EntityResolver() {
+	      public org.xml.sax.InputSource resolveEntity (String publicID, 
+							    String systemID) 
+		throws org.xml.sax.SAXException {
+
+		try {
+		  if (systemID != null) {
+		    URL url = new URL(is_url, systemID);
+
+		    org.xml.sax.InputSource src = new org.xml.sax.InputSource(openCachedURL(url));
+		    src.setSystemId(url.toString());
+		    
+		    if (external_urls != null) {
+		      external_urls.add(url);
+		    }
+
+		    return src;
+		  }
+		  else {
+		    throw new org.xml.sax.SAXException("Missing system ID");
+		  }
+		}
+		catch (MalformedURLException ex) {
+		  throw new org.xml.sax.SAXException("Malformed URL for system ID " + 
+						     systemID + ": " + ex.getMessage());
+		}
+		catch (IOException ex) {
+		  throw new org.xml.sax.SAXException("Unable to load resource for system ID " +
+						     systemID + ": " + ex.getMessage());
+		}
+	      }
+	  });
+
+	return db.parse(is, is_url.toString());
+      }
+      catch (ParserConfigurationException ex) {
+	throw new org.xml.sax.SAXException("ParserConfigurationException: " + ex);
+      }
+    }
+
+
     public InputStream openCachedURL(URL url) 
       throws IOException {
       return url.openStream();
@@ -242,16 +301,19 @@ public class ESXX {
       while (true) {
 	try {
 	  Workload workload = workloadQueue.take();
-	  String method = workload.getProperties().getProperty("REQUEST_METHOD");
+	  String request_method = workload.getProperties().getProperty("REQUEST_METHOD");
 	  
 	  try {
 	    ESXXParser parser = getCachedESXXParser(workload.getURL());
 
-	    Scriptable scope   = new ImporterTopLevel(cx, false);
-	    JSESXX     js_esxx = new JSESXX(this, cx, scope, workload, 
-					    parser.getXML(), parser.getStylesheet());
-	    Object     esxx    = Context.javaToJS(js_esxx, scope);
-	    ScriptableObject.putProperty(scope, "esxx", esxx);
+	    ScriptableObject scope   = new ImporterTopLevel(cx, false);
+	    JSESXX           js_esxx = new JSESXX(this, cx, scope, 
+						  workload, 
+						  parser.getXML(), 
+						  parser.getStylesheet());
+
+	    // Add the top-level "esxx" variable
+	    ScriptableObject.putProperty(scope, "esxx", Context.javaToJS(js_esxx, scope));
 	    
 	    Object result = null;
 	    Exception error = null;
@@ -297,51 +359,21 @@ public class ESXX {
 
 		soap_body = js_esxx.soapMessage.getSOAPBody().extractContentAsDocument();
 	
-		String handler = (action.object + "." + 
-				  soap_body.getDocumentElement().getLocalName());
+		Object args[] = { domToE4X(soap_body, cx, scope),
+				  domToE4X(soap_header, cx, scope) };
 
-		Object fobj = cx.evaluateString(scope, handler,
-						"<soap/>", 1, null);
-		
-		if (fobj == null || 
-		    fobj == ScriptableObject.NOT_FOUND) {
-		  throw new ESXXException("SOAP method '" + handler + "' not found.");
-		}
-		else if (!(fobj instanceof Function)) {
-		  throw new ESXXException("SOAP method '" + handler + 
-					  "' is not a valid function.");
-		} 
-		else {
-		  Object args[] = { domToE4X(soap_header, cx, scope),
-				    domToE4X(soap_body, cx, scope) };
-		  Function f = (Function) fobj;
-		  result = f.call(cx, scope, scope, args);
-		}
-
+		result = callJSMethod(action.object, soap_body.getDocumentElement().getLocalName(),
+				      args, "SOAP method", cx, scope);
 	      }
 	      else if (parser.hasHandlers()) {
-		String handler = parser.getHandlerFunction(method);
+		String handler = parser.getHandlerFunction(request_method);
 
 		if (handler == null) {
-		  throw new ESXXException("'" + method + "' handler not defined.");
+		  throw new ESXXException("'" + request_method + "' handler not defined.");
 		}
 
-		Object fobj = cx.evaluateString(scope, handler,
-						"<handler/>", 1, null);
-		if (fobj == null || 
-		    fobj == ScriptableObject.NOT_FOUND) {
-		  throw new ESXXException("'" + method + "' handler '" + handler + 
-					  "' not found.");
-		}
-		else if (!(fobj instanceof Function)) {
-		  throw new ESXXException("'" + method + "' handler '" + handler + 
-					  "' is not a valid function.");
-		} 
-		else {
-//		  Object args[] = { cx.javaToJS(ex, scope) };
-		  Function f = (Function) fobj;
-		  result = f.call(cx, scope, scope, null);
-		}
+		result = callJSMethod(handler, 
+				      null, "'" + request_method + "' handler", cx, scope);
 	      }
 	      else {
 		// No handlers; the document is the result
@@ -363,27 +395,16 @@ public class ESXX {
 		String handler = parser.getErrorHandlerFunction();
 
 		try {
-		  Object fobj = cx.evaluateString(scope, handler, "<error-handler/>", 0, null);
+		  Object args[] = { cx.javaToJS(error, scope) };
 
-		  if (fobj == null || 
-		      fobj == ScriptableObject.NOT_FOUND ||
-		      !(fobj instanceof Function)) {
-		    // Error handler is not a function
-		    throw new ESXXException("Error handler '" + handler + 
-					    "' is not a valid function.");
-		  } 
-		  else {
-		    Object args[] = { cx.javaToJS(error, scope) };
-		    Function f = (Function) fobj;
-		    result = f.call(cx, scope, scope, args);
-		  }
-		}	
-		catch (Exception errex) {
+		  result = callJSMethod(handler, args, "Error handler", cx, scope);
+		}
+		catch (Exception ex) {
 		  throw new ESXXException("Failed to handle error '" + error.toString() + 
 					  "':\n" +
 					  "Error handler '" + handler + 
 					  "' failed with message '" + 
-					  errex.getMessage() + "'");
+					  ex.getMessage() + "'");
 		}
 	      }
 	      else {
@@ -508,12 +529,53 @@ public class ESXX {
 	}
       }
     }
-    
+
+    private Object callJSMethod(String expr, 
+				Object[] args, String identifier, 
+				Context cx, ScriptableObject scope) 
+      throws ESXXException {
+      String object;
+      String method;
+
+      int dot = expr.lastIndexOf('.');
+
+      if (dot == -1) {
+	object = null;
+	method = expr;
+      }
+      else {
+	object = expr.substring(0, dot);
+	method = expr.substring(dot + 1);
+      }
+
+      return callJSMethod(object, method, args, identifier, cx, scope);
+    }
+
+    private Object callJSMethod(String object, String method,
+				Object[] args, String identifier, 
+				Context cx, ScriptableObject scope)
+      throws ESXXException {
+      ScriptableObject o;
+
+      if (object == null) {
+	o = scope;
+      }
+      else {
+	o = (ScriptableObject) cx.evaluateString(scope, object, identifier, 1, null);
+
+	if (o == null || o == ScriptableObject.NOT_FOUND) {
+	  throw new ESXXException(identifier + " '" + object + "." + method + "' not found.");
+	}
+      }
+
+      return scope.callMethod(cx, o, method, args);
+    }
 
 
     private static final int MAX_WORKLOADS = 16;
 
     private Properties settings;
+    private DocumentBuilderFactory documentBuilderFactory;
     private TransformerFactory  transformerFactory;
     private ThreadGroup workerThreads;
     private LinkedBlockingQueue<Workload> workloadQueue;

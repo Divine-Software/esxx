@@ -139,63 +139,68 @@ public class CommandLine {
 
 
     public static void main(String[] args) {
-      Properties settings = new Properties();
-
-      JFast fastcgi  = null;
-      Properties cgi = null;
-
       try {
-	fastcgi = new JFast(Integer.parseInt(System.getenv().get("FCGI_PORT")));
-      }
-      catch (Exception ex) {
-	// FCGI not available, try plain CGI
+	Properties settings = new Properties();
 
-	if (System.getenv().get("REQUEST_METHOD") != null) {
-	  cgi = new Properties();
-	  cgi.putAll(System.getenv());
+	JFast fastcgi  = null;
+	Properties cgi = null;
+
+	try {
+	  fastcgi = new JFast(Integer.parseInt(System.getenv().get("FCGI_PORT")));
+	}
+	catch (Exception ex) {
+	  // FCGI not available, try plain CGI
+
+	  if (System.getenv().get("REQUEST_METHOD") != null) {
+	    cgi = new Properties();
+	    cgi.putAll(System.getenv());
+	  }
+	  else {
+	    // CGI is not available either, use command line
+	    cgi = new Properties();
+	  
+	    cgi.setProperty("REQUEST_METHOD", args[0]);
+	    cgi.setProperty("PATH_TRANSLATED", new File(args[1]).getAbsolutePath());
+	    cgi.setProperty("PATH_INFO", args[1]);
+	  }
+	}
+
+	ESXX esxx = new ESXX(settings);
+
+	if (fastcgi != null) {
+	  while (true) {
+	    try {
+	      JFastRequest req = fastcgi.acceptRequest();
+
+	      esxx.addWorkload(new CGIWorkload(req));
+	    }
+	    catch (JFastException ex) {
+	      ex.printStackTrace();
+	    }
+	    catch (IOException ex) {
+	      ex.printStackTrace();
+	      System.exit(10);
+	    }
+	  }
 	}
 	else {
-	  // CGI is not available either, use command line
-	  cgi = new Properties();
-	  
-	  cgi.setProperty("REQUEST_METHOD", args[0]);
-	  cgi.setProperty("PATH_TRANSLATED", new File(args[1]).getAbsolutePath());
-	  cgi.setProperty("PATH_INFO", args[1]);
-	}
-      }
-
-      ESXX esxx = new ESXX(settings);
-
-      if (fastcgi != null) {
-	while (true) {
-	  try {
-	    JFastRequest req = fastcgi.acceptRequest();
-
-	    esxx.addWorkload(new CGIWorkload(req));
-	  }
-	  catch (JFastException ex) {
-	    ex.printStackTrace();
-	  }
-	  catch (IOException ex) {
-	    ex.printStackTrace();
-	    System.exit(10);
-	  }
-	}
-      }
-      else {
-	esxx.addWorkload(new CGIWorkload(cgi));
+	  esxx.addWorkload(new CGIWorkload(cgi));
 	
-	synchronized (cgiMutex) {
-	  while (cgiResult == null) {
-	    try {
-	      cgiMutex.wait();
-	    }
-	    catch (InterruptedException ex) {
+	  synchronized (cgiMutex) {
+	    while (cgiResult == null) {
+	      try {
+		cgiMutex.wait();
+	      }
+	      catch (InterruptedException ex) {
+	      }
 	    }
 	  }
-	}
 
-	System.exit(cgiResult);
+	  System.exit(cgiResult);
+	}
+      }
+      catch (Exception ex) {
+	ex.printStackTrace();
       }
     }
 };

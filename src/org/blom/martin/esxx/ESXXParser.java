@@ -7,7 +7,6 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.HashMap;
-import javax.xml.parsers.*;
 import javax.xml.stream.*;
 import javax.xml.xpath.*;
 import org.w3c.dom.*;
@@ -50,49 +49,7 @@ public class ESXXParser {
       // Load and parse the document
 
       try {
-	DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-
-	dbf.setExpandEntityReferences(true);
-	dbf.setNamespaceAware(true);
-	dbf.setValidating(true);
-	dbf.setXIncludeAware(true);
-
-	DocumentBuilder db = dbf.newDocumentBuilder();
-
-	db.setEntityResolver(new org.xml.sax.EntityResolver() {
-	      public org.xml.sax.InputSource resolveEntity (String publicID, 
-							    String systemID) 
-		throws org.xml.sax.SAXException {
-
-		try {
-		  if (systemID != null) {
-		    URL url = new URL(baseURL, systemID);
-
-		    org.xml.sax.InputSource src = new org.xml.sax.InputSource(
-		      esxxObject.openCachedURL(url));
-		    src.setSystemId(url.toString());
-		    
-		    externalURLs.add(url);
-
-		    return src;
-		  }
-		  else {
-		    throw new org.xml.sax.SAXException("Missing system ID");
-		  }
-		}
-		catch (MalformedURLException ex) {
-		  throw new org.xml.sax.SAXException("Malformed URL for system ID " + 
-						     systemID + ": " + ex.getMessage());
-		}
-		catch (IOException ex) {
-		  throw new org.xml.sax.SAXException("Unable to load resource for system ID " +
-						     systemID + ": " + ex.getMessage());
-		}
-	      }
-	  });
-
-	xml = db.parse(esxxObject.openCachedURL(url), url.toString());
-
+	xml = esxxObject.parseXML(esxxObject.openCachedURL(url), url, externalURLs);
 
 	// Extract ESXX information, if any
 
@@ -160,11 +117,6 @@ public class ESXXParser {
 	  ex.printStackTrace();
 	  throw new XMLStreamException(ex.getMessage());
 	}
-      }
-      catch (ParserConfigurationException ex) {
-	// Should never happen
-	ex.printStackTrace();
-	throw new XMLStreamException(ex.getMessage());
       }
       catch (org.xml.sax.SAXException ex) {
 	throw new XMLStreamException(ex.getMessage());
