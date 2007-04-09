@@ -30,6 +30,15 @@ public class ESXXParser {
 	public String code;
     };
 
+    public static class SOAPAction {
+	public SOAPAction(String o, String s) {
+	  object = o;
+	  stylesheet = s;
+	}
+
+	public String object;
+	public String stylesheet;
+    }
 
     public ESXXParser(ESXX esxx, URL url)
       throws IOException, XMLStreamException {
@@ -186,7 +195,7 @@ public class ESXXParser {
       return handlers.get(http_method);
     }
 
-    public String getSOAPObject(String action) {
+    public SOAPAction getSOAPAction(String action) {
       return soapActions.get(action);
     }
 
@@ -293,8 +302,9 @@ public class ESXXParser {
     private void handleSOAP(Element e) 
       throws org.xml.sax.SAXException {
       String object = e.getAttributeNS(null, "object").trim();
+      String stylesheet = e.getAttributeNS(null, "stylesheet").trim();
 
-      soapActions.put(e.getAttributeNS(null, "action"), object);
+      soapActions.put(e.getAttributeNS(null, "action"), new SOAPAction(object, stylesheet));
     }
 
     private void handleErrorHandler(Element e)
@@ -323,6 +333,6 @@ public class ESXXParser {
     private LinkedList<Code> codeList = new LinkedList<Code>();
 
     private HashMap<String,String> handlers = new HashMap<String,String>();
-    private HashMap<String,String> soapActions = new HashMap<String,String>();
+    private HashMap<String,SOAPAction> soapActions = new HashMap<String,SOAPAction>();
     private String errorHandler;
 };

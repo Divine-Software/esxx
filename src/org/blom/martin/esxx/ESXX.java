@@ -269,15 +269,20 @@ public class ESXX {
 	      // Execute the SOAP or HTTP handler (if available)
 
 	      if (js_esxx.soapMessage != null) {
-		String object = parser.getSOAPObject(js_esxx.soapAction);
+		ESXXParser.SOAPAction action = parser.getSOAPAction(js_esxx.soapAction);
 
-		if (object == null) {
+		if (action == null) {
 		  // Try default action object
-		  object = parser.getSOAPObject("");
+		  action = parser.getSOAPAction("");
 		}
 		
-		if (object == null) {
+		if (action == null) {
 		  throw new ESXXException("'" + js_esxx.soapAction + "' SOAP action not defined.");
+		}
+
+		// Install action-supplied stylesheet
+		if (action.stylesheet != null && !action.stylesheet.equals("")) {
+		  js_esxx.stylesheet = action.stylesheet;
 		}
 
 		org.w3c.dom.Node     soap_header = null;
@@ -292,7 +297,8 @@ public class ESXX {
 
 		soap_body = js_esxx.soapMessage.getSOAPBody().extractContentAsDocument();
 	
-		String handler = object + "." + soap_body.getDocumentElement().getLocalName();
+		String handler = (action.object + "." + 
+				  soap_body.getDocumentElement().getLocalName());
 
 		Object fobj = cx.evaluateString(scope, handler,
 						"<soap/>", 1, null);
@@ -415,17 +421,25 @@ public class ESXX {
 	    }
 	    else {
 	      // Identity transformer
-
 	      tr = transformerFactory.newTransformer();
+
+	      // Set media-type, if specified
+	      Object content_type = ScriptableObject.getProperty(js_esxx.headers, 
+								 "Content-Type");
+
+	      if (content_type != null && 
+		  !(content_type instanceof org.mozilla.javascript.Undefined)) {
+		tr.setOutputProperty("media-type", content_type.toString());
+	      }
 	    }
 
 	    tr.transform(src, new StreamResult(workload.getOutWriter()));
 
  	    Properties p = new Properties();
 
-	    for (String s : tr.getOutputProperties().stringPropertyNames()) {
-	      p.setProperty("_" + s, tr.getOutputProperties().getProperty(s));
-	    }
+// 	    for (String s : tr.getOutputProperties().stringPropertyNames()) {
+// 	      p.setProperty("_" + s, tr.getOutputProperties().getProperty(s));
+// 	    }
 
 	    // Copy headers from the JS object
 
@@ -451,6 +465,10 @@ public class ESXX {
 	      }
 	    }
 
+	    // Copy Content-Type from the stylesheet
+	    p.setProperty("Content-Type", tr.getOutputProperty("media-type"));
+
+	    // Return workload
 	    workload.finished(0, p);
 	  }
 	  catch (Exception ex) {
