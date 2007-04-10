@@ -21,12 +21,21 @@ import javax.xml.parsers.*;
 
 
 public class ESXX {
+    /** A string that defines the ESXX XML namespace */
     public static final String NAMESPACE = "http://martin.blom.org/esxx/1.0/";
 
-    public class ESXXException 
-      extends Exception {
-	public ESXXException(String why) { super(why); }
-    }
+    /** The constructor.
+     *
+     *  Will initialize the operating environment, start the worker
+     *  threads and initialize the JavaScript contexts.
+     *
+     *  @param p A set of properties that can be used to tune the
+     *  execution. Currently, only "esxx.worker_threads" is defined,
+     *  which defaults to (number of CPUs * 2).
+     *
+     *  @throws ParserConfigurationException If no XML parser could be
+     *  found.
+     */
 
     public ESXX(Properties p) 
       throws ParserConfigurationException {
@@ -62,10 +71,10 @@ public class ESXX {
 	});
 
 
+      // Create worker threads
+
       workerThreads = new ThreadGroup("ESXX worker threads");
       workloadQueue = new LinkedBlockingQueue<Workload>(MAX_WORKLOADS);
-
-      // Create worker threads
 
       int threads = Integer.parseInt(
 	settings.getProperty("esxx.worker_threads", 
@@ -91,6 +100,15 @@ public class ESXX {
       }
     }
 
+
+    /** Adds a Workload to the work queue.
+     * 
+     *  Once the workload has been executed, Workload.finished will be
+     *  called with an ignorable returncode and a set of HTTP headers.
+     *
+     *  @param w  The Workload object that is to be executed.
+     */
+
     public void addWorkload(Workload w) {
       while (true) {
 	try {
@@ -103,6 +121,15 @@ public class ESXX {
       }
     }
 
+
+    /** Utility method that serializes a W3C DOM Node to a String.
+     *
+     *  @param node  The Node to be serialized.
+     *
+     *  @param omit_xml_declaration  Set to 'true' if you don't want the XML decl.
+     *
+     *  @return A String containing the XML representation of the supplied Node.
+     */
 
     public String serializeNode(org.w3c.dom.Node node, boolean omit_xml_declaration) {
       try {
@@ -120,11 +147,22 @@ public class ESXX {
 	return sw.toString();
       }
       catch (TransformerException ex) {
+	// Should never happen
 	ex.printStackTrace();
 	return "";
       }
     }
 
+    /** Utility method that converts a W3C DOM Node into an E4X XML object.
+     *
+     *  @param node  The Node to be converted.
+     *
+     *  @param cx    The current JavaScript context.
+     *
+     *  @param scope The current JavaScript scope.
+     *
+     *  @return A Scriptable representing an E4X XML object.
+     */
 
     public Scriptable domToE4X(org.w3c.dom.Node node, Context cx, Scriptable scope) {
       if (node == null) {
@@ -137,6 +175,13 @@ public class ESXX {
     }
 
 
+    /** Utility method that converts an E4X XML object into a W3C DOM Node.
+     *
+     *  @param node  The E4X XML node to be converted.
+     *
+     *  @return A W3C DOM Node.
+     */
+    
     public org.w3c.dom.Node e4xToDOM(Scriptable node) {
       try {
 	return org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(node);
@@ -157,6 +202,16 @@ public class ESXX {
 	return null;
       }
     }
+
+
+    /** Utility method that translates the name of a CGI environment
+     *  variable into it's original HTTP header name.
+     *
+     *  @param name The name of a CGI variable.
+     *
+     *  @return  The name of the original HTTP header, or null if this
+     *  variable name is unknown.
+     */
 
     public String cgiToHTTP(String name) {
       String h = cgiToHTTPMap.get(name);
@@ -195,6 +250,25 @@ public class ESXX {
 	return null;
       }
     }
+
+
+    /** Utility method that parses an InputStream into a W3C DOM
+     *  Document.
+     *
+     *  @param is  The InputStream to be parsed.
+     *
+     *  @param is_url  The location of the InputStream.
+     *
+     *  @param external_urls A Collection of URLs that will be
+     *  populated with all URLs visited during the parsing. Can be
+     *  'null'.
+     *
+     *  @return A W3C DOM Document.
+     *
+     *  @throws SAXException On parser errors.
+     *
+     *  @throws IOException On I/O errors.
+     */
 
     public Document parseXML(InputStream is, final URL is_url, 
 			     final Collection<URL> external_urls) 
