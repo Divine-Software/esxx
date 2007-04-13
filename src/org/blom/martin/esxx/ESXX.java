@@ -369,6 +369,8 @@ public class ESXX {
 
       cx.getWrapFactory().setJavaPrimitiveWrap(false);
 
+      // Store a reference to the ESXX object
+      cx.putThreadLocal(ESXX.class, this);
 
       // Now wait for workloads and execute them
 
@@ -376,6 +378,8 @@ public class ESXX {
 	try {
 	  Workload workload = workloadQueue.take();
 	  String request_method = workload.getProperties().getProperty("REQUEST_METHOD");
+	  
+	  cx.putThreadLocal(java.net.URL.class, workload.getURL());
 	  
 	  try {
 	    ESXXParser parser = getCachedESXXParser(workload.getURL());
@@ -388,6 +392,8 @@ public class ESXX {
 
 	    // Add the top-level "esxx" variable
 	    ScriptableObject.putProperty(scope, "esxx", Context.javaToJS(js_esxx, scope));
+
+	    ScriptableObject.defineClass(scope, JSURL.class);
 	    
 	    Object result = null;
 	    Exception error = null;
