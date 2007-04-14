@@ -422,41 +422,50 @@ public class ESXX {
 	      parseSOAPMessage(js_esxx);
 
 	      // Execute the SOAP or HTTP handler (if available)
-
+	      ESXXParser.SOAPAction action = null;
+	      
 	      if (js_esxx.soapMessage != null) {
-		ESXXParser.SOAPAction action = parser.getSOAPAction(js_esxx.soapAction);
+		action = parser.getSOAPAction(js_esxx.soapAction);
 
 		if (action == null) {
 		  // Try default action object
 		  action = parser.getSOAPAction("");
 		}
-		
-		if (action == null) {
-		  throw new ESXXException("'" + js_esxx.soapAction + "' SOAP action not defined.");
-		}
+	      }
 
+	      if (action != null) {
 		// Install action-supplied stylesheet
 		if (action.stylesheet != null && !action.stylesheet.equals("")) {
 		  js_esxx.stylesheet = action.stylesheet;
 		}
 
-		org.w3c.dom.Node     soap_header = null;
-		org.w3c.dom.Document soap_body   = null;
+		if (action.object != null && !action.object.equals("")) {
+		  // RPC style SOAP handler
 
-		try { 
-		  soap_header = js_esxx.soapMessage.getSOAPHeader();
-		}
-		catch (SOAPException ex) {
-		  // The header is optional
-		}
+		  org.w3c.dom.Node     soap_header = null;
+		  org.w3c.dom.Document soap_body   = null;
 
-		soap_body = js_esxx.soapMessage.getSOAPBody().extractContentAsDocument();
+		  try { 
+		    soap_header = js_esxx.soapMessage.getSOAPHeader();
+		  }
+		  catch (SOAPException ex) {
+		    // The header is optional
+		  }
+
+		  soap_body = js_esxx.soapMessage.getSOAPBody().extractContentAsDocument();
 	
-		Object args[] = { domToE4X(soap_body, cx, scope),
+		  Object args[] = { domToE4X(soap_body, cx, scope),
 				  domToE4X(soap_header, cx, scope) };
 
-		result = callJSMethod(action.object, soap_body.getDocumentElement().getLocalName(),
-				      args, "SOAP method", cx, scope);
+		  result = callJSMethod(action.object, 
+					soap_body.getDocumentElement().getLocalName(),
+					args, "SOAP method", cx, scope);
+		}
+		else {
+		  // No RPC handler; the SOAP message itself is the result
+
+		  result = domToE4X(js_esxx.soapMessage.getSOAPPart(), cx, scope);
+		}
 	      }
 	      else if (parser.hasHandlers()) {
 		String handler = parser.getHandlerFunction(request_method);
