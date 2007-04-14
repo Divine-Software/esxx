@@ -27,7 +27,10 @@ function MyApp(e) {
 
   this.handleGet = function() {
     esxx.headers.Status = "201 OK";
-    esxx.debug.println("**** START GET HANDLER ****");
+    esxx.debug.println("**** START GET HANDLER ****")
+
+    var url = new URL("filen.txt");
+    esxx.debug.println(url);
 
     XML.ignoreComments = false;
 

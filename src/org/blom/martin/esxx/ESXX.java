@@ -70,33 +70,46 @@ public class ESXX {
 	    }
 	});
 
+      // Set up shared main context
+      Context cx = Context.enter();
 
-      // Create worker threads
+      try {
+	final ScriptableObject shared_scope = new ImporterTopLevel(cx, false);
+	ScriptableObject.defineClass(shared_scope, JSURL.class);
 
-      workerThreads = new ThreadGroup("ESXX worker threads");
-      workloadQueue = new LinkedBlockingQueue<Workload>(MAX_WORKLOADS);
+	// Create worker threads
 
-      int threads = Integer.parseInt(
-	settings.getProperty("esxx.worker_threads", 
-			     "" + Runtime.getRuntime().availableProcessors() * 2));
+	workerThreads = new ThreadGroup("ESXX worker threads");
+	workloadQueue = new LinkedBlockingQueue<Workload>(MAX_WORKLOADS);
 
-      for (int i = 0; i < threads; ++i) {
-	Thread t = new Thread(
-	  workerThreads, 
-	  new Runnable() {
-	      public void run() {
-		// Create the JavaScript thread context and invoke workerThread()
-		Context.call(new ContextAction() {
-		      public Object run(Context cx) {
-			workerThread(cx);
-			return null;
-		      }
-		  });
-	      }
-	  },
-	  "ESXX worker thread " + i);
+	int threads = Integer.parseInt(
+	  settings.getProperty("esxx.worker_threads", 
+			       "" + Runtime.getRuntime().availableProcessors() * 2));
 
-	t.start();
+	for (int i = 0; i < threads; ++i) {
+	  Thread t = new Thread(
+	    workerThreads, 
+	    new Runnable() {
+		public void run() {
+		  // Create the JavaScript thread context and invoke workerThread()
+		  Context.call(new ContextAction() {
+			public Object run(Context cx) {
+			  workerThread(cx, shared_scope);
+			  return null;
+			}
+		    });
+		}
+	    },
+	    "ESXX worker thread " + i);
+
+	  t.start();
+	}
+      }
+      catch (Exception ex) {
+	ex.printStackTrace();
+      }
+      finally {
+	cx.exit();
       }
     }
 
@@ -364,16 +377,14 @@ public class ESXX {
       }
     }
 
-    private void workerThread(Context cx) {
+    private void workerThread(Context cx, Scriptable shared_scope) {
       // Provide a better mapping for primitive types on this context
-
       cx.getWrapFactory().setJavaPrimitiveWrap(false);
 
       // Store a reference to the ESXX object
       cx.putThreadLocal(ESXX.class, this);
 
       // Now wait for workloads and execute them
-
       while (true) {
 	try {
 	  Workload workload = workloadQueue.take();
@@ -384,16 +395,18 @@ public class ESXX {
 	  try {
 	    ESXXParser parser = getCachedESXXParser(workload.getURL());
 
-	    ScriptableObject scope   = new ImporterTopLevel(cx, false);
-	    JSESXX           js_esxx = new JSESXX(this, cx, scope, 
-						  workload, 
-						  parser.getXML(), 
-						  parser.getStylesheet());
+	    // Use the shared top-level scope, but put global variables in a local scope
+	    ScriptableObject scope = (ScriptableObject) cx.newObject(shared_scope);
+	    scope.setPrototype(shared_scope);
+	    scope.setParentScope(null);
+
+	    JSESXX js_esxx = new JSESXX(this, cx, scope, 
+					workload, 
+					parser.getXML(), 
+					parser.getStylesheet());
 
 	    // Add the top-level "esxx" variable
 	    ScriptableObject.putProperty(scope, "esxx", Context.javaToJS(js_esxx, scope));
-
-	    ScriptableObject.defineClass(scope, JSURL.class);
 	    
 	    Object result = null;
 	    Exception error = null;
