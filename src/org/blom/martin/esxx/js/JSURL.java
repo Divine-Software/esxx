@@ -22,8 +22,8 @@ public class JSURL
     }
 
 
-    public static Object jsFunction_load(Context cx, Scriptable thisObj,
-					 Object[] args, Function funObj)
+    public static Object jsFunction_loadString(Context cx, Scriptable thisObj,
+					       Object[] args, Function funObj)
       throws MalformedURLException, IOException, UnsupportedEncodingException {
       JSURL          js_this = checkInstance(thisObj);
       ESXX           esxx    = js_this.esxx;
