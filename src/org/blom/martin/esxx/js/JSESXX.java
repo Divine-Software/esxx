@@ -3,20 +3,17 @@ package org.blom.martin.esxx.js;
 
 import org.blom.martin.esxx.ESXX;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.TreeMap;
-import javax.xml.soap.*;
+import javax.xml.soap.MimeHeaders;
+import javax.xml.soap.SOAPMessage;
 import org.blom.martin.esxx.Workload;
 import org.mozilla.javascript.*;
 import org.w3c.dom.*;
@@ -49,35 +46,6 @@ public class JSESXX {
       this.stylesheet = (stylesheet != null ? stylesheet.toString() : "");
     }
 
-    public String loadURL(String url)
-      throws MalformedURLException, IOException, UnsupportedEncodingException {
-      return loadURL(url, "UTF-8");
-    }
-
-    public String loadURL(String url, String charset)
-      throws MalformedURLException, IOException, UnsupportedEncodingException {
-      StringBuilder  sb = new StringBuilder();
-      String         s;
-      URL            real_url = new URL(baseURL, url);
-
-      BufferedReader br = new BufferedReader(new InputStreamReader(
-					       esxx.openCachedURL(real_url),
-					       charset));
-
-      while ((s = br.readLine()) != null) {
-	sb.append(s);
-      }
-
-      return sb.toString();
-    }
-
-    public Scriptable loadXML(String url)
-      throws MalformedURLException, IOException, org.xml.sax.SAXException {
-      URL real_url = new URL(baseURL, url);
-
-      return esxx.domToE4X(esxx.parseXML(esxx.openCachedURL(real_url), real_url, null), cx, scope);
-    }
-
     public InputStream in;
     public PrintWriter error;
     public PrintWriter debug;
@@ -100,6 +68,7 @@ public class JSESXX {
       Document query_doc;
 
       this.env = cx.newObject(scope, "Object");
+      this.query = cx.newObject(scope, "Object");
 
       try {
 	DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
@@ -135,11 +104,11 @@ public class JSESXX {
 	  handleAcceptHeader(hdr, value, accept_doc);
 	}
 
-	handleQueryHeader(name, value, query_doc);
+	handleQueryHeader(name, value, cx, query);
       }
 
       accept = esxx.domToE4X(accept_doc, cx, scope);
-      query  = esxx.domToE4X(query_doc, cx, scope);
+//      query  = esxx.domToE4X(query_doc, cx, scope);
     }
 
 
@@ -223,16 +192,9 @@ public class JSESXX {
       }
     }
 
-    private void handleQueryHeader(String name, String value, Document doc) {
-      Element query = doc.getDocumentElement();
-
-      if (name.equals("REQUEST_METHOD")) {
-	query.setAttribute("method", value);
-      }
-      else if (name.equals("PATH_INFO")) {
-	query.setAttribute("path", value);
-      }
-      else if (name.equals("QUERY_STRING") && value.length() > 0) {
+    private void handleQueryHeader(String name, String value, 
+				   Context cx, Scriptable var) {
+      if (name.equals("QUERY_STRING") && value.length() > 0) {
 	String[] args = value.split("&");
 
 	for (String arg : args) {
@@ -240,27 +202,55 @@ public class JSESXX {
 
 	  try {
 	    String n = URLDecoder.decode(nv[0], "UTF-8").trim();
-	    
-	    // TODO: Handle . or / to create sub-elements?
-	    Element element = doc.createElement(makeXMLName(n));
 
-	    if (nv.length == 2) {
-	      String v = URLDecoder.decode(nv[1], "UTF-8");
-	      element.appendChild(doc.createTextNode(v));
+	    if (nv.length == 1) {
+	      ScriptableObject.putProperty(var, makeXMLName(n), "");
 	    }
-	  
-	    query.appendChild(element);
+	    else if (nv.length == 2) {
+	      String v = URLDecoder.decode(nv[1], "UTF-8");
+	      ScriptableObject.putProperty(var, makeXMLName(n), v);
+	    }
 	  }
-	  catch (java.io.UnsupportedEncodingException ex) {
+	  catch (UnsupportedEncodingException ex) {
 	    // Ignore illegal headers
 	  }
 	}
       }
-      else if (name.equals("")) {
-      }
-      else if (name.equals("")) {
-      }
     }
+
+//     private void handleQueryHeader(String name, String value, Document doc) {
+//       Element query = doc.getDocumentElement();
+
+//       if (name.equals("REQUEST_METHOD")) {
+// 	query.setAttribute("method", value);
+//       }
+//       else if (name.equals("PATH_INFO")) {
+// 	query.setAttribute("path", value);
+//       }
+//       else if (name.equals("QUERY_STRING") && value.length() > 0) {
+// 	String[] args = value.split("&");
+
+// 	for (String arg : args) {
+// 	  String[] nv = arg.split("=", 2);
+
+// 	  try {
+// 	    String n = URLDecoder.decode(nv[0], "UTF-8").trim();
+	    
+// 	    // TODO: Handle . or / to create sub-elements?
+// 	    Element element = doc.createElement(makeXMLName(n));
+
+// 	    if (nv.length == 2) {
+// 	      String v = URLDecoder.decode(nv[1], "UTF-8");
+// 	      element.appendChild(doc.createTextNode(v));
+// 	    }
+	  
+// 	    query.appendChild(element);
+// 	  }
+// 	  catch (java.io.UnsupportedEncodingException ex) {
+// 	    // Ignore illegal headers
+// 	  }
+// 	}
+//     }
 
     private String makeXMLName(String s) {
       char[] chars = s.toCharArray();

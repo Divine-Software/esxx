@@ -29,8 +29,14 @@ function MyApp(e) {
     esxx.headers.Status = "201 OK";
     esxx.debug.println("**** START GET HANDLER ****")
 
-    var url = new URL("filen.txt");
+    for (i in esxx.query) {
+      esxx.debug.println("i: " + esxx.query[i]);
+    }
+
+    var url = new URL("test-code.esxx");
     esxx.debug.println(url);
+    var filen = url.loadXML();
+    esxx.debug.println(typeof filen);
 
     XML.ignoreComments = false;
 
