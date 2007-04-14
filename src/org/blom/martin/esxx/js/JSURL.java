@@ -6,6 +6,8 @@ import java.net.URL;
 import java.net.MalformedURLException;
 import org.blom.martin.esxx.*;
 import org.mozilla.javascript.*;
+import org.w3c.dom.*;
+import org.w3c.dom.bootstrap.*;
 
 public class JSURL 
   extends ScriptableObject {
@@ -50,12 +52,62 @@ public class JSURL
 
     public static Object jsFunction_loadXML(Context cx, Scriptable thisObj,
                                             Object[] args, Function funObj)
-      throws MalformedURLException, IOException, org.xml.sax.SAXException {
+      throws IOException, org.xml.sax.SAXException {
       JSURL js_this = (JSURL) thisObj;
       ESXX  esxx    = js_this.esxx;
       URL   url     = js_this.url;
 
-      return esxx.domToE4X(esxx.parseXML(esxx.openCachedURL(url), url, null), cx, thisObj);
+      Document result = null;
+
+      // If this URL is a file: URL and is also a directory, create an
+      // XML directory listing.
+      if (url.getProtocol().equals("file")) {
+	try {
+	  File dir = new File(url.toURI());
+
+	  if (dir.exists() && dir.isDirectory()) {
+	    File[] list = dir.listFiles();
+	    
+	    DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
+	    DOMImplementation         impl = reg.getDOMImplementation("XML 3.0");
+
+	    result = impl.createDocument(null, "result", null);
+
+	    Element root = result.getDocumentElement();
+
+	    for (File f : list) {
+	      Element element = null;
+
+	      if (f.isDirectory()) {
+		element = result.createElement("directory");
+	      }
+	      else if (f.isFile()) {
+		element = result.createElement("file");
+		element.setAttribute("length", Long.toString(f.length()));
+	      }
+	      
+	      element.setAttribute("name", f.getName());
+	      element.setAttribute("path", f.getPath());
+	      element.setAttribute("url", f.toURI().toString());
+	      element.setAttribute("isHidden", f.isHidden() ? "true" : "false");
+	      element.setAttribute("lastModified", Long.toString(f.lastModified()));
+
+//	      element.appendChild(result.createTextNode(f.getName()));
+	      root.appendChild(element);
+	    }
+	  }
+	}
+	catch (Exception ex) {
+	  // Do nothing
+	}
+      }
+
+      if (result == null) {
+	// Load URL as normal
+	result = esxx.parseXML(esxx.openCachedURL(url), url, null);
+      }
+      
+      return esxx.domToE4X(result, cx, thisObj);
     }
 
 
@@ -80,7 +132,7 @@ public class JSURL
 	    return new JSURL(esxx, new URL(base_url, url));
 	  }
 	  else {
-	    Context.reportRuntimeError("Single argument must be URL or String"); 
+	    throw Context.reportRuntimeError("Single argument must be URL or String"); 
 	  }
 	}
 	else if (args.length == 2) {
@@ -91,13 +143,13 @@ public class JSURL
 	    return new JSURL(esxx, new URL(old.url, url));
 	  }
 	  catch (ClassCastException ex) {
-	    Context.reportRuntimeError("Duble argument must be URL and String"); 
+	    throw Context.reportRuntimeError("Duble argument must be URL and String"); 
 	  }
 	}
       }
       catch (MalformedURLException ex) {
-	Context.reportRuntimeError("MalformedURLException: " + 
-				   ex.getMessage()); 
+	throw Context.reportRuntimeError("MalformedURLException: " + 
+					 ex.getMessage()); 
       }
 
       return null;

@@ -1,22 +1,4 @@
 
-
-for (var h in esxx.headers) {
-  esxx.debug.println(h + ": " + esxx.headers[h] + " (" + typeof esxx.headers[h] + ")");
-}
-
-for (var h in esxx.properties) {
-  esxx.debug.println(h + ": " + esxx.properties[h] + " (" + typeof esxx.properties[h] + ")");
-}
-
-esxx.debug.println(esxx.headers.Status);
-esxx.headers[0] =  "Apa: kalle";
-esxx.headers[1] =  "Apa2; kalle";
-
-esxx.debug.println(esxx.document);
-default xml namespace = new Namespace("http://martin.blom.org/esxx/1.0/");
-esxx.debug.println(esxx.document.info.author[0]);
-default xml namespace = new Namespace("");
-
 function MyApp(e) {
 
   this.handleError = function(ex) {
@@ -29,37 +11,19 @@ function MyApp(e) {
     esxx.headers.Status = "201 OK";
     esxx.debug.println("**** START GET HANDLER ****")
 
-    for (i in esxx.query) {
-      esxx.debug.println("i: " + esxx.query[i]);
-    }
+    var directory = new URL(".").loadXML();
 
-    var url = new URL("test-code.esxx");
-    esxx.debug.println(url);
-    var filen = url.loadXML();
-    esxx.debug.println(typeof filen);
+    esxx.debug.println("File larger than 2000 bytes:");
+    esxx.debug.println(directory.file.(@length > 2000));
 
-    XML.ignoreComments = false;
+    esxx.debug.println("Files starting with the letter L:");
+//    esxx.debug.println(directory.file.(/^L/.test(@name)));
+    esxx.debug.println(directory.file.(@name.match("^L")));
 
-    a = <apa>data<a/> <!-- apa --></apa>;
-
-    XML.prettyPrinting = false;
-    esxx.debug.println(a);
-
-    XML.prettyPrinting = true;
-    esxx.debug.println(a);
-
-    default xml namespace = new Namespace("http://www.w3.org/1999/xhtml");
-
-    var html = <html>
-    <body><p>Hej här är en banan till dig!</p>
-    </body>
-    </html>;
-
-    html.body.*[0] = <address name="Martin Blom"/> + html.body.*[0];
-    html.body.* += <address name="Martin Blom"/>;
+    esxx.debug.println(new Date(0).toString());
 
     esxx.debug.println("**** END GET HANDLER ****");
 
-    return html;
+    return <html/>;
   }
 }
