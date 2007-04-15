@@ -6,6 +6,7 @@ import org.blom.martin.esxx.js.JSESXX;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URI;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -389,9 +390,9 @@ public class ESXX {
 	try {
 	  Workload workload = workloadQueue.take();
 	  String request_method = workload.getProperties().getProperty("REQUEST_METHOD");
-	  
-	  cx.putThreadLocal(java.net.URL.class, workload.getURL());
-	  
+
+	  cx.putThreadLocal(java.net.URI.class, workload.getURL().toURI());
+
 	  try {
 	    ESXXParser parser = getCachedESXXParser(workload.getURL());
 
@@ -623,6 +624,9 @@ public class ESXX {
 
 	    workload.finished(500, h);
 	  }
+	}
+	catch (java.net.URISyntaxException ex) {
+	  ex.printStackTrace();
 	}
 	catch (InterruptedException ex) {
 	  // Don't know what to do here ... die?

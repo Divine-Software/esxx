@@ -2,8 +2,8 @@
 package org.blom.martin.esxx;
 
 import java.io.*;
-import java.net.URL;
-import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import org.blom.martin.esxx.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.*;
@@ -14,7 +14,7 @@ public class JSURL
     public JSURL() {
     }
 
-    public JSURL(ESXX esxx, URL url) {
+    public JSURL(ESXX esxx, URI url) {
       this.esxx    = esxx;
       this.url     = url;
     }
@@ -26,10 +26,10 @@ public class JSURL
 
     public static Object jsFunction_loadString(Context cx, Scriptable thisObj,
 					       Object[] args, Function funObj)
-      throws MalformedURLException, IOException, UnsupportedEncodingException {
+      throws URISyntaxException, IOException, UnsupportedEncodingException {
       JSURL          js_this = checkInstance(thisObj);
       ESXX           esxx    = js_this.esxx;
-      URL            url     = js_this.url;
+      URI            url     = js_this.url;
       String         charset = "UTF-8";
       StringBuilder  sb      = new StringBuilder();
       String         s;
@@ -39,7 +39,7 @@ public class JSURL
       }
 
       BufferedReader br = new BufferedReader(new InputStreamReader(
-					       esxx.openCachedURL(url),
+					       esxx.openCachedURL(url.toURL()),
 					       charset));
 
       while ((s = br.readLine()) != null) {
@@ -53,17 +53,17 @@ public class JSURL
     public static Object jsFunction_loadXML(Context cx, Scriptable thisObj,
                                             Object[] args, Function funObj)
       throws IOException, org.xml.sax.SAXException {
-      JSURL js_this = (JSURL) thisObj;
+      JSURL js_this = checkInstance(thisObj);
       ESXX  esxx    = js_this.esxx;
-      URL   url     = js_this.url;
+      URI   url     = js_this.url;
 
       Document result = null;
 
-      // If this URL is a file: URL and is also a directory, create an
+      // If this URI is a file: URL and is also a directory, create an
       // XML directory listing.
-      if (url.getProtocol().equals("file")) {
+      if (url.getScheme().equals("file")) {
 	try {
-	  File dir = new File(url.toURI());
+	  File dir = new File(url);
 
 	  if (dir.exists() && dir.isDirectory()) {
 	    File[] list = dir.listFiles();
@@ -91,6 +91,7 @@ public class JSURL
 	      element.setAttribute("url", f.toURI().toString());
 	      element.setAttribute("isHidden", f.isHidden() ? "true" : "false");
 	      element.setAttribute("lastModified", Long.toString(f.lastModified()));
+	      element.setAttribute("id", Integer.toHexString(f.hashCode()));
 
 //	      element.appendChild(result.createTextNode(f.getName()));
 	      root.appendChild(element);
@@ -104,7 +105,7 @@ public class JSURL
 
       if (result == null) {
 	// Load URL as normal
-	result = esxx.parseXML(esxx.openCachedURL(url), url, null);
+	result = esxx.parseXML(esxx.openCachedURL(url.toURL()), url.toURL(), null);
       }
       
       return esxx.domToE4X(result, cx, thisObj);
@@ -115,10 +116,10 @@ public class JSURL
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
 				       boolean inNewExpr) {
-      ESXX esxx = (ESXX) cx.getThreadLocal(ESXX.class);
-      URL base_url = (URL) cx.getThreadLocal(URL.class);
+//      try {
+	ESXX esxx = (ESXX) cx.getThreadLocal(ESXX.class);
+	URI base_url = (URI) cx.getThreadLocal(URI.class);
 
-      try {
 	if (args.length == 0) {
 	  return new JSURL(esxx, base_url);
 	}
@@ -129,7 +130,7 @@ public class JSURL
 	  }
 	  else if (args[0] instanceof String) {
 	    String url = (String) args[0];
-	    return new JSURL(esxx, new URL(base_url, url));
+	    return new JSURL(esxx, base_url.resolve(url));
 	  }
 	  else {
 	    throw Context.reportRuntimeError("Single argument must be URL or String"); 
@@ -140,17 +141,17 @@ public class JSURL
 	    JSURL old = (JSURL) args[0];
 	    String url = (String) args[1];
 
-	    return new JSURL(esxx, new URL(old.url, url));
+	    return new JSURL(esxx, old.url.resolve(url));
 	  }
 	  catch (ClassCastException ex) {
 	    throw Context.reportRuntimeError("Duble argument must be URL and String"); 
 	  }
 	}
-      }
-      catch (MalformedURLException ex) {
-	throw Context.reportRuntimeError("MalformedURLException: " + 
-					 ex.getMessage()); 
-      }
+//       }
+//       catch (URISyntaxException ex) {
+// 	throw Context.reportRuntimeError("URISyntaxException: " + 
+// 					 ex.getMessage()); 
+//       }
 
       return null;
     }
@@ -169,5 +170,5 @@ public class JSURL
     }
 
     private ESXX esxx;
-    private URL url;
+    private URI url;
 }
