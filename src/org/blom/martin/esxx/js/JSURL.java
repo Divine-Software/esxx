@@ -4,19 +4,20 @@ package org.blom.martin.esxx;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import org.blom.martin.esxx.*;
 import org.mozilla.javascript.*;
-import org.w3c.dom.*;
-import org.w3c.dom.bootstrap.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 public class JSURL 
   extends ScriptableObject {
     public JSURL() {
     }
 
-    public JSURL(ESXX esxx, URI url) {
-      this.esxx    = esxx;
-      this.url     = url;
+    public JSURL(ESXX esxx, URI uri) {
+      this.esxx = esxx;
+      this.uri  = uri;
     }
 
     public String getClassName() {
@@ -24,23 +25,106 @@ public class JSURL
     }
 
 
-    public static Object jsFunction_loadString(Context cx, Scriptable thisObj,
-					       Object[] args, Function funObj)
-      throws URISyntaxException, IOException, UnsupportedEncodingException {
-      JSURL          js_this = checkInstance(thisObj);
-      ESXX           esxx    = js_this.esxx;
-      URI            url     = js_this.url;
-      String         charset = "UTF-8";
-      StringBuilder  sb      = new StringBuilder();
-      String         s;
+    public static Object jsFunction_load(Context cx, Scriptable thisObj,
+					 Object[] args, Function funObj)
+      throws IOException, org.xml.sax.SAXException {
+      JSURL  js_this = checkInstance(thisObj);
+      String type    = "text/xml";
+      HashMap<String,String> params = new HashMap<String,String>();
 
       if (args.length >= 1 && args[0] != Context.getUndefinedValue()) {
-	charset = Context.toString(args[0]);
+	type = parseMIMEType(Context.toString(args[0]), params);
+      }
+
+      return js_this.load(cx, type, params);
+    }
+
+    static public Object jsConstructor(Context cx, 
+				       java.lang.Object[] args, 
+				       Function ctorObj, 
+				       boolean inNewExpr) {
+      ESXX esxx = (ESXX) cx.getThreadLocal(ESXX.class);
+      URI base_uri = (URI) cx.getThreadLocal(URI.class);
+
+      if (args.length == 0) {
+	return new JSURL(esxx, base_uri);
+      }
+      else if (args.length == 1) {
+	if (args[0] instanceof JSURL) {
+	  JSURL old = (JSURL) args[0];
+	  return new JSURL(esxx, old.uri);
+	}
+	else if (args[0] instanceof String) {
+	  String uri = (String) args[0];
+	  return new JSURL(esxx, base_uri.resolve(uri));
+	}
+	else {
+	  throw Context.reportRuntimeError("Single argument must be URI or String"); 
+	}
+      }
+      else if (args.length == 2) {
+	try {
+	  JSURL old = (JSURL) args[0];
+	  String uri = Context.toString(args[1]);
+
+	  return new JSURL(esxx, old.uri.resolve(uri));
+	}
+	catch (ClassCastException ex) {
+	  throw Context.reportRuntimeError("Double argument must be URI and String"); 
+	}
+      }
+
+      return null;
+    }
+
+    public String toString() {
+      return uri.toString();
+    }
+
+    private Object load(Context cx, String type, HashMap<String,String> params)
+      throws IOException, org.xml.sax.SAXException {
+      if (type.equals("text/xml")) {
+	Document result = null;
+
+	// If this URI is a file: URI and is also a directory, create
+	// an XML directory listing.
+	if (uri.getScheme().equals("file")) {
+	  File dir = new File(uri);
+	
+	  if (dir.exists() && dir.isDirectory()) {
+	    result = createDirectoryListing(dir);
+	  }
+	}
+	
+	if (result == null) {
+	  // Load URI as XML
+	  result = esxx.parseXML(esxx.openCachedURL(uri.toURL()), uri.toURL(), null);
+	}
+
+	return esxx.domToE4X(result, cx, this);
+      }
+      else if (type.equals("text/plain")) {
+	// Load URI as plain text
+	return loadString(uri, params);
+      }
+      else {
+	throw Context.reportRuntimeError("Unknown content type argument '" + type + "'"); 
+      }
+    }
+
+    private String loadString(URI uri, HashMap<String,String> params)
+      throws IOException {
+      String        cs = params.get("charset");
+      StringBuilder sb = new StringBuilder();
+      String        s;
+
+      if (cs == null) {
+	cs = "UTF-8";
       }
 
       BufferedReader br = new BufferedReader(new InputStreamReader(
-					       esxx.openCachedURL(url.toURL()),
-					       charset));
+					       esxx.openCachedURL(uri.toURL()),
+					       cs));
 
       while ((s = br.readLine()) != null) {
 	sb.append(s);
@@ -49,117 +133,50 @@ public class JSURL
       return sb.toString();
     }
 
+    private Document createDirectoryListing(File dir) {
+      File[] list = dir.listFiles();
 
-    public static Object jsFunction_loadXML(Context cx, Scriptable thisObj,
-                                            Object[] args, Function funObj)
-      throws IOException, org.xml.sax.SAXException {
-      JSURL js_this = checkInstance(thisObj);
-      ESXX  esxx    = js_this.esxx;
-      URI   url     = js_this.url;
+      Document result = esxx.createDocument("result");
+      Element  root   = result.getDocumentElement();
 
-      Document result = null;
+      for (File f : list) {
+	Element element = null;
 
-      // If this URI is a file: URL and is also a directory, create an
-      // XML directory listing.
-      if (url.getScheme().equals("file")) {
-	try {
-	  File dir = new File(url);
-
-	  if (dir.exists() && dir.isDirectory()) {
-	    File[] list = dir.listFiles();
-	    
-	    DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
-	    DOMImplementation         impl = reg.getDOMImplementation("XML 3.0");
-
-	    result = impl.createDocument(null, "result", null);
-
-	    Element root = result.getDocumentElement();
-
-	    for (File f : list) {
-	      Element element = null;
-
-	      if (f.isDirectory()) {
-		element = result.createElement("directory");
-	      }
-	      else if (f.isFile()) {
-		element = result.createElement("file");
-		element.setAttribute("length", Long.toString(f.length()));
-	      }
+	if (f.isDirectory()) {
+	  element = result.createElement("directory");
+	}
+	else if (f.isFile()) {
+	  element = result.createElement("file");
+	  element.setAttribute("length", Long.toString(f.length()));
+	}
 	      
-	      element.setAttribute("name", f.getName());
-	      element.setAttribute("path", f.getPath());
-	      element.setAttribute("url", f.toURI().toString());
-	      element.setAttribute("isHidden", f.isHidden() ? "true" : "false");
-	      element.setAttribute("lastModified", Long.toString(f.lastModified()));
-	      element.setAttribute("id", Integer.toHexString(f.hashCode()));
-
-//	      element.appendChild(result.createTextNode(f.getName()));
-	      root.appendChild(element);
-	    }
-	  }
-	}
-	catch (Exception ex) {
-	  // Do nothing
-	}
+	element.setAttribute("name", f.getName());
+	element.setAttribute("path", f.getPath());
+	element.setAttribute("uri", f.toURI().toString());
+	element.setAttribute("isHidden", f.isHidden() ? "true" : "false");
+	element.setAttribute("lastModified", Long.toString(f.lastModified()));
+	element.setAttribute("id", Integer.toHexString(f.hashCode()));
+	root.appendChild(element);
       }
 
-      if (result == null) {
-	// Load URL as normal
-	result = esxx.parseXML(esxx.openCachedURL(url.toURL()), url.toURL(), null);
+      return result;
+    }
+
+    private static String parseMIMEType(String ct, HashMap<String,String> params) {
+      String[] parts = ct.split(";");
+      String   type  = parts[0].trim();
+
+      // Add all attributes
+      for (int i = 1; i < parts.length; ++i) {
+	String[] attr = parts[i].split("=", 2);
+
+	if (attr.length == 2) {
+	  params.put(attr[0].trim(), attr[1].trim());
+	}
       }
       
-      return esxx.domToE4X(result, cx, thisObj);
+      return type;
     }
-
-
-    static public Object jsConstructor(Context cx, 
-				       java.lang.Object[] args, 
-				       Function ctorObj, 
-				       boolean inNewExpr) {
-//      try {
-	ESXX esxx = (ESXX) cx.getThreadLocal(ESXX.class);
-	URI base_url = (URI) cx.getThreadLocal(URI.class);
-
-	if (args.length == 0) {
-	  return new JSURL(esxx, base_url);
-	}
-	else if (args.length == 1) {
-	  if (args[0] instanceof JSURL) {
-	    JSURL old = (JSURL) args[0];
-	    return new JSURL(esxx, old.url);
-	  }
-	  else if (args[0] instanceof String) {
-	    String url = (String) args[0];
-	    return new JSURL(esxx, base_url.resolve(url));
-	  }
-	  else {
-	    throw Context.reportRuntimeError("Single argument must be URL or String"); 
-	  }
-	}
-	else if (args.length == 2) {
-	  try {
-	    JSURL old = (JSURL) args[0];
-	    String url = (String) args[1];
-
-	    return new JSURL(esxx, old.url.resolve(url));
-	  }
-	  catch (ClassCastException ex) {
-	    throw Context.reportRuntimeError("Duble argument must be URL and String"); 
-	  }
-	}
-//       }
-//       catch (URISyntaxException ex) {
-// 	throw Context.reportRuntimeError("URISyntaxException: " + 
-// 					 ex.getMessage()); 
-//       }
-
-      return null;
-    }
-
-    public String toString() {
-      return url.toString();
-    }
-
 
     private static JSURL checkInstance(Scriptable obj) {
       if (obj == null || !(obj instanceof JSURL)) {
@@ -170,5 +187,5 @@ public class JSURL
     }
 
     private ESXX esxx;
-    private URI url;
+    private URI uri;
 }

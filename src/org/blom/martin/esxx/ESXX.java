@@ -18,6 +18,8 @@ import javax.xml.transform.stream.*;
 import org.mozilla.javascript.*;
 import java.util.Collection;
 import org.w3c.dom.Document;
+import org.w3c.dom.DOMImplementation;
+import org.w3c.dom.bootstrap.*;
 import javax.xml.parsers.*;
 
 
@@ -36,10 +38,16 @@ public class ESXX {
      *
      *  @throws ParserConfigurationException If no XML parser could be
      *  found.
+     *
+     *  @throws ClassNotFoundException On DOM implementation errors
+     *
+     *  @throws InstantiationException On DOM implementation errors
+     *
+     *  @throws IllegalAccessException On DOM implementation errors
      */
 
     public ESXX(Properties p) 
-      throws ParserConfigurationException {
+      throws ParserConfigurationException, ClassNotFoundException, InstantiationException, IllegalAccessException {
       settings = p;
 
       // Custom CGI-to-HTTP translations
@@ -53,6 +61,9 @@ public class ESXX {
       documentBuilderFactory.setNamespaceAware(true);
       documentBuilderFactory.setValidating(true);
       documentBuilderFactory.setXIncludeAware(true);
+
+      DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
+      domImplementation = reg.getDOMImplementation("XML 3.0");
 
       transformerFactory = TransformerFactory.newInstance();
       transformerFactory.setURIResolver(new URIResolver() {
@@ -215,6 +226,18 @@ public class ESXX {
       catch (Exception ex) {
 	return null;
       }
+    }
+
+
+    /** Utility method to create a new W3C DOM document.
+     *
+     *  @param name  The name of the document element
+     *
+     *  @return A W3C DOM Document.
+     */
+
+    public Document createDocument(String name) {
+      return domImplementation.createDocument(null, name, null);
     }
 
 
@@ -682,6 +705,7 @@ public class ESXX {
 
     private Properties settings;
     private DocumentBuilderFactory documentBuilderFactory;
+    private DOMImplementation domImplementation;
     private TransformerFactory  transformerFactory;
     private ThreadGroup workerThreads;
     private LinkedBlockingQueue<Workload> workloadQueue;
