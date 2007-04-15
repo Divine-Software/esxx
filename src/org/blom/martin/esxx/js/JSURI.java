@@ -54,12 +54,9 @@ public class JSURI
 	  JSURI old = (JSURI) args[0];
 	  return new JSURI(esxx, old.uri);
 	}
-	else if (args[0] instanceof String) {
-	  String uri = (String) args[0];
-	  return new JSURI(esxx, base_uri.resolve(uri));
-	}
 	else {
-	  throw Context.reportRuntimeError("Single argument must be URI or String"); 
+	  String uri = Context.toString(args[0]);
+	  return new JSURI(esxx, base_uri.resolve(uri));
 	}
       }
       else if (args.length == 2) {
