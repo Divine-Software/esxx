@@ -10,25 +10,25 @@ import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-public class JSURL 
+public class JSURI 
   extends ScriptableObject {
-    public JSURL() {
+    public JSURI() {
     }
 
-    public JSURL(ESXX esxx, URI uri) {
+    public JSURI(ESXX esxx, URI uri) {
       this.esxx = esxx;
       this.uri  = uri;
     }
 
     public String getClassName() {
-      return "URL";
+      return "URI";
     }
 
 
     public static Object jsFunction_load(Context cx, Scriptable thisObj,
 					 Object[] args, Function funObj)
       throws IOException, org.xml.sax.SAXException {
-      JSURL  js_this = checkInstance(thisObj);
+      JSURI  js_this = checkInstance(thisObj);
       String type    = "text/xml";
       HashMap<String,String> params = new HashMap<String,String>();
 
@@ -47,16 +47,16 @@ public class JSURL
       URI base_uri = (URI) cx.getThreadLocal(URI.class);
 
       if (args.length == 0) {
-	return new JSURL(esxx, base_uri);
+	return new JSURI(esxx, base_uri);
       }
       else if (args.length == 1) {
-	if (args[0] instanceof JSURL) {
-	  JSURL old = (JSURL) args[0];
-	  return new JSURL(esxx, old.uri);
+	if (args[0] instanceof JSURI) {
+	  JSURI old = (JSURI) args[0];
+	  return new JSURI(esxx, old.uri);
 	}
 	else if (args[0] instanceof String) {
 	  String uri = (String) args[0];
-	  return new JSURL(esxx, base_uri.resolve(uri));
+	  return new JSURI(esxx, base_uri.resolve(uri));
 	}
 	else {
 	  throw Context.reportRuntimeError("Single argument must be URI or String"); 
@@ -64,10 +64,10 @@ public class JSURL
       }
       else if (args.length == 2) {
 	try {
-	  JSURL old = (JSURL) args[0];
+	  JSURI old = (JSURI) args[0];
 	  String uri = Context.toString(args[1]);
 
-	  return new JSURL(esxx, old.uri.resolve(uri));
+	  return new JSURI(esxx, old.uri.resolve(uri));
 	}
 	catch (ClassCastException ex) {
 	  throw Context.reportRuntimeError("Double argument must be URI and String"); 
@@ -178,12 +178,12 @@ public class JSURL
       return type;
     }
 
-    private static JSURL checkInstance(Scriptable obj) {
-      if (obj == null || !(obj instanceof JSURL)) {
+    private static JSURI checkInstance(Scriptable obj) {
+      if (obj == null || !(obj instanceof JSURI)) {
 	throw Context.reportRuntimeError("Called on incompatible object");
       }
 
-      return (JSURL) obj;
+      return (JSURI) obj;
     }
 
     private ESXX esxx;

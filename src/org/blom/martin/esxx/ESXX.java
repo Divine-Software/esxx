@@ -87,7 +87,7 @@ public class ESXX {
 
       try {
 	final ScriptableObject shared_scope = new ImporterTopLevel(cx, false);
-	ScriptableObject.defineClass(shared_scope, JSURL.class);
+	ScriptableObject.defineClass(shared_scope, JSURI.class);
 
 	// Create worker threads
 
