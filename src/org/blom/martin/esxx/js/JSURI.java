@@ -6,6 +6,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import org.blom.martin.esxx.*;
+import org.blom.martin.esxx.js.JSESXX;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -42,9 +43,10 @@ public class JSURI
     static public Object jsConstructor(Context cx, 
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
-				       boolean inNewExpr) {
+				       boolean inNewExpr) 
+      throws java.net.URISyntaxException {
       ESXX esxx = (ESXX) cx.getThreadLocal(ESXX.class);
-      URI base_uri = (URI) cx.getThreadLocal(URI.class);
+      URI base_uri = ((Workload) cx.getThreadLocal(Workload.class)).getURL().toURI();
 
       if (args.length == 0) {
 	return new JSURI(esxx, base_uri);
@@ -95,7 +97,10 @@ public class JSURI
 	
 	if (result == null) {
 	  // Load URI as XML
-	  result = esxx.parseXML(esxx.openCachedURL(uri.toURL()), uri.toURL(), null);
+	  JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
+
+	  result = esxx.parseXML(esxx.openCachedURL(uri.toURL()), uri.toURL(), null, 
+				 js_esxx.debug);
 	}
 
 	return esxx.domToE4X(result, cx, this);

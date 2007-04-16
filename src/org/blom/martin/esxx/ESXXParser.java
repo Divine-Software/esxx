@@ -49,7 +49,7 @@ public class ESXXParser {
       // Load and parse the document
 
       try {
-	xml = esxxObject.parseXML(esxxObject.openCachedURL(url), url, externalURLs);
+	xml = esxxObject.parseXML(esxxObject.openCachedURL(url), url, externalURLs, null);
 
 	// Extract ESXX information, if any
 

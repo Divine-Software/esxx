@@ -300,6 +300,9 @@ public class ESXX {
      *  populated with all URLs visited during the parsing. Can be
      *  'null'.
      *
+     *  @param err A PrintWriter that will be used to report parser
+     *  errors. Can be 'null'.
+     *
      *  @return A W3C DOM Document.
      *
      *  @throws SAXException On parser errors.
@@ -308,10 +311,29 @@ public class ESXX {
      */
 
     public Document parseXML(InputStream is, final URL is_url, 
-			     final Collection<URL> external_urls) 
+			     final Collection<URL> external_urls,
+			     final PrintWriter err) 
       throws org.xml.sax.SAXException, IOException {
       try {
 	DocumentBuilder db = documentBuilderFactory.newDocumentBuilder();
+
+	db.setErrorHandler(new org.xml.sax.ErrorHandler() {
+	      public void error(org.xml.sax.SAXParseException ex) {
+		if (err != null) {
+		  err.println("XML parser error in " + ex.getSystemId() + "#" + 
+			      ex.getLineNumber() + ": " + ex.getMessage());
+		}
+	      }
+		
+	      public void fatalError(org.xml.sax.SAXParseException ex) {
+		throw ex;
+	      }
+
+	      public void warning(org.xml.sax.SAXParseException ex) {
+		  err.println("XML parser warning in " + ex.getSystemId() + "#" + 
+			      ex.getLineNumber() + ": " + ex.getMessage());
+	      }
+	  });
 
 	db.setEntityResolver(new org.xml.sax.EntityResolver() {
 	      public org.xml.sax.InputSource resolveEntity (String publicID, 
@@ -414,7 +436,7 @@ public class ESXX {
 	  Workload workload = workloadQueue.take();
 	  String request_method = workload.getProperties().getProperty("REQUEST_METHOD");
 
-	  cx.putThreadLocal(java.net.URI.class, workload.getURL().toURI());
+	  cx.putThreadLocal(Workload.class, workload);
 
 	  try {
 	    ESXXParser parser = getCachedESXXParser(workload.getURL());
@@ -431,6 +453,8 @@ public class ESXX {
 
 	    // Add the top-level "esxx" variable
 	    ScriptableObject.putProperty(scope, "esxx", Context.javaToJS(js_esxx, scope));
+
+	    cx.putThreadLocal(JSESXX.class, js_esxx);
 	    
 	    Object result = null;
 	    Exception error = null;
@@ -648,9 +672,9 @@ public class ESXX {
 	    workload.finished(500, h);
 	  }
 	}
-	catch (java.net.URISyntaxException ex) {
-	  ex.printStackTrace();
-	}
+// 	catch (java.net.URISyntaxException ex) {
+// 	  ex.printStackTrace();
+// 	}
 	catch (InterruptedException ex) {
 	  // Don't know what to do here ... die?
 	  ex.printStackTrace();
