@@ -20,10 +20,19 @@ function MyApp(e) {
     esxx.debug.println("Files starting with the letter L:");
     esxx.debug.println(directory.file.(name.match("^L")));
 
-    esxx.debug.println(new Date(0).toString());
+    java.lang.Class.forName("org.postgresql.Driver");
+    var uri = new URI("jdbc:postgresql:martin");
+    uri.user = "martin";
+    uri.password = "martin";
+
+    var db = uri.query("select * from test");
+    var i = uri.query("insert into test values(11, 'test2');");
+    
+    esxx.debug.println(typeof i);
+    esxx.debug.println(i);
 
     esxx.debug.println("**** END GET HANDLER ****");
 
-    return directory;
+    return db;
   }
 }

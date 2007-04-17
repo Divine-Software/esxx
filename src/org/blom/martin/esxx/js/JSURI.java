@@ -2,9 +2,11 @@
 package org.blom.martin.esxx;
 
 import java.io.*;
+import java.sql.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.Properties;
 import org.blom.martin.esxx.*;
 import org.blom.martin.esxx.js.JSESXX;
 import org.mozilla.javascript.*;
@@ -37,7 +39,27 @@ public class JSURI
 	type = parseMIMEType(Context.toString(args[0]), params);
       }
 
-      return js_this.load(cx, type, params);
+      return js_this.load(cx, thisObj, type, params);
+    }
+
+
+    public static Object jsFunction_query(Context cx, Scriptable thisObj,
+					  Object[] args, Function funObj)
+      throws SQLException, IOException, org.xml.sax.SAXException
+    {
+      JSURI  js_this = checkInstance(thisObj);
+      String type    = "text/xml";
+      HashMap<String,String> params = new HashMap<String,String>();
+
+      if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
+	throw Context.reportRuntimeError("Missing query argument"); 
+      }
+
+      if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
+	type = parseMIMEType(Context.toString(args[1]), params);
+      }
+
+      return js_this.query(cx, thisObj, Context.toString(args[0]), type, params);
     }
 
     static public Object jsConstructor(Context cx, 
@@ -80,7 +102,8 @@ public class JSURI
       return uri.toString();
     }
 
-    private Object load(Context cx, String type, HashMap<String,String> params)
+    private Object load(Context cx, Scriptable thisObj, 
+			String type, HashMap<String,String> params)
       throws IOException, org.xml.sax.SAXException {
       if (type.equals("text/xml")) {
 	Document result = null;
@@ -163,6 +186,64 @@ public class JSURI
 
       return result;
     }
+
+
+    private Object query(Context cx, Scriptable thisObj,
+			 String query, String type, HashMap<String,String> params)
+      throws SQLException, IOException, org.xml.sax.SAXException {
+      String scheme = uri.getScheme();
+      
+      if (scheme.equals("jdbc")) {
+	Properties properties = new Properties();
+
+	for (Object id : ScriptableObject.getPropertyIds(thisObj)) {
+	  if (id instanceof String) {
+	    String key   = (String) id;
+	    String value = Context.toString(ScriptableObject.getProperty(thisObj, key));
+
+	    properties.setProperty(key, value);
+	  }
+	}
+
+	Connection db     = DriverManager.getConnection(uri.toString(), properties);
+	Statement  sql    = db.createStatement();
+
+	Document   result = esxx.createDocument("result");
+	Element    root   = result.getDocumentElement();
+
+	if (sql.execute(query)) {
+	  ResultSet rs = sql.getResultSet();
+	  ResultSetMetaData rmd = rs.getMetaData();
+
+	  int      count = rmd.getColumnCount();
+	  String[] names = new String[count];
+
+	  for (int i = 0; i < count; ++i) {
+	    names[i] = rmd.getColumnName(i + 1);
+	  }
+
+	  while (rs.next()) {
+	    Element row = result.createElement("row");
+	    
+	    for (int i = 0; i < count; ++i) {
+	      setParam(result, row, names[i], rs.getString(i + 1));
+	    }
+
+	    root.appendChild(row);
+	  }
+	  
+	  return esxx.domToE4X(result, cx, this);
+	}
+	else {
+	  return new Integer(sql.getUpdateCount());
+	}
+      }
+      else {
+	throw Context.reportRuntimeError("URI protocol '" + scheme + 
+					 "' does not support queries."); 
+      }
+    }
+
 
     private void setParam(Document document, Element element, String name, String value) {
 //      element.setAttribute(name, value);
