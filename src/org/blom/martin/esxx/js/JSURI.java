@@ -149,19 +149,26 @@ public class JSURI
 	}
 	else if (f.isFile()) {
 	  element = result.createElement("file");
-	  element.setAttribute("length", Long.toString(f.length()));
+	  setParam(result, element, "length", Long.toString(f.length()));
 	}
 	      
-	element.setAttribute("name", f.getName());
-	element.setAttribute("path", f.getPath());
-	element.setAttribute("uri", f.toURI().toString());
-	element.setAttribute("isHidden", f.isHidden() ? "true" : "false");
-	element.setAttribute("lastModified", Long.toString(f.lastModified()));
-	element.setAttribute("id", Integer.toHexString(f.hashCode()));
+	setParam(result, element, "name", f.getName());
+	setParam(result, element, "path", f.getPath());
+	setParam(result, element, "uri", f.toURI().toString());
+	setParam(result, element, "isHidden", f.isHidden() ? "true" : "false");
+	setParam(result, element, "lastModified", Long.toString(f.lastModified()));
+	setParam(result, element, "id", Integer.toHexString(f.hashCode()));
 	root.appendChild(element);
       }
 
       return result;
+    }
+
+    private void setParam(Document document, Element element, String name, String value) {
+//      element.setAttribute(name, value);
+      Element e = document.createElement(name);
+      e.appendChild(document.createTextNode(value));
+      element.appendChild(e);
     }
 
     private static String parseMIMEType(String ct, HashMap<String,String> params) {

@@ -325,7 +325,8 @@ public class ESXX {
 		}
 	      }
 		
-	      public void fatalError(org.xml.sax.SAXParseException ex) {
+	      public void fatalError(org.xml.sax.SAXParseException ex)
+		throws org.xml.sax.SAXParseException {
 		throw ex;
 	      }
 
