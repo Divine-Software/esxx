@@ -12,27 +12,12 @@ function MyApp(e) {
     esxx.headers.Status = "201 OK";
     esxx.debug.println("**** START GET HANDLER ****")
 
-    var directory = new URI(".").load();
+    var ldap = new URI("ldap://blom.org:389/ou=People,dc=blom,dc=org??sub?(objectClass=*)");
 
-    esxx.debug.println("File larger than 2000 bytes:");
-    esxx.debug.println(directory.file.(length > 2000));
-
-    esxx.debug.println("Files starting with the letter L:");
-    esxx.debug.println(directory.file.(name.match("^L")));
-
-    java.lang.Class.forName("org.postgresql.Driver");
-    var uri = new URI("jdbc:postgresql:martin");
-    uri.user = "martin";
-    uri.password = "martin";
-
-    var db = uri.query("select * from test");
-    var i = uri.query("insert into test values(11, 'test2');");
-    
-    esxx.debug.println(typeof i);
-    esxx.debug.println(i);
+    esxx.debug.println(ldap.load());
 
     esxx.debug.println("**** END GET HANDLER ****");
 
-    return db;
+    return <db/>;
   }
 }

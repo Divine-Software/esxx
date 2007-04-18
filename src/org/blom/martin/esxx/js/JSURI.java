@@ -7,6 +7,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Properties;
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
+import javax.naming.directory.*;
 import org.blom.martin.esxx.*;
 import org.blom.martin.esxx.js.JSESXX;
 import org.mozilla.javascript.*;
@@ -65,7 +68,7 @@ public class JSURI
 
     public static Object jsFunction_load(Context cx, Scriptable thisObj,
 					 Object[] args, Function funObj)
-      throws IOException, org.xml.sax.SAXException {
+      throws IOException, org.xml.sax.SAXException, NamingException {
       JSURI  js_this = checkInstance(thisObj);
       String type    = null;
       HashMap<String,String> params = new HashMap<String,String>();
@@ -105,33 +108,45 @@ public class JSURI
 
     private Object load(Context cx, Scriptable thisObj, 
 			String type, HashMap<String,String> params)
-      throws IOException, org.xml.sax.SAXException {
+      throws IOException, org.xml.sax.SAXException, NamingException {
       if (type == null) {
 	type = "text/xml";
       }
 
       if (type.equals("text/xml")) {
-	Document result = null;
+	String scheme = uri.getScheme();
 
 	// If this URI is a file: URI and is also a directory, create
 	// an XML directory listing.
-	if (uri.getScheme().equals("file")) {
+	if (scheme.equals("file")) {
+	  Document result;
+
 	  File dir = new File(uri);
 	
 	  if (dir.exists() && dir.isDirectory()) {
 	    result = createDirectoryListing(dir);
 	  }
+	  else {
+	    // Load file as XML
+	    JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
+
+	    result = esxx.parseXML(esxx.openCachedURL(uri.toURL()), uri.toURL(), null, 
+				   js_esxx.debug);
+	  }
+
+	  return esxx.domToE4X(result, cx, this);
 	}
-	
-	if (result == null) {
+	else if (scheme.startsWith("ldap")) {
+	  return loadLDAP(cx, thisObj, type, params);
+	}
+	else {
 	  // Load URI as XML
 	  JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
 
-	  result = esxx.parseXML(esxx.openCachedURL(uri.toURL()), uri.toURL(), null, 
-				 js_esxx.debug);
+	  Document result = esxx.parseXML(esxx.openCachedURL(uri.toURL()), uri.toURL(), null, 
+					  js_esxx.debug);
+	  return esxx.domToE4X(result, cx, this);
 	}
-
-	return esxx.domToE4X(result, cx, this);
       }
       else if (type.equals("text/plain")) {
 	// Load URI as plain text
@@ -193,6 +208,52 @@ public class JSURI
     }
 
 
+    private Object loadLDAP(Context cx, Scriptable thisObj,
+			    String type, HashMap<String,String> params)
+      throws NamingException {
+      try {
+      DirContext        ctx    = new InitialDirContext();
+      NamingEnumeration answer = ctx.search(uri.toString(), "", null);
+
+      Document          result = esxx.createDocument("result");
+      Element           root   = result.getDocumentElement();
+	  
+      while (answer.hasMore()) {
+	SearchResult sr = (SearchResult) answer.next();
+
+	String name = sr.getName();
+	String path = sr.getNameInNamespace();
+	URI    euri = new URI(uri.getScheme(), uri.getAuthority(),
+			      "/" + path, "?base", uri.getFragment());
+
+	Element entry = result.createElement("entry");
+
+	entry.setAttribute("name", name);
+	entry.setAttribute("path", path);
+	entry.setAttribute("uri", euri.toString());
+
+	for (NamingEnumeration ae = sr.getAttributes().getAll(); ae.hasMore();) {
+	  Attribute attr = (Attribute)ae.next();
+
+	  for (NamingEnumeration e = attr.getAll(); e.hasMore();) {
+	    Object v = e.next();	
+
+ 	    addChild(entry, attr.getID(), v.toString());
+	  }
+	}
+
+	root.appendChild(entry);
+      }
+      
+      return esxx.domToE4X(result, cx, this);
+      }
+      catch (Exception ex) {
+	ex.printStackTrace();
+	return null;
+      }
+    }
+
+
     private Object query(Context cx, Scriptable thisObj,
 			 String query, String type, HashMap<String,String> params)
       throws SQLException, IOException, org.xml.sax.SAXException {
@@ -242,7 +303,7 @@ public class JSURI
 	  }
 
 	  while (rs.next()) {
-	    Element row = result.createElement("row");
+	    Element row = result.createElement("entry");
 	    
 	    for (int i = 0; i < count; ++i) {
 	      addChild(row, names[i], rs.getString(i + 1));
