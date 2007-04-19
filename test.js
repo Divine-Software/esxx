@@ -12,7 +12,7 @@ function MyApp(e) {
     esxx.headers.Status = "201 OK";
     esxx.debug.println("**** START GET HANDLER ****")
 
-    var ldap = new URI("ldap://blom.org:389/ou=People,dc=blom,dc=org??sub?(objectClass=*)");
+    var ldap = new URI("ldap://blom.org:389/uid=martin,ou=People,dc=blom,dc=org??base?(objectClass=*)");
 
     esxx.debug.println(ldap.load());
 

@@ -6,6 +6,7 @@ import java.sql.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Properties;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -68,7 +69,7 @@ public class JSURI
 
     public static Object jsFunction_load(Context cx, Scriptable thisObj,
 					 Object[] args, Function funObj)
-      throws IOException, org.xml.sax.SAXException, NamingException {
+      throws Exception {
       JSURI  js_this = checkInstance(thisObj);
       String type    = null;
       HashMap<String,String> params = new HashMap<String,String>();
@@ -108,7 +109,7 @@ public class JSURI
 
     private Object load(Context cx, Scriptable thisObj, 
 			String type, HashMap<String,String> params)
-      throws IOException, org.xml.sax.SAXException, NamingException {
+      throws Exception {
       if (type == null) {
 	type = "text/xml";
       }
@@ -210,9 +211,37 @@ public class JSURI
 
     private Object loadLDAP(Context cx, Scriptable thisObj,
 			    String type, HashMap<String,String> params)
-      throws NamingException {
-      try {
-      DirContext        ctx    = new InitialDirContext();
+      throws NamingException, URISyntaxException {
+      Hashtable<String, String> env = new Hashtable<String, String>();
+      boolean got_user = false;
+      boolean got_type = false;
+
+      for (Object id : ScriptableObject.getPropertyIds(thisObj)) {
+	if (id instanceof String) {
+	  String key   = (String) id;
+	  String value = Context.toString(ScriptableObject.getProperty(thisObj, key));
+
+	  if (key.equals("user")) {
+	    key = javax.naming.Context.SECURITY_PRINCIPAL;
+	    got_user = true;
+	  }
+	  else if (key.equals("password")) {
+	    key = javax.naming.Context.SECURITY_CREDENTIALS;
+	  }
+	  else if (key.equals("authentication")) {
+	    key = javax.naming.Context.SECURITY_AUTHENTICATION;
+	    got_type = true;
+	  }
+
+	  env.put(key, value);
+	}
+      }
+
+      if (got_user && !got_type) {
+	env.put(javax.naming.Context.SECURITY_AUTHENTICATION, "simple");
+      }
+
+      DirContext        ctx    = new InitialDirContext(env);
       NamingEnumeration answer = ctx.search(uri.toString(), "", null);
 
       Document          result = esxx.createDocument("result");
@@ -246,11 +275,6 @@ public class JSURI
       }
       
       return esxx.domToE4X(result, cx, this);
-      }
-      catch (Exception ex) {
-	ex.printStackTrace();
-	return null;
-      }
     }
 
 
