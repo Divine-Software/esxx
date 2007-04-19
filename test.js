@@ -15,6 +15,13 @@ function MyApp(e) {
     var ldap = new URI("ldap://blom.org:389/uid=martin,ou=People,dc=blom,dc=org??base?(objectClass=*)");
 
     esxx.debug.println(ldap.load());
+    esxx.debug.println(new URI("build").load());
+    
+    java.lang.Class.forName("org.postgresql.Driver");
+    var db = new URI("jdbc:postgresql:martin");
+    db.user = "martin";
+    db.password = "martin";
+    esxx.debug.println(db.query("select * from test"));
 
     esxx.debug.println("**** END GET HANDLER ****");
 
