@@ -448,6 +448,7 @@ public class ESXX {
 
 	  try {
 	    ESXXParser parser = getCachedESXXParser(workload.getURL());
+	    Scriptable shared = parser.compile(cx, shared_scope);
 
 	    // Use the shared top-level scope, but put global variables in a local scope
 	    ScriptableObject scope = (ScriptableObject) cx.newObject(shared_scope);
@@ -456,6 +457,7 @@ public class ESXX {
 
 	    JSESXX js_esxx = new JSESXX(this, cx, scope, 
 					workload, 
+					shared,
 					parser.getXML(), 
 					parser.getStylesheet());
 
@@ -471,7 +473,8 @@ public class ESXX {
 	      // Execute all <?esxx and <?esxx-import PIs
 
 	      for (ESXXParser.Code c : parser.getCodeList()) {
-		cx.evaluateString(scope, c.code, c.url.toString(), c.line, null);
+		c.code.exec(cx, scope);
+//		cx.evaluateString(scope, c.code, c.url.toString(), c.line, null);
 	      }
 
 	      // Parse SOAP message, if any

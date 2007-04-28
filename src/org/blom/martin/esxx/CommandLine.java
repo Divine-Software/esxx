@@ -54,7 +54,6 @@ public class CommandLine {
 	  outStream  = out_stream;
 	}
 
-
 	public void finished(int rc, Properties headers) {
 	  try {
 	    getErrorWriter().flush();
@@ -104,7 +103,9 @@ public class CommandLine {
 	    ex.printStackTrace();
 	  }
 
+//	  System.err.println("Request took " + (System.currentTimeMillis() - start) + " ms");
 	}
+//	private long start = System.currentTimeMillis();
 
 	static Reader createReader(InputStream is, Properties headers) {
 	  return new InputStreamReader(is);

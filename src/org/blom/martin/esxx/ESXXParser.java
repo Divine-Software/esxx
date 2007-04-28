@@ -5,19 +5,23 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import javax.xml.stream.*;
 import javax.xml.xpath.*;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Script;
+import org.mozilla.javascript.Scriptable;
 import org.w3c.dom.*;
 
 public class ESXXParser {
 
     public static class Code {
-	public Code(URL u, int l, String c) {
+	public Code(URL u, int l, String s) {
 	  url = u;
 	  line = l;
-	  code = c;
+	  source = s;
+	  code = null;
 	}
 
 	public String toString() {
@@ -26,7 +30,8 @@ public class ESXXParser {
 
 	public URL url;
 	public int line;
-	public String code;
+	public String source;
+	public Script code;
     };
 
     public static class SOAPAction {
@@ -155,6 +160,19 @@ public class ESXXParser {
       return errorHandler;
     }
 
+    public synchronized Scriptable compile(Context cx, Scriptable shared_scope) {
+      if (sharedObject != null) {
+	return sharedObject;
+      }
+
+      for (Code c : codeList) {
+	c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
+      }
+
+      sharedObject = cx.newObject(shared_scope);
+
+      return sharedObject;
+    }
 
     private void handleStylesheet(String data)
       throws XMLStreamException {
@@ -277,7 +295,9 @@ public class ESXXParser {
     private URL baseURL;
     private LinkedList<URL> externalURLs = new LinkedList<URL>();
 
-    private boolean gotESXX;
+    private Scriptable sharedObject = null;
+
+    private boolean gotESXX = false;
 
     private Document xml;
     private StringBuilder code = new StringBuilder();

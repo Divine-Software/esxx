@@ -21,7 +21,7 @@ import org.w3c.dom.bootstrap.*;
 
 public class JSESXX {
     public JSESXX(ESXX esxx, Context cx, Scriptable scope, Workload workload,
-		  Document document, URL stylesheet) {
+		  Scriptable shared_object, Document document, URL stylesheet) {
 
       this.esxx    = esxx;
       this.cx      = cx;
@@ -32,16 +32,18 @@ public class JSESXX {
       this.debug = new PrintWriter(workload.getDebugWriter());
       this.error = new PrintWriter(workload.getErrorWriter());
 
+      this.shared = shared_object;
+
       this.mimeHeaders = new MimeHeaders();
 
       handleProperties(workload);
 
       this.document = esxx.domToE4X(document, cx, scope);
 
-      this.headers = cx.newObject(scope, "Object");
+      this.headers = cx.newObject(scope);
       ScriptableObject.putProperty(this.headers, "Status", "200 OK");
 
-      ScriptableObject.putProperty(this.headers, "Cookies", cx.newObject(scope, "Object"));
+      ScriptableObject.putProperty(this.headers, "Cookies", cx.newObject(scope));
 
       this.stylesheet = (stylesheet != null ? stylesheet.toString() : "");
     }
@@ -49,6 +51,8 @@ public class JSESXX {
     public InputStream in;
     public PrintWriter error;
     public PrintWriter debug;
+
+    public Scriptable shared;
 
     public Scriptable env;
     public Scriptable accept;
@@ -67,8 +71,8 @@ public class JSESXX {
       Document accept_doc;
       Document query_doc;
 
-      this.env = cx.newObject(scope, "Object");
-      this.query = cx.newObject(scope, "Object");
+      this.env = cx.newObject(scope);
+      this.query = cx.newObject(scope);
 
       try {
 	DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
