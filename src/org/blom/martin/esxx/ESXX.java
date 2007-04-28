@@ -166,6 +166,7 @@ public class ESXX {
 
 	tr.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION,
 			     omit_xml_declaration ? "yes" : "no");
+	tr.setOutputProperty(OutputKeys.METHOD, "xml");
 
 	DOMSource src = new DOMSource(node);
 	StreamResult  dst = new StreamResult(sw);
