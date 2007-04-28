@@ -432,6 +432,9 @@ public class ESXX {
     }
 
     private void workerThread(Context cx, Scriptable shared_scope) {
+      // Enable all optimizations
+      cx.setOptimizationLevel(9);
+
       // Provide a better mapping for primitive types on this context
       cx.getWrapFactory().setJavaPrimitiveWrap(false);
 
