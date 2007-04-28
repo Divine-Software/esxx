@@ -50,6 +50,8 @@ public class ESXX {
       throws ParserConfigurationException, ClassNotFoundException, InstantiationException, IllegalAccessException {
       settings = p;
 
+      memoryCache = new MemoryCache(this);
+
       // Custom CGI-to-HTTP translations
       cgiToHTTPMap.put("HTTP_SOAPACTION", "SOAPAction");
       cgiToHTTPMap.put("CONTENT_TYPE", "Content-Type");
@@ -379,13 +381,13 @@ public class ESXX {
 
     public InputStream openCachedURL(URL url) 
       throws IOException {
-      return url.openStream();
+      return memoryCache.openCachedURL(url);
     }
 
 
     public ESXXParser getCachedESXXParser(URL url)
       throws XMLStreamException, IOException {
-      return new ESXXParser(this, url);
+      return memoryCache.getCachedESXXParser(url);
     }
 
 
@@ -728,6 +730,7 @@ public class ESXX {
 
     private static final int MAX_WORKLOADS = 16;
 
+    private MemoryCache memoryCache;
     private Properties settings;
     private DocumentBuilderFactory documentBuilderFactory;
     private DOMImplementation domImplementation;
