@@ -5,22 +5,24 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.HttpURLConnection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 import java.util.zip.Inflater;
 import javax.xml.stream.XMLStreamException;
 
 public abstract class CacheBase {
-    public CacheBase(ESXX esxx) {
-      this.esxx = esxx;
+    public CacheBase(ESXX esxx, int max_entries, long max_size, long max_age) {
+      this.esxx  = esxx;
+      maxEntries = max_entries;
+      maxSize    = max_size;
+      maxAge     = max_age;
     }
 
     public abstract InputStream openCachedURL(URL url) 
       throws IOException;
-
-    public abstract ESXXParser getCachedESXXParser(URL url) 
-      throws XMLStreamException, IOException;
 
     protected CachedURL getCachedURL(URL url) {
       CachedURL cached;
@@ -42,63 +44,61 @@ public abstract class CacheBase {
     protected InputStream getStreamIfModified(CachedURL cached) 
       throws IOException {
 
-      synchronized (cached) {
-	URLConnection uc = cached.url.openConnection();
+      URLConnection uc = cached.url.openConnection();
 
-	uc.setIfModifiedSince(cached.lastModified);
+      uc.setIfModifiedSince(cached.lastModified);
 
-	InputStream is;
+      InputStream is;
 
-	if (uc instanceof HttpURLConnection) {
-	  HttpURLConnection huc = (HttpURLConnection) uc;
+      if (uc instanceof HttpURLConnection) {
+	HttpURLConnection huc = (HttpURLConnection) uc;
 
-	  huc.setFollowRedirects(true);
-	  huc.setRequestProperty("Accept-Encoding", "gzip, deflate");
+	huc.setFollowRedirects(true);
+	huc.setRequestProperty("Accept-Encoding", "gzip, deflate");
 
-	  if (cached.eTag != null) {
-	    huc.addRequestProperty("If-None-Match", cached.eTag);
-	  }
+	if (cached.eTag != null) {
+	  huc.addRequestProperty("If-None-Match", cached.eTag);
+	}
 
-	  huc.connect();
+	huc.connect();
 
-	  if (huc.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) {
-	    return null;
-	  }
+	if (huc.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) {
+	  return null;
+	}
 
-	  // It's modified: update protocol-specific meta-info ...
-	  cached.eTag = huc.getHeaderField("ETag");
+	// It's modified: update protocol-specific meta-info ...
+	cached.eTag = huc.getHeaderField("ETag");
 
-	  // ... and get the input stream
-	  String encoding = huc.getContentEncoding();
+	// ... and get the input stream
+	String encoding = huc.getContentEncoding();
 
-	  if (encoding != null && encoding.equalsIgnoreCase("gzip")) {
-	    is = new GZIPInputStream(huc.getInputStream());
-	  }
-	  else if (encoding != null && encoding.equalsIgnoreCase("deflate")) {
-	    is = new InflaterInputStream(huc.getInputStream(), new Inflater(true));
-	  }
-	  else {
-	    is = huc.getInputStream();
-	  }
+	if (encoding != null && encoding.equalsIgnoreCase("gzip")) {
+	  is = new GZIPInputStream(huc.getInputStream());
+	}
+	else if (encoding != null && encoding.equalsIgnoreCase("deflate")) {
+	  is = new InflaterInputStream(huc.getInputStream(), new Inflater(true));
 	}
 	else {
-	  uc.connect();
+	  is = huc.getInputStream();
+	}
+      }
+      else {
+	uc.connect();
 	
-	  if (uc.getLastModified() <= cached.lastModified) {
-	    return null;
-	  }
-
-	  is = uc.getInputStream();
+	if (uc.getLastModified() <= cached.lastModified) {
+	  return null;
 	}
 
-	cached.lastChecked   = System.currentTimeMillis();
-
-	cached.lastModified  = uc.getLastModified();
-	cached.contentType   = uc.getContentType();
-	cached.contentLength = uc.getContentLength();
-      
-	return is;
+	is = uc.getInputStream();
       }
+
+      cached.lastChecked   = System.currentTimeMillis();
+
+      cached.lastModified  = uc.getLastModified();
+      cached.contentType   = uc.getContentType();
+      cached.contentLength = uc.getContentLength();
+      
+      return is;
     }
 
     protected static void copy(InputStream is, OutputStream os) 
@@ -144,8 +144,49 @@ public abstract class CacheBase {
 	public int contentLength;
 	public Object content;
     }
+    
+    private class LRUMap
+      extends LinkedHashMap<String, CachedURL> {
 
-    protected HashMap<String, CachedURL> cachedURLs = new HashMap<String, CachedURL>();
+	public LRUMap() {
+	  super(128, 0.75f, true);
+	}
+
+	private boolean isFull(CachedURL eldest) {
+	  return (size() > maxEntries ||
+		  currentSize > maxSize ||
+		  (eldest.lastChecked != 0 && 
+		   eldest.lastChecked < (System.currentTimeMillis() - maxAge)));
+	}
+
+	protected boolean removeEldestEntry(Map.Entry<String, CachedURL> eldest) {
+	  if (isFull(eldest.getValue())) {
+
+	    Iterator<Map.Entry<String, CachedURL>> i = entrySet().iterator();
+	      
+	    while (i.hasNext()) {
+	      Map.Entry<String, CachedURL> e = i.next();
+
+	      if (!isFull(e.getValue())) {
+		break;
+	      }
+
+	      i.remove();
+	    }
+	  }
+
+	  // Tell implementation not to auto-modify the hash table
+	  return false;
+	}
+    }
+
+    private LRUMap cachedURLs = new LRUMap();
+
+    private int maxEntries;
+    private long maxSize;
+    private long maxAge;
+
+    private long currentSize;
 
     protected ESXX esxx;
 }

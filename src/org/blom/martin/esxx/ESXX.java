@@ -50,7 +50,11 @@ public class ESXX {
       throws ParserConfigurationException, ClassNotFoundException, InstantiationException, IllegalAccessException {
       settings = p;
 
-      memoryCache = new MemoryCache(this);
+      memoryCache = new MemoryCache(
+	this, 
+	Integer.parseInt(settings.getProperty("esxx.cache.max_entries", "1024")),
+	Long.parseLong(settings.getProperty("esxx.cache.max_size", "16")) * 1024 * 1024,
+	Long.parseLong(settings.getProperty("esxx.cache.max_age", "3600")) * 1000);
 
       // Custom CGI-to-HTTP translations
       cgiToHTTPMap.put("HTTP_SOAPACTION", "SOAPAction");
