@@ -21,7 +21,7 @@ import org.w3c.dom.bootstrap.*;
 
 public class JSESXX {
     public JSESXX(ESXX esxx, Context cx, Scriptable scope, Workload workload,
-		  Scriptable shared_object, Document document, URL stylesheet) {
+		  Scriptable session_object, Document document, URL stylesheet) {
 
       this.esxx    = esxx;
       this.cx      = cx;
@@ -32,7 +32,7 @@ public class JSESXX {
       this.debug = new PrintWriter(workload.getDebugWriter());
       this.error = new PrintWriter(workload.getErrorWriter());
 
-      this.shared = shared_object;
+      this.session = session_object;
 
       this.mimeHeaders = new MimeHeaders();
 
@@ -52,7 +52,7 @@ public class JSESXX {
     public PrintWriter error;
     public PrintWriter debug;
 
-    public Scriptable shared;
+    public Scriptable session;
 
     public Scriptable env;
     public Scriptable accept;

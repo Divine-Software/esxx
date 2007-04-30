@@ -338,8 +338,8 @@ public class ESXX {
 	      }
 
 	      public void warning(org.xml.sax.SAXParseException ex) {
-		  err.println("XML parser warning in " + ex.getSystemId() + "#" + 
-			      ex.getLineNumber() + ": " + ex.getMessage());
+		err.println("XML parser warning in " + ex.getSystemId() + "#" + 
+			    ex.getLineNumber() + ": " + ex.getMessage());
 	      }
 	  });
 
@@ -451,16 +451,13 @@ public class ESXX {
 
 	  try {
 	    ESXXParser parser = getCachedESXXParser(workload.getURL());
-	    Scriptable shared = parser.compile(cx, shared_scope);
 
-	    // Use the shared top-level scope, but put global variables in a local scope
-	    ScriptableObject scope = (ScriptableObject) cx.newObject(shared_scope);
-	    scope.setPrototype(shared_scope);
-	    scope.setParentScope(null);
+	    // Compile all <?esxx and <?esxx-import PIs, if not already done
+	    Scriptable scope = parser.compile(cx, shared_scope);
 
 	    JSESXX js_esxx = new JSESXX(this, cx, scope, 
 					workload, 
-					shared,
+					null,
 					parser.getXML(), 
 					parser.getStylesheet());
 
@@ -473,12 +470,8 @@ public class ESXX {
 	    Exception error = null;
 
 	    try {
-	      // Execute all <?esxx and <?esxx-import PIs
-
-	      for (ESXXParser.Code c : parser.getCodeList()) {
-		c.code.exec(cx, scope);
-//		cx.evaluateString(scope, c.code, c.url.toString(), c.line, null);
-	      }
+	      // Execute all <?esxx and <?esxx-import PIs, if not already done
+	      parser.execute(cx);
 
 	      // Parse SOAP message, if any
 	      parseSOAPMessage(js_esxx);
@@ -517,7 +510,7 @@ public class ESXX {
 		  soap_body = js_esxx.soapMessage.getSOAPBody().extractContentAsDocument();
 	
 		  Object args[] = { domToE4X(soap_body, cx, scope),
-				  domToE4X(soap_header, cx, scope) };
+				    domToE4X(soap_header, cx, scope) };
 
 		  result = callJSMethod(action.object, 
 					soap_body.getDocumentElement().getLocalName(),
@@ -699,7 +692,7 @@ public class ESXX {
 
     private Object callJSMethod(String expr, 
 				Object[] args, String identifier, 
-				Context cx, ScriptableObject scope) 
+				Context cx, Scriptable scope) 
       throws ESXXException {
       String object;
       String method;
@@ -720,22 +713,22 @@ public class ESXX {
 
     private Object callJSMethod(String object, String method,
 				Object[] args, String identifier, 
-				Context cx, ScriptableObject scope)
+				Context cx, Scriptable scope)
       throws ESXXException {
-      ScriptableObject o;
+      Scriptable o;
 
       if (object == null) {
 	o = scope;
       }
       else {
-	o = (ScriptableObject) cx.evaluateString(scope, object, identifier, 1, null);
+	o = (Scriptable) cx.evaluateString(scope, object, identifier, 1, null);
 
 	if (o == null || o == ScriptableObject.NOT_FOUND) {
 	  throw new ESXXException(identifier + " '" + object + "." + method + "' not found.");
 	}
       }
 
-      return scope.callMethod(cx, o, method, args);
+      return ((ScriptableObject) scope).callMethod(cx, o, method, args);
     }
 
 

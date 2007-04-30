@@ -161,17 +161,30 @@ public class ESXXParser {
     }
 
     public synchronized Scriptable compile(Context cx, Scriptable shared_scope) {
-      if (sharedObject != null) {
-	return sharedObject;
+      if (applicationScope != null) {
+	return applicationScope;
       }
 
       for (Code c : codeList) {
 	c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
       }
 
-      sharedObject = cx.newObject(shared_scope);
+      // Use the shared top-level scope, but put global variables in the application scope
+      applicationScope = cx.newObject(shared_scope);
+      applicationScope.setPrototype(shared_scope);
+      applicationScope.setParentScope(null);
 
-      return sharedObject;
+      return applicationScope;
+    }
+
+    public synchronized void execute(Context cx) {
+      if (!hasExecuted) {
+	for (Code c : codeList) {
+	  c.code.exec(cx, applicationScope);
+	}
+	
+	hasExecuted = true;
+      }
     }
 
     private void handleStylesheet(String data)
@@ -295,7 +308,8 @@ public class ESXXParser {
     private URL baseURL;
     private LinkedList<URL> externalURLs = new LinkedList<URL>();
 
-    private Scriptable sharedObject = null;
+    private Scriptable applicationScope = null;
+    private boolean hasExecuted = false;
 
     private boolean gotESXX = false;
 
