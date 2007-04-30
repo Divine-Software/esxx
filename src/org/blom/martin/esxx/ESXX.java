@@ -92,8 +92,8 @@ public class ESXX {
       Context cx = Context.enter();
 
       try {
-	final ScriptableObject shared_scope = new ImporterTopLevel(cx, true);
-	ScriptableObject.defineClass(shared_scope, JSURI.class);
+	final ScriptableObject toplevel_scope = new ImporterTopLevel(cx, true);
+	ScriptableObject.defineClass(toplevel_scope, JSURI.class);
 
 	// Create worker threads
 
@@ -112,7 +112,7 @@ public class ESXX {
 		  // Create the JavaScript thread context and invoke workerThread()
 		  Context.call(new ContextAction() {
 			public Object run(Context cx) {
-			  workerThread(cx, shared_scope);
+			  workerThread(cx, toplevel_scope);
 			  return null;
 			}
 		    });
@@ -431,7 +431,7 @@ public class ESXX {
       }
     }
 
-    private void workerThread(Context cx, Scriptable shared_scope) {
+    private void workerThread(Context cx, Scriptable toplevel_scope) {
       // Enable all optimizations
       cx.setOptimizationLevel(9);
 
@@ -453,23 +453,23 @@ public class ESXX {
 	    ESXXParser parser = getCachedESXXParser(workload.getURL());
 
 	    // Compile all <?esxx and <?esxx-import PIs, if not already done
-	    Scriptable global = parser.compile(cx, shared_scope);
+	    Scriptable shared_scope = parser.compile(cx, toplevel_scope);
 
 	    // Create a per-invocation scope where we'll put the "esxx" object
- 	    Scriptable scope  = cx.newObject(global);
- 	    scope.setPrototype(global);
+ 	    Scriptable scope  = cx.newObject(shared_scope);
+ 	    scope.setPrototype(shared_scope);
  	    scope.setParentScope(null);
 
 	    JSESXX js_esxx = new JSESXX(this, cx, scope,
 					workload,
-					global,
+					shared_scope,
 					parser.getXML(),
 					parser.getStylesheet());
 
 	    cx.putThreadLocal(JSESXX.class, js_esxx);
 
 	    // Execute all <?esxx and <?esxx-import PIs, if not already done
-	    // NOTE! The code will execute in the global application scope!
+	    // NOTE! The code will execute in the shared application scope!
 	    parser.execute(cx, js_esxx);
 
 	    Object result = null;
