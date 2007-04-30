@@ -46,12 +46,12 @@ public class ESXX {
      *  @throws IllegalAccessException On DOM implementation errors
      */
 
-    public ESXX(Properties p) 
+    public ESXX(Properties p)
       throws ParserConfigurationException, ClassNotFoundException, InstantiationException, IllegalAccessException {
       settings = p;
 
       memoryCache = new MemoryCache(
-	this, 
+	this,
 	Integer.parseInt(settings.getProperty("esxx.cache.max_entries", "1024")),
 	Long.parseLong(settings.getProperty("esxx.cache.max_size", "16")) * 1024 * 1024,
 	Long.parseLong(settings.getProperty("esxx.cache.max_age", "3600")) * 1000);
@@ -92,7 +92,7 @@ public class ESXX {
       Context cx = Context.enter();
 
       try {
-	final ScriptableObject shared_scope = new ImporterTopLevel(cx, false);
+	final ScriptableObject shared_scope = new ImporterTopLevel(cx, true);
 	ScriptableObject.defineClass(shared_scope, JSURI.class);
 
 	// Create worker threads
@@ -101,12 +101,12 @@ public class ESXX {
 	workloadQueue = new LinkedBlockingQueue<Workload>(MAX_WORKLOADS);
 
 	int threads = Integer.parseInt(
-	  settings.getProperty("esxx.worker_threads", 
+	  settings.getProperty("esxx.worker_threads",
 			       "" + Runtime.getRuntime().availableProcessors() * 2));
 
 	for (int i = 0; i < threads; ++i) {
 	  Thread t = new Thread(
-	    workerThreads, 
+	    workerThreads,
 	    new Runnable() {
 		public void run() {
 		  // Create the JavaScript thread context and invoke workerThread()
@@ -133,7 +133,7 @@ public class ESXX {
 
 
     /** Adds a Workload to the work queue.
-     * 
+     *
      *  Once the workload has been executed, Workload.finished will be
      *  called with an ignorable returncode and a set of HTTP headers.
      *
@@ -213,7 +213,7 @@ public class ESXX {
      *
      *  @return A W3C DOM Node.
      */
-    
+
     public org.w3c.dom.Node e4xToDOM(Scriptable node) {
       try {
 	return org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(node);
@@ -317,9 +317,9 @@ public class ESXX {
      *  @throws IOException On I/O errors.
      */
 
-    public Document parseXML(InputStream is, final URL is_url, 
+    public Document parseXML(InputStream is, final URL is_url,
 			     final Collection<URL> external_urls,
-			     final PrintWriter err) 
+			     final PrintWriter err)
       throws org.xml.sax.SAXException, IOException {
       try {
 	DocumentBuilder db = documentBuilderFactory.newDocumentBuilder();
@@ -327,25 +327,25 @@ public class ESXX {
 	db.setErrorHandler(new org.xml.sax.ErrorHandler() {
 	      public void error(org.xml.sax.SAXParseException ex) {
 		if (err != null) {
-		  err.println("XML parser error in " + ex.getSystemId() + "#" + 
+		  err.println("XML parser error in " + ex.getSystemId() + "#" +
 			      ex.getLineNumber() + ": " + ex.getMessage());
 		}
 	      }
-		
+
 	      public void fatalError(org.xml.sax.SAXParseException ex)
 		throws org.xml.sax.SAXParseException {
 		throw ex;
 	      }
 
 	      public void warning(org.xml.sax.SAXParseException ex) {
-		err.println("XML parser warning in " + ex.getSystemId() + "#" + 
+		err.println("XML parser warning in " + ex.getSystemId() + "#" +
 			    ex.getLineNumber() + ": " + ex.getMessage());
 	      }
 	  });
 
 	db.setEntityResolver(new org.xml.sax.EntityResolver() {
-	      public org.xml.sax.InputSource resolveEntity (String publicID, 
-							    String systemID) 
+	      public org.xml.sax.InputSource resolveEntity (String publicID,
+							    String systemID)
 		throws org.xml.sax.SAXException {
 
 		try {
@@ -354,7 +354,7 @@ public class ESXX {
 
 		    org.xml.sax.InputSource src = new org.xml.sax.InputSource(openCachedURL(url));
 		    src.setSystemId(url.toString());
-		    
+
 		    if (external_urls != null) {
 		      external_urls.add(url);
 		    }
@@ -366,7 +366,7 @@ public class ESXX {
 		  }
 		}
 		catch (MalformedURLException ex) {
-		  throw new org.xml.sax.SAXException("Malformed URL for system ID " + 
+		  throw new org.xml.sax.SAXException("Malformed URL for system ID " +
 						     systemID + ": " + ex.getMessage());
 		}
 		catch (IOException ex) {
@@ -384,7 +384,7 @@ public class ESXX {
     }
 
 
-    public InputStream openCachedURL(URL url) 
+    public InputStream openCachedURL(URL url)
       throws IOException {
       return memoryCache.openCachedURL(url);
     }
@@ -409,9 +409,9 @@ public class ESXX {
     }
 
 
-    private void parseSOAPMessage(JSESXX js_esxx) 
+    private void parseSOAPMessage(JSESXX js_esxx)
       throws ESXXException {
-      
+
       // Consume SOAP message, if any
       if (js_esxx.soapAction != null) {
 	try {
@@ -453,32 +453,38 @@ public class ESXX {
 	    ESXXParser parser = getCachedESXXParser(workload.getURL());
 
 	    // Compile all <?esxx and <?esxx-import PIs, if not already done
-	    Scriptable scope = parser.compile(cx, shared_scope);
+	    Scriptable global = parser.compile(cx, shared_scope);
 
-	    JSESXX js_esxx = new JSESXX(this, cx, scope, 
-					workload, 
-					null,
-					parser.getXML(), 
+	    // Create a per-invocation scope where we'll put the "esxx" object
+ 	    Scriptable scope  = cx.newObject(global);
+ 	    scope.setPrototype(global);
+ 	    scope.setParentScope(null);
+
+	    JSESXX js_esxx = new JSESXX(this, cx, scope,
+					workload,
+					global,
+					parser.getXML(),
 					parser.getStylesheet());
 
-	    // Add the top-level "esxx" variable
-	    ScriptableObject.putProperty(scope, "esxx", Context.javaToJS(js_esxx, scope));
-
 	    cx.putThreadLocal(JSESXX.class, js_esxx);
-	    
+
+	    // Execute all <?esxx and <?esxx-import PIs, if not already done
+	    // NOTE! The code will execute in the global application scope!
+	    parser.execute(cx, js_esxx);
+
 	    Object result = null;
 	    Exception error = null;
 
-	    try {
-	      // Execute all <?esxx and <?esxx-import PIs, if not already done
-	      parser.execute(cx);
+	    // Add the instance-level "esxx" variable
+	    ScriptableObject.putProperty(scope, "esxx", Context.javaToJS(js_esxx, scope));
 
+	    try {
 	      // Parse SOAP message, if any
 	      parseSOAPMessage(js_esxx);
 
 	      // Execute the SOAP or HTTP handler (if available)
 	      ESXXParser.SOAPAction action = null;
-	      
+
 	      if (js_esxx.soapMessage != null) {
 		action = parser.getSOAPAction(js_esxx.soapAction);
 
@@ -500,7 +506,7 @@ public class ESXX {
 		  org.w3c.dom.Node     soap_header = null;
 		  org.w3c.dom.Document soap_body   = null;
 
-		  try { 
+		  try {
 		    soap_header = js_esxx.soapMessage.getSOAPHeader();
 		  }
 		  catch (SOAPException ex) {
@@ -508,11 +514,11 @@ public class ESXX {
 		  }
 
 		  soap_body = js_esxx.soapMessage.getSOAPBody().extractContentAsDocument();
-	
+
 		  Object args[] = { domToE4X(soap_body, cx, scope),
 				    domToE4X(soap_header, cx, scope) };
 
-		  result = callJSMethod(action.object, 
+		  result = callJSMethod(action.object,
 					soap_body.getDocumentElement().getLocalName(),
 					args, "SOAP method", cx, scope);
 		}
@@ -529,7 +535,7 @@ public class ESXX {
 		  throw new ESXXException("'" + request_method + "' handler not defined.");
 		}
 
-		result = callJSMethod(handler, 
+		result = callJSMethod(handler,
 				      null, "'" + request_method + "' handler", cx, scope);
 	      }
 	      else {
@@ -557,10 +563,10 @@ public class ESXX {
 		  result = callJSMethod(handler, args, "Error handler", cx, scope);
 		}
 		catch (Exception ex) {
-		  throw new ESXXException("Failed to handle error '" + error.toString() + 
+		  throw new ESXXException("Failed to handle error '" + error.toString() +
 					  "':\n" +
-					  "Error handler '" + handler + 
-					  "' failed with message '" + 
+					  "Error handler '" + handler +
+					  "' failed with message '" +
 					  ex.getMessage() + "'");
 		}
 	      }
@@ -574,7 +580,7 @@ public class ESXX {
 	    if (result == null || result instanceof org.mozilla.javascript.Undefined) {
 	      throw new ESXXException("No result from '" + workload.getURL() + "'");
 	    }
-	    
+
 	    Source src;
 
 	    try {
@@ -583,13 +589,13 @@ public class ESXX {
 	    catch (Exception ex) {
 	      src = new StreamSource(new StringReader(result.toString()));
 	    }
-	    
+
 
 	    Transformer tr;
 
 	    if (js_esxx.stylesheet != null && !js_esxx.stylesheet.equals("")) {
 	      URL stylesheet = new URL(workload.getURL(), js_esxx.stylesheet);
-	      
+
 	      try {
 		tr = getCachedStylesheet(stylesheet);
 	      }
@@ -602,10 +608,10 @@ public class ESXX {
 	      tr = transformerFactory.newTransformer();
 
 	      // Set media-type, if specified
-	      Object content_type = ScriptableObject.getProperty(js_esxx.headers, 
+	      Object content_type = ScriptableObject.getProperty(js_esxx.headers,
 								 "Content-Type");
 
-	      if (content_type != null && 
+	      if (content_type != null &&
 		  !(content_type instanceof org.mozilla.javascript.Undefined)) {
 		tr.setOutputProperty("media-type", content_type.toString());
 	      }
@@ -636,7 +642,7 @@ public class ESXX {
 		String value = ScriptableObject.getProperty(js_esxx.headers, id).toString();
 
 		String[] kv = value.split(":", 2);
-		
+
 		if (kv.length == 2) {
 		  p.setProperty(kv[0], kv[1]);
 		}
@@ -690,9 +696,9 @@ public class ESXX {
       }
     }
 
-    private Object callJSMethod(String expr, 
-				Object[] args, String identifier, 
-				Context cx, Scriptable scope) 
+    private Object callJSMethod(String expr,
+				Object[] args, String identifier,
+				Context cx, Scriptable scope)
       throws ESXXException {
       String object;
       String method;
@@ -712,7 +718,7 @@ public class ESXX {
     }
 
     private Object callJSMethod(String object, String method,
-				Object[] args, String identifier, 
+				Object[] args, String identifier,
 				Context cx, Scriptable scope)
       throws ESXXException {
       Scriptable o;
@@ -731,6 +737,22 @@ public class ESXX {
       return ((ScriptableObject) scope).callMethod(cx, o, method, args);
     }
 
+
+
+    private static class MyFactory extends ContextFactory {
+	protected boolean hasFeature(Context cx, int featureIndex) {
+	  if (featureIndex == Context.FEATURE_DYNAMIC_SCOPE) {
+	    return true;
+	  }
+
+	  return super.hasFeature(cx, featureIndex);
+	}
+    }
+
+    static {
+      // Enable dynamic scopes
+      ContextFactory.initGlobal(new MyFactory());
+    }
 
     private static final int MAX_WORKLOADS = 16;
 

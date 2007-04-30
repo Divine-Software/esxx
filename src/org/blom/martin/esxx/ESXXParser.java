@@ -12,6 +12,7 @@ import javax.xml.xpath.*;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 import org.w3c.dom.*;
 
 public class ESXXParser {
@@ -177,12 +178,19 @@ public class ESXXParser {
       return applicationScope;
     }
 
-    public synchronized void execute(Context cx) {
+    public synchronized void execute(Context cx, org.blom.martin.esxx.js.JSESXX js_esxx) {
       if (!hasExecuted) {
+	// Temporary add the top-level "esxx" variable to the application scope
+	ScriptableObject.putProperty(applicationScope, "esxx", 
+				     Context.javaToJS(js_esxx, applicationScope));
+
 	for (Code c : codeList) {
 	  c.code.exec(cx, applicationScope);
 	}
 	
+	// Clean up the application scope
+	ScriptableObject.deleteProperty(applicationScope, "esxx"); 
+
 	hasExecuted = true;
       }
     }
