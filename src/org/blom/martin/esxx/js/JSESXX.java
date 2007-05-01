@@ -48,6 +48,10 @@ public class JSESXX {
       this.stylesheet = (stylesheet != null ? stylesheet.toString() : "");
     }
 
+    public Synchronizer sync(Function f) {
+      return new Synchronizer(f);
+    }
+
     public InputStream in;
     public PrintWriter error;
     public PrintWriter debug;
