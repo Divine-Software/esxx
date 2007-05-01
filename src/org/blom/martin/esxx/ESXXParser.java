@@ -170,26 +170,20 @@ public class ESXXParser {
 	c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
       }
 
-      // Use the shared top-level scope, but put global variables in the application scope
-      applicationScope = cx.newObject(shared_scope);
+      // Use the shared top-level scope, but put global variables in
+      // the application's global scope
+      applicationScope = cx.newObject(shared_scope, "Global", new Object[0]);
       applicationScope.setPrototype(shared_scope);
       applicationScope.setParentScope(null);
 
       return applicationScope;
     }
 
-    public synchronized void execute(Context cx, org.blom.martin.esxx.js.JSESXX js_esxx) {
+    public synchronized void execute(Context cx, Scriptable scope) {
       if (!hasExecuted) {
-	// Temporary add the top-level "esxx" variable to the application scope
-	ScriptableObject.putProperty(applicationScope, "esxx", 
-				     Context.javaToJS(js_esxx, applicationScope));
-
 	for (Code c : codeList) {
-	  c.code.exec(cx, applicationScope);
+	  c.code.exec(cx, scope);
 	}
-	
-	// Clean up the application scope
-	ScriptableObject.deleteProperty(applicationScope, "esxx"); 
 
 	hasExecuted = true;
       }

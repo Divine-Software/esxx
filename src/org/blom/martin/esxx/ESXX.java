@@ -1,7 +1,7 @@
 
 package org.blom.martin.esxx;
 
-import org.blom.martin.esxx.js.JSESXX;
+import org.blom.martin.esxx.js.*;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -93,6 +93,7 @@ public class ESXX {
 
       try {
 	final ScriptableObject toplevel_scope = new ImporterTopLevel(cx, true);
+	ScriptableObject.defineClass(toplevel_scope, JSGlobal.class);
 	ScriptableObject.defineClass(toplevel_scope, JSURI.class);
 
 	// Create worker threads
@@ -452,31 +453,25 @@ public class ESXX {
 	  try {
 	    ESXXParser parser = getCachedESXXParser(workload.getURL());
 
-	    // Compile all <?esxx and <?esxx-import PIs, if not already done
-	    Scriptable shared_scope = parser.compile(cx, toplevel_scope);
+	    // Compile all <?esxx and <?esxx-import PIs, if not already done.
+	    // compile() returns the application's global scope
+	    Scriptable scope = parser.compile(cx, toplevel_scope);
 
-	    // Create a per-invocation scope where we'll put the "esxx" object
- 	    Scriptable scope  = cx.newObject(shared_scope);
- 	    scope.setPrototype(shared_scope);
- 	    scope.setParentScope(null);
-
+	    // Make the JSESXX object available as the instance-level
+	    // "esxx" variable (via magic in JSGlobal).
 	    JSESXX js_esxx = new JSESXX(this, cx, scope,
 					workload,
-					shared_scope,
+					null,
 					parser.getXML(),
 					parser.getStylesheet());
 
 	    cx.putThreadLocal(JSESXX.class, js_esxx);
 
 	    // Execute all <?esxx and <?esxx-import PIs, if not already done
-	    // NOTE! The code will execute in the shared application scope!
-	    parser.execute(cx, js_esxx);
+	    parser.execute(cx, scope);
 
 	    Object result = null;
 	    Exception error = null;
-
-	    // Add the instance-level "esxx" variable
-	    ScriptableObject.putProperty(scope, "esxx", Context.javaToJS(js_esxx, scope));
 
 	    try {
 	      // Parse SOAP message, if any
@@ -737,22 +732,20 @@ public class ESXX {
       return ((ScriptableObject) scope).callMethod(cx, o, method, args);
     }
 
-
-
-    private static class MyFactory extends ContextFactory {
-	protected boolean hasFeature(Context cx, int featureIndex) {
-	  if (featureIndex == Context.FEATURE_DYNAMIC_SCOPE) {
-	    return true;
-	  }
-
-	  return super.hasFeature(cx, featureIndex);
-	}
-    }
-
-    static {
-      // Enable dynamic scopes
-      ContextFactory.initGlobal(new MyFactory());
-    }
+//     private static class MyFactory extends ContextFactory {
+// 	protected boolean hasFeature(Context cx, int featureIndex) {
+// 	  if (featureIndex == Context.FEATURE_DYNAMIC_SCOPE) {
+// 	    return true;
+// 	  }
+//
+// 	  return super.hasFeature(cx, featureIndex);
+// 	}
+//     }
+//
+//     static {
+//       // Enable dynamic scopes
+//       ContextFactory.initGlobal(new MyFactory());
+//     }
 
     private static final int MAX_WORKLOADS = 16;
 
