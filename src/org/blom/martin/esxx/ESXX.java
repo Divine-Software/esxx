@@ -92,10 +92,6 @@ public class ESXX {
       Context cx = Context.enter();
 
       try {
-	final ScriptableObject toplevel_scope = new ImporterTopLevel(cx, true);
-	ScriptableObject.defineClass(toplevel_scope, JSGlobal.class);
-	ScriptableObject.defineClass(toplevel_scope, JSURI.class);
-
 	// Create worker threads
 
 	workerThreads = new ThreadGroup("ESXX worker threads");
@@ -113,7 +109,7 @@ public class ESXX {
 		  // Create the JavaScript thread context and invoke workerThread()
 		  Context.call(new ContextAction() {
 			public Object run(Context cx) {
-			  workerThread(cx, toplevel_scope);
+			  workerThread(cx);
 			  return null;
 			}
 		    });
@@ -432,7 +428,7 @@ public class ESXX {
       }
     }
 
-    private void workerThread(Context cx, Scriptable toplevel_scope) {
+    private void workerThread(Context cx) {
       // Enable all optimizations
       cx.setOptimizationLevel(9);
 
@@ -455,7 +451,7 @@ public class ESXX {
 
 	    // Compile all <?esxx and <?esxx-import PIs, if not already done.
 	    // compile() returns the application's global scope
-	    Scriptable scope = parser.compile(cx, toplevel_scope);
+	    Scriptable scope = parser.compile(cx);
 
 	    // Make the JSESXX object available as the instance-level
 	    // "esxx" variable (via magic in JSGlobal).

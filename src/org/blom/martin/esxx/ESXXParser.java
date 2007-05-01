@@ -9,7 +9,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import javax.xml.stream.*;
 import javax.xml.xpath.*;
+import org.blom.martin.esxx.js.JSGlobal;
+import org.blom.martin.esxx.js.JSURI;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ImporterTopLevel;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -161,19 +164,26 @@ public class ESXXParser {
       return errorHandler;
     }
 
-    public synchronized Scriptable compile(Context cx, Scriptable shared_scope) {
+    public synchronized Scriptable compile(Context cx)
+      throws IllegalAccessException, InstantiationException, 
+      java.lang.reflect.InvocationTargetException {
       if (applicationScope != null) {
 	return applicationScope;
       }
+
+      // Create per-application top-level and global scopes
+      ScriptableObject toplevel_scope = new ImporterTopLevel(cx, false);
+      ScriptableObject.defineClass(toplevel_scope, JSGlobal.class);
+      ScriptableObject.defineClass(toplevel_scope, JSURI.class);
 
       for (Code c : codeList) {
 	c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
       }
 
-      // Use the shared top-level scope, but put global variables in
-      // the application's global scope
-      applicationScope = cx.newObject(shared_scope, "Global", new Object[0]);
-      applicationScope.setPrototype(shared_scope);
+      // Use the top-level scope, but put global variables in the
+      // Global scope so we can override the "esxx" member.
+      applicationScope = cx.newObject(toplevel_scope, "Global", new Object[0]);
+      applicationScope.setPrototype(toplevel_scope);
       applicationScope.setParentScope(null);
 
       return applicationScope;
