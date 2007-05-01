@@ -1,12 +1,13 @@
 
-package org.blom.martin.esxx;
+package org.blom.martin.esxx.js;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
-import org.blom.martin.esxx.js.JSESXX;
+import org.blom.martin.esxx.ESXX;
+import org.blom.martin.esxx.Workload;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

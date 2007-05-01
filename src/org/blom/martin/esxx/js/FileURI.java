@@ -1,9 +1,10 @@
 
-package org.blom.martin.esxx;
+package org.blom.martin.esxx.js;
 
 import java.io.File;
 import java.net.URI;
 import java.util.HashMap;
+import org.blom.martin.esxx.ESXX;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

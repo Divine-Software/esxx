@@ -1,10 +1,11 @@
 
-package org.blom.martin.esxx;
+package org.blom.martin.esxx.js;
 
 import java.sql.*;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Properties;
+import org.blom.martin.esxx.ESXX;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

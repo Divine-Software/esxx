@@ -1,5 +1,5 @@
 
-package org.blom.martin.esxx;
+package org.blom.martin.esxx.js;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -7,6 +7,7 @@ import java.util.Hashtable;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.*;
+import org.blom.martin.esxx.ESXX;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
