@@ -172,19 +172,12 @@ public class ESXXParser {
       }
 
       // Create per-application top-level and global scopes
-      ScriptableObject toplevel_scope = new ImporterTopLevel(cx, false);
-      ScriptableObject.defineClass(toplevel_scope, JSGlobal.class);
-      ScriptableObject.defineClass(toplevel_scope, JSURI.class);
+      applicationScope = new JSGlobal(cx);
+      ScriptableObject.defineClass(applicationScope, JSURI.class);
 
       for (Code c : codeList) {
 	c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
       }
-
-      // Use the top-level scope, but put global variables in the
-      // Global scope so we can override the "esxx" member.
-      applicationScope = cx.newObject(toplevel_scope, "Global", new Object[0]);
-      applicationScope.setPrototype(toplevel_scope);
-      applicationScope.setParentScope(null);
 
       return applicationScope;
     }

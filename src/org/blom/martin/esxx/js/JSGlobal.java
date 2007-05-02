@@ -4,13 +4,10 @@ package org.blom.martin.esxx.js;
 import org.mozilla.javascript.*;
 
 public class JSGlobal 
-  extends ScriptableObject {
-    public JSGlobal() {
-      super();
-    }
+  extends ImporterTopLevel {
 
-    public String getClassName() {
-      return "Global";
+    public JSGlobal(Context cx) {
+      super(cx, false);
     }
 
     public Object get(String name, Scriptable start) {
