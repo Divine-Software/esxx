@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+                  "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY esxx "ESXX">
+]>
+
+<article>
+  <title>Introducing &esxx;</title>
+<!--  <subtitle>The friendly Web/XML Application Server</subtitle>-->
+  <articleinfo>
+    <author>
+      <firstname>Martin</firstname>
+      <surname>Blom</surname>
+    </author>
+    <abstract>
+      <para>&esxx; is a free, easy-to-install, easy-to-use, no-nonsense
+ECMAscript application server, incorporating familar technologies such
+as XML, XSLT, SQL and LDAP.</para>
+    </abstract>
+
+    <keywordset>
+      <keyword>ECMAscript</keyword>
+      <keyword>JavaScript</keyword>
+      <keyword>Web/XML Application Server</keyword>
+    </keywordset>
+
+    
+  </articleinfo>
+  
+  <section>
+    <title>Introduction</title>
+    
+    <para>In the late 90's, I was involved in the development of a one
+of the first Web/XML application servers. During that time, we realized
+the benefits of using data-driven programming for server-based web
+applications. In this context, data-driven programming means that the
+data that is to be returned as response to a request is generated and
+then gradually refined until it reaches the user, most often in the form
+of an (X)HTML page, using plain XML as intermediate format.</para>
+
+    <para>By focusing solely on <emphasis>what</emphasis> to present to
+the user in the logic stage and not <emphasis>how</emphasis>, the
+programmer can focus on what he or she is good at, and leave
+presentation and graphical design to those that knows this stuff.</para>
+
+    <para>Six years later<footnote> <para>(during which I was mainly
+working as a hardware and low-level software engineer and not really
+<quote>in touch</quote> with what was going on on the web)</para>
+</footnote>, I find that people are <emphasis>still</emphasis> mixing
+HTML and server-side code on a regular basis.</para>
+
+    <para></para>
+  </section>
+</article>
+
+
