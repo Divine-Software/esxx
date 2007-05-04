@@ -198,9 +198,16 @@ public class ESXX {
 	return null;
       }
 
-//      String cmd = "<>" + serializeNode(node, true) + "</>;";
+      // Please, somebody kill me!
+
       String cmd = serializeNode(node, true);
-      return (Scriptable) cx.evaluateString(scope, cmd, "<domToE4X>", 0, null);
+
+      try {
+	return cx.newObject(scope, "XML", new String[] { cmd });
+      }
+      catch (Exception ex) {
+	return (Scriptable) cx.evaluateString(scope, cmd, "<domToE4X>", 0, null);
+      }
     }
 
 
