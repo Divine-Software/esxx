@@ -8,6 +8,7 @@ import java.net.URI;
 import java.util.HashMap;
 import org.blom.martin.esxx.ESXX;
 import org.blom.martin.esxx.Workload;
+import org.htmlcleaner.HtmlCleaner;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -130,6 +131,24 @@ public class JSURI
 	Document result = esxx.parseXML(esxx.openCachedURL(uri.toURL()), uri.toURL(), null, 
 					js_esxx.debug);
 	return esxx.domToE4X(result, cx, this);
+      }
+      else if (type.equals("text/html")) {
+	String      cs = params.get("charset");
+	HtmlCleaner hc;
+
+	if (cs != null) {
+	  hc = new HtmlCleaner(esxx.openCachedURL(uri.toURL()), cs);
+	}
+	else {
+	  hc = new HtmlCleaner(esxx.openCachedURL(uri.toURL()));
+	}
+
+	hc.setHyphenReplacementInComment("\u2012\u2012");
+	hc.setUseCdataForScriptAndStyle(false);
+	hc.clean();
+	
+	System.out.println(esxx.serializeNode(hc.createDOM(), true));
+	return esxx.domToE4X(hc.createDOM(), cx, this);
       }
       else if (type.equals("text/plain")) {
 	// Load URI as plain text

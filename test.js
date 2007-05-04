@@ -12,16 +12,19 @@ function MyApp(e) {
     esxx.headers.Status = "201 OK";
     esxx.debug.println("**** START GET HANDLER ****")
 
-    var ldap = new URI("ldap://blom.org:389/uid=martin,ou=People,dc=blom,dc=org??base?(objectClass=*)");
+//     var ldap = new URI("ldap://blom.org:389/uid=martin,ou=People,dc=blom,dc=org??base?(objectClass=*)");
 
-    esxx.debug.println(ldap.load());
-    esxx.debug.println(new URI("build").load());
+//     esxx.debug.println(ldap.load());
+//     esxx.debug.println(new URI("build").load());
     
-    java.lang.Class.forName("org.postgresql.Driver");
-    var db = new URI("jdbc:postgresql:martin");
-    db.user = "martin";
-    db.password = "martin";
-    esxx.debug.println(db.query("select * from test"));
+//     java.lang.Class.forName("org.postgresql.Driver");
+//     var db = new URI("jdbc:postgresql:martin");
+//     db.user = "martin";
+//     db.password = "martin";
+//     esxx.debug.println(db.query("select * from test"));
+
+    var url = new URI("cp.xml");
+    esxx.debug.println(url.load());
 
     esxx.debug.println("**** END GET HANDLER ****");
 
