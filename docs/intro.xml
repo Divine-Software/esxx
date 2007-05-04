@@ -44,10 +44,8 @@ the user in the logic stage and not <emphasis>how</emphasis>, the
 programmer can focus on what he or she is good at, and leave
 presentation and graphical design to those that knows this stuff.</para>
 
-    <para>Six years later<footnote> <para>(during which I was mainly
-working as a hardware and low-level software engineer and not really
-<quote>in touch</quote> with what was going on on the web)</para>
-</footnote>, I find that people are <emphasis>still</emphasis> mixing
+    <para>Six years later, during which I was not involved in anything
+web related, I find that people are <emphasis>still</emphasis> mixing
 HTML and server-side code on a regular basis.</para>
 
     <para></para>
