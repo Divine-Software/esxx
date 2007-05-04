@@ -83,7 +83,7 @@ public class CommandLine {
 	    
 	    if (dstr.length() != 0) {
 	      out.println("<!-- Start ESXX Debug Log");
-	      out.print(dstr.replaceAll("-->", "--\u00bb"));
+	      out.print(dstr.replaceAll("--", "\u2012\u2012"));
 	      out.println("End ESXX Debug Log -->");
 	    }
 
