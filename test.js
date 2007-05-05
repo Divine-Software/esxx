@@ -23,8 +23,8 @@ function MyApp(e) {
 //     db.password = "martin";
 //     esxx.debug.println(db.query("select * from test"));
 
-    var url = new URI("cp.xml");
-    esxx.debug.println(url.load());
+    var uri = new URI("http://martin.blom.org/");
+    esxx.debug.println(uri.load());
 
     esxx.debug.println("**** END GET HANDLER ****");
 

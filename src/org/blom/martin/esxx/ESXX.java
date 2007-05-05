@@ -388,9 +388,14 @@ public class ESXX {
     }
 
 
+    public InputStream openCachedURL(URL url, String[] content_type)
+      throws IOException {
+      return memoryCache.openCachedURL(url, content_type);
+    }
+
     public InputStream openCachedURL(URL url)
       throws IOException {
-      return memoryCache.openCachedURL(url);
+      return memoryCache.openCachedURL(url, null);
     }
 
 

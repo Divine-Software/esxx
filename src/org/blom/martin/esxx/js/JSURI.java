@@ -2,6 +2,7 @@
 package org.blom.martin.esxx.js;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.net.URI;
@@ -120,16 +121,25 @@ public class JSURI
     protected Object load(Context cx, Scriptable thisObj, 
 			String type, HashMap<String,String> params)
       throws Exception {
+      try{
+      String[]    ct = { null };
+      InputStream is = esxx.openCachedURL(uri.toURL(), ct);
+      
       if (type == null) {
-	type = "text/xml";
+	if (ct[0] != null) {
+	  params.clear();
+	  type = parseMIMEType(ct[0], params);
+	}
+	else {
+	  type = "text/xml";
+	}
       }
 
       if (type.equals("text/xml")) {
 	// Load URI as XML
 	JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
 
-	Document result = esxx.parseXML(esxx.openCachedURL(uri.toURL()), uri.toURL(), null, 
-					js_esxx.debug);
+	Document result = esxx.parseXML(is, uri.toURL(), null, js_esxx.debug);
 	return esxx.domToE4X(result, cx, this);
       }
       else if (type.equals("text/html")) {
@@ -137,30 +147,33 @@ public class JSURI
 	HtmlCleaner hc;
 
 	if (cs != null) {
-	  hc = new HtmlCleaner(esxx.openCachedURL(uri.toURL()), cs);
+	  hc = new HtmlCleaner(is, cs);
 	}
 	else {
-	  hc = new HtmlCleaner(esxx.openCachedURL(uri.toURL()));
+	  hc = new HtmlCleaner(is);
 	}
 
 	hc.setHyphenReplacementInComment("\u2012\u2012");
 	hc.setUseCdataForScriptAndStyle(false);
 	hc.clean();
 	
-	System.out.println(esxx.serializeNode(hc.createDOM(), true));
 	return esxx.domToE4X(hc.createDOM(), cx, this);
       }
       else if (type.equals("text/plain")) {
 	// Load URI as plain text
-	return loadString(uri, params);
+	return loadString(is, params);
       }
       else {
 	throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
 					 "' does can't load '" + type + "'."); 
       }
+      }catch (Exception ex) {
+	ex.printStackTrace();
+	throw ex;
+      }
     }
 
-    private String loadString(URI uri, HashMap<String,String> params)
+    private String loadString(InputStream is, HashMap<String,String> params)
       throws IOException {
       String        cs = params.get("charset");
       StringBuilder sb = new StringBuilder();
@@ -170,9 +183,7 @@ public class JSURI
 	cs = "UTF-8";
       }
 
-      BufferedReader br = new BufferedReader(new InputStreamReader(
-					       esxx.openCachedURL(uri.toURL()),
-					       cs));
+      BufferedReader br = new BufferedReader(new InputStreamReader(is, cs));
 
       while ((s = br.readLine()) != null) {
 	sb.append(s);

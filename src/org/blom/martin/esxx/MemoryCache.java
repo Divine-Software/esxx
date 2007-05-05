@@ -14,12 +14,16 @@ public class MemoryCache
 //      System.err.println("Created memory cache");
     }
 
-    public InputStream openCachedURL(URL url) 
+    public InputStream openCachedURL(URL url, String[] content_type) 
       throws IOException {
       CacheBase.CachedURL cached = getCachedURL(url);
 
       synchronized (cached) {
 	updateCachedURL(cached);
+
+	if (content_type != null) {
+	  content_type[0] = cached.contentType;
+	}
 
 	return new ByteArrayInputStream((byte[]) cached.content);
       }

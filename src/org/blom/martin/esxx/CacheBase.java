@@ -21,7 +21,7 @@ public abstract class CacheBase {
       maxAge     = max_age;
     }
 
-    public abstract InputStream openCachedURL(URL url) 
+    public abstract InputStream openCachedURL(URL url, String[] content_type) 
       throws IOException;
 
     protected CachedURL getCachedURL(URL url) {
@@ -55,6 +55,7 @@ public abstract class CacheBase {
 
 	huc.setFollowRedirects(true);
 	huc.setRequestProperty("Accept-Encoding", "gzip, deflate");
+	huc.setRequestProperty("Accept", "text/xml,text/html;q=0.9,text/plain;q=0.8,*/*;q=0.1");
 
 	if (cached.eTag != null) {
 	  huc.addRequestProperty("If-None-Match", cached.eTag);
