@@ -44,7 +44,8 @@ function MyApp(e) {
     url += "&Body=" + encodeURIComponent("Default Body");
 
     var mailto = new URI(url);
-    mailto.save("Hej alla barn nu ska vi röka på lite");
+//    mailto.save("Hej alla barn nu ska vi röka på lite");
+    mailto.save(<html>Hallå!</html>, "text/xml");
 
     esxx.debug.println("**** END GET HANDLER ****");
 

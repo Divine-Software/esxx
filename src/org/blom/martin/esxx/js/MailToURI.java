@@ -98,6 +98,14 @@ public class MailToURI
       if (type == null || type.equals("text/plain")) {
 	msg.setText(data.toString());
       }
+      else if (type.equals("text/xml")) {
+	if (data instanceof Scriptable) {
+	  data = esxx.serializeNode(esxx.e4xToDOM((Scriptable) data), true);
+	}
+	
+	msg.setDataHandler(new javax.activation.DataHandler(
+			     new javax.mail.util.ByteArrayDataSource((String) data, type)));
+      }
       else {
 	msg.setContent(data, type);
       }
