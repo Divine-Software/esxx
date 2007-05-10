@@ -1,9 +1,7 @@
 
 package org.blom.martin.esxx.js;
 
-import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -11,7 +9,6 @@ import java.util.HashMap;
 import java.util.Properties;
 import org.blom.martin.esxx.ESXX;
 import org.blom.martin.esxx.Workload;
-import org.htmlcleaner.HtmlCleaner;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
