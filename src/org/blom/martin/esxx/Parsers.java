@@ -127,7 +127,7 @@ class Parsers {
 		
 		if (readers.hasNext()) {
 		  ImageReader reader = readers.next();
-		  String      index  = mime_params.get("index");
+		  String      index  = mime_params.get("x-index");
 
 		  reader.setInput(new FileCacheImageInputStream(is, null));
 		  return reader.read(index != null ? Integer.parseInt(index) : 0);
