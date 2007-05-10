@@ -102,20 +102,6 @@ public abstract class CacheBase {
       return is;
     }
 
-    protected static void copy(InputStream is, OutputStream os) 
-      throws IOException {
-      byte buffer[] = new byte[8192];
-               
-      int bytesRead;
-               
-      while ((bytesRead = is.read(buffer)) != -1) {
-	os.write(buffer, 0, bytesRead);
-      }
-               
-      os.flush();
-      os.close();
-    }
-
     protected static class CachedURL {
 	public CachedURL(URL url) {
 	  this.url = url;

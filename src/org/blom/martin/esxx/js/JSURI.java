@@ -154,61 +154,25 @@ public class JSURI
 	  }
 	}
 
-	if (type.equals("text/xml")) {
-	  // Load URI as XML
-	  JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
-
-	  Document result = esxx.parseXML(is, uri.toURL(), null, js_esxx.debug);
-	  return esxx.domToE4X(result, cx, this);
-	}
-	else if (type.equals("text/html")) {
-	  String      cs = params.get("charset");
-	  HtmlCleaner hc;
-
-	  if (cs != null) {
-	    hc = new HtmlCleaner(is, cs);
-	  }
-	  else {
-	    hc = new HtmlCleaner(is);
-	  }
-
-	  hc.setHyphenReplacementInComment("\u2012\u2012");
-	  hc.setUseCdataForScriptAndStyle(false);
-	  hc.clean();
+	JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
+	Object result  = esxx.parseStream(type, params,
+					  is, uri.toURL(), 
+					  null, 
+					  js_esxx.debug,
+					  cx, this);
 	
-	  return esxx.domToE4X(hc.createDOM(), cx, this);
-	}
-	else if (type.equals("text/plain")) {
-	  // Load URI as plain text
-	  return loadString(is, params);
-	}
-	else {
+	if (result == null) {
 	  throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
 					   "' does can't load '" + type + "'."); 
 	}
-      }catch (Exception ex) {
+	else {
+	  return result;
+	}
+      }
+      catch (Exception ex) {
 	ex.printStackTrace();
 	throw ex;
       }
-    }
-
-    private String loadString(InputStream is, HashMap<String,String> params)
-      throws IOException {
-      String        cs = params.get("charset");
-      StringBuilder sb = new StringBuilder();
-      String        s;
-
-      if (cs == null) {
-	cs = "UTF-8";
-      }
-
-      BufferedReader br = new BufferedReader(new InputStreamReader(is, cs));
-
-      while ((s = br.readLine()) != null) {
-	sb.append(s);
-      }
-
-      return sb.toString();
     }
 
 

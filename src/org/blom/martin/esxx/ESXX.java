@@ -8,7 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URI;
 import java.util.Properties;
-import java.util.TreeMap;
+import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.soap.*;
@@ -55,6 +55,8 @@ public class ESXX {
 	Integer.parseInt(settings.getProperty("esxx.cache.max_entries", "1024")),
 	Long.parseLong(settings.getProperty("esxx.cache.max_size", "16")) * 1024 * 1024,
 	Long.parseLong(settings.getProperty("esxx.cache.max_age", "3600")) * 1000);
+
+      parsers = new Parsers(this);
 
       // Custom CGI-to-HTTP translations
       cgiToHTTPMap.put("HTTP_SOAPACTION", "SOAPAction");
@@ -398,6 +400,14 @@ public class ESXX {
       return memoryCache.openCachedURL(url, null);
     }
 
+    public Object parseStream(String mime_type, HashMap<String,String> mime_params,
+			      InputStream is, URL is_url,
+			      Collection<URL> external_urls,
+			      PrintWriter err, 
+			      Context cx, Scriptable scope) 
+      throws Exception {
+      return parsers.parse(mime_type, mime_params, is, is_url, external_urls, err, cx, scope);
+    }
 
     public ESXXParser getCachedESXXParser(URL url)
       throws XMLStreamException, IOException {
@@ -417,6 +427,19 @@ public class ESXX {
       }
     }
 
+    public static void copyStream(InputStream is, OutputStream os) 
+      throws IOException {
+      byte buffer[] = new byte[8192];
+               
+      int bytesRead;
+               
+      while ((bytesRead = is.read(buffer)) != -1) {
+	os.write(buffer, 0, bytesRead);
+      }
+               
+      os.flush();
+      os.close();
+    }
 
     private void parseSOAPMessage(JSESXX js_esxx)
       throws ESXXException {
@@ -758,11 +781,12 @@ public class ESXX {
     private static final int MAX_WORKLOADS = 16;
 
     private MemoryCache memoryCache;
+    private Parsers parsers;
     private Properties settings;
     private DocumentBuilderFactory documentBuilderFactory;
     private DOMImplementation domImplementation;
     private TransformerFactory  transformerFactory;
     private ThreadGroup workerThreads;
     private LinkedBlockingQueue<Workload> workloadQueue;
-    private TreeMap<String,String> cgiToHTTPMap = new TreeMap<String,String>();
+    private HashMap<String,String> cgiToHTTPMap = new HashMap<String,String>();
 };

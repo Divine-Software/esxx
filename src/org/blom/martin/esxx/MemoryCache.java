@@ -62,7 +62,7 @@ public class MemoryCache
 	
 //	System.err.println("Reloading modified URL " + cached);
 
-	copy(is, os);
+	esxx.copyStream(is, os);
 	cached.content = os.toByteArray();
 	return true;
       }
