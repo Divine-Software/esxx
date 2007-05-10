@@ -26,6 +26,9 @@ function MyApp(e) {
 //     var uri = new URI("http://martin.blom.org/");
 //     esxx.debug.println(uri.load());
 
+    var uri = new URI("http://www.foi.se/upload/GD_portr%C3%A4tt.jpg");
+    esxx.debug.println(uri.load("image/*"));
+
 //     var mailto1 = new URI("mailto:addr1%2C%20addr2");
 //     var mailto2 = new URI("mailto:?to=addr1%2C%20addr2");
 //     var mailto3 = new URI("mailto:addr1?to=addr2");
@@ -37,15 +40,15 @@ function MyApp(e) {
 //     mailto2.save("Hej");
 //     mailto3.save("Hej");
 
-    var url = "mailto:martin@blom.org"
-    url += "?bcc=" + encodeURIComponent("lcs@lysator.liu.se");
-    url += "&from=" + encodeURIComponent("Martin Blom <martin@blom.org>");
-    url += "&subject=" + encodeURIComponent("Hej Banan från ESXX");
-    url += "&Body=" + encodeURIComponent("Default Body");
+//     var url = "mailto:martin@blom.org"
+//     url += "?bcc=" + encodeURIComponent("lcs@lysator.liu.se");
+//     url += "&from=" + encodeURIComponent("Martin Blom <martin@blom.org>");
+//     url += "&subject=" + encodeURIComponent("Hej Banan från ESXX");
+//     url += "&Body=" + encodeURIComponent("Default Body");
 
-    var mailto = new URI(url);
-//    mailto.save("Hej alla barn nu ska vi röka på lite");
-    mailto.save(<html>Hallå!</html>, "text/xml");
+//     var mailto = new URI(url);
+// //    mailto.save("Hej alla barn nu ska vi röka på lite");
+//     mailto.save(<html>Hallå!</html>, "text/xml");
 
     esxx.debug.println("**** END GET HANDLER ****");
 

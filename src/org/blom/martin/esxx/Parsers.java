@@ -9,8 +9,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.FileCacheImageInputStream;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.HashMap;
 import org.htmlcleaner.HtmlCleaner;
 import org.mozilla.javascript.*;
@@ -107,6 +111,39 @@ class Parsers {
 	      return sb.toString();
 	    }
 	});
+
+      Parser image_parser = new Parser() {
+	    public Object parse(String mime_type, HashMap<String,String> mime_params,
+				InputStream is, URL is_url,
+				Collection<URL> external_urls,
+				PrintWriter err, 
+				Context cx, Scriptable scope) 
+	    throws IOException {
+	      if (mime_type.equals("image/*")) {
+		return ImageIO.read(is);
+	      }
+	      else {
+		Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType(mime_type);
+		
+		if (readers.hasNext()) {
+		  ImageReader reader = readers.next();
+		  String      index  = mime_params.get("index");
+
+		  reader.setInput(new FileCacheImageInputStream(is, null));
+		  return reader.read(index != null ? Integer.parseInt(index) : 0);
+		}
+		else {
+		  return null;
+		}
+	      }
+	    }
+	};
+
+      parserMap.put("image/bmp", image_parser);
+      parserMap.put("image/gif", image_parser);
+      parserMap.put("image/jpeg", image_parser);
+      parserMap.put("image/wbmp", image_parser);
+      parserMap.put("image/*", image_parser);
     }
 
     public Object parse(String mime_type, HashMap<String,String> mime_params,
