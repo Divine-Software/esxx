@@ -2,7 +2,14 @@
 
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
                   "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
-<!ENTITY esxx "ESXX">
+<!ENTITY es   "<acronym>ECMAscript</acronym>">
+<!ENTITY esxx "<acronym>ESXX</acronym>">
+<!ENTITY html "<acronym>HTML</acronym>">
+<!ENTITY ldap "<acronym>LDAP</acronym>">
+<!ENTITY j2se "<acronym>J2SE</acronym>">
+<!ENTITY sql  "<acronym>SQL</acronym>">
+<!ENTITY xml  "<acronym>XML</acronym>">
+<!ENTITY xslt "<acronym>XSLT</acronym>">
 ]>
 
 <article>
@@ -15,14 +22,20 @@
     </author>
     <abstract>
       <para>&esxx; is a free, easy-to-install, easy-to-use, no-nonsense
-ECMAscript application server, incorporating familar technologies such
-as XML, XSLT, SQL and LDAP.</para>
+&es; application server, incorporating familar technologies such as
+&xml;, &xslt;, &sql;, &ldap; and Java into one single package.</para>
     </abstract>
 
     <keywordset>
-      <keyword>ECMAscript</keyword>
+      <keyword>ECMAScript</keyword>
+      <keyword>LDAP</keyword>
+      <keyword>SQL</keyword>
+      <keyword>XML Application Server</keyword>
+      <keyword>XML</keyword>
+      <keyword>XSLT</keyword>
+      <keyword>Java</keyword>
       <keyword>JavaScript</keyword>
-      <keyword>Web/XML Application Server</keyword>
+      <keyword>Web Application Server</keyword>
     </keywordset>
 
     
@@ -32,24 +45,141 @@ as XML, XSLT, SQL and LDAP.</para>
     <title>Introduction</title>
     
     <para>In the late 90's, I was involved in the development of a one
-of the first Web/XML application servers. During that time, we realized
-the benefits of using data-driven programming for server-based web
-applications. In this context, data-driven programming means that the
-data that is to be returned as response to a request is generated and
-then gradually refined until it reaches the user, most often in the form
-of an (X)HTML page, using plain XML as intermediate format.</para>
+of the first Web/&xml; application servers developed. During that time,
+we realized the benefits of using data-driven programming for
+server-based web applications. In this context, data-driven programming
+means that the data, that is to be returned as response to a request, is
+generated and then gradually refined until it reaches the user, most
+often in the form of an <acronym>(X)HTML</acronym> page, using plain
+&xml; as intermediate formats.</para>
 
     <para>By focusing solely on <emphasis>what</emphasis> to present to
 the user in the logic stage and not <emphasis>how</emphasis>, the
 programmer can focus on what he or she is good at, and leave
-presentation and graphical design to those that knows this stuff.</para>
+presentation and graphical design to those who knows better.</para>
 
-    <para>Six years later, during which I was not involved in anything
-web related, I find that people are <emphasis>still</emphasis> mixing
-HTML and server-side code on a regular basis.</para>
+    <para>Six years later, after a period of not being involved with
+anything web related at all, I find that people are
+<emphasis>still</emphasis> mixing &html; and server-side code on a
+regular basis.</para>
+
+    <para>Worse yet, when looking around for a free, easy-to-use tool to
+drive a site I was planning, I found nothing that I liked. So, I rolled
+my own: &esxx;.</para>
+  </section>
+
+  <section>
+    <title>System requirements</title>
+
+    <para>&esxx; is written in Java and requires &j2se;
+6.0 and a web server. Apart from that, all extra Java packages are
+included in the &esxx; <acronym>JAR</acronym> file.</para>
+
+    <para>&esxx; is a <application>FastCGI</application> appliaction, so
+if you're using <application>Apache</application>, make sure it's
+configured with <application>mod_fastcgi</application> enabled.</para>
+  </section>
+
+  <section>
+    <title>Theory of operation</title>
 
     <para></para>
   </section>
+
+  <section>
+    <title>The <classname>URI</classname> class</title>
+
+    <para></para>
+
+    <section>
+      <title>The <methodname>load</methodname>() method</title>
+
+      <para></para>
+    </section>
+
+  </section>
+
+  <section>
+    <title><acronym>MIME</acronym> type parsers</title>
+
+
+    <section>
+      <title><literal>application/octet-stream</literal></title>
+
+      <para>The <literal>application/octet-stream</literal> parser loads
+a resource as-is into a Java <classname>ByteBuffer</classname>
+object.</para>
+    </section>
+
+    <section>
+      <title><literal>application/xslt+xml</literal></title>
+
+      <para>The <literal>application/xslt+xml</literal> parser loads and
+compiles an &xslt; style-sheet into an &es;
+<classname>XSLTProcessor</classname> object.</para>
+    </section>
+
+    <section>
+      <title><literal>image/*</literal></title>
+
+      <para>The <literal>image</literal> type of parses loads the
+specified resource as a Java <classname>BufferedImage</classname>
+object. The file types supported by &j2se; 6.0 are:
+<literal>image/bmp</literal>, <literal>image/gif</literal>,
+<literal>image/jpeg</literal>, <literal>image/png</literal> and ,
+<literal>image/wbmp</literal>. Use <literal>image/*</literal> to
+automatically identify the image type.</para>
+
+      <para>When specifying a specific image type, the unofficial
+<parameter>x-index</parameter> parameter can be used to specify the
+index of the image, in case the file contains multiple images.</para>
+    </section>
+
+    <section>
+      <title><literal>text/html</literal></title>
+	
+      <para>The <literal>text/html</literal> parser loads the resource
+as an &html; file, using the &html; parser <citation><xref
+linkend="htmlcleaner"/></citation>, to transform the document into
+well-formed &xml;.  The <parameter>charset</parameter> parameter can be
+used to specify the character set to be used. The result is an
+<classname>XML</classname> object.</para>
+    </section>
+
+    <section>
+      <title><literal>text/plain</literal></title>
+	
+      <para>The <literal>text/plain</literal> parser loads the resource
+as a plain <classname>String</classname>. The
+<parameter>charset</parameter> parameter can be used to specify the
+character set to be used.</para>
+    </section>
+
+    <section>
+      <title><literal>text/xml</literal></title>
+	
+      <para>The <literal>text/xml</literal> parser loads the resource as
+an &es; <classname>XML</classname> object. The document must be
+well-formed and if it has a <sgmltag class="element">DOCTYPE</sgmltag>,
+external entities will be included as well.</para>
+    </section>
+
+    <section>
+      <title><literal>text/x-sql</literal></title>
+
+      <para><literal>text/x-sql</literal> is not supported as a
+parser. In &esxx;, it's only as query type for <uri>jdbc:</uri>
+URIs.</para>
+    </section>
+
+  </section>
+
+  <bibliography>
+    <title>References</title>
+
+    <biblioentry id="htmlcleaner">
+      <abbrev id="htmlcleaner.abbrev">HtmlCleaner</abbrev>
+      <title><ulink url="http://htmlcleaner.sourceforge.net/">The <application>HtmlCleaner</application> project page</ulink></title>
+    </biblioentry>
+  </bibliography>
 </article>
-
-
