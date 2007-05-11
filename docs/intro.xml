@@ -2,6 +2,8 @@
 
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
                   "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+<!ENTITY ajax "<acronym>AJAX</acronym>">
+<!ENTITY css  "<acronym>CSS</acronym>">
 <!ENTITY es   "<acronym>ECMAscript</acronym>">
 <!ENTITY esxx "<acronym>ESXX</acronym>">
 <!ENTITY html "<acronym>HTML</acronym>">
@@ -37,39 +39,45 @@
       <keyword>JavaScript</keyword>
       <keyword>Web Application Server</keyword>
     </keywordset>
-
     
   </articleinfo>
   
   <section>
     <title>Introduction</title>
     
-    <para>In the late 90's, I was involved in the development of a one
-of the first Web/&xml; application servers developed. During that time,
-we realized the benefits of using data-driven programming for
-server-based web applications. In this context, data-driven programming
-means that the data, that is to be returned as response to a request, is
-generated and then gradually refined until it reaches the user, most
-often in the form of an <acronym>(X)HTML</acronym> page, using plain
-&xml; as intermediate formats.</para>
+    <para>In the late 90's, I was involved in the development of a a
+Web/&xml; application server. During that time, we realized the benefits
+of using data-driven programming for server-based web applications. In
+this context, data-driven programming means that the data, that is to be
+returned as response to a request, is generated and then gradually
+refined until it reaches the user, most often in the form of an
+<acronym>(X)HTML</acronym> page, using plain &xml; as intermediate
+formats.</para>
 
     <para>By focusing solely on <emphasis>what</emphasis> to present to
 the user in the logic stage and not <emphasis>how</emphasis>, the
 programmer can focus on what he or she is good at, and leave
-presentation and graphical design to those who knows better.</para>
+presentation and graphical design to those who knows
+better<footnote>
+	<para>In the current &ajax;-crazy world, this methodology works
+even better than it used to, </para>
+      </footnote>.</para>
 
     <para>Six years later, after a period of not being involved with
 anything web related at all, I find that people are
 <emphasis>still</emphasis> mixing &html; and server-side code on a
 regular basis.</para>
 
-    <para>Worse yet, when looking around for a free, easy-to-use tool to
-drive a site I was planning, I found nothing that I liked. So, I rolled
-my own: &esxx;.</para>
+    <para>Additionally, when looking around for a free, easy-to-use tool
+to drive a site I was planning, I found nothing that I liked. So, I
+decided to roll my own: &esxx;.</para>
+
+    <para>&esxx; is pronounced <quote>Essex</quote> and was originally
+an acronym for <quote>&es;, &xml; and &xslt;</quote>.</para>
   </section>
 
   <section>
-    <title>System requirements</title>
+    <title>System requirements &amp; license</title>
 
     <para>&esxx; is written in Java and requires &j2se;
 6.0 and a web server. Apart from that, all extra Java packages are
@@ -78,12 +86,84 @@ included in the &esxx; <acronym>JAR</acronym> file.</para>
     <para>&esxx; is a <application>FastCGI</application> appliaction, so
 if you're using <application>Apache</application>, make sure it's
 configured with <application>mod_fastcgi</application> enabled.</para>
+
+    <para>&esxx; is licensed under GPL version 2. It includes software
+components that use BSD-like licenses
+(<application>HtmlCleaner</application> and
+<application>JFast</application>). Closed-source licensing is possible;
+contact <email>martin@blom.org</email> for details.</para>
   </section>
 
   <section>
     <title>Theory of operation</title>
 
-    <para></para>
+    <para>In order to understand how &esxx; applications are meant to
+work, the following example might be of interest.</para>
+    
+    <orderedlist>
+      <listitem>
+	<para>A client performs a request to an &esxx; application.</para>
+      </listitem>
+
+      <listitem>
+	<para>If the application is not yet in memory, it is loaded, all
+&es; code is compiled and all request handlers and &xslt; stylesheets
+are registered. The application is started by executing the &es;
+code. Typically, that will create and initialize an application object
+that will later handle all client requests.</para>
+
+	<para>If the application was already running, this step does
+nothing, unless one of the source files were modified, in which case the
+application is restarted.</para>
+      </listitem>
+
+      <listitem>
+	<para>The appropriate request handler is invoked. Request
+handlers can be registered for <acronym>HTTP</acronym> requests like
+<command>GET</command>, <command>PUT</command>, <command>POST</command>,
+<command>DELETE</command> etc. and <acronym>SOAP</acronym>
+actions.</para>
+      </listitem>
+
+      <listitem>
+	<para>The handler processes the request and returns a
+result. Typically, this is an &xml; document maked as
+<literal>text/xml</literal>, but raw byte data and image results are
+also possible.</para>
+
+	<para>The document returned in this step typically includes all
+information that should be transmitted to the client, but the actual
+&xml; format is unspecified.</para>
+
+	<para>It's also possible to control the next step by selecting a
+different <acronym>MIME</acronym> type for the result.</para>
+      </listitem>
+
+      <listitem>
+	<para>Based on the result's <acronym>MIME</acronym> type, an
+appropriate &xslt; stylesheet is selected and used to transform the
+result into the appropriate data format.</para>
+
+	<para>Typically, the stylesheet will transform the &xml; data
+into an unstyled &html; document.</para>
+
+	<para>The &xslt; stylesheet has access to the &es; environment
+and it's possible to use custom &xslt; extension elements implemented in
+&es;. For example, a web page stylesheet could invoke &es; code to
+insert targeted advertisement or other <quote>extras</quote>, not
+really related to the application logic.</para>
+
+	<para>It is also the stylesheet that sets the final
+<acronym>MIME</acronym> type that is to be presented to the
+client.</para>
+      </listitem>
+
+      <listitem>
+	<para>The client receives the data and if the client was a
+actually a web browser, applies futher processing using &xslt;, &css;
+and client-side &es; and presents the result to the user.</para>
+      </listitem>
+    </orderedlist>
   </section>
 
   <section>
@@ -122,7 +202,7 @@ compiles an &xslt; style-sheet into an &es;
     <section>
       <title><literal>image/*</literal></title>
 
-      <para>The <literal>image</literal> type of parses loads the
+      <para>The <literal>image</literal> class of parses loads the
 specified resource as a Java <classname>BufferedImage</classname>
 object. The file types supported by &j2se; 6.0 are:
 <literal>image/bmp</literal>, <literal>image/gif</literal>,
