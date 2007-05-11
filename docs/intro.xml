@@ -90,8 +90,20 @@ configured with <application>mod_fastcgi</application> enabled.</para>
     <para>&esxx; is licensed under GPL version 2. It includes software
 components that use BSD-like licenses
 (<application>HtmlCleaner</application> and
-<application>JFast</application>). Closed-source licensing is possible;
-contact <email>martin@blom.org</email> for details.</para>
+<application>JFast</application>). </para>
+
+    <para>Closed-source licensing is possible; contact
+<email>martin@blom.org</email> for details.</para>
+
+    <note>
+      <para>Applications executed by &esxx; are considered to be linked
+to the GPL'ed runtime and thus subject to the GPL license. However,
+since these applications are fully server-side, they are ususally never
+<quote>distributed</quote> to the clients. Nevertheless, any person that
+has access to the (server-side) &es; code is entitled to enjoy it
+according to the GPL license.</para>
+    </note>
+
   </section>
 
   <section>
