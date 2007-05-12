@@ -7,7 +7,10 @@
 <!ENTITY es   "<acronym>ECMAscript</acronym>">
 <!ENTITY esxx "<acronym>ESXX</acronym>">
 <!ENTITY html "<acronym>HTML</acronym>">
+<!ENTITY http "<acronym>HTTP</acronym>">
+<!ENTITY jdbc "<acronym>JDBC</acronym>">
 <!ENTITY ldap "<acronym>LDAP</acronym>">
+<!ENTITY mime "<acronym>MIME</acronym>">
 <!ENTITY j2se "<acronym>J2SE</acronym>">
 <!ENTITY sql  "<acronym>SQL</acronym>">
 <!ENTITY xml  "<acronym>XML</acronym>">
@@ -95,14 +98,14 @@ components that use BSD-like licenses
     <para>Closed-source licensing is possible; contact
 <email>martin@blom.org</email> for details.</para>
 
-    <note>
+    <warning>
       <para>Applications executed by &esxx; are considered to be linked
 to the GPL'ed runtime and thus subject to the GPL license. However,
 since these applications are fully server-side, they are ususally never
 <quote>distributed</quote> to the clients. Nevertheless, any person that
 has access to the (server-side) &es; code is entitled to enjoy it
 according to the GPL license.</para>
-    </note>
+    </warning>
 
   </section>
 
@@ -131,7 +134,7 @@ application is restarted.</para>
 
       <listitem>
 	<para>The appropriate request handler is invoked. Request
-handlers can be registered for <acronym>HTTP</acronym> requests like
+handlers can be registered for &http; requests like
 <command>GET</command>, <command>PUT</command>, <command>POST</command>,
 <command>DELETE</command> etc. and <acronym>SOAP</acronym>
 actions.</para>
@@ -148,11 +151,11 @@ information that should be transmitted to the client, but the actual
 &xml; format is unspecified.</para>
 
 	<para>It's also possible to control the next step by selecting a
-different <acronym>MIME</acronym> type for the result.</para>
+different &mime; type for the result.</para>
       </listitem>
 
       <listitem>
-	<para>Based on the result's <acronym>MIME</acronym> type, an
+	<para>Based on the result's &mime; type, an
 appropriate &xslt; stylesheet is selected and used to transform the
 result into the appropriate data format.</para>
 
@@ -165,9 +168,8 @@ and it's possible to use custom &xslt; extension elements implemented in
 insert targeted advertisement or other <quote>extras</quote>, not
 really related to the application logic.</para>
 
-	<para>It is also the stylesheet that sets the final
-<acronym>MIME</acronym> type that is to be presented to the
-client.</para>
+	<para>It is also the stylesheet that sets the final &mime; type
+that is to be presented to the client.</para>
       </listitem>
 
       <listitem>
@@ -181,19 +183,153 @@ and client-side &es; and presents the result to the user.</para>
   <section>
     <title>The <classname>URI</classname> class</title>
 
-    <para></para>
+    <para>The <classname>URI</classname> class is probably the most
+important class in &esxx;. It's used for almost all external
+communication, including the filesystem, remote &http; servers,
+databases and &ldap; directories.</para>
+
+    <section>
+      <title>The <methodname>delete</methodname>() method</title>
+
+      <para>The <methodname>delete</methodname>() method is used to
+permamently remove a resource.</para>
+
+      <note>
+	<para>Not yet implemented.</para>
+      </note>
+    </section>
 
     <section>
       <title>The <methodname>load</methodname>() method</title>
 
-      <para></para>
+      <para>The <methodname>load</methodname>() method is used to fetch
+information from a resource. The information may be cached both by
+external proxy servers and &esxx; itself.</para>
+
+      <variablelist>
+	<varlistentry>
+	  <term><literal>file:</literal></term>
+	  <listitem>
+	    <para>If the specified resource is a file, it is loaded and
+parsed using the specified or default parser. If the resource is a
+directory, on the other hand, the only parser allowed is
+<literal>text/xml</literal> and information about the directory is
+returned as an &xml; structure.</para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term><literal>http:</literal>, <literal>https:</literal></term>
+	  <listitem>
+	    <para>A <command>GET</command> request is performed, using
+the <varname>If-Modified-Since</varname> header if the resource has been
+loaded before. The default parser it taken from the &http;
+response.</para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term><literal>ldap:</literal></term>
+	  <listitem>
+	    <para>A query to the &ldap; directory is performed and the
+returned entries are returned as an &xml; structure. The
+<literal>text/xml</literal> parser must be used, which is the
+default.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </section>
+
+    <section>
+      <title>The <methodname>save</methodname>() method</title>
+
+      <para>The <methodname>save</methodname>() method stores the
+content of an &es; variable in the specified resource.
+      </para>
+
+      <variablelist>
+	<varlistentry>
+	  <term><literal>file:</literal></term>
+	  <listitem>
+	    <para>The variable is serialized into the specified format
+and saved to the specified file.</para>
+	    <note>
+	      <para>Not yet implemented.</para>
+	    </note>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term><literal>http:</literal>, <literal>https:</literal></term>
+	  <listitem>
+	    <para>The variable is serialized into the specified format
+and stored using the <command>PUT</command> &http; method.</para>
+	    <note>
+	      <para>Not yet implemented.</para>
+	    </note>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term><literal>mailto:</literal></term>
+	  <listitem>
+	    <para>An email is sent to the specified
+recipients. Different &mime; types can be used for the email body, but
+multipart messages or attachments are not supported.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </section>
+
+    <section>
+      <title>The <methodname>query</methodname>() method</title>
+
+      <para>The <methodname>query</methodname>() method is used to
+perform queries to a resource and the result will be returned.
+      </para>
+
+      <variablelist>
+	<varlistentry>
+	  <term><literal>http:</literal>, <literal>https:</literal></term>
+	  <listitem>
+	    <para>A &http; <command>POST</command> request is
+performed.</para>
+
+	    <note>
+	      <para>Not yet implemented.</para>
+	    </note>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term><literal>jdbc:</literal></term>
+	  <listitem>
+	    <para>An &sql; query to an &jdbc;-enabled database will be
+executed and the result set will be returned as an &xml; structure. The
+query type must be <literal>text/x-sql</literal>, which is also the
+default.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
     </section>
 
   </section>
 
   <section>
-    <title><acronym>MIME</acronym> type parsers</title>
+    <title>&mime; type parsers</title>
 
+    <para>When using the <methodname>load</methodname>() method on
+<classname>URI</classname> objects for certain protocols<footnote>
+	<para>Currently<literal>file:</literal>,
+<literal>ftp:</literal>,
+<literal>jar:</literal>, <literal>http:</literal> and
+<literal>https</literal>.
+</para>
+      </footnote>, the &mime; parser to be used can be specified by the
+developer. If unspecified, the default is taken from the source (for
+example, the &http; server). If no such information is available,
+<literal>text/xml</literal> will be used.
+     </para>
 
     <section>
       <title><literal>application/octet-stream</literal></title>
@@ -209,6 +345,11 @@ object.</para>
       <para>The <literal>application/xslt+xml</literal> parser loads and
 compiles an &xslt; style-sheet into an &es;
 <classname>XSLTProcessor</classname> object.</para>
+
+      <note>
+	<para>This parser and <classname>XSLTProcessor</classname> are
+not yet implemented.</para>
+      </note>
     </section>
 
     <section>
@@ -260,7 +401,7 @@ external entities will be included as well.</para>
       <title><literal>text/x-sql</literal></title>
 
       <para><literal>text/x-sql</literal> is not supported as a
-parser. In &esxx;, it's only as query type for <uri>jdbc:</uri>
+parser. In &esxx;, it's only as query type for <literal>jdbc:</literal>
 URIs.</para>
     </section>
 
@@ -271,7 +412,10 @@ URIs.</para>
 
     <biblioentry id="htmlcleaner">
       <abbrev id="htmlcleaner.abbrev">HtmlCleaner</abbrev>
-      <title><ulink url="http://htmlcleaner.sourceforge.net/">The <application>HtmlCleaner</application> project page</ulink></title>
+      <title><ulink url="http://htmlcleaner.sourceforge.net/">The <application>HtmlCleaner</application> project</ulink></title>
+      <publisher>
+	<publishername>SourceForge</publishername>
+      </publisher>
     </biblioentry>
   </bibliography>
 </article>
