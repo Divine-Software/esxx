@@ -2,30 +2,48 @@
 
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
                   "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+
 <!ENTITY ajax "<acronym>AJAX</acronym>">
 <!ENTITY css  "<acronym>CSS</acronym>">
+<!ENTITY e4x   "<acronym>E4X</acronym>">
 <!ENTITY es   "<acronym>ECMAscript</acronym>">
 <!ENTITY esxx "<acronym>ESXX</acronym>">
 <!ENTITY html "<acronym>HTML</acronym>">
 <!ENTITY http "<acronym>HTTP</acronym>">
+<!ENTITY j2ee "<acronym>J2EE</acronym>">
+<!ENTITY j2se "<acronym>J2SE</acronym>">
 <!ENTITY jdbc "<acronym>JDBC</acronym>">
 <!ENTITY ldap "<acronym>LDAP</acronym>">
 <!ENTITY mime "<acronym>MIME</acronym>">
-<!ENTITY j2se "<acronym>J2SE</acronym>">
 <!ENTITY sql  "<acronym>SQL</acronym>">
 <!ENTITY xml  "<acronym>XML</acronym>">
 <!ENTITY xslt "<acronym>XSLT</acronym>">
+
+<!ENTITY apache      "<citation><xref linkend='apache'/></citation>">
+<!ENTITY esxx-home   "<citation><xref linkend='esxx-home'/></citation>">
+<!ENTITY fastcgi     "<citation><xref linkend='fastcgi'/></citation>">
+<!ENTITY htmlcleaner "<citation><xref linkend='htmlcleaner'/></citation>">
+<!ENTITY ice         "<citation><xref linkend='ice'/></citation>">
+<!ENTITY jfast       "<citation><xref linkend='jfast'/></citation>">
+<!ENTITY rhino       "<citation><xref linkend='rhino'/></citation>">
+
+<!ENTITY etc "<foreignphrase>et cetera</foreignphrase>">
 ]>
 
-<article>
+<article lang="en">
   <title>Introducing &esxx;</title>
 <!--  <subtitle>The friendly Web/XML Application Server</subtitle>-->
   <articleinfo>
     <author>
       <firstname>Martin</firstname>
       <surname>Blom</surname>
+      <email>martin@blom.org</email>
+      <address><street>Luftvärnsgatan 42</street>, 
+               <postcode>SE-58734</postcode> <city>Linköping</city>, 
+               <country>Sweden</country></address>
     </author>
     <abstract>
+      <title>Abstract</title>
       <para>&esxx; is a free, easy-to-install, easy-to-use, no-nonsense
 &es; application server, incorporating familar technologies such as
 &xml;, &xslt;, &sql;, &ldap; and Java into one single package.</para>
@@ -63,7 +81,7 @@ programmer can focus on what he or she is good at, and leave
 presentation and graphical design to those who knows
 better<footnote>
 	<para>In the current &ajax;-crazy world, this methodology works
-even better than it used to, </para>
+even better than it used to do.</para>
       </footnote>.</para>
 
     <para>Six years later, after a period of not being involved with
@@ -82,18 +100,18 @@ an acronym for <quote>&es;, &xml; and &xslt;</quote>.</para>
   <section>
     <title>System requirements &amp; license</title>
 
-    <para>&esxx; is written in Java and requires &j2se;
-6.0 and a web server. Apart from that, all extra Java packages are
-included in the &esxx; <acronym>JAR</acronym> file.</para>
+    <para>&esxx; is written in Java and requires &j2se; 6.0 and a web
+server. Apart from that, all extra Java packages, including the &es;
+engine &rhino;, are included in the &esxx; <acronym>JAR</acronym>
+file.</para>
 
-    <para>&esxx; is a <application>FastCGI</application> appliaction, so
-if you're using <application>Apache</application>, make sure it's
-configured with <application>mod_fastcgi</application> enabled.</para>
+    <para>&esxx; is a &fastcgi; appliaction, so if you're using
+&apache;, make sure it's configured with
+<application>mod_fastcgi</application> enabled.</para>
 
     <para>&esxx; is licensed under GPL version 2. It includes software
-components that use BSD-like licenses
-(<application>HtmlCleaner</application> and
-<application>JFast</application>). </para>
+components that use BSD-like licenses (&htmlcleaner; and
+&jfast;). </para>
 
     <para>Closed-source licensing is possible; contact
 <email>martin@blom.org</email> for details.</para>
@@ -112,8 +130,15 @@ according to the GPL license.</para>
   <section>
     <title>Theory of operation</title>
 
+    <para>&esxx; is multithreaded &mdash; and distributed, if desired
+&mdash; and thus highly scalable. Sessions can be maintained internally,
+if &esxx; is deployed on a single node only, or by a dedicated session
+node that the state-less &esxx; clients communicate with using &ice;,
+with <acronym>TCP</acronym>, <acronym>SSL</acronym> or
+<acronym>UDP</acronym> as transport layer.</para>
+
     <para>In order to understand how &esxx; applications are meant to
-work, the following example might be of interest.</para>
+work, the following example illustrates the intendend workflow.</para>
     
     <orderedlist>
       <listitem>
@@ -136,7 +161,7 @@ application is restarted.</para>
 	<para>The appropriate request handler is invoked. Request
 handlers can be registered for &http; requests like
 <command>GET</command>, <command>PUT</command>, <command>POST</command>,
-<command>DELETE</command> etc. and <acronym>SOAP</acronym>
+<command>DELETE</command> &etc; and <acronym>SOAP</acronym>
 actions.</para>
       </listitem>
 
@@ -157,7 +182,7 @@ different &mime; type for the result.</para>
       <listitem>
 	<para>Based on the result's &mime; type, an
 appropriate &xslt; stylesheet is selected and used to transform the
-result into the appropriate data format.</para>
+result into the final data format.</para>
 
 	<para>Typically, the stylesheet will transform the &xml; data
 into an unstyled &html; document.</para>
@@ -181,149 +206,252 @@ and client-side &es; and presents the result to the user.</para>
   </section>
 
   <section>
-    <title>The <classname>URI</classname> class</title>
+    <title>Execution environment</title>
+    
+    <para>&esxx; applications executes in a multithreaded <emphasis>Core
+JavaScript</emphasis> v1.5/&es; v3 environment with the following
+extensions:</para>
+    
+    <itemizedlist>
+      <listitem>
+	<para>The &es; for &xml; (&e4x;) extension is used for &xml;
+processing.</para>
+      </listitem>
 
-    <para>The <classname>URI</classname> class is probably the most
+      <listitem>
+	<para>The <emphasis>LiveConnect</emphasis> and JavaAdapters
+extensions, provided by &rhino;, are used for Java scripting, enabling
+access to the full &j2se; (or &j2ee;) platform.</para>
+      </listitem>
+
+      <listitem>
+	<para>A global object called <varname>esxx</varname> is used for
+request handling, logging &etc;.</para>
+      </listitem>
+
+      <listitem>
+	<para>A class named <classname>URI</classname> is used for
+communication to external services, such as other web servers or
+databases.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Even in a distributed configuration, &esxx; applications
+execute on one single node only &mdash; <emphasis>sessions</emphasis> are
+used to coordinate multiple instances of the application.</para>
+    
+    <para>An application instance defines an executing environment which
+is shared by all request handler threads for this application. If a
+request handler modified a global or otherwise shared variable, proper
+syncronization must be used. The executing environment is preserved
+between requests to the same application instance, until the application
+is restarted or flushed from memory.</para>
+
+
+    <section>
+      <title>The <varname>esxx</varname> object</title>
+
+      <para>The <varname>esxx</varname> object is used to hold various
+information about the current request, such as query headers, cookies
+and <acronym>CGI</acronym> variables. It is also used to log errors and
+debug information.</para>
+    </section>
+
+    <section>
+      <title>The <classname>URI</classname> class</title>
+
+      <para>The <classname>URI</classname> class is probably the most
 important class in &esxx;. It's used for almost all external
 communication, including the filesystem, remote &http; servers,
 databases and &ldap; directories.</para>
 
-    <section>
-      <title>The <methodname>delete</methodname>() method</title>
+      <section>
+	<title>The <methodname>delete</methodname>() method</title>
 
-      <para>The <methodname>delete</methodname>() method is used to
+	<para>The <methodname>delete</methodname>() method is used to
 permamently remove a resource.</para>
 
-      <note>
-	<para>Not yet implemented.</para>
-      </note>
-    </section>
+	<note>
+	  <para>Not yet implemented.</para>
+	</note>
+      </section>
 
-    <section>
-      <title>The <methodname>load</methodname>() method</title>
+      <section>
+	<title>The <methodname>load</methodname>() method</title>
 
-      <para>The <methodname>load</methodname>() method is used to fetch
-information from a resource. The information may be cached both by
+	<para>The <methodname>load</methodname>() method is used to
+fetch information from a resource. The information may be cached both by
 external proxy servers and &esxx; itself.</para>
 
-      <variablelist>
-	<varlistentry>
-	  <term><literal>file:</literal></term>
-	  <listitem>
-	    <para>If the specified resource is a file, it is loaded and
-parsed using the specified or default parser. If the resource is a
+	<variablelist>
+	  <varlistentry>
+	    <term><literal>file:</literal></term>
+	    <listitem>
+	      <para>If the specified resource is a file, it is loaded
+and parsed using the specified or default parser. If the resource is a
 directory, on the other hand, the only parser allowed is
 <literal>text/xml</literal> and information about the directory is
 returned as an &xml; structure.</para>
-	  </listitem>
-	</varlistentry>
+	    </listitem>
+	  </varlistentry>
 
-	<varlistentry>
-	  <term><literal>http:</literal>, <literal>https:</literal></term>
-	  <listitem>
-	    <para>A <command>GET</command> request is performed, using
+	  <varlistentry>
+	    <term><literal>http:</literal>,
+<literal>https:</literal></term>
+	    <listitem>
+	      <para>A <command>GET</command> request is performed, using
 the <varname>If-Modified-Since</varname> header if the resource has been
 loaded before. The default parser it taken from the &http;
 response.</para>
-	  </listitem>
-	</varlistentry>
+	    </listitem>
+	  </varlistentry>
 
-	<varlistentry>
-	  <term><literal>ldap:</literal></term>
-	  <listitem>
-	    <para>A query to the &ldap; directory is performed and the
+	  <varlistentry>
+	    <term><literal>jdbc:</literal></term>
+	    <listitem>
+	      <para>Not supported.</para>
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term><literal>ldap:</literal></term>
+	    <listitem>
+	      <para>A query to the &ldap; directory is performed and the
 returned entries are returned as an &xml; structure. The
 <literal>text/xml</literal> parser must be used, which is the
 default.</para>
-	  </listitem>
-	</varlistentry>
-      </variablelist>
-    </section>
+	    </listitem>
+	  </varlistentry>
 
-    <section>
-      <title>The <methodname>save</methodname>() method</title>
+	  <varlistentry>
+	    <term><literal>mailto:</literal></term>
+	    <listitem>
+	      <para>Not supported.</para>
+	    </listitem>
+	  </varlistentry>
+	</variablelist>
+      </section>
 
-      <para>The <methodname>save</methodname>() method stores the
+      <section>
+	<title>The <methodname>save</methodname>() method</title>
+
+	<para>The <methodname>save</methodname>() method stores the
 content of an &es; variable in the specified resource.
       </para>
 
-      <variablelist>
-	<varlistentry>
-	  <term><literal>file:</literal></term>
-	  <listitem>
-	    <para>The variable is serialized into the specified format
+	<variablelist>
+	  <varlistentry>
+	    <term><literal>file:</literal></term>
+	    <listitem>
+	      <para>The variable is serialized into the specified format
 and saved to the specified file.</para>
-	    <note>
-	      <para>Not yet implemented.</para>
-	    </note>
-	  </listitem>
-	</varlistentry>
+	      <note>
+		<para>Not yet implemented.</para>
+	      </note>
+	    </listitem>
+	  </varlistentry>
 
-	<varlistentry>
-	  <term><literal>http:</literal>, <literal>https:</literal></term>
-	  <listitem>
-	    <para>The variable is serialized into the specified format
+	  <varlistentry>
+	    <term><literal>http:</literal>,
+<literal>https:</literal></term>
+	    <listitem>
+	      <para>The variable is serialized into the specified format
 and stored using the <command>PUT</command> &http; method.</para>
-	    <note>
-	      <para>Not yet implemented.</para>
-	    </note>
-	  </listitem>
-	</varlistentry>
+	      <note>
+		<para>Not yet implemented.</para>
+	      </note>
+	    </listitem>
+	  </varlistentry>
 
-	<varlistentry>
-	  <term><literal>mailto:</literal></term>
-	  <listitem>
-	    <para>An email is sent to the specified
-recipients. Different &mime; types can be used for the email body, but
-multipart messages or attachments are not supported.</para>
-	  </listitem>
-	</varlistentry>
-      </variablelist>
-    </section>
+	  <varlistentry>
+	    <term><literal>jdbc:</literal></term>
+	    <listitem>
+	      <para>Not supported.</para>
+	    </listitem>
+	  </varlistentry>
 
-    <section>
-      <title>The <methodname>query</methodname>() method</title>
+	  <varlistentry>
+	    <term><literal>ldap:</literal></term>
+	    <listitem>
+	      <para>Not supported.</para>
+	    </listitem>
+	  </varlistentry>
 
-      <para>The <methodname>query</methodname>() method is used to
+	  <varlistentry>
+	    <term><literal>mailto:</literal></term>
+	    <listitem>
+	      <para>An email is sent to the specified recipients.
+Different &mime; types can be used for the email body, but multipart
+messages or attachments are not supported.</para>
+	    </listitem>
+	  </varlistentry>
+	</variablelist>
+      </section>
+
+      <section>
+	<title>The <methodname>query</methodname>() method</title>
+
+	<para>The <methodname>query</methodname>() method is used to
 perform queries to a resource and the result will be returned.
       </para>
 
-      <variablelist>
-	<varlistentry>
-	  <term><literal>http:</literal>, <literal>https:</literal></term>
-	  <listitem>
-	    <para>A &http; <command>POST</command> request is
+	<variablelist>
+	  <varlistentry>
+	    <term><literal>file:</literal></term>
+	    <listitem>
+	      <para>Not supported.</para>
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term><literal>http:</literal>,
+<literal>https:</literal></term>
+	    <listitem>
+	      <para>A &http; <command>POST</command> request is
 performed.</para>
 
-	    <note>
-	      <para>Not yet implemented.</para>
-	    </note>
-	  </listitem>
-	</varlistentry>
+	      <note>
+		<para>Not yet implemented.</para>
+	      </note>
+	    </listitem>
+	  </varlistentry>
 
-	<varlistentry>
-	  <term><literal>jdbc:</literal></term>
-	  <listitem>
-	    <para>An &sql; query to an &jdbc;-enabled database will be
+	  <varlistentry>
+	    <term><literal>jdbc:</literal></term>
+	    <listitem>
+	      <para>An &sql; query to an &jdbc;-enabled database will be
 executed and the result set will be returned as an &xml; structure. The
 query type must be <literal>text/x-sql</literal>, which is also the
 default.</para>
-	  </listitem>
-	</varlistentry>
-      </variablelist>
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term><literal>ldap:</literal></term>
+	    <listitem>
+	      <para>Not supported.</para>
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term><literal>mailto:</literal></term>
+	    <listitem>
+	      <para>Not supported.</para>
+	    </listitem>
+	  </varlistentry>
+
+	</variablelist>
+      </section>
     </section>
 
-  </section>
+    <section>
+      <title>&mime; type parsers</title>
 
-  <section>
-    <title>&mime; type parsers</title>
-
-    <para>When using the <methodname>load</methodname>() method on
+      <para>When using the <methodname>load</methodname>() method on
 <classname>URI</classname> objects for certain protocols<footnote>
-	<para>Currently<literal>file:</literal>,
-<literal>ftp:</literal>,
-<literal>jar:</literal>, <literal>http:</literal> and
-<literal>https</literal>.
+	  <para>In Sun's &j2se; 6.0, <literal>file:</literal>,
+<literal>ftp:</literal>, <literal>jar:</literal>,
+<literal>http:</literal> and <literal>https:</literal>.
 </para>
       </footnote>, the &mime; parser to be used can be specified by the
 developer. If unspecified, the default is taken from the source (for
@@ -331,31 +459,31 @@ example, the &http; server). If no such information is available,
 <literal>text/xml</literal> will be used.
      </para>
 
-    <section>
-      <title><literal>application/octet-stream</literal></title>
+      <section>
+	<title><literal>application/octet-stream</literal></title>
 
-      <para>The <literal>application/octet-stream</literal> parser loads
-a resource as-is into a Java <classname>ByteBuffer</classname>
+	<para>The <literal>application/octet-stream</literal> parser
+loads a resource as-is into a Java <classname>ByteBuffer</classname>
 object.</para>
-    </section>
+      </section>
 
-    <section>
-      <title><literal>application/xslt+xml</literal></title>
+      <section>
+	<title><literal>application/xslt+xml</literal></title>
 
-      <para>The <literal>application/xslt+xml</literal> parser loads and
-compiles an &xslt; style-sheet into an &es;
+	<para>The <literal>application/xslt+xml</literal> parser loads
+and compiles an &xslt; style-sheet into an &es;
 <classname>XSLTProcessor</classname> object.</para>
 
-      <note>
-	<para>This parser and <classname>XSLTProcessor</classname> are
+	<note>
+	  <para>This parser and <classname>XSLTProcessor</classname> are
 not yet implemented.</para>
-      </note>
-    </section>
+	</note>
+      </section>
 
-    <section>
-      <title><literal>image/*</literal></title>
+      <section>
+	<title><literal>image/*</literal></title>
 
-      <para>The <literal>image</literal> class of parses loads the
+	<para>The <literal>image</literal> class of parses loads the
 specified resource as a Java <classname>BufferedImage</classname>
 object. The file types supported by &j2se; 6.0 are:
 <literal>image/bmp</literal>, <literal>image/gif</literal>,
@@ -363,59 +491,227 @@ object. The file types supported by &j2se; 6.0 are:
 <literal>image/wbmp</literal>. Use <literal>image/*</literal> to
 automatically identify the image type.</para>
 
-      <para>When specifying a specific image type, the unofficial
+	<para>When specifying a specific image type, the unofficial
 <parameter>x-index</parameter> parameter can be used to specify the
 index of the image, in case the file contains multiple images.</para>
-    </section>
+      </section>
 
-    <section>
-      <title><literal>text/html</literal></title>
+      <section>
+	<title><literal>text/html</literal></title>
 	
-      <para>The <literal>text/html</literal> parser loads the resource
-as an &html; file, using the &html; parser <citation><xref
-linkend="htmlcleaner"/></citation>, to transform the document into
-well-formed &xml;.  The <parameter>charset</parameter> parameter can be
-used to specify the character set to be used. The result is an
-<classname>XML</classname> object.</para>
-    </section>
+	<para>The <literal>text/html</literal> parser loads the resource
+as an &html; file, using the &html; parser &htmlcleaner;, to transform
+the document into well-formed &xml;.  The <parameter>charset</parameter>
+parameter can be used to specify the character set to be used. The
+result is an <classname>XML</classname> object.</para>
+      </section>
 
-    <section>
-      <title><literal>text/plain</literal></title>
+      <section>
+	<title><literal>text/plain</literal></title>
 	
-      <para>The <literal>text/plain</literal> parser loads the resource
-as a plain <classname>String</classname>. The
+	<para>The <literal>text/plain</literal> parser loads the
+resource as a plain <classname>String</classname>. The
 <parameter>charset</parameter> parameter can be used to specify the
 character set to be used.</para>
-    </section>
+      </section>
 
-    <section>
-      <title><literal>text/xml</literal></title>
+      <section>
+	<title><literal>text/xml</literal></title>
 	
-      <para>The <literal>text/xml</literal> parser loads the resource as
-an &es; <classname>XML</classname> object. The document must be
+	<para>The <literal>text/xml</literal> parser loads the resource
+as an &es; <classname>XML</classname> object. The document must be
 well-formed and if it has a <sgmltag class="element">DOCTYPE</sgmltag>,
 external entities will be included as well.</para>
-    </section>
+      </section>
 
-    <section>
-      <title><literal>text/x-sql</literal></title>
+      <section>
+	<title><literal>text/x-sql</literal></title>
 
-      <para><literal>text/x-sql</literal> is not supported as a
+	<para><literal>text/x-sql</literal> is not supported as a
 parser. In &esxx;, it's only as query type for <literal>jdbc:</literal>
 URIs.</para>
+      </section>
     </section>
+  </section>
 
+  <section id="examples">
+    <title>Examples</title>
+
+    <para>The following examples give a quick glimpse of how a few small
+&esxx; applications might look like. Although the <sgmltag
+class="pi">esxx</sgmltag> processing instruction used here should only
+be used to <quote>bootstrap</quote> the application, these examples
+include the full implementation in one single program listing for
+brevity.</para>
+
+    <para>The <filename>html.xslt</filename> stylesheet referred to in
+some of the examples is listed in <xref linkend="appendix.xslt"/>.</para>
+
+    <example id="example.hello">
+      <title>Hello, world!</title>
+      
+      <para>A minimal application that returns <quote>Hello,
+world!</quote> as a plain <literal>text/plain</literal> document.</para>
+
+      <programlisting linenumbering="numbered"><![CDATA[<?xml version="1.0"?>
+
+<esxx xmlns="http://martin.blom.org/esxx/1.0/">
+    <settings>
+      <handler type="GET" function="handleGet" />
+    </settings>
+</esxx>
+
+<?esxx
+
+function handleGet() {
+  return "Hello, world!";
+}
+
+?>]]></programlisting>
+    </example>
+
+    <example id="example.trans">
+      <title>&xml; to &html; transformation</title>
+      
+      <para>An application that returns an &xml; document that is
+transformed by a &xslt; stylesheet into an &html; document.</para>
+
+      <para>An &http; query parameter called <varname>name</varname> can be
+used to customize the result<footnote>
+	  <para>The observant reader might wonder if <xref
+linkend="example.trans"/> is not subject to &html; injection and
+Cross-Site Scripting attacks. The answer is <emphasis>no</emphasis>. The
+<varname>name</varname> variable is a <classname>String</classname> and
+it will be inserted in the &xml; document as a
+<classname>Text</classname> node &mdash; which the stylesheet
+transformer will encode correctly.</para>
+</footnote>.</para>
+
+      <para>Notice how the &xml; document is returned as an &e4x;
+<classname>XML</classname> object. The &mime; type
+<literal>text/html</literal> is used to specify that the
+<filename>html.xslt</filename> stylesheet should be applied to the &xml;
+result.</para>
+
+      <programlisting linenumbering="numbered"><![CDATA[<?xml version="1.0"?>
+
+<esxx xmlns="http://martin.blom.org/esxx/1.0/">
+    <settings>
+      <handler type="GET" function="handleGet" />
+      <stylesheet type="text/html" href="html.xslt"/>
+    </settings>
+</esxx>
+
+<?esxx
+
+function handleGet() {
+  var name = esxx.query.name || "world";
+
+  return ["text/html", <para>Hello, {name}!</para>];
+}
+
+?>]]></programlisting>
+    </example>
+  </section>
+
+  <section>
+    <title>Conclusion</title>
+
+    <para>&esxx; is a free, light-weight and easy-to-use Web/&xml;
+application server, suitable for driving everything from simple web
+services to large, distributed web sites.</para>
+
+    <para>By building upon the versatile &j2se; 6.0 platform, a rich,
+mature software platform is blended with a &es;-based rapid web
+development environment.</para>
+
+    <para>This paper has hopefully given a brief overview of how &esxx;
+works, what it can do and how basic &esxx; applications might look
+like. More information is available in &esxx-home;.</para>
   </section>
 
   <bibliography>
     <title>References</title>
 
-    <biblioentry id="htmlcleaner">
-      <abbrev id="htmlcleaner.abbrev">HtmlCleaner</abbrev>
-      <title><ulink url="http://htmlcleaner.sourceforge.net/">The <application>HtmlCleaner</application> project</ulink></title>
+    <biblioentry id="apache">
+      <abbrev>Apache</abbrev>
+      <title><ulink url="http://httpd.apache.org/">The <application>Apache &http; server</application> project</ulink></title>
       <publisher>
-	<publishername>SourceForge</publishername>
+	<publishername>The Apache Software Foundation</publishername>
       </publisher>
     </biblioentry>
+
+    <biblioentry id="esxx-home">
+      <abbrev>ESXX</abbrev>
+      <title><ulink url="http://martin.blom.org/esxx/">The &esxx; project</ulink></title>
+      <author>
+	<firstname>Martin</firstname>
+	<surname>Blom</surname>
+      </author>
+      <publisher>
+	<publishername>Divine Software</publishername>
+      </publisher>
+    </biblioentry>
+
+    <biblioentry id="fastcgi">
+      <abbrev>FastCGI</abbrev>
+      <title><ulink url="http://www.fastcgi.com/">The <application>FastCGI</application> project</ulink></title>
+      <publisher>
+	<publishername>Rob Saccoccio</publishername>
+      </publisher>
+    </biblioentry>
+
+    <biblioentry id="htmlcleaner">
+      <abbrev>HtmlCleaner</abbrev>
+      <title><ulink url="http://htmlcleaner.sourceforge.net/">The <application>HtmlCleaner</application> project</ulink></title>
+      <author>
+	<firstname>Vladimir</firstname>
+	<surname>Nikic</surname>
+      </author>
+    </biblioentry>
+
+    <biblioentry id="ice">
+      <abbrev>Ice</abbrev>
+      <title><ulink url="http://www.zeroc.com/ice.html">The Internet Communications Engine</ulink></title>
+      <publisher>
+	<publishername>ZeroC</publishername>
+      </publisher>
+    </biblioentry>
+
+    <biblioentry id="jfast">
+      <abbrev>JFast</abbrev>
+      <title><ulink url="http://www.stewartspeak.com/projects/jfast/">The <application>JFast</application> project</ulink></title>
+      <author>
+	<firstname>Stewart</firstname>
+	<surname>Ulm</surname>
+      </author>
+      <publisher>
+	<publishername>Moderate Design</publishername>
+      </publisher>
+    </biblioentry>
+
+    <biblioentry id="rhino">
+      <abbrev>Rhino</abbrev>
+      <title><ulink url="http://www.mozilla.org/rhino/">Rhino: JavaScript for Java</ulink></title>
+      <author>
+	<firstname>Norris</firstname>
+	<surname>Boyd</surname>
+      </author>
+      <publisher>
+	<publishername>Mozilla</publishername>
+      </publisher>
+    </biblioentry>
+
   </bibliography>
+
+  <appendix id="appendix.xslt">
+    <title ><filename>html.xslt</filename></title>
+
+    <para>The <filename>html.xslt</filename> &xslt; stylesheet used by
+some of the examples in <xref linkend="examples"/> is defined as follows:</para>
+    <programlisting>
+<![CDATA[
+]]>
+    </programlisting>
+  </appendix>
 </article>
