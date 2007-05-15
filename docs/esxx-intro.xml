@@ -681,7 +681,7 @@ function handleGet() {
   db.user = "esxx";
   db.password = "secret";
 
-  var result = db.query("select * from customers where id = {customer_id}");
+  var result = db.query("SELECT * FROM customers WHERE id = {customer_id}");
 
   return ["text/html", <customer>{result.entry[0].*}</customer>];
 }
