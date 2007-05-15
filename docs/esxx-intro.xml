@@ -19,6 +19,9 @@
 <!ENTITY xml  "<acronym>XML</acronym>">
 <!ENTITY xslt "<acronym>XSLT</acronym>">
 
+<!ENTITY js         "<application>JavaScript</application>">
+<!ENTITY postgresql "<application>PostgreSQL</application>">
+
 <!ENTITY apache      "<citation><xref linkend='apache'/></citation>">
 <!ENTITY esxx-home   "<citation><xref linkend='esxx-home'/></citation>">
 <!ENTITY fastcgi     "<citation><xref linkend='fastcgi'/></citation>">
@@ -33,7 +36,10 @@
 <article lang="en">
   <title>Introducing &esxx;</title>
 <!--  <subtitle>The friendly Web/XML Application Server</subtitle>-->
+  
   <articleinfo>
+    <pubdate>2007-05-15</pubdate>
+
     <author>
       <firstname>Martin</firstname>
       <surname>Blom</surname>
@@ -42,10 +48,11 @@
                <postcode>SE-58734</postcode> <city>Linköping</city>, 
                <country>Sweden</country></address>
     </author>
+    
     <abstract>
       <title>Abstract</title>
       <para>&esxx; is a free, easy-to-install, easy-to-use, no-nonsense
-&es; application server, incorporating familar technologies such as
+&es; application server, incorporating familiar technologies such as
 &xml;, &xslt;, &sql;, &ldap; and Java into one single package.</para>
     </abstract>
 
@@ -66,7 +73,7 @@
   <section>
     <title>Introduction</title>
     
-    <para>In the late 90's, I was involved in the development of a a
+    <para>In the late 90's, I was involved in the development of a
 Web/&xml; application server. During that time, we realized the benefits
 of using data-driven programming for server-based web applications. In
 this context, data-driven programming means that the data, that is to be
@@ -80,18 +87,45 @@ the user in the logic stage and not <emphasis>how</emphasis>, the
 programmer can focus on what he or she is good at, and leave
 presentation and graphical design to those who knows
 better<footnote>
-	<para>In the current &ajax;-crazy world, this methodology works
-even better than it used to do.</para>
+	<para>In the current &ajax;-crazy world, this methodology actually
+works even better than it used to do.</para>
       </footnote>.</para>
 
     <para>Six years later, after a period of not being involved with
-anything web related at all, I find that people are
-<emphasis>still</emphasis> mixing &html; and server-side code on a
-regular basis.</para>
+anything web related at all, I was looking around for a free,
+easy-to-use tool to drive a site I was planning, but found nothing that
+I liked. So, I decided to roll my own: &esxx;.</para>
 
-    <para>Additionally, when looking around for a free, easy-to-use tool
-to drive a site I was planning, I found nothing that I liked. So, I
-decided to roll my own: &esxx;.</para>
+    <para>The main design parameters of &esxx; are:</para>
+
+    <orderedlist>
+      <listitem>
+	<para>Ease-of-use &mdash; easy installation, little or no
+configuration, quick deployment, rapid development.</para>
+      </listitem>
+
+      <listitem>
+	<para>&es; &mdash; a new employment required &js; knowledge,
+which I didn't have, so the choice of script language was a
+given. &e4x; was another major reason.</para>
+      </listitem>
+
+      <listitem>
+	<para>Data-driven &mdash; <emphasis>no</emphasis> mixing of
+&html; and code, ever. Period.</para>
+      </listitem>
+
+      <listitem>
+	<para>Standards based &mdash; &xml;, &xslt;, &html;, &sql;
+&hellip; Simply put, stuff that people already know.</para>
+      </listitem>
+
+      <listitem>
+	<para>Extensibility &mdash; what &esxx; doesn't provide directly,
+must be easily available in some other way. Java and &rhino; satisfies
+that criteria.</para>
+      </listitem>
+    </orderedlist>
 
     <para>&esxx; is pronounced <quote>Essex</quote> and was originally
 an acronym for <quote>&es;, &xml; and &xslt;</quote>.</para>
@@ -105,12 +139,12 @@ server. Apart from that, all extra Java packages, including the &es;
 engine &rhino;, are included in the &esxx; <acronym>JAR</acronym>
 file.</para>
 
-    <para>&esxx; is a &fastcgi; appliaction, so if you're using
+    <para>&esxx; is a &fastcgi; application, so if you're using
 &apache;, make sure it's configured with
 <application>mod_fastcgi</application> enabled.</para>
 
-    <para>&esxx; is licensed under GPL version 2. It includes software
-components that use BSD-like licenses (&htmlcleaner; and
+    <para>&esxx; is licensed under GPL version 2. It also includes
+software components that use BSD-like licenses (&htmlcleaner; and
 &jfast;). </para>
 
     <para>Closed-source licensing is possible; contact
@@ -119,7 +153,7 @@ components that use BSD-like licenses (&htmlcleaner; and
     <warning>
       <para>Applications executed by &esxx; are considered to be linked
 to the GPL'ed runtime and thus subject to the GPL license. However,
-since these applications are fully server-side, they are ususally never
+since these applications are fully server-side, they are usually never
 <quote>distributed</quote> to the clients. Nevertheless, any person that
 has access to the (server-side) &es; code is entitled to enjoy it
 according to the GPL license.</para>
@@ -137,8 +171,8 @@ node that the state-less &esxx; clients communicate with using &ice;,
 with <acronym>TCP</acronym>, <acronym>SSL</acronym> or
 <acronym>UDP</acronym> as transport layer.</para>
 
-    <para>In order to understand how &esxx; applications are meant to
-work, the following example illustrates the intendend workflow.</para>
+    <para>The following example illustrates the intended workflow of
+&esxx; applications.</para>
     
     <orderedlist>
       <listitem>
@@ -147,7 +181,7 @@ work, the following example illustrates the intendend workflow.</para>
 
       <listitem>
 	<para>If the application is not yet in memory, it is loaded, all
-&es; code is compiled and all request handlers and &xslt; stylesheets
+&es; code and &xslt; stylesheets are compiled and all request handlers
 are registered. The application is started by executing the &es;
 code. Typically, that will create and initialize an application object
 that will later handle all client requests.</para>
@@ -167,7 +201,7 @@ actions.</para>
 
       <listitem>
 	<para>The handler processes the request and returns a
-result. Typically, this is an &xml; document maked as
+result. Typically, this is an &xml; document marked as
 <literal>text/xml</literal>, but raw byte data and image results are
 also possible.</para>
 
@@ -190,17 +224,19 @@ into an unstyled &html; document.</para>
 	<para>The &xslt; stylesheet has access to the &es; environment
 and it's possible to use custom &xslt; extension elements implemented in
 &es;. For example, a web page stylesheet could invoke &es; code to
-insert targeted advertisement or other <quote>extras</quote>, not
-really related to the application logic.</para>
+insert targeted advertisement or other <quote>extras</quote> that are
+not really part of the applications logic, but still requires code
+beyond plain &xslt; rules to be executed.</para>
 
 	<para>It is also the stylesheet that sets the final &mime; type
 that is to be presented to the client.</para>
       </listitem>
 
       <listitem>
-	<para>The client receives the data and if the client was a
-actually a web browser, applies futher processing using &xslt;, &css;
-and client-side &es; and presents the result to the user.</para>
+	<para>The client receives the data and &mdash; if the client was
+a actually a web browser &mdash; applies further processing using
+client-side&xslt;, &css; and client-side &es; and presents the result to
+the user.</para>
       </listitem>
     </orderedlist>
   </section>
@@ -241,9 +277,9 @@ execute on one single node only &mdash; <emphasis>sessions</emphasis> are
 used to coordinate multiple instances of the application.</para>
     
     <para>An application instance defines an executing environment which
-is shared by all request handler threads for this application. If a
+is shared by all request handler threads for the application. If a
 request handler modified a global or otherwise shared variable, proper
-syncronization must be used. The executing environment is preserved
+synchronization must be used. The executing environment is preserved
 between requests to the same application instance, until the application
 is restarted or flushed from memory.</para>
 
@@ -269,7 +305,7 @@ databases and &ldap; directories.</para>
 	<title>The <methodname>delete</methodname>() method</title>
 
 	<para>The <methodname>delete</methodname>() method is used to
-permamently remove a resource.</para>
+permanently remove a resource.</para>
 
 	<note>
 	  <para>Not yet implemented.</para>
@@ -318,7 +354,7 @@ response.</para>
 	    <listitem>
 	      <para>A query to the &ldap; directory is performed and the
 returned entries are returned as an &xml; structure. The
-<literal>text/xml</literal> parser must be used, which is the
+<literal>text/xml</literal> parser must be used, which is also the
 default.</para>
 	    </listitem>
 	  </varlistentry>
@@ -356,7 +392,7 @@ and saved to the specified file.</para>
 <literal>https:</literal></term>
 	    <listitem>
 	      <para>The variable is serialized into the specified format
-and stored using the <command>PUT</command> &http; method.</para>
+and stored using the &http; <command>PUT</command> method.</para>
 	      <note>
 		<para>Not yet implemented.</para>
 	      </note>
@@ -380,9 +416,9 @@ and stored using the <command>PUT</command> &http; method.</para>
 	  <varlistentry>
 	    <term><literal>mailto:</literal></term>
 	    <listitem>
-	      <para>An email is sent to the specified recipients.
-Different &mime; types can be used for the email body, but multipart
-messages or attachments are not supported.</para>
+	      <para>An email is sent to the specified recipient(s).  Any
+&mime; type can be used for the email body, but multipart messages or
+attachments are not supported.</para>
 	    </listitem>
 	  </varlistentry>
 	</variablelist>
@@ -407,7 +443,7 @@ perform queries to a resource and the result will be returned.
 	    <term><literal>http:</literal>,
 <literal>https:</literal></term>
 	    <listitem>
-	      <para>A &http; <command>POST</command> request is
+	      <para>An &http; <command>POST</command> request is
 performed.</para>
 
 	      <note>
@@ -419,7 +455,7 @@ performed.</para>
 	  <varlistentry>
 	    <term><literal>jdbc:</literal></term>
 	    <listitem>
-	      <para>An &sql; query to an &jdbc;-enabled database will be
+	      <para>An &sql; query to a &jdbc;-enabled database will be
 executed and the result set will be returned as an &xml; structure. The
 query type must be <literal>text/x-sql</literal>, which is also the
 default.</para>
@@ -471,7 +507,7 @@ object.</para>
 	<title><literal>application/xslt+xml</literal></title>
 
 	<para>The <literal>application/xslt+xml</literal> parser loads
-and compiles an &xslt; style-sheet into an &es;
+and compiles an &xslt; stylesheet into an &es;
 <classname>XSLTProcessor</classname> object.</para>
 
 	<note>
@@ -487,7 +523,7 @@ not yet implemented.</para>
 specified resource as a Java <classname>BufferedImage</classname>
 object. The file types supported by &j2se; 6.0 are:
 <literal>image/bmp</literal>, <literal>image/gif</literal>,
-<literal>image/jpeg</literal>, <literal>image/png</literal> and ,
+<literal>image/jpeg</literal>, <literal>image/png</literal> and
 <literal>image/wbmp</literal>. Use <literal>image/*</literal> to
 automatically identify the image type.</para>
 
@@ -574,24 +610,7 @@ function handleGet() {
       <title>&xml; to &html; transformation</title>
       
       <para>An application that returns an &xml; document that is
-transformed by a &xslt; stylesheet into an &html; document.</para>
-
-      <para>An &http; query parameter called <varname>name</varname> can be
-used to customize the result<footnote>
-	  <para>The observant reader might wonder if <xref
-linkend="example.trans"/> is not subject to &html; injection and
-Cross-Site Scripting attacks. The answer is <emphasis>no</emphasis>. The
-<varname>name</varname> variable is a <classname>String</classname> and
-it will be inserted in the &xml; document as a
-<classname>Text</classname> node &mdash; which the stylesheet
-transformer will encode correctly.</para>
-</footnote>.</para>
-
-      <para>Notice how the &xml; document is returned as an &e4x;
-<classname>XML</classname> object. The &mime; type
-<literal>text/html</literal> is used to specify that the
-<filename>html.xslt</filename> stylesheet should be applied to the &xml;
-result.</para>
+transformed by an &xslt; stylesheet into an &html; document.</para>
 
       <programlisting linenumbering="numbered"><![CDATA[<?xml version="1.0"?>
 
@@ -611,6 +630,66 @@ function handleGet() {
 }
 
 ?>]]></programlisting>
+
+      <para>An &http; query parameter called <varname>name</varname> can be
+used to customize the result<footnote>
+	  <para>The observant reader might wonder if <xref
+linkend="example.trans"/> is not subject to &html; injection and
+Cross-Site Scripting attacks. The answer is <emphasis>no</emphasis>. The
+<varname>name</varname> variable is a <classname>String</classname> and
+it will be inserted in the &xml; document as a
+<classname>Text</classname> node &mdash; which the stylesheet
+transformer will encode correctly.</para>
+</footnote>.</para>
+
+      <para>Notice how the &xml; document is returned as an &e4x;
+<classname>XML</classname> object. The &mime; type
+<literal>text/html</literal> is used to specify that the
+<filename>html.xslt</filename> stylesheet should be applied to the &xml;
+result.</para>
+    </example>
+
+    <example id="example.sql">
+      <title>&sql; queries</title>
+      
+      <para>A small &sql; application that returns customer
+information from an &postgresql; database
+called <varname>esxx</varname>. The custumer ID (an integer) is
+taken from the <varname>id</varname> &http; query parameter<footnote>
+	  <para>Again, note the lack of both &html; and &sql; injection
+vulnerabilities!</para>
+	</footnote>. The result is transformed to an &html; table by the
+<filename>html.xslt</filename> stylesheet.</para>
+
+      <programlisting linenumbering="numbered"><![CDATA[<?xml version="1.0"?>
+
+<esxx xmlns="http://martin.blom.org/esxx/1.0/">
+    <settings>
+      <handler type="GET" function="handleGet" />
+      <stylesheet type="text/html" href="html.xslt"/>
+    </settings>
+</esxx>
+
+<?esxx
+
+java.lang.Class.forName("org.postgresql.Driver");
+
+function handleGet() {
+  var customer_id = parseInt(esxx.query.id);
+
+  var db = new URI("jdbc:postgresql:esxx");
+  db.user = "esxx";
+  db.password = "secret";
+
+  var result = db.query("select * from customers where id = {customer_id}");
+
+  return ["text/html", <customer>{result.entry[0].*}</customer>];
+}
+
+?>]]></programlisting>
+
+      <para>&sql; commands to create and populate a suitable database
+can be found in <xref linkend="appendix.sql"/>.</para>
     </example>
   </section>
 
@@ -619,10 +698,11 @@ function handleGet() {
 
     <para>&esxx; is a free, light-weight and easy-to-use Web/&xml;
 application server, suitable for driving everything from simple web
-services to large, distributed web sites.</para>
+services to large &mdash; but not too complex &mdash; distributed web
+sites.</para>
 
     <para>By building upon the versatile &j2se; 6.0 platform, a rich,
-mature software platform is blended with a &es;-based rapid web
+mature software platform is blended with an &es;-based rapid web
 development environment.</para>
 
     <para>This paper has hopefully given a brief overview of how &esxx;
@@ -709,10 +789,53 @@ like. More information is available in &esxx-home;.</para>
 
     <para>The <filename>html.xslt</filename> &xslt; stylesheet used by
 some of the examples in <xref linkend="examples"/> is defined as follows:</para>
-    <programlisting>
+    <programlisting linenumbering="numbered">
 <![CDATA[
 ]]>
     </programlisting>
+  </appendix>
+
+  <appendix id="appendix.sql">
+    <title ><filename>customers.sql</filename></title>
+
+    <para>A listing of &postgresql; and &sql; commands that creates a
+suitable database for use with <xref linkend="example.sql"/>
+follows.</para>
+
+    <screen><![CDATA[
+$ createuser --no-adduser --no-createdb --pwprompt esxx
+Enter password for new user: secret
+Enter it again: secret
+CREATE USER
+$ createdb --encoding UTF-8 --owner esxx esxx
+CREATE DATABASE
+$ psql -U esxx -h localhost esxx
+Welcome to psql 7.4.16, the PostgreSQL interactive terminal.
+
+Type:  \copyright for distribution terms
+       \h for help with SQL commands
+       \? for help on internal slash commands
+       \g or terminate with semicolon to execute query
+       \q to quit
+esxx=# CREATE TABLE customers(id SERIAL PRIMARY KEY, 
+esxx(#                        name VARCHAR(64), 
+esxx(#                        address VARCHAR(256), 
+esxx(#                        country VARCHAR(64));
+NOTICE:  CREATE TABLE will create implicit sequence "customers_id_seq" 
+for "serial" column "customers.id"
+NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index 
+"customers_pkey" for table "customers"
+CREATE TABLE
+esxx=# INSERT INTO customers(name, address, country) 
+esxx-#             VALUES('Martin Blom', 'Luftvarnsgatan 42', 'Sweden');
+INSERT 20994 1
+esxx=# INSERT INTO customers(name, address, country) 
+esxx-#             VALUES('John Doe', 'Street', 'USA');
+INSERT 20995 1
+esxx=# \q
+$
+]]></screen>
+
   </appendix>
 </article>
 
