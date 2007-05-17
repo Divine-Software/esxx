@@ -106,11 +106,7 @@ public class JSURI
 	throw Context.reportRuntimeError("Missing query argument"); 
       }
 
-      if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
-	type = parseMIMEType(Context.toString(args[1]), params);
-      }
-
-      return js_this.query(cx, thisObj, Context.toString(args[0]), type, params);
+      return js_this.query(cx, thisObj, args);
     }
 
 
@@ -173,8 +169,7 @@ public class JSURI
     }
 
 
-    protected Object query(Context cx, Scriptable thisObj,
-			   String query, String type, HashMap<String,String> params)
+    protected Object query(Context cx, Scriptable thisObj, Object[] args)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
 				       "' does not support query()."); 
