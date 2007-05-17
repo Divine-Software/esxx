@@ -106,7 +106,7 @@ configuration, quick deployment, rapid development.</para>
 
       <listitem>
 	<para>&es; &mdash; a new employment required &js; knowledge,
-which I didn't have, so the choice of script language was a
+which I didn't have, so the choice of scripting language was a
 given. &e4x; was another major reason.</para>
       </listitem>
 
@@ -650,14 +650,14 @@ result.</para>
     </example>
 
     <example id="example.sql">
-      <title>&sql; queries</title>
+      <title>&sql; query</title>
       
-      <para>A small &sql; application that returns customer
-information from an &postgresql; database
-called <varname>esxx</varname>. The custumer ID (an integer) is
-taken from the <varname>id</varname> &http; query parameter<footnote>
-	  <para>Again, note the lack of both &html; and &sql; injection
-vulnerabilities!</para>
+      <para>A small &sql; application that returns customer information
+from an &postgresql; database called <varname>esxx</varname>. The
+custumer name to search for is taken from the <varname>name</varname>
+&http; query parameter<footnote>
+	  <para>Again, pay attention the lack of both &html; and &sql;
+injection vulnerabilities.</para>
 	</footnote>. The result is transformed to an &html; table by the
 <filename>html.xslt</filename> stylesheet.</para>
 
@@ -672,18 +672,18 @@ vulnerabilities!</para>
 
 <?esxx
 
-java.lang.Class.forName("org.postgresql.Driver");
+var db = new URI("jdbc:postgresql:esxx");
+db.user = "esxx";
+db.password = "secret";
 
 function handleGet() {
-  var customer_id = parseInt(esxx.query.id);
+  var match = esxx.query.name + "%";
 
-  var db = new URI("jdbc:postgresql:esxx");
-  db.user = "esxx";
-  db.password = "secret";
+  var result = db.query("SELECT * FROM customers WHERE name LIKE {match}");
 
-  var result = db.query("SELECT * FROM customers WHERE id = {customer_id}");
-
-  return ["text/html", <customer>{result.entry[0].*}</customer>];
+  return ["text/html", <customer query="{esxx.query.name}">
+                         {result.*}
+                       </customer>];
 }
 
 ?>]]></programlisting>
@@ -803,13 +803,7 @@ suitable database for use with <xref linkend="example.sql"/>
 follows.</para>
 
     <screen><![CDATA[
-$ createuser --no-adduser --no-createdb --pwprompt esxx
-Enter password for new user: secret
-Enter it again: secret
-CREATE USER
-$ createdb --encoding UTF-8 --owner esxx esxx
-CREATE DATABASE
-$ psql -U esxx -h localhost esxx
+[postgres ~] $ psql
 Welcome to psql 7.4.16, the PostgreSQL interactive terminal.
 
 Type:  \copyright for distribution terms
@@ -817,23 +811,41 @@ Type:  \copyright for distribution terms
        \? for help on internal slash commands
        \g or terminate with semicolon to execute query
        \q to quit
-esxx=# CREATE TABLE customers(id SERIAL PRIMARY KEY, 
-esxx(#                        name VARCHAR(64), 
-esxx(#                        address VARCHAR(256), 
-esxx(#                        country VARCHAR(64));
+
+postgres=# CREATE USER esxx WITH PASSWORD 'secret';
+CREATE USER
+postgres=# CREATE DATABASE esxx WITH OWNER esxx ENCODING 'UTF-8';
+CREATE DATABASE
+postgres=# \q
+[postgres ~]$ psql -U esxx -h localhost esxx
+Password: secret
+Welcome to psql 7.4.16, the PostgreSQL interactive terminal.
+
+Type:  \copyright for distribution terms
+       \h for help with SQL commands
+       \? for help on internal slash commands
+       \g or terminate with semicolon to execute query
+       \q to quit
+
+esxx=> CREATE TABLE customers(id SERIAL PRIMARY KEY, 
+esxx(>                        name VARCHAR(64), 
+esxx(>                        address VARCHAR(256), 
+esxx(>                        country VARCHAR(64));
 NOTICE:  CREATE TABLE will create implicit sequence "customers_id_seq" 
 for "serial" column "customers.id"
 NOTICE:  CREATE TABLE / PRIMARY KEY will create implicit index 
 "customers_pkey" for table "customers"
 CREATE TABLE
-esxx=# INSERT INTO customers(name, address, country) 
-esxx-#             VALUES('Martin Blom', 'Luftvarnsgatan 42', 'Sweden');
+esxx=> CREATE INDEX customers_name_index ON customers (name);
+CREATE INDEX
+esxx=> INSERT INTO customers (name, address, country) 
+esxx->             VALUES('Martin Blom', 'Luftvarnsgatan 42', 'Sweden');
 INSERT 20994 1
-esxx=# INSERT INTO customers(name, address, country) 
-esxx-#             VALUES('John Doe', 'Street', 'USA');
+esxx=> INSERT INTO customers (name, address, country) 
+esxx->             VALUES('John Doe', 'Street', 'USA');
 INSERT 20995 1
-esxx=# \q
-$
+esxx=> \q
+[postgres ~]$
 ]]></screen>
 
   </appendix>
