@@ -45,78 +45,15 @@ public class JdbcURI
       Document   result = esxx.createDocument("result");
       Element    root   = result.getDocumentElement();
 
-      StringBuilder sb = new StringBuilder();
-
-      boolean quote1 = false;
-      boolean quote2 = false;
-      char    escape = '\\';
-
-      java.util.ArrayList<String> vars = new java.util.ArrayList<String>();
-
-      for (int i = 0; i < query.length(); ++i) {
-	if (query.charAt(i) == escape) {
-	  sb.append(query.charAt(i));
-
-	  ++i;
-
-	  if (i != query.length()) {
-	    sb.append(query.charAt(i));
-	  }
-
-	  continue;
-	}
-	  
-	if (!quote2 && query.charAt(i) == '\'') {
-	  quote1 = !quote1;
-	}
-	else if (!quote1 && query.charAt(i) == '"') {
-	  quote2 = !quote2;
-	}
-	  
-	if (!quote1 && 
-	    !quote2 && 
-	    query.charAt(i) == '{' &&
-	    i + 3 < query.length() &&
-	    Character.isJavaIdentifierStart(query.charAt(i + 1))) {
-	  for (int j = i + 2; j < query.length(); ++j) {
-	    if (query.charAt(j) == '}') {
-	      // Found a variable reference. Store it and put a ? in the SQL query.
-	      String var = query.substring(i + 1, j);
-
-	      System.err.println("Found var " + var);
-	      vars.add(var);
-
-	      sb.append('?');
-	      i = j + 1;
-	    }
-	    else if (!Character.isJavaIdentifierPart(query.charAt(j))) {
-	      // Append char as-is and break out of inner loop
-	      sb.append(query.charAt(i));
-	      break;
-	    }
-	  }
-	}
-	else {
-	  // Append char
-	  sb.append(query.charAt(i));
-	}
-      }
-
-      System.out.println("Original  : " + query);
-      System.out.println("Translated: " + sb.toString());
-
-      CallableStatement sql = db.prepareCall(sb.toString());
+      CallableStatement sql = db.prepareCall(query);
       ParameterMetaData pmd = sql.getParameterMetaData();
 
-      System.err.println("Got pmd: " + pmd);
       for (int i = 1; i <= pmd.getParameterCount(); ++i) {
-	try {
-	  System.err.println(i + ": " + pmd.getParameterClassName(i));
-	  System.err.println(i + ": " + pmd.getParameterMode(i));
-	  System.err.println(i + ": " + pmd.getParameterType(i));
-	  System.err.println(i + ": " + pmd.getParameterTypeName(i));
+	switch (pmd.getParameterType(i)) {
+	  default:
+	    sql.setObject(i, args[i]);
+	    break;
 	}
-	catch (Exception ex) {}
       }
 
       if (sql.execute()) {

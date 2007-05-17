@@ -1,5 +1,8 @@
 
+var GLOB = "kalle";
+
 function MyApp(e) {
+  this.inside_my = "";
 
   this.handleError = function(ex) {
 	esxx.debug.println("**** START ERROR HANDLER ****");
@@ -8,7 +11,11 @@ function MyApp(e) {
 	return <html><body>{ex}</body></html>
     };
 
+  var FUN = "kalle";
+
   this.handleGet = function() {
+    var local = "t%";
+
     esxx.headers.Status = "201 OK";
     esxx.debug.println("**** START GET HANDLER ****")
 
@@ -17,17 +24,18 @@ function MyApp(e) {
 //     esxx.debug.println(ldap.load());
 //     esxx.debug.println(new URI("build").load());
     
-//     java.lang.Class.forName("org.postgresql.Driver");
-//     var db = new URI("jdbc:postgresql:martin");
-//     db.user = "martin";
+    var db = new URI("jdbc:postgresql:martin?user=martin&password=martin");
+//    db.user = "martin";
 //     db.password = "martin";
-//     esxx.debug.println(db.query("select * from test"));
+
+    esxx.debug.println(db.query("select * from test where name like ? or apan = ?", 
+				local, "30"));
 
 //     var uri = new URI("http://martin.blom.org/");
 //     esxx.debug.println(uri.load());
 
-    var uri = new URI("http://www.foi.se/upload/GD_portr%C3%A4tt.jpg");
-    esxx.debug.println(uri.load("image/*"));
+//     var uri = new URI("http://www.foi.se/upload/GD_portr%C3%A4tt.jpg");
+//     esxx.debug.println(uri.load("image/*"));
 
 //     var mailto1 = new URI("mailto:addr1%2C%20addr2");
 //     var mailto2 = new URI("mailto:?to=addr1%2C%20addr2");
