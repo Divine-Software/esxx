@@ -672,14 +672,13 @@ injection vulnerabilities.</para>
 
 <?esxx
 
-var db = new URI("jdbc:postgresql:esxx");
-db.user = "esxx";
-db.password = "secret";
+var db = new URI("jdbc:postgresql:esxx?user=esxx&password=secret");
 
 function handleGet() {
   var match = esxx.query.name + "%";
 
-  var result = db.query("SELECT * FROM customers WHERE name LIKE {match}");
+  var result = db.query("SELECT * FROM customers WHERE name LIKE ?", 
+                         match);
 
   return ["text/html", <customer query="{esxx.query.name}">
                          {result.*}
@@ -802,7 +801,7 @@ some of the examples in <xref linkend="examples"/> is defined as follows:</para>
 suitable database for use with <xref linkend="example.sql"/>
 follows.</para>
 
-    <screen><![CDATA[
+    <screen linenumbering="numbered"><![CDATA[
 [postgres ~] $ psql
 Welcome to psql 7.4.16, the PostgreSQL interactive terminal.
 
