@@ -5,8 +5,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.util.Properties;
 import java.util.HashMap;
 import javax.xml.soap.*;
@@ -16,6 +14,9 @@ import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
 import org.blom.martin.esxx.js.*;
 import org.mozilla.javascript.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.Comment;
 
 class Worker 
   implements ContextAction {
@@ -123,31 +124,17 @@ class Worker
 	      }
 	    }
 
+	    // Handle result types
 	    if (result instanceof ByteBuffer) {
 	      if (content_type == null) {
 		content_type = "application/octent-stream";
 	      }
-
-	      // Write result as-is to output stream
-	      WritableByteChannel wbc = Channels.newChannel(workload.getOutputStream());
-	      ByteBuffer          bb  = (ByteBuffer) result;
-	      
-	      bb.rewind();
-
-	      while (bb.hasRemaining()) {
-		wbc.write(bb);
-	      }
 	    }
 	    else if (result instanceof String) {
 	      if (content_type == null) {
-		content_type = "text/plain";
+		content_type = "text/plain;charset=" + 
+		  java.nio.charset.Charset.defaultCharset().name();
 	      }
-
-	      // Write result as-is, using the specified charset (if present)
-	      Writer out = Workload.createWriter(workload.getOutputStream(),
-						 content_type);
-	      out.write((String) result);
-	      out.flush();
 	    }
 	    else if (result instanceof BufferedImage) {
 	      if (content_type == null) {
@@ -158,10 +145,10 @@ class Worker
 	      throw new ESXXException("BufferedImage results not supported yet.");
 	    }
 	    else {
-	      Source src;
+	      Node node;
 
 	      try {
-		src = new DOMSource(org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result));
+		node = (org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result));
 	      }
 	      catch (Exception ex) {
 		throw new ESXXException("Unsupported result type from '" + workload.getURL() + 
@@ -176,8 +163,6 @@ class Worker
 		if (stylesheet == null) {
 		  stylesheet = parser.getStylesheet("");
 		}
-
-		System.err.println("**** STYLESHEET for " + content_type + " = " + stylesheet);
 
 		tr = esxx.getCachedStylesheet(stylesheet);
 
@@ -200,19 +185,30 @@ class Worker
 		throw new ESXXException("Unable to load stylesheet: " + ex.getMessage());
 	      }
 
-	      tr.transform(src, 
-			   new StreamResult(Workload.createWriter(workload.getOutputStream(),
-								  content_type)));
+	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	      tr.transform(new DOMSource(node), new StreamResult(bos));
 	      
 	      content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
 		";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
+
+	      // Attach debug log to document
+	      workload.getDebugWriter().close();
+
+	      String ds = workload.getDebugWriter().toString();
+	    
+	      if (ds.length() != 0) {
+		Writer out = workload.createWriter(bos, content_type);
+		out.write("<!-- Start ESXX Debug Log\n" + 
+			  ds.replaceAll("--", "\u2012\u2012") +
+			  "End ESXX Debug Log -->");
+		out.close();
+	      }
+
+	      bos.close();
+	      result = bos;
 	    }
 
 	    Properties p = new Properties();
-
-// 	    for (String s : tr.getOutputProperties().stringPropertyNames()) {
-// 	      p.setProperty("_" + s, tr.getOutputProperties().getProperty(s));
-// 	    }
 
 	    // Copy headers from the JS object
 
@@ -238,7 +234,6 @@ class Worker
 	      }
 	    }
 
-
 	    // Set Status
 	    p.setProperty("Status", status);
 
@@ -246,7 +241,7 @@ class Worker
 	    p.setProperty("Content-Type", content_type);
 
 	    // Return workload
-	    workload.finished(0, p);
+	    workload.finished(0, p, result);
 	  }
 	  catch (Exception ex) {
 	    Properties h = new Properties();
@@ -255,8 +250,8 @@ class Worker
 	    h.setProperty("Status", "500 " + title);
 	    h.setProperty("Content-Type", "text/html");
 
-	    PrintWriter out = new PrintWriter(Workload.createWriter(workload.getOutputStream(),
-								    "text/html"));
+	    StringWriter sw = new StringWriter();
+	    PrintWriter out = new PrintWriter(sw);
 
 	    out.println("<?xml version='1.0'?>");
 	    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" " +
@@ -275,9 +270,9 @@ class Worker
 	      out.println("</pre>");
 	    }
 	    out.println("</body></html>");
-	    out.flush();
+	    out.close();
 
-	    workload.finished(500, h);
+	    workload.finished(500, h, sw.toString());
 	  }
 	}
 	catch (InterruptedException ex) {

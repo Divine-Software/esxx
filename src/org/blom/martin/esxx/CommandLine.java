@@ -1,11 +1,15 @@
 
 package org.blom.martin.esxx;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
-import java.util.Properties;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import org.bumblescript.jfast.*;
 
@@ -18,10 +22,7 @@ public class CommandLine {
 
 	public CGIWorkload(Properties cgi) {
 	  this(cgi, 
-//	       createReader(System.in, cgi), 
 	       System.in,
-	       new ByteArrayOutputStream(), 
-	       new StringWriter(), 
 	       new OutputStreamWriter(System.err),
 	       System.out);
 	}
@@ -29,10 +30,7 @@ public class CommandLine {
 
 	public CGIWorkload(JFastRequest jfast) {
 	  this(jfast.properties,
-//	       createReader(new ByteArrayInputStream(jfast.data), jfast.properties),
 	       new ByteArrayInputStream(jfast.data),
-	       new ByteArrayOutputStream(), 
-	       new StringWriter(), 
 	       new OutputStreamWriter(System.err),
 	       jfast.out);
 	  jFast = jfast;
@@ -40,51 +38,74 @@ public class CommandLine {
 
 
 	private CGIWorkload(Properties   cgi,
-//			    Reader       in,
 			    InputStream  in,
-			    ByteArrayOutputStream body,
-			    StringWriter debug, 
 			    Writer       error,
 			    OutputStream out_stream) {
 	  super(createURL(cgi),
 		cgi,
-		in, body, debug, error);
-	  this.body  = body;
-	  this.debug = debug;
+		in, error);
 	  outStream  = out_stream;
 	}
 
-	public void finished(int rc, Properties headers) {
+	public void finished(int rc, Properties headers, Object result) {
 	  try {
-	    getErrorWriter().flush();
-	    getDebugWriter().flush();
-
-	    PrintWriter out = new PrintWriter(createWriter(outStream, 
-							   headers.getProperty("Content-Type")));
+	    PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
 
 	    // Output HTTP headers
+	    String content_type = "text/xml";
 
 	    for (Map.Entry<Object, Object> h : headers.entrySet()) {
 	      String name  = (String) h.getKey();
 	      String value = (String) h.getValue();
 
+	      if (name.equals("Content-Type")) {
+		content_type = value;
+	      }
+
 	      out.println(name + ": " + value);
 	    }
 
-	    // Output body
 	    out.println("");
-	    out.println(body);
+	    out.flush();
 
-	    // Output debug log as XML comment, if non-empty.
-	    String dstr = debug.toString();
-	    
-	    if (dstr.length() != 0) {
-	      out.println("<!-- Start ESXX Debug Log");
-	      out.print(dstr.replaceAll("--", "\u2012\u2012"));
-	      out.println("End ESXX Debug Log -->");
+	    // Output body
+	    if (result instanceof ByteArrayOutputStream) {
+	      ByteArrayOutputStream bos = (ByteArrayOutputStream) result;
+
+	      bos.writeTo(outStream);
+	    }
+	    else if (result instanceof ByteBuffer) {
+	      // Write result as-is to output stream
+	      WritableByteChannel wbc = Channels.newChannel(outStream);
+	      ByteBuffer          bb  = (ByteBuffer) result;
+	      
+	      bb.rewind();
+
+	      while (bb.hasRemaining()) {
+		wbc.write(bb);
+	      }
+
+	      wbc.close();
+	    }
+	    else if (result instanceof String) {
+	      // Write result as-is, using the specified charset (if present)
+	      Writer ow = Workload.createWriter(outStream, content_type);
+	      ow.write((String) result);
+	      ow.close();
+	    }
+	    else if (result instanceof BufferedImage) {
+	      // TODO ...
+	      throw new InternalError("BufferedImage results not supported yet.");
+	    }
+	    else {
+	      throw new InternalError("Unsupported result class type: " + result.getClass());
 	    }
 
-	    out.flush();
+	    // Close streams
+	    try { getInputStream().close(); } catch (IOException ex) {}
+	    try { getErrorWriter().close(); } catch (IOException ex) {}
+	    try { getDebugWriter().close(); } catch (IOException ex) {}
+	    try { outStream.close();        } catch (IOException ex) {}
 	
 	    if (jFast == null) {
 	      synchronized (cgiMutex) {
@@ -120,11 +141,8 @@ public class CommandLine {
 	  }
 	}
 
-	private ByteArrayOutputStream body;
-	private StringWriter debug;
 	private OutputStream outStream;
-
-	JFastRequest jFast;
+	private JFastRequest jFast;
     }
 
 

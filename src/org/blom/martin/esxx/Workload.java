@@ -6,21 +6,21 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URL;
 import java.util.Properties;
+import java.util.HashMap;
 
 public abstract class Workload {
-    public abstract void finished(int rc, Properties headers);
+    public abstract void finished(int rc, Properties headers, Object result);
 
     public Workload(URL url, Properties properties,
-		    InputStream in, OutputStream out,
-		    Writer debug, Writer error) {
+		    InputStream in, Writer error) {
       streamURL       = url;
 
       this.in         = in;
-      this.out        = out;
-      this.debug      = debug;
+      this.debug      = new StringWriter();
       this.error      = error;
       this.properties = properties;
     }
@@ -33,11 +33,7 @@ public abstract class Workload {
       return in;
     }
 
-    public OutputStream getOutputStream() {
-      return out;
-    }
-
-    public Writer getDebugWriter() {
+    public StringWriter getDebugWriter() {
       return debug;
     }
 
@@ -49,21 +45,36 @@ public abstract class Workload {
       return properties;
     }
 
-    public static Reader createReader(InputStream is, String content_type) {
-      // TODO: Read charset
-      return new InputStreamReader(is);
+    public static Reader createReader(InputStream is, String content_type) 
+      throws java.io.UnsupportedEncodingException {
+      HashMap<String, String> params = new HashMap<String, String>();
+      String                  ct = ESXX.parseMIMEType(content_type, params);
+      String                  cs = params.get("charset");
+
+      if (cs == null) {
+	cs = java.nio.charset.Charset.defaultCharset().name();
+      }
+
+      return new InputStreamReader(is, cs);
     }
 
-    public static Writer createWriter(OutputStream os, String content_type) {
-      // TODO: Read charset
-      return new OutputStreamWriter(os);
+    public static Writer createWriter(OutputStream os, String content_type)
+      throws java.io.UnsupportedEncodingException {
+      HashMap<String, String> params = new HashMap<String, String>();
+      String                  ct = ESXX.parseMIMEType(content_type, params);
+      String                  cs = params.get("charset");
+
+      if (cs == null) {
+	cs = java.nio.charset.Charset.defaultCharset().name();
+      }
+
+      return new OutputStreamWriter(os, cs);
     }
 
     private URL streamURL;
 
     private InputStream in;
-    private OutputStream out;
-    private Writer debug;
+    private StringWriter debug;
     private Writer error;
     private Properties properties;
 };

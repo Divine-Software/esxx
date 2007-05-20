@@ -6,6 +6,8 @@
 
   <!-- Identity transform -->
 
+  <xsl:output encoding="iso-8859-1" media-type="text/html"/>
+
   <xsl:template match="@*|node()">
     <xsl:copy>
       <xsl:apply-templates select="@*|node()"/>

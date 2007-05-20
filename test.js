@@ -58,9 +58,10 @@ function MyApp(e) {
 // //    mailto.save("Hej alla barn nu ska vi röka på lite");
 //     mailto.save(<html>Hallå!</html>, "text/xml");
 
+    esxx.debug.println("- -- --- ----");
     esxx.debug.println("**** END GET HANDLER ****");
 
     default xml namespace = "http://www.w3.org/1999/xhtml";
-    return ["text/xml; charset=ISO-8859-1", <p>Hello, world!</p>];
+    return ["text/html", <p>Hello, world!</p>];
   }
 }
