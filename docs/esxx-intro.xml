@@ -74,13 +74,13 @@
     <title>Introduction</title>
     
     <para>In the late 90's, I was involved in the development of a
-Web/&xml; application server. During that time, we realized the benefits
-of using data-driven programming for server-based web applications. In
-this context, data-driven programming means that the data, that is to be
-returned as response to a request, is generated and then gradually
-refined until it reaches the user, most often in the form of an
-<acronym>(X)HTML</acronym> page, using plain &xml; as intermediate
-formats.</para>
+Web/&xml; application server. During that time, we quickly realized the
+benefits of using a data-driven approach to server-based web
+applications. In this context, <quote>data-driven</quote> means that the
+data, that is to be returned as response to a request, is generated in
+raw form first, and then gradually refined until it reaches the user,
+most often in the form of an <acronym>(X)HTML</acronym> page, using
+plain &xml; as intermediate formats.</para>
 
     <para>By focusing solely on <emphasis>what</emphasis> to present to
 the user in the logic stage and not <emphasis>how</emphasis>, the
@@ -111,8 +111,8 @@ given. &e4x; was another major reason.</para>
       </listitem>
 
       <listitem>
-	<para>Data-driven &mdash; <emphasis>no</emphasis> mixing of
-&html; and code, ever. Period.</para>
+	<para><quote>Data-driven</quote> &mdash; <emphasis>no</emphasis>
+mixing of &html; and code, period.</para>
       </listitem>
 
       <listitem>
@@ -121,9 +121,9 @@ given. &e4x; was another major reason.</para>
       </listitem>
 
       <listitem>
-	<para>Extensibility &mdash; what &esxx; doesn't provide directly,
-must be easily available in some other way. Java and &rhino; satisfies
-that criteria.</para>
+	<para>Extensibility &mdash; what &esxx; doesn't provide
+directly, must be easily available in some other way (in this case,
+Java).</para>
       </listitem>
     </orderedlist>
 
@@ -593,7 +593,7 @@ world!</quote> as a plain <literal>text/plain</literal> document.</para>
 
 <esxx xmlns="http://martin.blom.org/esxx/1.0/">
     <settings>
-      <handler type="GET" function="handleGet" />
+      <http method="GET" handler="handleGet" />
     </settings>
 </esxx>
 
@@ -616,8 +616,8 @@ transformed by an &xslt; stylesheet into an &html; document.</para>
 
 <esxx xmlns="http://martin.blom.org/esxx/1.0/">
     <settings>
-      <handler type="GET" function="handleGet" />
-      <stylesheet type="text/html" href="html.xslt"/>
+      <http method="GET" handler="handleGet" />
+      <stylesheet mime-type="text/html" href="html.xslt"/>
     </settings>
 </esxx>
 
@@ -665,8 +665,8 @@ injection vulnerabilities.</para>
 
 <esxx xmlns="http://martin.blom.org/esxx/1.0/">
     <settings>
-      <handler type="GET" function="handleGet" />
-      <stylesheet type="text/html" href="html.xslt"/>
+      <http method="GET" handler="handleGet" />
+      <stylesheet mime-type="text/html" href="html.xslt"/>
     </settings>
 </esxx>
 

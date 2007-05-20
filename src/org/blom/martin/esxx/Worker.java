@@ -49,76 +49,26 @@ class Worker
 	    JSESXX js_esxx = new JSESXX(esxx, cx, scope,
 					workload,
 					null,
-					parser.getXML(),
-					parser.getStylesheet());
+					parser.getXML());
 
 	    cx.putThreadLocal(JSESXX.class, js_esxx);
 
 	    // Execute all <?esxx and <?esxx-import PIs, if not already done
 	    parser.execute(cx, scope);
 
-	    Object result = null;
-	    Exception error = null;
+	    Object    result = null;
+	    Exception error  = null;
 
 	    try {
-	      // Parse SOAP message, if any
-	      parseSOAPMessage(js_esxx);
-
 	      // Execute the SOAP or HTTP handler (if available)
-	      ESXXParser.SOAPAction action = null;
 
-	      if (js_esxx.soapMessage != null) {
-		action = parser.getSOAPAction(js_esxx.soapAction);
+	      String object = getSOAPAction(js_esxx, parser);
 
-		if (action == null) {
-		  // Try default action object
-		  action = parser.getSOAPAction("");
-		}
-	      }
-
-	      if (action != null) {
-		// Install action-supplied stylesheet
-		if (action.stylesheet != null && !action.stylesheet.equals("")) {
-		  js_esxx.stylesheet = action.stylesheet;
-		}
-
-		if (action.object != null && !action.object.equals("")) {
-		  // RPC style SOAP handler
-
-		  org.w3c.dom.Node     soap_header = null;
-		  org.w3c.dom.Document soap_body   = null;
-
-		  try {
-		    soap_header = js_esxx.soapMessage.getSOAPHeader();
-		  }
-		  catch (SOAPException ex) {
-		    // The header is optional
-		  }
-
-		  soap_body = js_esxx.soapMessage.getSOAPBody().extractContentAsDocument();
-
-		  Object args[] = { esxx.domToE4X(soap_body, cx, scope),
-				    esxx.domToE4X(soap_header, cx, scope) };
-
-		  result = callJSMethod(action.object,
-					soap_body.getDocumentElement().getLocalName(),
-					args, "SOAP method", cx, scope);
-		}
-		else {
-		  // No RPC handler; the SOAP message itself is the result
-
-		  result = esxx.domToE4X(js_esxx.soapMessage.getSOAPPart(), cx, scope);
-		}
+	      if (object != null) {
+		result = handleSOAPAction(object, js_esxx, cx, scope);
 	      }
 	      else if (parser.hasHandlers()) {
-		String handler = parser.getHandlerFunction(request_method);
-
-		if (handler == null) {
-		  throw new ESXXException("'" + request_method + "' handler not defined.");
-		}
-
-		result = callJSMethod(handler,
-				      null, "'" + request_method + "' handler", cx, scope);
+		result = handleHTTPMethod(request_method, parser, cx, scope);
 	      }
 	      else {
 		// No handlers; the document is the result
@@ -137,20 +87,7 @@ class Worker
 
 	    if (error != null) {
 	      if (parser.hasHandlers()) {
-		String handler = parser.getErrorHandlerFunction();
-
-		try {
-		  Object args[] = { cx.javaToJS(error, scope) };
-
-		  result = callJSMethod(handler, args, "Error handler", cx, scope);
-		}
-		catch (Exception ex) {
-		  throw new ESXXException("Failed to handle error '" + error.toString() +
-					  "':\n" +
-					  "Error handler '" + handler +
-					  "' failed with message '" +
-					  ex.getMessage() + "'");
-		}
+		result = handleError(error, parser, cx, scope);
 	      }
 	      else {
 		// No error handler installed: throw away
@@ -159,7 +96,7 @@ class Worker
 	    }
 
 	    // No error or error handled: Did we get a valid result?
-	    if (result == null || result instanceof org.mozilla.javascript.Undefined) {
+	    if (result == null || result == Context.getUndefinedValue()) {
 	      throw new ESXXException("No result from '" + workload.getURL() + "'");
 	    }
 
@@ -176,9 +113,9 @@ class Worker
 	    Transformer tr;
 
 	    try {
-	      if (js_esxx.stylesheet != null && !js_esxx.stylesheet.equals("")) {
-		URL stylesheet = new URL(workload.getURL(), js_esxx.stylesheet);	
+	      URL stylesheet = parser.getStylesheet("");
 
+	      if (stylesheet != null && !stylesheet.equals("")) {
 		tr = esxx.getCachedStylesheet(stylesheet);
 	      }
 	      else {
@@ -189,7 +126,7 @@ class Worker
 								   "Content-Type");
 
 		if (content_type != null &&
-		    !(content_type instanceof org.mozilla.javascript.Undefined)) {
+		    !(content_type != Context.getUndefinedValue())) {
 		  tr.setOutputProperty("media-type", content_type.toString());
 		}
 	      }
@@ -266,9 +203,6 @@ class Worker
 	    workload.finished(500, h);
 	  }
 	}
-// 	catch (java.net.URISyntaxException ex) {
-// 	  ex.printStackTrace();
-// 	}
 	catch (InterruptedException ex) {
 	  // Don't know what to do here ... die?
 	  ex.printStackTrace();
@@ -277,8 +211,28 @@ class Worker
       }
     }
 
+    private String getSOAPAction(JSESXX js_esxx, ESXXParser parser) 
+      throws ESXXException, javax.xml.soap.SOAPException {
+      // Parse SOAP message, if any
+      parseSOAPMessage(js_esxx);
+
+      String action = null;
+
+      if (js_esxx.soapMessage != null) {
+	action = parser.getSOAPAction(js_esxx.soapAction);
+
+	if (action == null) {
+	  // Try default action object
+	  action = parser.getSOAPAction("");
+	}
+      }
+
+      return action;
+    }
+
+
     private void parseSOAPMessage(JSESXX js_esxx)
-      throws ESXXException {
+      throws ESXXException, javax.xml.soap.SOAPException  {
 
       // Consume SOAP message, if any
       if (js_esxx.soapAction != null) {
@@ -298,6 +252,84 @@ class Worker
 	}
       }
     }
+
+
+    private Object handleSOAPAction(String object, JSESXX js_esxx,
+				    Context cx, Scriptable scope) 
+      throws ESXXException, javax.xml.soap.SOAPException {
+      Object result;
+
+      if (!object.equals("")) {
+	// RPC style SOAP handler
+
+	org.w3c.dom.Node     soap_header = null;
+	org.w3c.dom.Document soap_body   = null;
+
+	try {
+	  soap_header = js_esxx.soapMessage.getSOAPHeader();
+	}
+	catch (SOAPException ex) {
+	  // The header is optional
+	}
+
+	soap_body = js_esxx.soapMessage.getSOAPBody().extractContentAsDocument();
+
+	Object args[] = { esxx.domToE4X(soap_body, cx, scope),
+			  esxx.domToE4X(soap_header, cx, scope) };
+
+	result = callJSMethod(object,
+			      soap_body.getDocumentElement().getLocalName(),
+			      args, "SOAP method", cx, scope);
+      }
+      else {
+	// No RPC handler; the SOAP message itself is the result
+
+	result = esxx.domToE4X(js_esxx.soapMessage.getSOAPPart(), cx, scope);
+      }
+
+      return result;
+    }
+
+
+    private Object handleHTTPMethod(String request_method, ESXXParser parser,
+				    Context cx, Scriptable scope) 
+      throws ESXXException {
+      Object result;
+      String handler = parser.getHandlerFunction(request_method);
+
+      if (handler == null) {
+	throw new ESXXException("'" + request_method + "' handler not defined.");
+      }
+
+      result = callJSMethod(handler,
+			    null, "'" + request_method + "' handler", cx, scope);
+
+      return result;
+    }
+
+
+    private Object handleError(Exception error, ESXXParser parser,
+			       Context cx, Scriptable scope) 
+      throws ESXXException {
+      Object result;
+      String handler = parser.getErrorHandlerFunction();
+
+      try {
+	Object args[] = { cx.javaToJS(error, scope) };
+
+	result = callJSMethod(handler, args, "Error handler", cx, scope);
+      }
+      catch (Exception ex) {
+	throw new ESXXException("Failed to handle error '" + error.toString() +
+				"':\n" +
+				"Error handler '" + handler +
+				"' failed with message '" +
+				ex.getMessage() + "'");
+      }
+
+      return result;
+    }
+
 
     private Object callJSMethod(String expr,
 				Object[] args, String identifier,

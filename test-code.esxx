@@ -3,9 +3,6 @@
                       "http://martin.blom.org/esxx/1.0/dtd/" [
 ]>
 
-<!-- Server-side stylesheet, which will be applied to the result -->
-<?esxx-stylesheet href="test.xsl"   type="text/xsl" ?>
-
 <!-- Load a few external files -->
 <?esxx-import href="test.js" ?>
 
@@ -39,18 +36,23 @@ is launched.</description>
     <!-- Application settings -->
     <settings>
       <!-- Handlers for HTTP GET/POST/PUT/DELETE -->
-      <handler type="GET" function="myapp.handleGet" />
-      <handler type="PUT" function="myapp.handlePut" />
-      <handler type="POST" function="myapp.handlePost" />
-      <handler type="DELETE" function="myapp.handleDelete" />
+      <http method="GET" handler="myapp.handleGet" />
+      <http method="PUT" handler="myapp.handlePut" />
+      <http method="POST" handler="myapp.handlePost" />
+      <http method="DELETE" handler="myapp.handleDelete" />
       <!-- etc ... -->
 
-      <!-- Handler for any kind of error -->
-      <error-handler function="myapp.handleError" />
+      <!-- Handlers for SOAP actions -->
+      <soap action="http://example.com/time" object="myapp.rpcTime" />
+      <soap action="http://example.com/money" object="myapp.rpcMoney" />
+      <soap action="" object="myapp.rpcDefault" />
 
-      <!-- This might work one day too ...
-      <service type="SOAP" class="myapp.rpcClass" />
-      -->
+      <!-- Transformation stylesheets -->
+      <stylesheet mime-type="text/html" href="test.xsl" type="text/xsl" />
+      <stylesheet mime-type="text/xml+my-soap" href="test-soap.xsl" />
+
+      <!-- Handler for any kind of error -->
+      <error handler="myapp.handleError" />
 
     </settings>
 </esxx>

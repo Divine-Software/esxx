@@ -21,7 +21,7 @@ import org.w3c.dom.bootstrap.*;
 
 public class JSESXX {
     public JSESXX(ESXX esxx, Context cx, Scriptable scope, Workload workload,
-		  Scriptable shared, Document document, URL stylesheet) {
+		  Scriptable shared, Document document) {
 
       this.esxx    = esxx;
       this.cx      = cx;
@@ -44,8 +44,6 @@ public class JSESXX {
       ScriptableObject.putProperty(this.headers, "Status", "200 OK");
 
       ScriptableObject.putProperty(this.headers, "Cookies", cx.newObject(scope));
-
-      this.stylesheet = (stylesheet != null ? stylesheet.toString() : "");
     }
 
     public Synchronizer sync(Function f) {
@@ -67,8 +65,6 @@ public class JSESXX {
     public String soapAction;
     public MimeHeaders mimeHeaders;
     public SOAPMessage soapMessage;
-
-    public String stylesheet;
 
 
     private void handleProperties(Workload workload) {

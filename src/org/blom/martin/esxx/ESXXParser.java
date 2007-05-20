@@ -38,16 +38,6 @@ public class ESXXParser {
 	public Script code;
     };
 
-    public static class SOAPAction {
-	public SOAPAction(String o, String s) {
-	  object = o;
-	  stylesheet = s;
-	}
-
-	public String object;
-	public String stylesheet;
-    }
-
     public ESXXParser(ESXX esxx, URL url)
       throws IOException, XMLStreamException {
       
@@ -109,13 +99,13 @@ public class ESXXParser {
 	      // esxx/settings/* matched.
 	      gotESXX = true;
 
-	      if (name.equals("handler")) {
-		handleHandler(e);
+	      if (name.equals("http")) {
+		handleHTTP(e);
 	      }
 	      else if (name.equals("soap")) {
 		handleSOAP(e);
 	      }
-	      else if (name.equals("error-handler")) {
+	      else if (name.equals("error")) {
 		handleErrorHandler(e);
 	      }
 	    }
@@ -144,8 +134,8 @@ public class ESXXParser {
       return codeList;
     }
 
-    public URL getStylesheet() {
-      return stylesheet;
+    public URL getStylesheet(String mime_type) {
+      return stylesheets.get(mime_type);
     }
 
     public boolean hasHandlers() {
@@ -153,10 +143,10 @@ public class ESXXParser {
     }
 
     public String getHandlerFunction(String http_method) {
-      return handlers.get(http_method);
+      return httpHandlers.get(http_method);
     }
 
-    public SOAPAction getSOAPAction(String action) {
+    public String getSOAPAction(String action) {
       return soapActions.get(action);
     }
 
@@ -202,23 +192,23 @@ public class ESXXParser {
 	if (xsr.next() == XMLStreamConstants.START_ELEMENT) {
 	  String type = xsr.getAttributeValue(null, "type");
 	  if (type == null || !type.equals("text/xsl")) {
-	    throw new XMLStreamException("<?esxx-stylesheet?> attribute 'type' "
-					 + "must be set to 'text/xsl'");
+	    throw new XMLStreamException("<?esxx-stylesheet?> attribute 'type' " +
+					 "must be set to 'text/xsl'");
 	  }
 
 	  String href = xsr.getAttributeValue(null, "href");
 
 	  if (href == null) {
-	    throw new XMLStreamException("<?esxx-stylesheet?> attribute 'href' "
-					 + "must be specified");
+	    throw new XMLStreamException("<?esxx-stylesheet?> attribute 'href' " +
+					 "must be specified");
 	  }
 
 	  try {
-	    stylesheet = new URL(baseURL, href);
+	    stylesheets.put("", new URL(baseURL, href));
 	  }
 	  catch (MalformedURLException ex) {
-	    throw new XMLStreamException("<?esxx-stylesheet?> attribute 'href' is invalid: "
-					 + ex.getMessage());
+	    throw new XMLStreamException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
+					 ex.getMessage());
 	  }
 	}
       }
@@ -237,8 +227,8 @@ public class ESXXParser {
 	  String href = xsr.getAttributeValue(null, "href");
 
 	  if (href == null) {
-	    throw new XMLStreamException("<?esxx-import?> attribute 'href' "
-					 + "must be specified");
+	    throw new XMLStreamException("<?esxx-import?> attribute 'href' " +
+					 "must be specified");
 	  }
 
 	  try {
@@ -258,12 +248,12 @@ public class ESXXParser {
 	    externalURLs.add(url);
 	  }
 	  catch (MalformedURLException ex) {
-	    throw new XMLStreamException("<?esxx-import?> attribute 'href' is invalid: "
-					 + ex.getMessage());
+	    throw new XMLStreamException("<?esxx-import?> attribute 'href' is invalid: " +
+					 ex.getMessage());
 	  }
 	  catch (IOException ex) {
-	    throw new XMLStreamException("<?esxx-import?> failed to include document: "
-					 + ex.getMessage());
+	    throw new XMLStreamException("<?esxx-import?> failed to include document: " +
+					 ex.getMessage());
 	  }
 	}
       }
@@ -275,32 +265,66 @@ public class ESXXParser {
       codeList.add(new Code(url, line, data));
     }
 
-    private void handleHandler(Element e) 
+    private void handleHTTP(Element e) 
       throws org.xml.sax.SAXException {
-      String handler = e.getAttributeNS(null, "function").trim();
+      String handler = e.getAttributeNS(null, "handler").trim();
+
+      if (handler.equals("")) {
+	throw new org.xml.sax.SAXException("<http> attribute 'handler' must " +
+					   "must be specified");
+      }
 
       if (handler.endsWith(")")) {
-	throw new org.xml.sax.SAXException("In <handler>: handler names " +
+	throw new org.xml.sax.SAXException("<http> attribute 'handler' value " +
 					   "should not include parentheses");
       }
 
-      handlers.put(e.getAttributeNS(null, "type"), handler);
+      httpHandlers.put(e.getAttributeNS(null, "method"), handler);
     }
 
     private void handleSOAP(Element e) 
       throws org.xml.sax.SAXException {
       String object = e.getAttributeNS(null, "object").trim();
-      String stylesheet = e.getAttributeNS(null, "stylesheet").trim();
 
-      soapActions.put(e.getAttributeNS(null, "action"), new SOAPAction(object, stylesheet));
+      if (object.equals("")) {
+	throw new org.xml.sax.SAXException("<soap> attribute 'object' must " +
+					   "must be specified");
+      }
+
+      soapActions.put(e.getAttributeNS(null, "action"), object);
+    }
+
+    private void handleStylesheet(Element e)
+      throws org.xml.sax.SAXException {
+      String mime_type = e.getAttributeNS(null, "mime-type").trim();
+      String href      = e.getAttributeNS(null, "href").trim();
+      String type      = e.getAttributeNS(null, "type").trim();
+      
+      if (href.equals("")) {
+	throw new org.xml.sax.SAXException("<stylesheet> attribute 'href' " +
+					   "must be specified");
+      }
+
+      if (!type.equals("") && !type.equals("text/xsl")) {
+	throw new org.xml.sax.SAXException("<stylesheet> attribute 'type' " +
+					   "must be set to 'text/xsl'");
+      }
+
+      try {
+	stylesheets.put(mime_type, new URL(baseURL, href));
+      }
+      catch (MalformedURLException ex) {
+	throw new org.xml.sax.SAXException("<stylesheet> attribute 'href' is invalid: " +
+					   ex.getMessage());
+      }
     }
 
     private void handleErrorHandler(Element e)
       throws org.xml.sax.SAXException {
-      String handler = e.getAttributeNS(null, "function").trim();
+      String handler = e.getAttributeNS(null, "error").trim();
 
       if (handler.endsWith(")")) {
-	throw new org.xml.sax.SAXException("In <error-handler>: handler names " +
+	throw new org.xml.sax.SAXException("<error> attribute 'handler' value " +
 					   "should not include parentheses");
       }
 
@@ -320,10 +344,10 @@ public class ESXXParser {
 
     private Document xml;
     private StringBuilder code = new StringBuilder();
-    private URL stylesheet;
     private LinkedList<Code> codeList = new LinkedList<Code>();
 
-    private HashMap<String,String> handlers = new HashMap<String,String>();
-    private HashMap<String,SOAPAction> soapActions = new HashMap<String,SOAPAction>();
+    private HashMap<String,String> httpHandlers = new HashMap<String,String>();
+    private HashMap<String,String> soapActions  = new HashMap<String,String>();
+    private HashMap<String,URL>    stylesheets  = new HashMap<String,URL>();
     private String errorHandler;
 };
