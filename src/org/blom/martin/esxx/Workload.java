@@ -2,6 +2,9 @@
 package org.blom.martin.esxx;
 
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.net.URL;
@@ -11,7 +14,7 @@ public abstract class Workload {
     public abstract void finished(int rc, Properties headers);
 
     public Workload(URL url, Properties properties,
-		    InputStream in, Writer out,
+		    InputStream in, OutputStream out,
 		    Writer debug, Writer error) {
       streamURL       = url;
 
@@ -26,15 +29,11 @@ public abstract class Workload {
       return streamURL;
     }
 
-//     public Reader getInReader() {
-//       return in;
-//     }
-
     public InputStream getInputStream() {
       return in;
     }
 
-    public Writer getOutWriter() {
+    public OutputStream getOutputStream() {
       return out;
     }
 
@@ -46,15 +45,24 @@ public abstract class Workload {
       return error;
     }
 
-
     public Properties getProperties() {
       return properties;
+    }
+
+    public static Reader createReader(InputStream is, String content_type) {
+      // TODO: Read charset
+      return new InputStreamReader(is);
+    }
+
+    public static Writer createWriter(OutputStream os, String content_type) {
+      // TODO: Read charset
+      return new OutputStreamWriter(os);
     }
 
     private URL streamURL;
 
     private InputStream in;
-    private Writer out;
+    private OutputStream out;
     private Writer debug;
     private Writer error;
     private Properties properties;

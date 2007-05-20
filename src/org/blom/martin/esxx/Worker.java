@@ -1,9 +1,14 @@
 
 package org.blom.martin.esxx;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.util.Properties;
+import java.util.HashMap;
 import javax.xml.soap.*;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.*;
@@ -100,42 +105,108 @@ class Worker
 	      throw new ESXXException("No result from '" + workload.getURL() + "'");
 	    }
 
-	    Source src;
+	    // If result is an Array, extract Status and Content-Type first.
+	    String status       = "200 OK";;
+	    String content_type = null;
 
-	    try {
-	      src = new DOMSource(org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result));
-	    }
-	    catch (Exception ex) {
-	      src = new StreamSource(new StringReader(result.toString()));
-	    }
-
-
-	    Transformer tr;
-
-	    try {
-	      URL stylesheet = parser.getStylesheet("");
-
-	      if (stylesheet != null && !stylesheet.equals("")) {
-		tr = esxx.getCachedStylesheet(stylesheet);
+	    if (result instanceof Scriptable) {
+	      Scriptable s = (Scriptable) result;
+	      
+	      if (s.has(2, s)) {
+		status       = Context.toString(s.get(0, s));
+		content_type = Context.toString(s.get(1, s));
+		result       = s.get(2, s);
 	      }
-	      else {
-		tr = esxx.getCachedStylesheet(null);
+	      else if (s.has(1, s)) {
+		content_type = Context.toString(s.get(0, s));
+		result       = s.get(1, s);
+	      }
+	    }
 
-		// Set media-type, if specified
-		Object content_type = ScriptableObject.getProperty(js_esxx.headers,
-								   "Content-Type");
+	    if (result instanceof ByteBuffer) {
+	      if (content_type == null) {
+		content_type = "application/octent-stream";
+	      }
 
-		if (content_type != null &&
-		    !(content_type != Context.getUndefinedValue())) {
-		  tr.setOutputProperty("media-type", content_type.toString());
+	      // Write result as-is to output stream
+	      WritableByteChannel wbc = Channels.newChannel(workload.getOutputStream());
+	      ByteBuffer          bb  = (ByteBuffer) result;
+	      
+	      bb.rewind();
+
+	      while (bb.hasRemaining()) {
+		wbc.write(bb);
+	      }
+	    }
+	    else if (result instanceof String) {
+	      if (content_type == null) {
+		content_type = "text/plain";
+	      }
+
+	      // Write result as-is, using the specified charset (if present)
+	      Writer out = Workload.createWriter(workload.getOutputStream(),
+						 content_type);
+	      out.write((String) result);
+	      out.flush();
+	    }
+	    else if (result instanceof BufferedImage) {
+	      if (content_type == null) {
+		content_type = "image/png";
+	      }
+
+	      // TODO ...
+	      throw new ESXXException("BufferedImage results not supported yet.");
+	    }
+	    else {
+	      Source src;
+
+	      try {
+		src = new DOMSource(org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result));
+	      }
+	      catch (Exception ex) {
+		throw new ESXXException("Unsupported result type from '" + workload.getURL() + 
+					"': " + result.getClass());
+	      }
+
+	      Transformer tr;
+
+	      try {
+		URL stylesheet = parser.getStylesheet(content_type);
+
+		if (stylesheet == null) {
+		  stylesheet = parser.getStylesheet("");
+		}
+
+		System.err.println("**** STYLESHEET for " + content_type + " = " + stylesheet);
+
+		tr = esxx.getCachedStylesheet(stylesheet);
+
+		// Set media-type on identity styleseet, if
+		// specified. User-specified stylesheets should set
+		// these keys directly in the stylesheet.
+		if (stylesheet == null && content_type != null) {
+		  HashMap<String,String> params = new HashMap<String,String>();
+		  String                 ct     = ESXX.parseMIMEType(content_type, params);
+		  String                 cs     = params.get("charset");
+
+		  tr.setOutputProperty(OutputKeys.MEDIA_TYPE, ct);
+
+		  if (cs != null) {
+		    tr.setOutputProperty(OutputKeys.ENCODING, cs);
+		  }
 		}
 	      }
-	    }
-	    catch (IOException ex) {
-	      throw new ESXXException("Unable to load stylesheet: " + ex.getMessage());
-	    }
+	      catch (IOException ex) {
+		throw new ESXXException("Unable to load stylesheet: " + ex.getMessage());
+	      }
 
-	    tr.transform(src, new StreamResult(workload.getOutWriter()));
+	      tr.transform(src, 
+			   new StreamResult(Workload.createWriter(workload.getOutputStream(),
+								  content_type)));
+	      
+	      content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
+		";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
+	    }
 
 	    Properties p = new Properties();
 
@@ -167,8 +238,12 @@ class Worker
 	      }
 	    }
 
-	    // Copy Content-Type from the stylesheet
-	    p.setProperty("Content-Type", tr.getOutputProperty("media-type"));
+
+	    // Set Status
+	    p.setProperty("Status", status);
+
+	    // Set Content-Type
+	    p.setProperty("Content-Type", content_type);
 
 	    // Return workload
 	    workload.finished(0, p);
@@ -180,7 +255,8 @@ class Worker
 	    h.setProperty("Status", "500 " + title);
 	    h.setProperty("Content-Type", "text/html");
 
-	    PrintWriter out = new PrintWriter(workload.getOutWriter());
+	    PrintWriter out = new PrintWriter(Workload.createWriter(workload.getOutputStream(),
+								    "text/html"));
 
 	    out.println("<?xml version='1.0'?>");
 	    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" " +
@@ -199,6 +275,7 @@ class Worker
 	      out.println("</pre>");
 	    }
 	    out.println("</body></html>");
+	    out.flush();
 
 	    workload.finished(500, h);
 	  }

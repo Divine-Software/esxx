@@ -20,7 +20,7 @@ public class CommandLine {
 	  this(cgi, 
 //	       createReader(System.in, cgi), 
 	       System.in,
-	       new StringWriter(), 
+	       new ByteArrayOutputStream(), 
 	       new StringWriter(), 
 	       new OutputStreamWriter(System.err),
 	       System.out);
@@ -31,7 +31,7 @@ public class CommandLine {
 	  this(jfast.properties,
 //	       createReader(new ByteArrayInputStream(jfast.data), jfast.properties),
 	       new ByteArrayInputStream(jfast.data),
-	       new StringWriter(), 
+	       new ByteArrayOutputStream(), 
 	       new StringWriter(), 
 	       new OutputStreamWriter(System.err),
 	       jfast.out);
@@ -42,7 +42,7 @@ public class CommandLine {
 	private CGIWorkload(Properties   cgi,
 //			    Reader       in,
 			    InputStream  in,
-			    StringWriter body,
+			    ByteArrayOutputStream body,
 			    StringWriter debug, 
 			    Writer       error,
 			    OutputStream out_stream) {
@@ -59,17 +59,14 @@ public class CommandLine {
 	    getErrorWriter().flush();
 	    getDebugWriter().flush();
 
-	    PrintWriter out = createWriter(outStream, headers);
+	    PrintWriter out = new PrintWriter(createWriter(outStream, 
+							   headers.getProperty("Content-Type")));
 
 	    // Output HTTP headers
 
 	    for (Map.Entry<Object, Object> h : headers.entrySet()) {
 	      String name  = (String) h.getKey();
 	      String value = (String) h.getValue();
-
-	      if (name.equals("Content-Type")) {
-		value = value + "; charset=" +  java.nio.charset.Charset.defaultCharset().name();
-	      }
 
 	      out.println(name + ": " + value);
 	    }
@@ -107,14 +104,6 @@ public class CommandLine {
 	}
 //	private long start = System.currentTimeMillis();
 
-	static Reader createReader(InputStream is, Properties headers) {
-	  return new InputStreamReader(is);
-	}
-
-	static PrintWriter createWriter(OutputStream os, Properties headers) {
-	  return new PrintWriter(new OutputStreamWriter(os));
-	}
-
 	static URL createURL(Properties headers) {
 	  try {
 	    File file = new File(headers.getProperty("PATH_TRANSLATED"));
@@ -131,7 +120,7 @@ public class CommandLine {
 	  }
 	}
 
-	private StringWriter body;
+	private ByteArrayOutputStream body;
 	private StringWriter debug;
 	private OutputStream outStream;
 

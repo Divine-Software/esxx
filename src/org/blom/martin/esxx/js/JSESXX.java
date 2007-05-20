@@ -41,8 +41,6 @@ public class JSESXX {
       this.document = esxx.domToE4X(document, cx, scope);
 
       this.headers = cx.newObject(scope);
-      ScriptableObject.putProperty(this.headers, "Status", "200 OK");
-
       ScriptableObject.putProperty(this.headers, "Cookies", cx.newObject(scope));
     }
 

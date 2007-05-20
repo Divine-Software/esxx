@@ -29,7 +29,7 @@ function MyApp(e) {
 //     db.password = "martin";
 
     esxx.debug.println(db.query("select * from test where name like ? or apan = ?", 
-				local, "30"));
+				local, "40"));
 
 //     var uri = new URI("http://martin.blom.org/");
 //     esxx.debug.println(uri.load());
@@ -60,6 +60,7 @@ function MyApp(e) {
 
     esxx.debug.println("**** END GET HANDLER ****");
 
-    return <db/>;
+    default xml namespace = "http://www.w3.org/1999/xhtml";
+    return ["text/xml; charset=ISO-8859-1", <p>Hello, world!</p>];
   }
 }
