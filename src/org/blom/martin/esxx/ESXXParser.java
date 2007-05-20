@@ -74,7 +74,7 @@ public class ESXXParser {
 	    });
 
 	  NodeList r = (NodeList) xpath.evaluate("processing-instruction() | " +
-						 "esxx:esxx/esxx:settings/esxx:*", 
+						 "esxx:esxx/esxx:handlers/esxx:*", 
 						 xml, XPathConstants.NODESET);
 	  
 	  for (int i = 0; i < r.getLength(); ++i) {
@@ -96,7 +96,7 @@ public class ESXXParser {
 	      Element e = (Element) n;
 	      String name = e.getLocalName();
 
-	      // esxx/settings/* matched.
+	      // esxx/handlers/* matched.
 	      gotESXX = true;
 
 	      if (name.equals("http")) {

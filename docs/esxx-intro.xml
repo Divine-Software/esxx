@@ -592,9 +592,9 @@ world!</quote> as a plain <literal>text/plain</literal> document.</para>
       <programlisting linenumbering="numbered"><![CDATA[<?xml version="1.0"?>
 
 <esxx xmlns="http://martin.blom.org/esxx/1.0/">
-    <settings>
+    <handlers>
       <http method="GET" handler="handleGet" />
-    </settings>
+    </handlers>
 </esxx>
 
 <?esxx
@@ -615,10 +615,10 @@ transformed by an &xslt; stylesheet into an &html; document.</para>
       <programlisting linenumbering="numbered"><![CDATA[<?xml version="1.0"?>
 
 <esxx xmlns="http://martin.blom.org/esxx/1.0/">
-    <settings>
+    <handlers>
       <http method="GET" handler="handleGet" />
       <stylesheet mime-type="text/html" href="html.xslt"/>
-    </settings>
+    </handlers>
 </esxx>
 
 <?esxx
@@ -664,10 +664,10 @@ injection vulnerabilities.</para>
       <programlisting linenumbering="numbered"><![CDATA[<?xml version="1.0"?>
 
 <esxx xmlns="http://martin.blom.org/esxx/1.0/">
-    <settings>
+    <handlers>
       <http method="GET" handler="handleGet" />
       <stylesheet mime-type="text/html" href="html.xslt"/>
-    </settings>
+    </handlers>
 </esxx>
 
 <?esxx

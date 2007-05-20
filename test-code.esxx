@@ -34,7 +34,7 @@ is launched.</description>
     </info>
 
     <!-- Application settings -->
-    <settings>
+    <handlers>
       <!-- Handlers for HTTP GET/POST/PUT/DELETE -->
       <http method="GET" handler="myapp.handleGet" />
       <http method="PUT" handler="myapp.handlePut" />
@@ -54,5 +54,5 @@ is launched.</description>
       <!-- Handler for any kind of error -->
       <error handler="myapp.handleError" />
 
-    </settings>
+    </handlers>
 </esxx>
