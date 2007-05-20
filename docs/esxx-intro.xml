@@ -51,9 +51,11 @@
     
     <abstract>
       <title>Abstract</title>
-      <para>&esxx; is a free, easy-to-install, easy-to-use, no-nonsense
-&es; application server, incorporating familiar technologies such as
-&xml;, &xslt;, &sql;, &ldap; and Java into one single package.</para>
+
+      <para>&esxx; (<quote>Essex</quote>) is a free, easy-to-install,
+easy-to-use, no-nonsense &es; application server, incorporating familiar
+technologies such as &xml;, &xslt;, &sql;, &ldap; and Java into one
+single package.</para>
     </abstract>
 
     <keywordset>
@@ -123,7 +125,7 @@ mixing of &html; and code, period.</para>
       <listitem>
 	<para>Extensibility &mdash; what &esxx; doesn't provide
 directly, must be easily available in some other way (in this case,
-Java).</para>
+by scripting Java).</para>
       </listitem>
     </orderedlist>
 
@@ -182,7 +184,7 @@ with <acronym>TCP</acronym>, <acronym>SSL</acronym> or
       <listitem>
 	<para>If the application is not yet in memory, it is loaded, all
 &es; code and &xslt; stylesheets are compiled and all request handlers
-are registered. The application is started by executing the &es;
+are registered. The application is then started by executing the &es;
 code. Typically, that will create and initialize an application object
 that will later handle all client requests.</para>
 
@@ -235,8 +237,8 @@ that is to be presented to the client.</para>
       <listitem>
 	<para>The client receives the data and &mdash; if the client was
 a actually a web browser &mdash; applies further processing using
-client-side&xslt;, &css; and client-side &es; and presents the result to
-the user.</para>
+client-side &xslt;, &css; and client-side &es;, and presents the result
+to the user.</para>
       </listitem>
     </orderedlist>
   </section>
@@ -278,7 +280,7 @@ used to coordinate multiple instances of the application.</para>
     
     <para>An application instance defines an executing environment which
 is shared by all request handler threads for the application. If a
-request handler modified a global or otherwise shared variable, proper
+request handler modifies a global or otherwise shared variable, proper
 synchronization must be used. The executing environment is preserved
 between requests to the same application instance, until the application
 is restarted or flushed from memory.</para>
@@ -456,9 +458,8 @@ performed.</para>
 	    <term><literal>jdbc:</literal></term>
 	    <listitem>
 	      <para>An &sql; query to a &jdbc;-enabled database will be
-executed and the result set will be returned as an &xml; structure. The
-query type must be <literal>text/x-sql</literal>, which is also the
-default.</para>
+executed and the result set will be returned as an &xml;
+structure.</para>
 	    </listitem>
 	  </varlistentry>
 
@@ -560,13 +561,6 @@ well-formed and if it has a <sgmltag class="element">DOCTYPE</sgmltag>,
 external entities will be included as well.</para>
       </section>
 
-      <section>
-	<title><literal>text/x-sql</literal></title>
-
-	<para><literal>text/x-sql</literal> is not supported as a
-parser. In &esxx;, it's only as query type for <literal>jdbc:</literal>
-URIs.</para>
-      </section>
     </section>
   </section>
 
@@ -697,8 +691,8 @@ can be found in <xref linkend="appendix.sql"/>.</para>
 
     <para>&esxx; is a free, light-weight and easy-to-use Web/&xml;
 application server, suitable for driving everything from simple web
-services to large &mdash; but not too complex &mdash; distributed web
-sites.</para>
+services to large &mdash; speaking about the number of users, but
+perhaps not complexity &mdash; distributed web sites.</para>
 
     <para>By building upon the versatile &j2se; 6.0 platform, a rich,
 mature software platform is blended with an &es;-based rapid web
