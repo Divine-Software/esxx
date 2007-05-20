@@ -137,8 +137,8 @@ public class ESXXParser {
       return codeList;
     }
 
-    public URL getStylesheet(String mime_type) {
-      return stylesheets.get(mime_type);
+    public URL getStylesheet(String media_type) {
+      return stylesheets.get(media_type);
     }
 
     public boolean hasHandlers() {
@@ -299,7 +299,7 @@ public class ESXXParser {
 
     private void handleStylesheet(Element e)
       throws org.xml.sax.SAXException {
-      String mime_type = e.getAttributeNS(null, "mime-type").trim();
+      String media_type = e.getAttributeNS(null, "media-type").trim();
       String href      = e.getAttributeNS(null, "href").trim();
       String type      = e.getAttributeNS(null, "type").trim();
       
@@ -314,7 +314,7 @@ public class ESXXParser {
       }
 
       try {
-	stylesheets.put(mime_type, new URL(baseURL, href));
+	stylesheets.put(media_type, new URL(baseURL, href));
       }
       catch (MalformedURLException ex) {
 	throw new org.xml.sax.SAXException("<stylesheet> attribute 'href' is invalid: " +

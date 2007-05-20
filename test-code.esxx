@@ -48,8 +48,8 @@ is launched.</description>
       <soap action="" object="myapp.rpcDefault" />
 
       <!-- Transformation stylesheets -->
-      <stylesheet mime-type="text/html" href="test.xsl" type="text/xsl" />
-      <stylesheet mime-type="text/xml+my-soap" href="test-soap.xsl" />
+      <stylesheet media-type="text/html" href="test.xsl" type="text/xsl" />
+      <stylesheet media-type="text/xml+my-soap" href="test-soap.xsl" />
 
       <!-- Handler for any kind of error -->
       <error handler="myapp.handleError" />

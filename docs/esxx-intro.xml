@@ -611,7 +611,7 @@ transformed by an &xslt; stylesheet into an &html; document.</para>
 <esxx xmlns="http://martin.blom.org/esxx/1.0/">
     <handlers>
       <http method="GET" handler="handleGet" />
-      <stylesheet mime-type="text/html" href="html.xslt"/>
+      <stylesheet media-type="text/html" href="html.xslt"/>
     </handlers>
 </esxx>
 
@@ -660,7 +660,7 @@ injection vulnerabilities.</para>
 <esxx xmlns="http://martin.blom.org/esxx/1.0/">
     <handlers>
       <http method="GET" handler="handleGet" />
-      <stylesheet mime-type="text/html" href="html.xslt"/>
+      <stylesheet media-type="text/html" href="html.xslt"/>
     </handlers>
 </esxx>
 
