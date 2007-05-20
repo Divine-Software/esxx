@@ -88,7 +88,7 @@ public class JSURI
       HashMap<String,String> params = new HashMap<String,String>();
 
       if (args.length >= 1 && args[0] != Context.getUndefinedValue()) {
-	type = parseMIMEType(Context.toString(args[0]), params);
+	type = ESXX.parseMIMEType(Context.toString(args[0]), params);
       }
 
       return js_this.load(cx, thisObj, type, params);
@@ -118,7 +118,7 @@ public class JSURI
       HashMap<String,String> params = new HashMap<String,String>();
 
       if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
-	type = parseMIMEType(Context.toString(args[1]), params);
+	type = ESXX.parseMIMEType(Context.toString(args[1]), params);
       }
 
       return js_this.save(cx, thisObj, args.length != 0 ? args[0] : null, type, params);
@@ -140,7 +140,7 @@ public class JSURI
 	if (type == null) {
 	  if (ct[0] != null) {
 	    params.clear();
-	    type = parseMIMEType(ct[0], params);
+	    type = ESXX.parseMIMEType(ct[0], params);
 	  }
 	  else {
 	    type = "text/xml";
@@ -192,22 +192,6 @@ public class JSURI
       element.appendChild(e);
     }
 
-
-    protected static String parseMIMEType(String ct, HashMap<String,String> params) {
-      String[] parts = ct.split(";");
-      String   type  = parts[0].trim();
-
-      // Add all attributes
-      for (int i = 1; i < parts.length; ++i) {
-	String[] attr = parts[i].split("=", 2);
-
-	if (attr.length == 2) {
-	  params.put(attr[0].trim(), attr[1].trim());
-	}
-      }
-      
-      return type;
-    }
 
     protected static JSURI checkInstance(Scriptable obj) {
       if (obj == null || !(obj instanceof JSURI)) {

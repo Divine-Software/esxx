@@ -446,6 +446,22 @@ public class ESXX {
       os.close();
     }
 
+    public static String parseMIMEType(String ct, HashMap<String,String> params) {
+      String[] parts = ct.split(";");
+      String   type  = parts[0].trim();
+
+      // Add all attributes
+      for (int i = 1; i < parts.length; ++i) {
+	String[] attr = parts[i].split("=", 2);
+
+	if (attr.length == 2) {
+	  params.put(attr[0].trim(), attr[1].trim());
+	}
+      }
+      
+      return type;
+    }
+
 
     private static final int MAX_WORKLOADS = 16;
 
