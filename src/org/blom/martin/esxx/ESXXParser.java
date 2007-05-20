@@ -105,6 +105,9 @@ public class ESXXParser {
 	      else if (name.equals("soap")) {
 		handleSOAP(e);
 	      }
+	      else if (name.equals("stylesheet")) {
+		handleStylesheet(e);
+	      }
 	      else if (name.equals("error")) {
 		handleErrorHandler(e);
 	      }
