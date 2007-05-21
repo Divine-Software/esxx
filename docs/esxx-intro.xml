@@ -486,7 +486,7 @@ structure.</para>
 
       <para>When using the <methodname>load</methodname>() method on
 <classname>URI</classname> objects for certain protocols<footnote>
-	  <para>In Sun's &j2se; 6.0, <literal>file:</literal>,
+	  <para>With Sun's &j2se; 6.0, <literal>file:</literal>,
 <literal>ftp:</literal>, <literal>jar:</literal>,
 <literal>http:</literal> and <literal>https:</literal>.
 </para>
