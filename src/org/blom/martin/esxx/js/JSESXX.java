@@ -48,6 +48,15 @@ public class JSESXX {
       return new Synchronizer(f);
     }
 
+    public synchronized void waitForEvent(long millisToWait) 
+      throws InterruptedException {
+      this.wait(millisToWait);
+    }
+
+    public synchronized void postEvent() {
+      this.notifyAll();
+    }
+
     public InputStream in;
     public PrintWriter error;
     public PrintWriter debug;
@@ -64,6 +73,7 @@ public class JSESXX {
     public MimeHeaders mimeHeaders;
     public SOAPMessage soapMessage;
 
+    public Object inputMessage;
 
     private void handleProperties(Workload workload) {
       Document accept_doc;
@@ -282,5 +292,5 @@ public class JSESXX {
     private ESXX esxx;
     private Context cx;
     private Scriptable scope;
-    private URL baseURL;
+    public URL baseURL; // for parseInputMessage 
 }

@@ -66,8 +66,10 @@ class Worker
 	    Exception error  = null;
 
 	    try {
-	      // Execute the SOAP or HTTP handler (if available)
+	      // Parse input message, if any
+	      parseInputMessage(js_esxx, cx, scope);
 
+	      // Execute the SOAP or HTTP handler (if available)
 	      String object = getSOAPAction(js_esxx, parser);
 
 	      if (object != null) {
@@ -285,9 +287,6 @@ class Worker
 
     private String getSOAPAction(JSESXX js_esxx, ESXXParser parser) 
       throws ESXXException, javax.xml.soap.SOAPException {
-      // Parse SOAP message, if any
-      parseSOAPMessage(js_esxx);
-
       String action = null;
 
       if (js_esxx.soapMessage != null) {
@@ -303,7 +302,7 @@ class Worker
     }
 
 
-    private void parseSOAPMessage(JSESXX js_esxx)
+    private void parseInputMessage(JSESXX js_esxx, Context cx, Scriptable scope)
       throws ESXXException, javax.xml.soap.SOAPException  {
 
       // Consume SOAP message, if any
@@ -321,6 +320,23 @@ class Worker
 	}
 	catch (SOAPException ex) {
 	  throw new ESXXException("Invalid SOAP message: " + ex.getMessage());
+	}
+      }
+      else {
+	// TODO: FIX THIS JUNK CODE!!
+	try {
+	  String[]               ct        = js_esxx.mimeHeaders.getHeader("Content-Type");
+	  HashMap<String,String> params    = new HashMap<String,String>();
+
+	  if (ct != null && ct.length == 1) {
+	    String                 mime_type = ESXX.parseMIMEType(ct[0], params);
+
+	    js_esxx.inputMessage = esxx.parseStream(mime_type, params, js_esxx.in, js_esxx.baseURL,
+						    null, js_esxx.debug, cx, scope);
+	  }
+	}
+	catch (Exception ex) {
+	  throw new ESXXException(ex.getMessage());
 	}
       }
     }

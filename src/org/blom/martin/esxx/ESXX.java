@@ -91,7 +91,7 @@ public class ESXX {
 
       numWorkerThreads = Integer.parseInt(
 	settings.getProperty("esxx.worker_threads",
-			     "" + Runtime.getRuntime().availableProcessors() * 2));
+			     "" + Runtime.getRuntime().availableProcessors() * 10));
       activeThreads = 0;
 
       // Set up shared main context
