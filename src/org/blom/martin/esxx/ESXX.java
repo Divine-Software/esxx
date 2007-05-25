@@ -89,6 +89,11 @@ public class ESXX {
 	    }
 	});
 
+      numWorkerThreads = Integer.parseInt(
+	settings.getProperty("esxx.worker_threads",
+			     "" + Runtime.getRuntime().availableProcessors() * 2));
+      activeThreads = 0;
+
       // Set up shared main context
       Context cx = Context.enter();
 
@@ -98,30 +103,40 @@ public class ESXX {
 	workerThreads = new ThreadGroup("ESXX worker threads");
 	workloadQueue = new LinkedBlockingQueue<Workload>(MAX_WORKLOADS);
 
-	int threads = Integer.parseInt(
-	  settings.getProperty("esxx.worker_threads",
-			       "" + Runtime.getRuntime().availableProcessors() * 2));
-
-	for (int i = 0; i < threads; ++i) {
-	  Thread t = new Thread(
-	    workerThreads,
-	    new Runnable() {
-		public void run() {
-		  // Create the JavaScript thread context and invoke
-		  // run() on the new Worker object
-		  Context.call(new Worker(ESXX.this));
-		}
-	    },
-	    "ESXX worker thread " + i);
-
-	  t.start();
-	}
+	createWorkers();
       }
       catch (Exception ex) {
 	ex.printStackTrace();
       }
       finally {
 	cx.exit();
+      }
+    }
+
+    public synchronized void suspendWorker() {
+      --activeThreads;
+      createWorkers();
+    }
+
+    public synchronized void resumeWorker() {
+      ++activeThreads;
+    }
+
+    private synchronized void createWorkers() {
+      while (activeThreads < numWorkerThreads) {
+	Thread t = new Thread(
+	  workerThreads,
+	  new Runnable() {
+	      public void run() {
+		// Create the JavaScript thread context and invoke
+		// run() on the new Worker object
+		Context.call(new Worker(ESXX.this));
+	      }
+	  },
+	  "ESXX worker thread " + activeThreads);
+
+	t.start();
+	++activeThreads;
       }
     }
 
@@ -424,7 +439,7 @@ public class ESXX {
 	}
 	else {
 	  // Identity transformer
-	    return transformerFactory.newTransformer();
+	  return transformerFactory.newTransformer();
 	}
       }
       catch (TransformerConfigurationException ex) {
@@ -472,6 +487,8 @@ public class ESXX {
     private DOMImplementation domImplementation;
     private TransformerFactory  transformerFactory;
     private ThreadGroup workerThreads;
+    private int numWorkerThreads;
+    private int activeThreads;
     private LinkedBlockingQueue<Workload> workloadQueue;
     private HashMap<String,String> cgiToHTTPMap = new HashMap<String,String>();
 };
