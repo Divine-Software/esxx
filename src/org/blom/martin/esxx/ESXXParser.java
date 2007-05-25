@@ -324,7 +324,7 @@ public class ESXXParser {
 
     private void handleErrorHandler(Element e)
       throws org.xml.sax.SAXException {
-      String handler = e.getAttributeNS(null, "error").trim();
+      String handler = e.getAttributeNS(null, "handler").trim();
 
       if (handler.endsWith(")")) {
 	throw new org.xml.sax.SAXException("<error> attribute 'handler' value " +
