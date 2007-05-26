@@ -11,6 +11,7 @@ import javax.xml.stream.*;
 import javax.xml.xpath.*;
 import org.blom.martin.esxx.js.JSGlobal;
 import org.blom.martin.esxx.js.JSURI;
+import org.blom.martin.esxx.js.JSRequest;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ImporterTopLevel;
 import org.mozilla.javascript.Script;
@@ -166,6 +167,7 @@ public class ESXXParser {
 
       // Create per-application top-level and global scopes
       applicationScope = new JSGlobal(cx);
+      ScriptableObject.defineClass(applicationScope, JSRequest.class);
       ScriptableObject.defineClass(applicationScope, JSURI.class);
 
       for (Code c : codeList) {
