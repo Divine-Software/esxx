@@ -1,6 +1,8 @@
 
 package org.blom.martin.esxx;
 
+import org.blom.martin.esxx.js.JSResponse;
+
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -13,7 +15,7 @@ import java.util.Properties;
 import java.util.HashMap;
 
 public abstract class Workload {
-    public abstract void finished(int rc, Properties headers, Object result);
+    public abstract void finished(int rc, JSResponse response);
 
     public Workload(URL url, Properties properties,
 		    InputStream in, Writer error) {

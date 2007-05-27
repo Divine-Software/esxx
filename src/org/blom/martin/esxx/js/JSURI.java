@@ -151,7 +151,7 @@ public class JSURI
 	Object result  = esxx.parseStream(type, params,
 					  is, uri.toURL(), 
 					  null, 
-					  js_esxx.debug,
+					  js_esxx.jsGet_debug(),
 					  cx, this);
 	
 	if (result == null) {

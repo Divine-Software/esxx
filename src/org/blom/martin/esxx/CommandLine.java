@@ -1,6 +1,8 @@
 
 package org.blom.martin.esxx;
 
+import org.blom.martin.esxx.js.JSResponse;
+
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
@@ -47,26 +49,38 @@ public class CommandLine {
 	  outStream  = out_stream;
 	}
 
-	public void finished(int rc, Properties headers, Object result) {
+	public void finished(int rc, JSResponse response) {
 	  try {
-	    PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
 
 	    // Output HTTP headers
-	    String content_type = "text/xml";
+	    final PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
 
-	    for (Map.Entry<Object, Object> h : headers.entrySet()) {
-	      String name  = (String) h.getKey();
-	      String value = (String) h.getValue();
+	    out.println("Status: " + response.getStatus());
+	    out.println("Content-Type: " + response.getContentType());
+	    
+	    response.enumerateHeaders(new JSResponse.HeaderEnumerator() {
+		  public void header(String name, String value) {
+		    out.println(name + ": " + value);
+		  }
+	      });
 
-	      if (name.equals("Content-Type")) {
-		content_type = value;
-	      }
+// 	    String content_type = "text/xml";
 
-	      out.println(name + ": " + value);
-	    }
+// 	    for (Map.Entry<Object, Object> h : headers.entrySet()) {
+// 	      String name  = (String) h.getKey();
+// 	      String value = (String) h.getValue();
+
+// 	      if (name.equals("Content-Type")) {
+// 		content_type = value;
+// 	      }
+
+// 	      out.println(name + ": " + value);
+// 	    }
 
 	    out.println("");
 	    out.flush();
+
+	    Object result = response.getResult();
 
 	    // Output body
 	    if (result instanceof ByteArrayOutputStream) {
@@ -89,7 +103,7 @@ public class CommandLine {
 	    }
 	    else if (result instanceof String) {
 	      // Write result as-is, using the specified charset (if present)
-	      Writer ow = Workload.createWriter(outStream, content_type);
+	      Writer ow = Workload.createWriter(outStream, response.getContentType());
 	      ow.write((String) result);
 	      ow.close();
 	    }

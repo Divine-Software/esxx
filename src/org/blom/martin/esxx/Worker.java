@@ -1,10 +1,8 @@
 
 package org.blom.martin.esxx;
 
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.util.Properties;
 import java.util.HashMap;
 import javax.xml.soap.*;
@@ -28,6 +26,7 @@ class Worker
     public Object run(Context cx) {
       // Enable all optimizations
       cx.setOptimizationLevel(9);
+//      cx.setOptimizationLevel(-1);
 
       // Provide a better mapping for primitive types on this context
       cx.getWrapFactory().setJavaPrimitiveWrap(false);
@@ -52,11 +51,8 @@ class Worker
 
 	    // Make the JSESXX object available as the instance-level
 	    // "esxx" variable (via magic in JSGlobal).
-	    JSESXX js_esxx = new JSESXX(esxx, cx, scope,
-					workload,
-					null,
-					parser.getXML());
-
+	    JSESXX js_esxx = (JSESXX) cx.newObject(scope, "ESXX", 
+						   new Object[] {esxx, workload, parser.getXML()});
 	    cx.putThreadLocal(JSESXX.class, js_esxx);
 
 	    // Execute all <?esxx and <?esxx-import PIs, if not already done
@@ -66,22 +62,23 @@ class Worker
 	    Exception error  = null;
 
 	    try {
-	      // Parse input message, if any
-	      parseInputMessage(js_esxx, cx, scope);
+	      // Create a Request object
+	      JSRequest req = (JSRequest) cx.newObject(scope, "Request", 
+						       new Object[] { esxx, workload });
 
 	      // Execute the SOAP or HTTP handler (if available)
-	      String object = getSOAPAction(js_esxx, parser);
+	      String object = getSOAPAction(req, parser);
 
 	      if (object != null) {
-		result = handleSOAPAction(object, js_esxx, cx, scope);
+		result = handleSOAPAction(object, req, cx, scope);
 	      }
 	      else if (parser.hasHandlers()) {
-		result = handleHTTPMethod(request_method, parser, cx, scope);
+		result = handleHTTPMethod(request_method, req, parser, cx, scope);
 	      }
 	      else {
 		// No handlers; the document is the result
 
-		result = js_esxx.document;
+		result = js_esxx.jsGet_document();
 	      }
 	    }
 	    catch (org.mozilla.javascript.RhinoException ex) {
@@ -108,59 +105,23 @@ class Worker
 	      throw new ESXXException("No result from '" + workload.getURL() + "'");
 	    }
 
-	    // If result is an Array, extract Status and Content-Type first.
-	    String status       = "200 OK";;
-	    String content_type = null;
+	    JSResponse response;
 
-	    if (result instanceof Scriptable) {
-	      Scriptable s = (Scriptable) result;
-	      
-	      if (s.has(2, s)) {
-		status       = Context.toString(s.get(0, s));
-		content_type = Context.toString(s.get(1, s));
-		result       = s.get(2, s);
-	      }
-	      else if (s.has(1, s)) {
-		content_type = Context.toString(s.get(0, s));
-		result       = s.get(1, s);
-	      }
-	    }
-
-	    // Handle result types
-	    if (result instanceof ByteBuffer) {
-	      if (content_type == null) {
-		content_type = "application/octent-stream";
-	      }
-	    }
-	    else if (result instanceof String) {
-	      if (content_type == null) {
-		content_type = "text/plain;charset=" + 
-		  java.nio.charset.Charset.defaultCharset().name();
-	      }
-	    }
-	    else if (result instanceof BufferedImage) {
-	      if (content_type == null) {
-		content_type = "image/png";
-	      }
-
-	      // TODO ...
-	      throw new ESXXException("BufferedImage results not supported yet.");
+	    if (result instanceof JSResponse) {
+	      response = (JSResponse) result;
 	    }
 	    else {
-	      Node node;
+	      response = (JSResponse) cx.newObject(scope, "Response",  new Object[] { result });
+	    }
 
-	      try {
-		node = (org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result));
-	      }
-	      catch (Exception ex) {
-		throw new ESXXException("Unsupported result type from '" + workload.getURL() + 
-					"': " + result.getClass());
-	      }
+	    if (response.getResult() instanceof Node) {
+	      Node   node         = (Node) response.getResult();
+	      String content_type = response.getContentType();
 
 	      Transformer tr;
 
 	      try {
-		URL stylesheet = parser.getStylesheet(content_type);
+		URL stylesheet = parser.getStylesheet(response.getContentType());
 
 		if (stylesheet == null) {
 		  stylesheet = parser.getStylesheet("");
@@ -184,7 +145,7 @@ class Worker
 		}
 	      }
 	      catch (IOException ex) {
-		throw new ESXXException("Unable to load stylesheet: " + ex.getMessage());
+		throw new ESXXException("Unable to load stylesheet: " + ex.getMessage(), ex);
 	      }
 
 	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -207,43 +168,13 @@ class Worker
 	      }
 
 	      bos.close();
-	      result = bos;
+
+	      response.setContentType(content_type);
+	      response.setResult(bos);
 	    }
-
-	    Properties p = new Properties();
-
-	    // Copy headers from the JS object
-
-	    for (Object o : js_esxx.headers.getIds()) {
-	      if (o instanceof String) {
-		String id = (String) o;
-
-		if (id.equals("Cookies")) {
-		}
-		else {
-		  p.setProperty(id, ScriptableObject.getProperty(js_esxx.headers, id).toString());
-		}
-	      }
-	      else if (o instanceof Integer) {
-		Integer id = (Integer) o;
-		String value = ScriptableObject.getProperty(js_esxx.headers, id).toString();
-
-		String[] kv = value.split(":", 2);
-
-		if (kv.length == 2) {
-		  p.setProperty(kv[0], kv[1]);
-		}
-	      }
-	    }
-
-	    // Set Status
-	    p.setProperty("Status", status);
-
-	    // Set Content-Type
-	    p.setProperty("Content-Type", content_type);
 
 	    // Return workload
-	    workload.finished(0, p, result);
+	    workload.finished(0, response);
 	  }
 	  catch (Exception ex) {
 	    Properties h = new Properties();
@@ -274,7 +205,16 @@ class Worker
 	    out.println("</body></html>");
 	    out.close();
 
-	    workload.finished(500, h, sw.toString());
+	    try {
+	      workload.finished(500, new JSResponse("500 " + title,
+						    "text/html",
+						    sw.toString()));
+	    }
+	    catch (ESXXException esx) {
+	      // This CANNOT happen
+	      throw new InternalError("new JSResponse() threw ESXXException: " +
+				      ex.getMessage());
+	    }
 	  }
 	}
 	catch (InterruptedException ex) {
@@ -285,12 +225,14 @@ class Worker
       }
     }
 
-    private String getSOAPAction(JSESXX js_esxx, ESXXParser parser) 
+    private String getSOAPAction(JSRequest req, ESXXParser parser) 
       throws ESXXException, javax.xml.soap.SOAPException {
       String action = null;
 
-      if (js_esxx.soapMessage != null) {
-	action = parser.getSOAPAction(js_esxx.soapAction);
+      String soap_action = req.jsGet_soapAction();
+
+      if (soap_action != null) {
+	action = parser.getSOAPAction(soap_action);
 
 	if (action == null) {
 	  // Try default action object
@@ -302,50 +244,12 @@ class Worker
     }
 
 
-    private void parseInputMessage(JSESXX js_esxx, Context cx, Scriptable scope)
-      throws ESXXException, javax.xml.soap.SOAPException  {
-
-      // Consume SOAP message, if any
-      if (js_esxx.soapAction != null) {
-	try {
-	  InputStream in = js_esxx.in;
-	  js_esxx.in = null;
-
-	  js_esxx.soapMessage = MessageFactory.newInstance(
-	    SOAPConstants.DYNAMIC_SOAP_PROTOCOL).createMessage(js_esxx.mimeHeaders, in);
-
-	}
-	catch (IOException ex) {
-	  throw new ESXXException("Unable to read SOAP message stream: " + ex.getMessage());
-	}
-	catch (SOAPException ex) {
-	  throw new ESXXException("Invalid SOAP message: " + ex.getMessage());
-	}
-      }
-      else {
-	// TODO: FIX THIS JUNK CODE!!
-	try {
-	  String[]               ct        = js_esxx.mimeHeaders.getHeader("Content-Type");
-	  HashMap<String,String> params    = new HashMap<String,String>();
-
-	  if (ct != null && ct.length == 1) {
-	    String                 mime_type = ESXX.parseMIMEType(ct[0], params);
-
-	    js_esxx.inputMessage = esxx.parseStream(mime_type, params, js_esxx.in, js_esxx.baseURL,
-						    null, js_esxx.debug, cx, scope);
-	  }
-	}
-	catch (Exception ex) {
-	  throw new ESXXException(ex.getMessage());
-	}
-      }
-    }
-
-
-    private Object handleSOAPAction(String object, JSESXX js_esxx,
+    private Object handleSOAPAction(String object, JSRequest req,
 				    Context cx, Scriptable scope) 
       throws ESXXException, javax.xml.soap.SOAPException {
       Object result;
+
+      SOAPMessage message = (SOAPMessage) req.jsGet_message();
 
       if (!object.equals("")) {
 	// RPC style SOAP handler
@@ -354,15 +258,16 @@ class Worker
 	org.w3c.dom.Document soap_body   = null;
 
 	try {
-	  soap_header = js_esxx.soapMessage.getSOAPHeader();
+	  soap_header = message.getSOAPHeader();
 	}
 	catch (SOAPException ex) {
 	  // The header is optional
 	}
 
-	soap_body = js_esxx.soapMessage.getSOAPBody().extractContentAsDocument();
+	soap_body = message.getSOAPBody().extractContentAsDocument();
 
-	Object args[] = { esxx.domToE4X(soap_body, cx, scope),
+	Object args[] = { req, 
+			  esxx.domToE4X(soap_body, cx, scope),
 			  esxx.domToE4X(soap_header, cx, scope) };
 
 	result = callJSMethod(object,
@@ -372,25 +277,27 @@ class Worker
       else {
 	// No RPC handler; the SOAP message itself is the result
 
-	result = esxx.domToE4X(js_esxx.soapMessage.getSOAPPart(), cx, scope);
+	result = esxx.domToE4X(message.getSOAPPart(), cx, scope);
       }
 
       return result;
     }
 
 
-    private Object handleHTTPMethod(String request_method, ESXXParser parser,
+    private Object handleHTTPMethod(String request_method, JSRequest req, ESXXParser parser,
 				    Context cx, Scriptable scope) 
       throws ESXXException {
       Object result;
       String handler = parser.getHandlerFunction(request_method);
 
       if (handler == null) {
-	throw new ESXXException("'" + request_method + "' handler not defined.");
+	throw new ESXXException(501, "'" + request_method + "' handler not defined.");
       }
 
+      Object args[] = { req };
+
       result = callJSMethod(handler,
-			    null, "'" + request_method + "' handler", cx, scope);
+			    args, "'" + request_method + "' handler", cx, scope);
 
       return result;
     }
@@ -412,7 +319,8 @@ class Worker
 				"':\n" +
 				"Error handler '" + handler +
 				"' failed with message '" +
-				ex.getMessage() + "'");
+				ex.getMessage() + "'", 
+				ex);
       }
 
       return result;

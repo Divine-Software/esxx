@@ -167,8 +167,6 @@ public class ESXXParser {
 
       // Create per-application top-level and global scopes
       applicationScope = new JSGlobal(cx);
-      ScriptableObject.defineClass(applicationScope, JSRequest.class);
-      ScriptableObject.defineClass(applicationScope, JSURI.class);
 
       for (Code c : codeList) {
 	c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
