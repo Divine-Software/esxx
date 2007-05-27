@@ -15,44 +15,8 @@ public class JSResponse
       super();
     }
 
-    public JSResponse(String status, String content_type, Object result)
-      throws ESXXException {
+    public JSResponse(String status, String content_type, Object result) {
       this();
-
-      // Unwrap wrapped objects
-      if (result instanceof Wrapper) {
-	result = ((Wrapper) result).unwrap();
-      }
-
-      // Check for valid result
-      if (result instanceof ByteArrayOutputStream ||
-	  result instanceof ByteBuffer) {
-	if (content_type == null) {
-	  content_type = "application/octent-stream";
-	}
-      }
-      else if (result instanceof String) {
-	if (content_type == null) {
-	  content_type = "text/plain;charset=" + 
-	    java.nio.charset.Charset.defaultCharset().name();
-	}
-      }
-      else if (result instanceof BufferedImage) {
-	if (content_type == null) {
-	  content_type = "image/png";
-	}
-
-	// TODO ...
-	throw new ESXXException("BufferedImage results not supported yet.");
-      }
-      else {
-	try {
-	  result = (org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result));
-	}
-	catch (Exception ex) {
-	  throw new ESXXException("Unsupported result type: " + result.getClass());
-	}
-      }
 
       this.status  = status;
       contentType  = content_type;
@@ -107,6 +71,41 @@ public class JSResponse
 
 	default:
 	  throw Context.reportRuntimeError("Response() constructor requires 1-3 arguments."); 
+      }
+
+      // Unwrap wrapped objects
+      if (result instanceof Wrapper) {
+	result = ((Wrapper) result).unwrap();
+      }
+
+      // Check for valid result
+      if (result instanceof ByteArrayOutputStream ||
+	  result instanceof ByteBuffer) {
+	if (content_type == null) {
+	  content_type = "application/octent-stream";
+	}
+      }
+      else if (result instanceof String) {
+	if (content_type == null) {
+	  content_type = "text/plain;charset=" + 
+	    java.nio.charset.Charset.defaultCharset().name();
+	}
+      }
+      else if (result instanceof BufferedImage) {
+	if (content_type == null) {
+	  content_type = "image/png";
+	}
+
+	// TODO ...
+	throw new ESXXException("BufferedImage results not supported yet.");
+      }
+      else {
+	try {
+	  result = (org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result));
+	}
+	catch (Exception ex) {
+	  throw new ESXXException("Unsupported result type: " + result.getClass());
+	}
       }
 
       JSResponse res = new JSResponse(status, content_type, result);

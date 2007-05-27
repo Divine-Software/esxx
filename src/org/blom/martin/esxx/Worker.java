@@ -205,16 +205,9 @@ class Worker
 	    out.println("</body></html>");
 	    out.close();
 
-	    try {
-	      workload.finished(500, new JSResponse("500 " + title,
-						    "text/html",
-						    sw.toString()));
-	    }
-	    catch (ESXXException esx) {
-	      // This CANNOT happen
-	      throw new InternalError("new JSResponse() threw ESXXException: " +
-				      ex.getMessage());
-	    }
+	    workload.finished(500, new JSResponse("500 " + title,
+						  "text/html",
+						  sw.toString()));
 	  }
 	}
 	catch (InterruptedException ex) {
