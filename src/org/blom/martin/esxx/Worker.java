@@ -115,62 +115,7 @@ class Worker
 	    }
 
 	    if (response.getResult() instanceof Node) {
-	      Node   node         = (Node) response.getResult();
-	      String content_type = response.getContentType();
-
-	      Transformer tr;
-
-	      try {
-		URL stylesheet = parser.getStylesheet(response.getContentType());
-
-		if (stylesheet == null) {
-		  stylesheet = parser.getStylesheet("");
-		}
-
-		tr = esxx.getCachedStylesheet(stylesheet);
-
-		// Set media-type on identity styleseet, if
-		// specified. User-specified stylesheets should set
-		// these keys directly in the stylesheet.
-		if (stylesheet == null && content_type != null) {
-		  HashMap<String,String> params = new HashMap<String,String>();
-		  String                 ct     = ESXX.parseMIMEType(content_type, params);
-		  String                 cs     = params.get("charset");
-
-		  tr.setOutputProperty(OutputKeys.MEDIA_TYPE, ct);
-
-		  if (cs != null) {
-		    tr.setOutputProperty(OutputKeys.ENCODING, cs);
-		  }
-		}
-	      }
-	      catch (IOException ex) {
-		throw new ESXXException("Unable to load stylesheet: " + ex.getMessage(), ex);
-	      }
-
-	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	      tr.transform(new DOMSource(node), new StreamResult(bos));
-	      
-	      content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
-		";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
-
-	      // Attach debug log to document
-	      workload.getDebugWriter().close();
-
-	      String ds = workload.getDebugWriter().toString();
-	    
-	      if (ds.length() != 0) {
-		Writer out = workload.createWriter(bos, content_type);
-		out.write("<!-- Start ESXX Debug Log\n" + 
-			  ds.replaceAll("--", "\u2012\u2012") +
-			  "End ESXX Debug Log -->");
-		out.close();
-	      }
-
-	      bos.close();
-
-	      response.setContentType(content_type);
-	      response.setResult(bos);
+	      handleTransformation(response, parser, workload);
 	    }
 
 	    // Return workload
@@ -295,6 +240,68 @@ class Worker
       return result;
     }
 
+
+    private void handleTransformation(JSResponse response, ESXXParser parser, Workload workload) 
+      throws ESXXException, IOException, UnsupportedEncodingException,
+      XMLStreamException, TransformerException {
+
+      Node   node         = (Node) response.getResult();
+      String content_type = response.getContentType();
+
+      Transformer tr;
+
+      try {
+	URL stylesheet = parser.getStylesheet(response.getContentType());
+
+	if (stylesheet == null) {
+	  stylesheet = parser.getStylesheet("");
+	}
+
+	tr = esxx.getCachedStylesheet(stylesheet);
+
+	// Set media-type on identity styleseet, if
+	// specified. User-specified stylesheets should set
+	// these keys directly in the stylesheet.
+	if (stylesheet == null && content_type != null) {
+	  HashMap<String,String> params = new HashMap<String,String>();
+	  String                 ct     = ESXX.parseMIMEType(content_type, params);
+	  String                 cs     = params.get("charset");
+
+	  tr.setOutputProperty(OutputKeys.MEDIA_TYPE, ct);
+
+	  if (cs != null) {
+	    tr.setOutputProperty(OutputKeys.ENCODING, cs);
+	  }
+	}
+      }
+      catch (IOException ex) {
+	throw new ESXXException("Unable to load stylesheet: " + ex.getMessage(), ex);
+      }
+
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      tr.transform(new DOMSource(node), new StreamResult(bos));
+
+      content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
+	";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
+
+      // Attach debug log to document
+      workload.getDebugWriter().close();
+
+      String ds = workload.getDebugWriter().toString();
+	    
+      if (ds.length() != 0) {
+	Writer out = workload.createWriter(bos, content_type);
+	out.write("<!-- Start ESXX Debug Log\n" + 
+		  ds.replaceAll("--", "\u2012\u2012") +
+		  "End ESXX Debug Log -->");
+	out.close();
+      }
+
+      bos.close();
+
+      response.setContentType(content_type);
+      response.setResult(bos);
+    }
 
     private Object handleError(Exception error, ESXXParser parser,
 			       Context cx, Scriptable scope) 
