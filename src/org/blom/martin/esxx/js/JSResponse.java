@@ -113,7 +113,7 @@ public class JSResponse
 
       // Copy properties from fouth argument
       if (args.length == 4) {
-	if (args[3] instanceof Scriptable) {
+	if (args[3] instanceof NativeObject) {
 	  Scriptable headers = (Scriptable) args[3];
 
 	  for (Object hdr : headers.getIds()) {
