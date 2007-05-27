@@ -15,12 +15,17 @@ import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.Comment;
-
+import javax.xml.stream.*;
+import javax.xml.stream.events.XMLEvent;
+import javax.xml.namespace.NamespaceContext;
 class Worker 
   implements ContextAction {
 
     public Worker(ESXX esxx) {
       this.esxx = esxx;
+
+      xmlOutputFactory = XMLOutputFactory.newInstance();
+      xmlOutputFactory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, true);
     }
 
     public Object run(Context cx) {
@@ -278,29 +283,57 @@ class Worker
 	throw new ESXXException("Unable to load stylesheet: " + ex.getMessage(), ex);
       }
 
-      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      tr.transform(new DOMSource(node), new StreamResult(bos));
+      if (true) {
+	StringWriter sw = new StringWriter();
+	
+	XMLEventWriter xew = xmlOutputFactory.createXMLEventWriter(sw);
 
-      content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
-	";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
+	tr.transform(new DOMSource(node), new javax.xml.transform.stax.StAXResult(xew));
 
-      // Attach debug log to document
-      workload.getDebugWriter().close();
+	content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
+	  ";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
 
-      String ds = workload.getDebugWriter().toString();
+	// Attach debug log to document
+	workload.getDebugWriter().close();
+
+	String ds = workload.getDebugWriter().toString();
 	    
-      if (ds.length() != 0) {
-	Writer out = workload.createWriter(bos, content_type);
-	out.write("<!-- Start ESXX Debug Log\n" + 
-		  ds.replaceAll("--", "\u2012\u2012") +
-		  "End ESXX Debug Log -->");
-	out.close();
+	if (ds.length() != 0) {
+	  sw.write("<!-- Start ESXX Debug Log\n" + 
+		   ds.replaceAll("--", "\u2012\u2012") +
+		   "End ESXX Debug Log -->");
+	}
+
+	sw.close();
+
+	response.setContentType(content_type);
+	response.setResult(sw.toString());
       }
+      else {
+	ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	tr.transform(new DOMSource(node), new StreamResult(bos));
 
-      bos.close();
+	content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
+	  ";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
 
-      response.setContentType(content_type);
-      response.setResult(bos);
+	// Attach debug log to document
+	workload.getDebugWriter().close();
+
+	String ds = workload.getDebugWriter().toString();
+	    
+	if (ds.length() != 0) {
+	  Writer out = workload.createWriter(bos, content_type);
+	  out.write("<!-- Start ESXX Debug Log\n" + 
+		    ds.replaceAll("--", "\u2012\u2012") +
+		    "End ESXX Debug Log -->");
+	  out.close();
+	}
+
+	bos.close();
+
+	response.setContentType(content_type);
+	response.setResult(bos);
+      }
     }
 
     private Object handleError(Exception error, ESXXParser parser,
@@ -383,5 +416,74 @@ class Worker
 //       ContextFactory.initGlobal(new MyFactory());
 //     }
 
+    private class ESXXResult
+      extends javax.xml.transform.stax.StAXResult {
+	public ESXXResult(StringWriter sw) 
+	  throws XMLStreamException {
+	  this(sw, xmlOutputFactory.createXMLEventWriter(sw));
+	}
+
+	private ESXXResult(StringWriter sw, XMLEventWriter xew) {
+	  super(new ESXXEventWriter(xew));
+	}	  
+    }
+
+    private class ESXXEventWriter
+      implements XMLEventWriter {
+
+	public ESXXEventWriter(XMLEventWriter xew) {
+	  xmEventWriter = xew;
+	}
+
+	public void add(XMLEvent event)
+	  throws XMLStreamException {
+	  xmEventWriter.add(event);
+	}
+
+	public void add(XMLEventReader reader)
+	  throws XMLStreamException {
+	  while (reader.hasNext()) {
+	    add((XMLEvent) reader.next());
+	  }
+	}
+
+	public void close()
+	  throws XMLStreamException {
+	  xmEventWriter.close();
+	}
+
+	public void flush()
+	  throws XMLStreamException {
+	  xmEventWriter.flush();
+	}
+
+	public NamespaceContext getNamespaceContext() {
+	  return xmEventWriter.getNamespaceContext();
+	}
+
+	public String getPrefix(String uri)
+	  throws XMLStreamException {
+	  return xmEventWriter.getPrefix(uri);
+	}
+
+	public void setDefaultNamespace(String uri)
+	  throws XMLStreamException {
+	  xmEventWriter.setDefaultNamespace(uri);
+	}
+
+	public void setNamespaceContext(NamespaceContext context)
+	  throws XMLStreamException {
+	  xmEventWriter.setNamespaceContext(context);
+	}
+
+	public void setPrefix(String prefix, String uri)
+	  throws XMLStreamException {
+	  xmEventWriter.setPrefix(prefix, uri);
+	}
+
+	private XMLEventWriter xmEventWriter;
+    }
+
     private ESXX esxx;
+    private XMLOutputFactory xmlOutputFactory;
 }
