@@ -6,7 +6,16 @@
 
   <!-- Identity transform -->
 
-  <xsl:output encoding="iso-8859-1" media-type="text/html"/>
+  <xsl:output 
+	version="1.1"
+	standalone="yes"
+	cdata-section-elements="xhtml:p"
+	indent="yes"
+	doctype-system="http://apa.com"
+	encoding="iso-8859-1" 
+	method="html"
+	media-type="text/html"
+	omit-xml-declaration="no"/>
 
   <xsl:template match="@*|node()">
     <xsl:copy>

@@ -19,6 +19,7 @@ function MyApp(e) {
     esxx.debug.println("**** END GET HANDLER ****");
 
     default xml namespace = "http://www.w3.org/1999/xhtml";
-    return new Response("text/html", <p>Hello, world!</p>);
+    return new Response("text/html", 
+	<html><body><p>Hello, world och Örjan!</p><div/></body></html>);
   }
 }

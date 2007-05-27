@@ -284,6 +284,62 @@ class Worker
       }
 
       if (true) {
+	if (!tr.getOutputProperty(OutputKeys.METHOD).equals("text")) {
+	  // Get identity transformer
+	  Transformer ntr = esxx.getCachedStylesheet(null);
+
+	  // Copy all  properties
+	  copyOutputKey(OutputKeys.CDATA_SECTION_ELEMENTS, tr, ntr);
+	  copyOutputKey(OutputKeys.DOCTYPE_PUBLIC, tr, ntr);
+	  copyOutputKey(OutputKeys.DOCTYPE_SYSTEM, tr, ntr);
+	  copyOutputKey(OutputKeys.ENCODING, tr, ntr);
+	  copyOutputKey(OutputKeys.INDENT, tr, ntr);
+	  copyOutputKey(OutputKeys.MEDIA_TYPE, tr, ntr);
+	  copyOutputKey(OutputKeys.METHOD, tr, ntr);
+	  copyOutputKey(OutputKeys.OMIT_XML_DECLARATION, tr, ntr);
+	  copyOutputKey(OutputKeys.STANDALONE, tr, ntr);
+	  copyOutputKey(OutputKeys.VERSION, tr, ntr);
+
+	  // Run user's transformation onto a new DOM node
+	  DOMResult dr = new DOMResult();
+
+	  // Force XML transformation
+	  tr.setOutputProperty(OutputKeys.METHOD, "xml");
+	  tr.setOutputProperty(OutputKeys.VERSION, "1.0");
+	  tr.setOutputProperty(OutputKeys.CDATA_SECTION_ELEMENTS, "");
+	  tr.transform(new DOMSource(node), dr);
+
+	  tr = ntr;
+	  node = dr.getNode();
+	}
+
+	ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+	tr.transform(new DOMSource(node), new StreamResult(bos));
+
+	content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
+	  ";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
+
+	// Attach debug log to document
+	workload.getDebugWriter().close();
+
+	String ds = workload.getDebugWriter().toString();
+	    
+	if (ds.length() != 0) {
+	  Writer out = workload.createWriter(bos, content_type);
+	  out.write("<!-- Start ESXX Debug Log\n" + 
+		    ds.replaceAll("--", "\u2012\u2012") +
+		    "End ESXX Debug Log -->");
+	  out.close();
+	}
+
+	bos.close();
+
+	response.setContentType(content_type);
+	response.setResult(bos);
+
+      }
+      else if (false) {
 	StringWriter sw = new StringWriter();
 	
 	XMLEventWriter xew = xmlOutputFactory.createXMLEventWriter(sw);
@@ -399,6 +455,14 @@ class Worker
       }
 
       return ((ScriptableObject) scope).callMethod(cx, o, method, args);
+    }
+
+    private static void copyOutputKey(String key, Transformer from, Transformer to) {
+      String value = from.getOutputProperty(key);
+      
+      if (value != null) {
+	to.setOutputProperty(key, value);
+      }
     }
 
 //     private static class MyFactory extends ContextFactory {
