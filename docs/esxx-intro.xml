@@ -263,8 +263,14 @@ access to the full &j2se; (or &j2ee;) platform.</para>
       </listitem>
 
       <listitem>
-	<para>A global object called <varname>esxx</varname> is used for
-request handling, logging &etc;.</para>
+	<para>A global object called <varname>esxx</varname> includes
+utility functions.</para>
+      </listitem>
+
+      <listitem>
+	<para>A class named <classname>Request</classname> use used to
+give the handlers information about the current request. Handler result
+is eventually stored in a <classname>Response</classname> object.</para>
       </listitem>
 
       <listitem>
