@@ -74,8 +74,8 @@ public class JSResponse
 	// Automatically convert an JS Array into a Response
 	NativeArray array = (NativeArray) args[0];
 	
-	if (array.getLength() > 3) {
-	  throw Context.reportRuntimeError("Array response requires 1-3 elements."); 
+	if (array.getLength() > 4) {
+	  throw Context.reportRuntimeError("Array response requires 1-4 elements."); 
 	}
 
 	args = new Object[(int) array.getLength()];
