@@ -69,6 +69,22 @@ public class JSResponse
       String content_type;
       Object result;
 
+      if (args.length == 1 && 
+	  args[0] instanceof NativeArray) {
+	// Automatically convert an JS Array into a Response
+	NativeArray array = (NativeArray) args[0];
+	
+	if (array.getLength() > 3) {
+	  throw Context.reportRuntimeError("Array response requires 1-3 elements."); 
+	}
+
+	args = new Object[(int) array.getLength()];
+
+	for (int i = 0; i < (int) array.getLength(); ++i) {
+	  args[i] = array.get(i, array);
+	}
+      }
+
       switch (args.length) {
 	case 1:
 	  status       = "200 OK";
@@ -83,6 +99,7 @@ public class JSResponse
 	  break;
 	  
 	case 3:
+	case 4:
 	  status       = Context.toString(args[0]);
 	  content_type = Context.toString(args[1]);
 	  result       = args[2];
@@ -92,7 +109,28 @@ public class JSResponse
 	  throw Context.reportRuntimeError("Response() constructor requires 1-3 arguments."); 
       }
 
-      return new JSResponse(status, content_type, result);
+      JSResponse res = new JSResponse(status, content_type, result);
+
+      // Copy properties from fouth argument
+      if (args.length == 4) {
+	if (args[3] instanceof Scriptable) {
+	  Scriptable headers = (Scriptable) args[3];
+
+	  for (Object hdr : headers.getIds()) {
+	    if (hdr instanceof String) {
+	      String name  = (String) hdr;
+	      String value = Context.toString(ScriptableObject.getProperty(headers, name));
+	      
+	      res.jsFunction_addHeader(name, value);
+	    }
+	  }
+	}
+	else {
+	  throw Context.reportRuntimeError("Fourth Response() arguments must be an JS Object."); 
+	}
+      }
+
+      return res;
     }
 
     public String getClassName() {
