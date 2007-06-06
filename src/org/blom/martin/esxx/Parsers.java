@@ -1,6 +1,7 @@
 
 package org.blom.martin.esxx;
 
+import org.blom.martin.esxx.xmtp.XMTPParser;
 
 import java.io.ByteArrayOutputStream;
 import java.io.BufferedReader;
@@ -47,6 +48,24 @@ class Parsers {
 // //	      Transformer transformer = esxx.getCachedStylesheet(is_url);
 // 	    }
 // 	});
+
+      parserMap.put("message/rfc822", new Parser() {
+	    public Object parse(String mime_type, HashMap<String,String> mime_params,
+				InputStream is, URL is_url,
+				Collection<URL> external_urls,
+				PrintWriter err, 
+				Context cx, Scriptable scope) 
+	      throws IOException, org.xml.sax.SAXException {
+	      try {
+		XMTPParser xmtp = new XMTPParser(is, true);
+		Document result = xmtp.getDocument();
+		return esxx.domToE4X(result, cx, scope);
+	      }
+	      catch (Exception ex) {
+		throw new IOException("Unabel to parse email message", ex);
+	      }
+	    }
+	});
 
       parserMap.put("text/xml", new Parser() {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,

@@ -16,6 +16,11 @@ function MyApp(e) {
   this.handleGet = function(req) {
     esxx.debug.println("**** START GET HANDLER ****")
 
+    var mail = new URI("file:///home/martin/source/xcerion/xmtp/examples/Testmail-2.eml");
+    return mail.load("message/rfc822")..html[0];
+//     var mailto = new URI("mailto:martin@blom.org?subject=XML%20Message");
+//     mailto.save(<xml>This is <empasis>XML</empasis>.</xml>, "text/xml");
+
     esxx.debug.println("**** END GET HANDLER ****");
 
     default xml namespace = "http://www.w3.org/1999/xhtml";
