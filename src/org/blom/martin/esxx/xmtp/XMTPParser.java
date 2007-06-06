@@ -29,14 +29,15 @@ import org.w3c.dom.ls.*;
 import org.w3c.dom.bootstrap.*;
 
 public class XMTPParser {
-    public XMTPParser(InputStream is, boolean process_html) 
+    public XMTPParser(InputStream is, boolean process_html, boolean add_preamble) 
       throws MessagingException, IOException,
       ClassNotFoundException, InstantiationException, IllegalAccessException {
       Session      session = Session.getDefaultInstance(System.getProperties());
       MimeMessage  message = new MimeMessage(session, is);
 
-      this.message  = message;
-      this.procHTML = process_html;
+      this.message     = message;
+      this.procHTML    = process_html;
+      this.addPreamble = add_preamble;
 
       DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
 
@@ -46,7 +47,7 @@ public class XMTPParser {
       document = domImplementation.createDocument(XMTP_NAMESPACE, "Message", null);
 
       // Convert message to XML right away
-      convertPart(document.getDocumentElement(), message, "mid:", message.getMessageID());
+      convertMessage(message);
     }
 
     public Document getDocument() {
@@ -74,7 +75,14 @@ public class XMTPParser {
     private static final int HTML_PART   = 5;	// Only used if processing HTML
     private static final int BASE64_PART = 6;
 
-    private void convertPart(Element element, Part part, String about_prefix, String about)
+
+    protected void convertMessage(MimeMessage message)
+      throws IOException, MessagingException {
+      convertPart(document.getDocumentElement(), message, "mid:", message.getMessageID());
+    }
+
+
+    protected void convertPart(Element element, Part part, String about_prefix, String about)
       throws IOException, MessagingException {
       if (about == null && part instanceof MimePart) {
 	about = ((MimePart) part).getContentID();
@@ -139,6 +147,16 @@ public class XMTPParser {
 
 	case MULTI_PART: {
 	  Multipart mp = (Multipart) content;
+
+	  // Add preample as a plain text node first in the Body if
+	  // addPreamble is true
+	  if (addPreamble && mp instanceof MimeMultipart) {
+	    MimeMultipart mmp = (MimeMultipart) mp;
+
+	    if (mmp.getPreamble() != null) {
+	      body.appendChild(document.createTextNode(mmp.getPreamble()));
+	    }
+	  }
 
 	  for (int i = 0; i < mp.getCount(); ++i) {
 	    Element msg = document.createElementNS(XMTP_NAMESPACE, "Message");
@@ -413,6 +431,7 @@ public class XMTPParser {
 
     private MimeMessage message;
     private boolean procHTML;
+    private boolean addPreamble;
 
     private Document document;
 

@@ -16,8 +16,8 @@ function MyApp(e) {
   this.handleGet = function(req) {
     esxx.debug.println("**** START GET HANDLER ****")
 
-    var mail = new URI("file:///home/martin/source/xcerion/xmtp/examples/Testmail-2.eml");
-    return mail.load("message/rfc822")..html[0];
+    var mail = new URI("file:///home/martin/source/xcerion/xmtp/examples/Testmail-6.eml");
+    return mail.load("message/rfc822");
 //     var mailto = new URI("mailto:martin@blom.org?subject=XML%20Message");
 //     mailto.save(<xml>This is <empasis>XML</empasis>.</xml>, "text/xml");
 

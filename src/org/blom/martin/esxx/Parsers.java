@@ -75,7 +75,7 @@ class Parsers {
 				Context cx, Scriptable scope) 
 	      throws IOException, org.xml.sax.SAXException {
 	      try {
-		XMTPParser xmtp = new XMTPParser(is, true);
+		XMTPParser xmtp = new XMTPParser(is, true, true);
 		Document result = xmtp.getDocument();
 		return esxx.domToE4X(result, cx, scope);
 	      }
