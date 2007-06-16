@@ -271,10 +271,14 @@ class Worker
       Node   node         = (Node) response.getResult();
       String content_type = response.getContentType();
 
+      HashMap<String,String> params = new HashMap<String,String>();
+      String                 ct     = ESXX.parseMIMEType(content_type, params);
+      String                 cs     = params.get("charset");
+
       Transformer tr;
 
       try {
-	URL stylesheet = parser.getStylesheet(response.getContentType());
+	URL stylesheet = parser.getStylesheet(ct);
 
 	if (stylesheet == null) {
 	  stylesheet = parser.getStylesheet("");
@@ -286,9 +290,6 @@ class Worker
 	// specified. User-specified stylesheets should set
 	// these keys directly in the stylesheet.
 	if (stylesheet == null && content_type != null) {
-	  HashMap<String,String> params = new HashMap<String,String>();
-	  String                 ct     = ESXX.parseMIMEType(content_type, params);
-	  String                 cs     = params.get("charset");
 
 	  tr.setOutputProperty(OutputKeys.MEDIA_TYPE, ct);
 

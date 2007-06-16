@@ -120,6 +120,10 @@ public class JSResponse
       else {
 	try {
 	  result = (org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(result));
+
+	  if (content_type == null) {
+	    content_type = "text/xml";
+	  }
 	}
 	catch (Exception ex) {
 	  throw new ESXXException("Unsupported result type: " + result.getClass());
