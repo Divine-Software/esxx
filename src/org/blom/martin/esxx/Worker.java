@@ -62,6 +62,7 @@ class Worker
 	try {
 	  Workload workload = esxx.getWorkload();
 	  String request_method = workload.getProperties().getProperty("REQUEST_METHOD");
+	  String path_info = workload.getProperties().getProperty("PATH_INFO");
 
 	  cx.putThreadLocal(Workload.class, workload);
 
@@ -96,7 +97,7 @@ class Worker
 		result = handleSOAPAction(object, req, cx, scope);
 	      }
 	      else if (parser.hasHandlers()) {
-		result = handleHTTPMethod(request_method, req, parser, cx, scope);
+		result = handleHTTPMethod(request_method, path_info, req, parser, cx, scope);
 	      }
 	      else {
 		// No handlers; the document is the result
@@ -245,14 +246,16 @@ class Worker
     }
 
 
-    private Object handleHTTPMethod(String request_method, JSRequest req, ESXXParser parser,
+    private Object handleHTTPMethod(String request_method, String path_info,
+				    JSRequest req, ESXXParser parser,
 				    Context cx, Scriptable scope) 
       throws ESXXException {
       Object result;
-      String handler = parser.getHandlerFunction(request_method);
+      String handler = parser.getHandlerFunction(request_method, path_info);
 
       if (handler == null) {
-	throw new ESXXException(501, "'" + request_method + "' handler not defined.");
+	throw new ESXXException(501, "'" + request_method + "' handler not defined for URI "
+				+ "'" + path_info + "'");
       }
 
       Object args[] = { req };

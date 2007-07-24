@@ -25,11 +25,17 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.xml.stream.*;
 import javax.xml.xpath.*;
 import org.blom.martin.esxx.js.JSGlobal;
-import org.blom.martin.esxx.js.JSURI;
 import org.blom.martin.esxx.js.JSRequest;
+import org.blom.martin.esxx.js.JSURI;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ImporterTopLevel;
 import org.mozilla.javascript.Script;
@@ -164,8 +170,20 @@ public class ESXXParser {
       return gotESXX;
     }
 
-    public String getHandlerFunction(String http_method) {
-      return httpHandlers.get(http_method);
+    public String getHandlerFunction(String http_method, String path_info) {
+      String key = http_method + path_info;
+
+      Matcher m = uriPrefixPattern.matcher(key);
+
+      if (m.matches()) {
+	for (int i = 1; i <= httpFunctions.length; ++i) {
+	  if (m.start(i) != -1) {
+	    return httpFunctions[i];
+	  }
+	}
+      }
+
+      return null;
     }
 
     public String getSOAPAction(String action) {
@@ -182,6 +200,9 @@ public class ESXXParser {
       if (applicationScope != null) {
 	return applicationScope;
       }
+
+      // Compile uri-matching regex pattern
+      compileRegEx();
 
       // Create per-application top-level and global scopes
       applicationScope = new JSGlobal(cx);
@@ -201,6 +222,31 @@ public class ESXXParser {
 
 	hasExecuted = true;
       }
+    }
+
+    private void compileRegEx() {
+      StringBuilder                  regex   = new StringBuilder();
+      Set<Map.Entry<String, String>> reverse = httpHandlers.descendingMap().entrySet();
+
+      httpFunctions = new String[reverse.size() + 1];
+
+      int i = 1;
+
+      for (Map.Entry<String, String> e : reverse) {
+	if (i != 1) {
+ 	  regex.append("|");
+	}
+ 	
+	regex.append("^(");
+ 	regex.append(e.getKey());
+ 	regex.append(").*");
+
+	httpFunctions[i] = e.getValue();
+
+	++i;
+      }
+
+      uriPrefixPattern = Pattern.compile(regex.toString());
     }
 
     private void handleStylesheet(String data)
@@ -288,7 +334,14 @@ public class ESXXParser {
 
     private void handleHTTP(Element e) 
       throws org.xml.sax.SAXException {
+      String method  = e.getAttributeNS(null, "method").trim();
+      String prefix  = e.getAttributeNS(null, "uri-prefix").trim();
       String handler = e.getAttributeNS(null, "handler").trim();
+
+      if (method.equals("")) {
+	throw new org.xml.sax.SAXException("<http> attribute 'method' must " +
+					   "must be specified");
+      }
 
       if (handler.equals("")) {
 	throw new org.xml.sax.SAXException("<http> attribute 'handler' must " +
@@ -300,7 +353,7 @@ public class ESXXParser {
 					   "should not include parentheses");
       }
 
-      httpHandlers.put(e.getAttributeNS(null, "method"), handler);
+      httpHandlers.put(method + prefix, handler);
     }
 
     private void handleSOAP(Element e) 
@@ -367,8 +420,11 @@ public class ESXXParser {
     private StringBuilder code = new StringBuilder();
     private LinkedList<Code> codeList = new LinkedList<Code>();
 
-    private HashMap<String,String> httpHandlers = new HashMap<String,String>();
-    private HashMap<String,String> soapActions  = new HashMap<String,String>();
-    private HashMap<String,URL>    stylesheets  = new HashMap<String,URL>();
+    private NavigableMap<String,String> httpHandlers = new TreeMap<String,String>();
+    private Map<String,String> soapActions  = new HashMap<String,String>();
+    private Map<String,URL>    stylesheets  = new HashMap<String,URL>();
     private String errorHandler;
+
+    private String[] httpFunctions;
+    private Pattern  uriPrefixPattern;
 };
