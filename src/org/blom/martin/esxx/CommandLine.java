@@ -134,11 +134,14 @@ public class CommandLine {
 	    }
 
 	    // Close streams
-	    try { getInputStream().close(); } catch (IOException ex) {}
-	    try { getErrorWriter().close(); } catch (IOException ex) {}
-	    try { getDebugWriter().close(); } catch (IOException ex) {}
-	    try { outStream.close();        } catch (IOException ex) {}
-	
+//	    try { getInputStream().flush(); } catch (IOException ex) {}
+// 	    try { getErrorWriter().flush(); } catch (IOException ex) {}
+// 	    try { getDebugWriter().flush(); } catch (IOException ex) {}
+// 	    try { outStream.flush();        } catch (IOException ex) {}
+	    getErrorWriter().flush();
+	    getDebugWriter().flush();
+	    outStream.flush();
+
 	    if (jFast == null) {
 	      synchronized (cgiMutex) {
 		cgiResult = rc;
