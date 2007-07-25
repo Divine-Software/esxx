@@ -60,6 +60,8 @@ class Worker
       // Now wait for workloads and execute them
       while (true) {
 	try {
+	  JSESXX js_esxx = null;
+
 	  Workload workload = esxx.getWorkload();
 	  String request_method = workload.getProperties().getProperty("REQUEST_METHOD");
 	  String path_info = workload.getProperties().getProperty("PATH_INFO");
@@ -75,8 +77,8 @@ class Worker
 
 	    // Make the JSESXX object available as the instance-level
 	    // "esxx" variable (via magic in JSGlobal).
-	    JSESXX js_esxx = (JSESXX) cx.newObject(scope, "ESXX", 
-						   new Object[] {esxx, workload, parser.getXML()});
+	    js_esxx = (JSESXX) cx.newObject(scope, "ESXX", 
+					    new Object[] {esxx, workload, parser.getXML()});
 	    cx.putThreadLocal(JSESXX.class, js_esxx);
 
 	    // Execute all <?esxx and <?esxx-import PIs, if not already done
@@ -177,6 +179,12 @@ class Worker
 	    workload.finished(500, new JSResponse("500 " + title,
 						  "text/html",
 						  sw.toString()));
+	  }
+
+	  if (js_esxx != null &&
+	      js_esxx.isMarkedForTermination()) {
+	    // End this thread
+	    return null;
 	  }
 	}
 	catch (InterruptedException ex) {
@@ -343,7 +351,7 @@ class Worker
 	  ";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
 
 	// Attach debug log to document
-	workload.getDebugWriter().close();
+	workload.getDebugWriter().flush();
 
 	String ds = workload.getDebugWriter().toString();
 	    

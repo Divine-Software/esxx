@@ -109,8 +109,7 @@ public class ESXX {
 
       numWorkerThreads = Integer.parseInt(
 	settings.getProperty("esxx.worker_threads",
-			     "" + Runtime.getRuntime().availableProcessors() * 10));
-      activeThreads = 0;
+			     "" + Runtime.getRuntime().availableProcessors() * 2));
 
       // Set up shared main context
       Context cx = Context.enter();
@@ -121,7 +120,9 @@ public class ESXX {
 	workerThreads = new ThreadGroup("ESXX worker threads");
 	workloadQueue = new LinkedBlockingQueue<Workload>(MAX_WORKLOADS);
 
-	createWorkers();
+	for (int i = 0; i < numWorkerThreads; ++i) {
+	  createWorker();
+	}
       }
       catch (Exception ex) {
 	ex.printStackTrace();
@@ -131,31 +132,19 @@ public class ESXX {
       }
     }
 
-    public synchronized void suspendWorker() {
-      --activeThreads;
-      createWorkers();
-    }
+    public synchronized void createWorker() {
+      Thread t = new Thread(
+	workerThreads,
+	new Runnable() {
+	    public void run() {
+	      // Create the JavaScript thread context and invoke
+	      // run() on the new Worker object
+	      Context.call(new Worker(ESXX.this));
+	    }
+	},
+	"ESXX worker thread");
 
-    public synchronized void resumeWorker() {
-      ++activeThreads;
-    }
-
-    private synchronized void createWorkers() {
-      while (activeThreads < numWorkerThreads) {
-	Thread t = new Thread(
-	  workerThreads,
-	  new Runnable() {
-	      public void run() {
-		// Create the JavaScript thread context and invoke
-		// run() on the new Worker object
-		Context.call(new Worker(ESXX.this));
-	      }
-	  },
-	  "ESXX worker thread " + activeThreads);
-
-	t.start();
-	++activeThreads;
-      }
+      t.start();
     }
 
 
@@ -506,7 +495,6 @@ public class ESXX {
     private TransformerFactory  transformerFactory;
     private ThreadGroup workerThreads;
     private int numWorkerThreads;
-    private int activeThreads;
     private LinkedBlockingQueue<Workload> workloadQueue;
     private HashMap<String,String> cgiToHTTPMap = new HashMap<String,String>();
 };

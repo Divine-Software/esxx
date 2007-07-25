@@ -40,6 +40,8 @@ public class JSESXX
       this.debug    = new PrintWriter(workload.getDebugWriter());
       this.error    = new PrintWriter(workload.getErrorWriter());
       this.document = esxx.domToE4X(document, cx, scope);
+
+      markedForTermination = false;
     }
 
     static public Object jsConstructor(Context cx, 
@@ -54,20 +56,17 @@ public class JSESXX
       return "ESXX";
     }
 
-//     public Synchronizer jsFunction_sync(Context cx, Scriptable scope, Scriptable thisObj, 
-// 			     java.lang.Object[] args) {
      public Synchronizer jsFunction_sync(Function f) {
       return new Synchronizer(f);
     }
 
-//     public synchronized void waitForEvent(long millisToWait) 
-//       throws InterruptedException {
-//       this.wait(millisToWait);
-//     }
+     public Forker jsFunction_slow(Function f) {
+      return new Forker(f);
+    }
 
-//     public synchronized void postEvent() {
-//       this.notifyAll();
-//     }
+    
+//      public static Forker jsFunction_slow(Context cx, Scriptable thisObj, 
+//  					    Object[] args, Function funcObj);
 
     public PrintWriter jsGet_error() {
       return error;
@@ -81,10 +80,36 @@ public class JSESXX
       return document;
     }
 
+    public boolean isMarkedForTermination() {
+      return markedForTermination;
+    }
+
     private ESXX esxx;
 
     private PrintWriter error;
     private PrintWriter debug;
 
     private Scriptable document;
+
+    private boolean markedForTermination;
+
+    private static class Forker
+      extends Delegator {
+	
+	public Forker(Scriptable obj) {
+	  super(obj);
+	}
+
+	public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
+	  JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
+
+	  if (!js_esxx.markedForTermination) {
+	    // Make this thread die on completion and create a new one
+	    js_esxx.markedForTermination = true;
+	    js_esxx.esxx.createWorker();
+	  }
+
+	  return ((Function) obj).call(cx,scope,thisObj,args);
+	}
+    }
 }
