@@ -28,7 +28,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 public class FileURI 
-  extends JSURI {
+  extends UrlURI {
     public FileURI(ESXX esxx, URI uri) {
       super(esxx, uri);
     }

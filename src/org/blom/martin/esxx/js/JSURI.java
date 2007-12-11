@@ -142,6 +142,16 @@ public class JSURI
       return js_this.save(cx, thisObj, args.length != 0 ? args[0] : null, type, params);
     }
 
+    public static Object jsFunction_delete(Context cx, Scriptable thisObj,
+					   Object[] args, Function funObj)
+      throws Exception {
+      JSURI  js_this = checkInstance(thisObj);
+      String type    = null;
+      HashMap<String,String> params = new HashMap<String,String>();
+
+      return js_this.delete(cx, thisObj);
+    }
+
 
     public String toString() {
       return uri.toString();
@@ -151,39 +161,8 @@ public class JSURI
     protected Object load(Context cx, Scriptable thisObj, 
 			  String type, HashMap<String,String> params)
       throws Exception {
-      try{
-	String[]    ct = { null };
-	InputStream is = esxx.openCachedURL(uri.toURL(), ct);
-      
-	if (type == null) {
-	  if (ct[0] != null) {
-	    params.clear();
-	    type = ESXX.parseMIMEType(ct[0], params);
-	  }
-	  else {
-	    type = "text/xml";
-	  }
-	}
-
-	JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
-	Object result  = esxx.parseStream(type, params,
-					  is, uri.toURL(), 
-					  null, 
-					  js_esxx.jsGet_debug(),
-					  cx, this);
-	
-	if (result == null) {
-	  throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
-					   "' does can't load '" + type + "'."); 
-	}
-	else {
-	  return result;
-	}
-      }
-      catch (Exception ex) {
-	ex.printStackTrace();
-	throw ex;
-      }
+      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
+				       "' does not support load()."); 
     }
 
 
@@ -201,10 +180,16 @@ public class JSURI
 				       "' does not support save()."); 
     }
 
+    protected Object delete(Context cx, Scriptable thisObj)
+      throws Exception {
+      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
+				       "' does not support delete()."); 
+    }
+
+
     protected static void addChild(Element element, String name, String value) {
       Document document = element.getOwnerDocument();
 
-//      element.setAttribute(name, value);
       Element e = document.createElement(name);
       e.appendChild(document.createTextNode(value));
       element.appendChild(e);

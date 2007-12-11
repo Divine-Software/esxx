@@ -40,13 +40,6 @@ public class MailToURI
 				       "' does not support load()."); 
     }
 
-    protected Object query(Context cx, Scriptable thisObj,
-			   String query, String type, HashMap<String,String> params)
-      throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
-				       "' does not support query() (yet)."); 
-    }
-
     protected Object save(Context cx, Scriptable thisObj, 
 			  Object data, String type, HashMap<String,String> params)
       throws Exception {
