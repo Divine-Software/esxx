@@ -16,8 +16,12 @@ function MyApp(e) {
   this.handleGet = function(req) {
     esxx.debug.println("**** START GET HANDLER ****")
 
-    var mail = new URI("Testmail-3.eml");
-    return mail.load("message/rfc822; x-format=esxx;x-process-html=false");
+    var db = new URI("jdbc:apa");
+    
+    db.query("select * from user_table where id = {id} and s = '{hej}' and a = `apa{kalle\\`s}` ..");
+
+//     var mail = new URI("Testmail-3.eml");
+//     return mail.load("message/rfc822; x-format=esxx;x-process-html=false");
 //     var mailto = new URI("mailto:martin@blom.org?subject=XML%20Message");
 //     mailto.save(<xml>This is <empasis>XML</empasis>.</xml>, "text/xml");
 

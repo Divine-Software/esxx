@@ -19,10 +19,13 @@
 
 package org.blom.martin.esxx.js;
 
-import java.sql.*;
 import java.net.URI;
+import java.sql.*;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.blom.martin.esxx.ESXX;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
@@ -55,8 +58,10 @@ public class JdbcURI
 	}
       }
 
-// 	fixa prepared statements här, med en hashtabell:
-// 	  "SELECT * from my_table where name = {name}"
+      LinkedList<String> params = new LinkedList<String>();
+      query = parseQuery(query, params);
+      System.err.println("Resulting query: " + query);
+
 
       Connection db = DriverManager.getConnection(uri.toString(), properties);
 
@@ -101,4 +106,38 @@ public class JdbcURI
 	return new Integer(sql.getUpdateCount());
       }
     }
+
+    private String parseQuery(String query, LinkedList<String> param_names) {
+      StringBuffer s = new StringBuffer();
+      Matcher      m = paramPattern.matcher(query);
+
+      param_names.clear();
+
+      while (m.find()) {
+	String g = m.group();
+
+	if (m.start(1) != -1) {
+	  // Match on group 1, which is our parameter pattern; append a single '?'
+	  m.appendReplacement(s, "?");
+	  param_names.add(g.substring(1, g.length() - 2));
+	}
+	else {
+	  // Match on quoted strings, which we just copy as-is
+	  m.appendReplacement(s, g);
+	}
+      }
+	
+      m.appendTail(s);
+
+      return s.toString();
+    }
+    
+
+    private static final String quotePattern1 = "('((\\\\')|[^'])+')";
+    private static final String quotePattern2 = "(`((\\\\`)|[^`])+`)";
+    private static final String quotePattern3 = "(\"((\\\\\")|[^\"])+\")";
+
+    private static final Pattern paramPattern = Pattern.compile(
+      "(\\{[^\\}]+\\})" +    // Group 1: Matches {identifier}
+      "|" + quotePattern1 + "|" + quotePattern2 + "|" + quotePattern3);
 }
