@@ -29,6 +29,7 @@
 <!ENTITY ice         "<citation><xref linkend='ice'/></citation>">
 <!ENTITY jfast       "<citation><xref linkend='jfast'/></citation>">
 <!ENTITY rhino       "<citation><xref linkend='rhino'/></citation>">
+<!ENTITY xmtp        "<citation><xref linkend='xmtp'/></citation>">
 
 <!ENTITY etc "<foreignphrase>et cetera</foreignphrase>">
 ]>
@@ -268,7 +269,7 @@ utility functions.</para>
       </listitem>
 
       <listitem>
-	<para>A class named <classname>Request</classname> use used to
+	<para>A class named <classname>Request</classname> is used to
 give the handlers information about the current request. Handler result
 is eventually stored in a <classname>Response</classname> object.</para>
       </listitem>
@@ -540,6 +541,22 @@ index of the image, in case the file contains multiple images.</para>
       </section>
 
       <section>
+	<title><literal>message/rfc822</literal></title>
+	
+	<para>The <literal>message/rfc822</literal> parser loads the
+resource as an RFC-822/RFC-2045/RFC-2822 (e-mail/MIME) file, and
+transforms the message into &xml;. The <parameter>x-format</parameter>
+parameter indicates the &xml; format to be used. <literal>esxx</literal>
+(the default), <literal>xios</literal> <footnote> 
+	    <para>Namespace <literal>urn:x-i-o-s:xmime</literal> and
+used in Xcerion's <productname>XIOS</productname> product.</para>
+</footnote> and <literal>xmtp</literal> (see &xmtp;) are supported. A second
+parameter, <literal>x-process-html</literal>, can be used to specifiy if &html; parts
+shold be processed (using &htmlcleaner;).  The result is an
+<classname>XML</classname> object.</para>
+      </section>
+
+      <section>
 	<title><literal>text/html</literal></title>
 	
 	<para>The <literal>text/html</literal> parser loads the resource
@@ -778,6 +795,19 @@ like. More information is available in &esxx-home;.</para>
       </author>
       <publisher>
 	<publishername>Mozilla</publishername>
+      </publisher>
+    </biblioentry>
+
+    <biblioentry id="xmtp">
+      <abbrev>XMTP</abbrev>
+      <title><ulink url="http://www.openhealth.org/xmtp/">XML MIME Transformation Protocol (XMTP)</ulink></title>
+      <subtitle>An RDF XML mapping of RFC 822/MIME</subtitle>
+      <author>
+	<firstname>Jonathan</firstname>
+	<surname>Borden</surname>
+      </author>
+      <publisher>
+	<publishername>The Open Healthcare Group</publishername>
       </publisher>
     </biblioentry>
 

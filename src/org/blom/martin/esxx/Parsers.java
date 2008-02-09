@@ -74,13 +74,53 @@ class Parsers {
 				PrintWriter err, 
 				Context cx, Scriptable scope) 
 	      throws IOException, org.xml.sax.SAXException {
+	      boolean xmtp;
+	      boolean ns;
+	      boolean html;
+
+	      String fmt = mime_params.get("x-format");
+	      String prc = mime_params.get("x-process-html");
+
+	      if (fmt == null || fmt.equals("esxx")) {
+		xmtp = false;
+		ns   = false;
+		html = true;
+	      }
+	      else if (fmt.equals("xmtp")) {
+		xmtp = true;
+		ns   = true;
+		html = false;
+	      }
+	      else if (fmt.equals("xios")) {
+		xmtp = false;
+		ns   = true;
+		html = true;
+	      }
+	      else {
+		throw new IOException("No support for param 'x-format=" + fmt + "'");
+	      }
+
+	      if (prc == null) {
+		// Leave html as-is
+	      }
+	      else if (prc.equals("true")) {
+		html = true;
+	      }
+	      else if (prc.equals("false")) {
+		html = false;
+	      }
+	      else {
+		throw new IOException("Invalid value in param 'x-process-html=" + prc + "'");
+	      }
+
 	      try {
-		XMTPParser xmtp = new XMTPParser(is, true, true);
-		Document result = xmtp.getDocument();
+		XMTPParser p = new XMTPParser(xmtp, ns, html, true);
+		p.convertMessage(is);
+		Document result = p.getDocument();
 		return esxx.domToE4X(result, cx, scope);
 	      }
 	      catch (Exception ex) {
-		throw new IOException("Unabel to parse email message", ex);
+		throw new IOException("Unable to parse email message", ex);
 	      }
 	    }
 	});
@@ -154,7 +194,7 @@ class Parsers {
 				Collection<URL> external_urls,
 				PrintWriter err, 
 				Context cx, Scriptable scope) 
-	    throws IOException {
+	      throws IOException {
 	      if (mime_type.equals("image/*")) {
 		return ImageIO.read(is);
 	      }

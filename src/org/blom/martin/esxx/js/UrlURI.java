@@ -21,6 +21,7 @@ package org.blom.martin.esxx.js;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
 import java.util.HashMap;
 import org.blom.martin.esxx.ESXX;
 import org.mozilla.javascript.*;
@@ -34,8 +35,9 @@ public class UrlURI
     protected Object load(Context cx, Scriptable thisObj, 
 			  String type, HashMap<String,String> params)
       throws Exception {
+      URL        url = uri.toURL();
       String[]    ct = { null };
-      InputStream is = esxx.openCachedURL(uri.toURL(), ct);
+      InputStream is = esxx.openCachedURL(url, ct);
       
       if (type == null) {
 	if (ct[0] != null) {
@@ -49,7 +51,7 @@ public class UrlURI
 
       JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
       Object result  = esxx.parseStream(type, params,
-					is, uri.toURL(), 
+					is, url,
 					null, 
 					js_esxx.jsGet_debug(),
 					cx, this);

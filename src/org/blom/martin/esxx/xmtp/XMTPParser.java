@@ -29,25 +29,42 @@ import org.w3c.dom.ls.*;
 import org.w3c.dom.bootstrap.*;
 
 public class XMTPParser {
-    public XMTPParser(InputStream is, boolean process_html, boolean add_preamble) 
+    public XMTPParser(boolean xmtp, boolean use_ns, 
+		      boolean process_html, boolean add_preamble) 
       throws MessagingException, IOException,
       ClassNotFoundException, InstantiationException, IllegalAccessException {
-      Session      session = Session.getDefaultInstance(System.getProperties());
-      MimeMessage  message = new MimeMessage(session, is);
 
-      this.message     = message;
+      this.session = Session.getDefaultInstance(System.getProperties());
+
+      this.xmtpMode    = xmtp;
       this.procHTML    = process_html;
       this.addPreamble = add_preamble;
+
+      if (use_ns) {
+	if (xmtpMode) {
+	  documentNS     = XMTP_NAMESPACE;
+	  documentPrefix = "";
+	}
+	else {
+	  documentNS     = MIME_NAMESPACE;
+	  documentPrefix = "m:";
+	}
+      }
+      else {
+	documentNS     = "";
+	documentPrefix = "";
+      }
 
       DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
 
       domImplementation   = reg.getDOMImplementation("XML 3.0");
       domImplementationLS = (DOMImplementationLS) domImplementation.getFeature("LS", "3.0");
 
-      document = domImplementation.createDocument(XMTP_NAMESPACE, "Message", null);
+      document = domImplementation.createDocument(documentNS, documentPrefix + "Message", null);
+    }
 
-      // Convert message to XML right away
-      convertMessage(message);
+    public String getNamespace() {
+      return documentNS;
     }
 
     public Document getDocument() {
@@ -58,7 +75,7 @@ public class XMTPParser {
       LSSerializer ser = domImplementationLS.createLSSerializer();
       
       return ser.writeToString(document);
-   }
+    }
 
     public void writeDocument(Writer wr) {
       LSSerializer ser = domImplementationLS.createLSSerializer();
@@ -73,17 +90,28 @@ public class XMTPParser {
     private static final int PLAIN_PART  = 3;
     private static final int XML_PART    = 4;
     private static final int HTML_PART   = 5;	// Only used if processing HTML
-    private static final int BASE64_PART = 6;
+    private static final int RFC822_PART = 6;
+    private static final int BASE64_PART = 7;
 
 
-    protected void convertMessage(MimeMessage message)
+    public void convertMessage(InputStream is)
       throws IOException, MessagingException {
-      convertPart(document.getDocumentElement(), message, "mid:", message.getMessageID());
+      convertMessage(document.getDocumentElement(), new MimeMessage(session, is));
+    }
+
+    private void convertMessage(Element element, MimeMessage msg)
+      throws IOException, MessagingException {
+//      System.err.println("Creating new message");
+      this.message = msg;
+//      System.err.println(message);
+      convertPart(element, message, "mid:", message.getMessageID());
     }
 
 
     protected void convertPart(Element element, Part part, String about_prefix, String about)
       throws IOException, MessagingException {
+//      System.err.println("convertPart on " + message);
+
       if (about == null && part instanceof MimePart) {
 	about = ((MimePart) part).getContentID();
       }
@@ -93,7 +121,12 @@ public class XMTPParser {
       }
 
       if (about != null) {
-	element.setAttributeNS(RDF_NAMESPACE, "web:about", about_prefix + about);
+	if (xmtpMode) {
+	  element.setAttributeNS(RDF_NAMESPACE, "web:about", about_prefix + about);
+	}
+	else {
+	  element.setAttribute("id", about_prefix + about);
+	}
       }
       
       int    part_type = 0;
@@ -102,7 +135,7 @@ public class XMTPParser {
       ContentType content_type = new ContentType(part.getContentType());
       String base_type = content_type.getBaseType().toLowerCase();
       InputStream content_stream = null;
-
+	
       if (content instanceof String) {
 	if (base_type.endsWith("/xml") || base_type.endsWith("+xml")) {
 	  part_type = XML_PART;
@@ -113,6 +146,9 @@ public class XMTPParser {
 	else {
 	  part_type = STRING_PART;
 	}
+      }
+      else if (content instanceof MimeMessage) {
+	part_type = RFC822_PART;
       }
       else if (content instanceof Multipart) {
 	part_type = MULTI_PART;
@@ -129,6 +165,10 @@ public class XMTPParser {
 	else if (procHTML && base_type.equals("text/html")) {
 	  part_type = HTML_PART;
 	}
+// 	else if (base_type.equals("message/rfc822")) {
+// 	  part_type = RFC822_PART;
+// 	  System.err.println("message/rfc822 got it!");
+// 	}
 	else {
 	  part_type = BASE64_PART;
 	}
@@ -137,12 +177,12 @@ public class XMTPParser {
       convertHeaders(element, part, part.getAllHeaders(), 
 		     part_type == BASE64_PART ? "base64" : null);
 
-      Element body = document.createElementNS(XMTP_NAMESPACE, "Body");
+      Element body = document.createElementNS(documentNS, documentPrefix + "Body");
       element.appendChild(body);
 
       switch (part_type) {
 	case STRING_PART:
-	  body.setTextContent((String) content);
+	  convertTextPart(body, (String) content);
 	  break;
 
 	case MULTI_PART: {
@@ -159,7 +199,7 @@ public class XMTPParser {
 	  }
 
 	  for (int i = 0; i < mp.getCount(); ++i) {
-	    Element msg = document.createElementNS(XMTP_NAMESPACE, "Message");
+	    Element msg = document.createElementNS(documentNS, documentPrefix + "Message");
 	    body.appendChild(msg);
 	    convertPart(msg, mp.getBodyPart(i), "cid:", null);
 	  }
@@ -167,7 +207,7 @@ public class XMTPParser {
 	}
 
 	case PLAIN_PART:
-	  Element msg = document.createElementNS(XMTP_NAMESPACE, "Message");
+	  Element msg = document.createElementNS(documentNS, documentPrefix + "Message");
 	  body.appendChild(msg);
 	  convertPart(msg, (Part) content, "cid:", null);
 	  break;
@@ -221,18 +261,16 @@ public class XMTPParser {
 	  break;
 	}
 
-	case BASE64_PART: {
-	  ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	  Base64.OutputStream b64os = new Base64.OutputStream(bos, Base64.ENCODE);
-	  byte[] buffer = new byte[4096];
-	  int bytes_read;
-               
-	  while ((bytes_read = content_stream.read(buffer)) != -1) {
-	    b64os.write(buffer, 0, bytes_read);
-	  }
+	case RFC822_PART: {
+	  // This is a bit ugly, but whatever
+	  MimeMessage saved_message = message;
+	  convertMessage(body, (MimeMessage) content);
+	  message = saved_message;
+	  break;
+	}
 
-	  b64os.close();
-	  body.setTextContent(bos.toString("US-ASCII"));
+	case BASE64_PART: {
+	  convertBase64Part(body, content_stream);
 	  break;
 	}
       }
@@ -251,6 +289,11 @@ public class XMTPParser {
 	  if (name.equalsIgnoreCase("Content-Type")) {
 	    // Parse Content-Type
 	    ContentType ct = new ContentType(hdr.getValue());
+
+	    if (!xmtpMode) {
+	      // Delete the boundary parameter, which is not interesting
+	      ct.getParameterList().remove("boundary");
+	    }
 
 	    convertResourceHeader(element, "Content-Type", 
 				  ct.getBaseType(),  ct.getParameterList());
@@ -330,7 +373,7 @@ public class XMTPParser {
 
     protected void convertPlainHeader(Element element, String name, String value)
       throws MessagingException {
-      Element e = document.createElementNS(XMTP_NAMESPACE, makeXMLName(name));
+      Element e = document.createElementNS(documentNS, documentPrefix + makeXMLName(name));
 
       element.appendChild(e);
 
@@ -342,40 +385,69 @@ public class XMTPParser {
     protected void convertResourceHeader(Element element, String name, 
 					 String value, ParameterList params)
       throws MessagingException {
-      Element e = document.createElementNS(XMTP_NAMESPACE, makeXMLName(name));
-      e.setAttributeNS(RDF_NAMESPACE, "web:parseType", "Resource");
+      Element e = document.createElementNS(documentNS, documentPrefix + makeXMLName(name));
 
       element.appendChild(e);
 
-      Element e2 = document.createElementNS(RDF_NAMESPACE, "web:value");
-      e2.setTextContent(value);
+      if (xmtpMode) {
+	e.setAttributeNS(RDF_NAMESPACE, "web:parseType", "Resource");
 
-      e.appendChild(e2);
 
-      for (Enumeration names = params.getNames(); names.hasMoreElements(); ) {
-	String param = (String) names.nextElement();
-
-	e2 = document.createElementNS(XMTP_NAMESPACE, makeXMLName(param));
-	e2.setTextContent(params.get(param));
+	Element e2 = document.createElementNS(RDF_NAMESPACE, "web:value");
+	e2.setTextContent(value.toLowerCase());
 
 	e.appendChild(e2);
+
+	for (Enumeration names = params.getNames(); names.hasMoreElements(); ) {
+	  String param = (String) names.nextElement();
+
+	  e2 = document.createElementNS(XMTP_NAMESPACE, makeXMLName(param));
+	  e2.setTextContent(params.get(param));
+
+	  e.appendChild(e2);
+	}
+      }
+      else {
+	e.setTextContent(value.toLowerCase());
+
+	for (Enumeration names = params.getNames(); names.hasMoreElements(); ) {
+	  String param = (String) names.nextElement();
+
+	  e.setAttribute(makeXMLName(param), params.get(param));
+	}
       }
     }
 
+    protected void convertAddressHeader(Element element, String name, Address[] addresses) 
+      throws MessagingException {
+      Element e = document.createElementNS(documentNS, documentPrefix + makeXMLName(name));
+      e.setTextContent(InternetAddress.toString(addresses));
+
+      element.appendChild(e);
+    }
+
+    protected void convertTextPart(Element element, String content)
+      throws IOException, MessagingException {
+      element.setTextContent(content);
+    }
 
     protected void convertDOMPart(Element element, Document doc)
-      throws MessagingException {
+      throws IOException, MessagingException {
       // Add some extra info
       DocumentType doctype = doc.getDoctype();
 
-      element.setAttributeNS(ESXX_NAMESPACE, "esxx:version", doc.getXmlVersion());
-      element.setAttributeNS(ESXX_NAMESPACE, "esxx:encoding", doc.getXmlEncoding());
-      element.setAttributeNS(ESXX_NAMESPACE, "esxx:standalone", 
-			     doc.getXmlStandalone() ? "yes" : "no");
+      if (xmtpMode) {
+	element.setAttributeNS(RDF_NAMESPACE, "web:parseType", "Literal");
+      }
+      else {
+	element.setAttribute("version", doc.getXmlVersion());
+	element.setAttribute("encoding", doc.getXmlEncoding());
+	element.setAttribute("standalone", doc.getXmlStandalone() ? "yes" : "no");
 
-      if (doctype != null) {
-	element.setAttributeNS(ESXX_NAMESPACE, "esxx:doctype-public", doctype.getPublicId());
-	element.setAttributeNS(ESXX_NAMESPACE, "esxx:doctype-system", doctype.getSystemId());
+	if (doctype != null) {
+	  element.setAttribute("doctype-public", doctype.getPublicId());
+	  element.setAttribute("doctype-system", doctype.getSystemId());
+	}
       }
 
 
@@ -387,15 +459,20 @@ public class XMTPParser {
       element.appendChild(adopted);
     }
 
+    protected void convertBase64Part(Element element, InputStream is)
+      throws IOException, MessagingException {
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      Base64.OutputStream b64os = new Base64.OutputStream(bos, Base64.ENCODE);
+      byte[] buffer = new byte[4096];
+      int bytes_read;
+               
+      while ((bytes_read = is.read(buffer)) != -1) {
+	b64os.write(buffer, 0, bytes_read);
+      }
 
-    protected void convertAddressHeader(Element element, String name, Address[] addresses) 
-      throws MessagingException {
-      Element e = document.createElementNS(XMTP_NAMESPACE, makeXMLName(name));
-      e.setTextContent(InternetAddress.toString(addresses));
-
-      element.appendChild(e);
+      b64os.close();
+      element.setTextContent(bos.toString("US-ASCII"));
     }
-
 
     private String makeXMLName(String s) {
       char[] chars = s.toCharArray();
@@ -424,14 +501,19 @@ public class XMTPParser {
 
     private static final String RDF_NAMESPACE  = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
     private static final String XMTP_NAMESPACE = "http://www.openhealth.org/xmtp#";
-    private static final String ESXX_NAMESPACE = "http://martin.blom.org/esxx/1.0/";
+    private static final String MIME_NAMESPACE = "urn:x-i-o-s:xmime";
 
     private static java.text.SimpleDateFormat RFC2822_DATEFORMAT =
       new java.text.SimpleDateFormat("EEE', 'dd' 'MMM' 'yyyy' 'HH:mm:ss' 'Z", Locale.US);
 
+    private Session session;
     private MimeMessage message;
+    private boolean xmtpMode;
     private boolean procHTML;
     private boolean addPreamble;
+
+    private String documentNS;
+    private String documentPrefix;
 
     private Document document;
 
