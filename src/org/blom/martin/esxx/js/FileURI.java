@@ -85,4 +85,12 @@ public class FileURI
 
       return result;
     }
+
+    protected Object delete(Context cx, Scriptable thisObj)
+      throws Exception {
+
+      File f = new File(uri);
+
+      return new Boolean(f.delete());
+    }
 }
