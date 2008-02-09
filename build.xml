@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 
 <project name="esxx" default="compile">
+  <import file="exec-jar.xml"/>
   <description>esxx build file</description>
 
   <property name="src.dir"     location="src"/>
@@ -8,8 +9,6 @@
   <property name="classes.dir" location="${build.dir}/classes"/>
   <property name="lib.dir"     location="lib"/>
   <property name="dist.dir"    location="dist"/>
-
-  <property name="main-class"  value="org.blom.martin.esxx.CommandLine"/>
 
   <path id="classpath">
     <pathelement path="${classes.dir}"/>
@@ -25,25 +24,26 @@
     <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" debug="true" />
   </target>
 
-  <target name="dist" depends="compile" description="generate the distribution" >
-    <mkdir dir="${dist.dir}"/>
+  <target name="jar" depends="compile" description="generate all main jar files" >
+    <jar jarfile="${build.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+      <manifest>
+        <attribute name="Main-Class" value="org.blom.martin.esxx.CommandLine"/>
+      </manifest>
+    </jar>
+  </target>
 
+  <target name="dist" depends="jar" description="generate the distribution" >
+    <mkdir dir="${dist.dir}"/>
     <copy todir="${dist.dir}">
       <fileset dir="" includes="LICENSE*,README"/>
     </copy>
-
-    <mkdir dir="${dist.dir}/lib"/>
-    <jar jarfile="${dist.dir}/lib/${ant.project.name}.jar" basedir="${classes.dir}">
-      <zipgroupfileset dir="${lib.dir}" includes="*.jar"/>
-      <manifest>
-        <attribute name="Main-Class" value="${main-class}"/>
-      </manifest>
-    </jar>
 
     <mkdir dir="${dist.dir}/examples"/>
     <copy todir="${dist.dir}/examples">
       <fileset dir="" includes="test*"/>
     </copy>
+
+    <exec-jar in="${build.dir}/esxx.jar" out="${dist.dir}/esxx.jar"/>
   </target>
 
   <target name="clean" description="clean up" >
@@ -51,8 +51,8 @@
     <delete dir="${dist.dir}"/>
   </target>
 
-  <target name="run" depends="compile">
-    <java classname="${main-class}" fork="true" classpathref="classpath">
+  <target name="run" depends="dist">
+    <java jar="${dist.dir}/esxx.jar" fork="true">
       <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
       <arg value="GET" />
       <arg file="test-code.esxx" />

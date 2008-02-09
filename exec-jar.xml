@@ -1,0 +1,23 @@
+<project>
+  <!-- Define the <one-jar> Ant task -->
+  <taskdef name="one-jar" classname="com.simontuffs.onejar.ant.OneJarTask" 
+		classpath="lib/one-jar-ant-task-0.96.jar" onerror="report"/>
+
+  <macrodef name="exec-jar">
+    <attribute name="in"/>
+    <attribute name="out"/>
+
+    <sequential>
+      <copy file="@{in}" tofile="${build.dir}/main.jar"/>
+      <one-jar destfile="@{out}">
+        <main jar="${build.dir}/main.jar"/>
+        <lib>
+          <fileset dir="${lib.dir}" includes="*.jar" excludes="one-jar-ant-task-*.jar"/>
+        </lib>
+      </one-jar>
+
+      <chmod file="@{out}" perm="+x"/>
+      <delete file="${build.dir}/main.jar"/>
+    </sequential>
+  </macrodef>
+</project>
