@@ -55,21 +55,21 @@
     <java jar="${dist.dir}/esxx.jar" fork="true">
       <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
       <arg value="GET" />
-      <arg file="test-code.esxx" />
+      <arg file="tests/test-code.esxx" />
     </java>
 
 <!--
-    <java classname="${main-class}" fork="true" classpathref="classpath">
+    <java jar="${dist.dir}/esxx.jar" fork="true">
       <arg value="GET"/>
       <arg file="test-xml.esxx" />
     </java>
 
-    <java classname="${main-class}" fork="true" classpathref="classpath">
+    <java jar="${dist.dir}/esxx.jar" fork="true">
       <arg value="GET"/>
       <arg file="test-xslt.esxx" />
     </java>
 
-    <java classname="${main-class}" fork="true" classpathref="classpath">
+    <java jar="${dist.dir}/esxx.jar" fork="true">
       <arg value="GET"/>
       <arg file="test-code.esxx" />
     </java>
