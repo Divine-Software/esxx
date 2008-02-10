@@ -696,7 +696,6 @@ function handleGet() {
                           match: esxx.query.name + "%"
                         });
 
-
   return ["text/html", <customer query="{esxx.query.name}">
                          {result.*}
                        </customer>];
