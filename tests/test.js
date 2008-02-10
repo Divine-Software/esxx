@@ -16,9 +16,11 @@ function MyApp(e) {
   this.handleGet = function(req) {
     esxx.debug.println("**** START GET HANDLER ****")
 
-    var db = new URI("jdbc:apa");
+    var db = new URI("jdbc:postgresql:esxx?user=esxx&password=secret");
     
-    db.query("select * from user_table where id = {id} and s = '{hej}' and a = `apa{kalle\\`s}` ..");
+    return db.query("select * from customers where country = {c}", {
+	c : "Sweden"
+	  });
 
 //     var mail = new URI("Testmail-3.eml");
 //     return mail.load("message/rfc822; x-format=esxx;x-process-html=false");

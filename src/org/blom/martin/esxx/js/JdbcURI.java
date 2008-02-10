@@ -37,13 +37,6 @@ public class JdbcURI
       super(esxx, uri);
     }
 
-    protected Object load(Context cx, Scriptable thisObj, 
-			  String type, HashMap<String,String> params)
-      throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
-				       "' does not support load()."); 
-    }
-
     protected Object query(Context cx, Scriptable thisObj, Object[] args)
       throws SQLException {
       String     query      = Context.toString(args[0]);
@@ -58,30 +51,26 @@ public class JdbcURI
 	}
       }
 
-      LinkedList<String> params = new LinkedList<String>();
-      query = parseQuery(query, params);
-      System.err.println("Resulting query: " + query);
-
-
       Connection db = DriverManager.getConnection(uri.toString(), properties);
 
-      Document   result = esxx.createDocument("result");
-      Element    root   = result.getDocumentElement();
+      Query q = new Query(query, db);
 
-      CallableStatement sql = db.prepareCall(query);
-      ParameterMetaData pmd = sql.getParameterMetaData();
-
-      for (int i = 1; i <= pmd.getParameterCount(); ++i) {
-	switch (pmd.getParameterType(i)) {
-	  default:
-	    sql.setObject(i, args[i]);
-	    break;
+      if (q.needParams()) {
+	if (args.length < 2 || args[1] == Context.getUndefinedValue()) {
+	  throw Context.reportRuntimeError("Missing parameter argument.");
 	}
+	
+	q.bindParams((Scriptable) args[1]);
       }
 
-      if (sql.execute()) {
-	ResultSet rs = sql.getResultSet();
+      Object rc = q.execute();
+      
+      if (rc instanceof ResultSet) {
+	ResultSet          rs = (ResultSet) rc;
 	ResultSetMetaData rmd = rs.getMetaData();
+
+	Document   result = esxx.createDocument("result");
+	Element    root   = result.getDocumentElement();
 
 	int      count = rmd.getColumnCount();
 	String[] names = new String[count];
@@ -103,41 +92,102 @@ public class JdbcURI
 	return esxx.domToE4X(result, cx, this);
       }
       else {
-	return new Integer(sql.getUpdateCount());
+	return rc;
       }
     }
 
-    private String parseQuery(String query, LinkedList<String> param_names) {
-      StringBuffer s = new StringBuffer();
-      Matcher      m = paramPattern.matcher(query);
 
-      param_names.clear();
+    private static class Query {
+	public Query(String unparsed_query, Connection db)
+	  throws SQLException {
+	  parseQuery(unparsed_query);
 
-      while (m.find()) {
-	String g = m.group();
+	  try {
+	    sql = db.prepareCall(query);
+	    pmd = sql.getParameterMetaData();
+	  }
+	  catch (SQLException ex) {
+	    throw Context.reportRuntimeError("JDBC failed to prepare parsed SQL statement: " +
+					     query + ": " + ex.getMessage());
+	  }
 
-	if (m.start(1) != -1) {
-	  // Match on group 1, which is our parameter pattern; append a single '?'
-	  m.appendReplacement(s, "?");
-	  param_names.add(g.substring(1, g.length() - 2));
+	  if (pmd.getParameterCount() != params.size()) {
+	    throw Context.reportRuntimeError("JDBC and ESXX report different " +
+					     "number of arguments in SQL query"); 
+	  }
 	}
-	else {
-	  // Match on quoted strings, which we just copy as-is
-	  m.appendReplacement(s, g);
+
+	public boolean needParams()
+	  throws SQLException {
+	  return pmd.getParameterCount() != 0;
 	}
-      }
+
+	public void bindParams(Scriptable object) 
+	  throws SQLException {
+ 
+	  int p = 1;
+	  for (String name : params) {
+	    String value = Context.toString(ScriptableObject.getProperty(object, name));
+
+	    switch (pmd.getParameterType(p)) {
+	      default:
+		sql.setObject(p, value);
+		break;
+	    }
+
+	    ++p;
+	  }
+	}
+
+	public Object execute()
+	  throws SQLException {
+	  if (sql.execute()) {
+	    sql.clearParameters();
+	    return sql.getResultSet();
+	  }
+	  else {
+	    sql.clearParameters();
+	    return new Integer(sql.getUpdateCount());
+	  }
+	}
+
+	private void parseQuery(String unparsed_query) {
+	  StringBuffer s = new StringBuffer();
+	  Matcher      m = paramPattern.matcher(unparsed_query);
+
+	  params = new LinkedList<String>();
+
+	  while (m.find()) {
+	    String g = m.group();
+
+	    if (m.start(1) != -1) {
+	      // Match on group 1, which is our parameter pattern; append a single '?'
+	      m.appendReplacement(s, "?");
+	      params.add(g.substring(1, g.length() - 1));
+	    }
+	    else {
+	      // Match on quoted strings, which we just copy as-is
+	      m.appendReplacement(s, g);
+	    }
+	  }
 	
-      m.appendTail(s);
+	  m.appendTail(s);
 
-      return s.toString();
+	  query = s.toString();
+	}
+
+	private String query;
+	private LinkedList<String> params;
+
+	private CallableStatement sql;
+	private ParameterMetaData pmd;
+
+	private static final String quotePattern1 = "('((\\\\')|[^'])+')";
+	private static final String quotePattern2 = "(`((\\\\`)|[^`])+`)";
+	private static final String quotePattern3 = "(\"((\\\\\")|[^\"])+\")";
+
+	private static final Pattern paramPattern = Pattern.compile(
+	  "(\\{[^\\}]+\\})" +    // Group 1: Matches {identifier}
+	  "|" + quotePattern1 + "|" + quotePattern2 + "|" + quotePattern3);
     }
-    
-
-    private static final String quotePattern1 = "('((\\\\')|[^'])+')";
-    private static final String quotePattern2 = "(`((\\\\`)|[^`])+`)";
-    private static final String quotePattern3 = "(\"((\\\\\")|[^\"])+\")";
-
-    private static final Pattern paramPattern = Pattern.compile(
-      "(\\{[^\\}]+\\})" +    // Group 1: Matches {identifier}
-      "|" + quotePattern1 + "|" + quotePattern2 + "|" + quotePattern3);
 }
