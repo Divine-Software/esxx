@@ -692,10 +692,10 @@ injection vulnerabilities.</para>
 var db = new URI("jdbc:postgresql:esxx?user=esxx&password=secret");
 
 function handleGet() {
-  var match = esxx.query.name + "%";
+  var result = db.query("SELECT * FROM customers WHERE name LIKE {match}", {
+                          match: esxx.query.name + "%"
+                        });
 
-  var result = db.query("SELECT * FROM customers WHERE name LIKE ?", 
-                         match);
 
   return ["text/html", <customer query="{esxx.query.name}">
                          {result.*}
