@@ -28,8 +28,8 @@ import org.w3c.dom.*;
 import org.w3c.dom.ls.*;
 import org.w3c.dom.bootstrap.*;
 
-public class XMTPParser {
-    public XMTPParser(boolean xmtp, boolean use_ns, 
+public class MIMEParser {
+    public MIMEParser(boolean xmtp, boolean use_ns, 
 		      boolean process_html, boolean add_preamble) 
       throws MessagingException, IOException,
       ClassNotFoundException, InstantiationException, IllegalAccessException {
@@ -94,16 +94,16 @@ public class XMTPParser {
     private static final int BASE64_PART = 7;
 
 
-    public void convertMessage(InputStream is)
+    public String convertMessage(InputStream is)
       throws IOException, MessagingException {
-      convertMessage(document.getDocumentElement(), new MimeMessage(session, is));
+      MimeMessage msg = new MimeMessage(session, is);
+      convertMessage(document.getDocumentElement(), msg);
+      return msg.getMessageID();
     }
 
     private void convertMessage(Element element, MimeMessage msg)
       throws IOException, MessagingException {
-//      System.err.println("Creating new message");
       this.message = msg;
-//      System.err.println(message);
       convertPart(element, message, "mid:", message.getMessageID());
     }
 
@@ -499,9 +499,9 @@ public class XMTPParser {
     }
 
 
-    private static final String RDF_NAMESPACE  = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
-    private static final String XMTP_NAMESPACE = "http://www.openhealth.org/xmtp#";
-    private static final String MIME_NAMESPACE = "urn:x-i-o-s:xmime";
+    static final String RDF_NAMESPACE  = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+    static final String XMTP_NAMESPACE = "http://www.openhealth.org/xmtp#";
+    static final String MIME_NAMESPACE = "urn:x-i-o-s:xmime";
 
     private static java.text.SimpleDateFormat RFC2822_DATEFORMAT =
       new java.text.SimpleDateFormat("EEE', 'dd' 'MMM' 'yyyy' 'HH:mm:ss' 'Z", Locale.US);
@@ -512,8 +512,8 @@ public class XMTPParser {
     private boolean procHTML;
     private boolean addPreamble;
 
-    private String documentNS;
-    private String documentPrefix;
+    protected String documentNS;
+    protected String documentPrefix;
 
     private Document document;
 

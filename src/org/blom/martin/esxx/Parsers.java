@@ -19,7 +19,7 @@
 
 package org.blom.martin.esxx;
 
-import org.blom.martin.esxx.xmtp.XMTPParser;
+import org.blom.martin.esxx.xmtp.MIMEParser;
 
 import java.io.ByteArrayOutputStream;
 import java.io.BufferedReader;
@@ -114,7 +114,7 @@ class Parsers {
 	      }
 
 	      try {
-		XMTPParser p = new XMTPParser(xmtp, ns, html, true);
+		MIMEParser p = new MIMEParser(xmtp, ns, html, true);
 		p.convertMessage(is);
 		Document result = p.getDocument();
 		return esxx.domToE4X(result, cx, scope);
