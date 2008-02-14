@@ -56,34 +56,47 @@ public class XMTPParser {
 	// We expect to see a <Message> element and nothing else
 
 	while (!exit && xr.hasNext()) {
-	  int ev = xr.nextTag();
+	  int ev = xr.next();
 
 	  switch (ev) {
-	    case START_DOCUMENT:
-	      break;
-
 	    case START_ELEMENT: {
 	      verifyNamespaceURI(xr);
 
-	      if (xr.getLocalName().equals("Message")) {
+	      String lname = xr.getLocalName();
+
+	      if (lname.equals("Message")) {
 		// Accepted
 		message = new MimeMessage(session);
 	      
 		convertPart(xr, message);
-		exit = true;
+		message.saveChanges();
 	      }
 	      else {
-		throw new XMLStreamException("Unsupported MIME+XML format");
+		throw new XMLStreamException("Unsupported root element: " + lname);
 	      }
 	      break;
 	    }
 
+	    case END_ELEMENT:
+	      if (xr.getLocalName().equals("Body")) {
+		// If this <Message> was an attachment (inside a <Body>),
+		// we end up here.
+		exit = true;
+	      }
+	      else {
+		throw new XMLStreamException("MIME+XML parser is messed up #1");
+	      }
+	      break;
+
+	    case END_DOCUMENT:
+	      // For top-level <Message> elements, this is where we end up.
+	      exit = true;
+	      break;
+
 	    default:
-	      throw new XMLStreamException("MIME+XML parser is messed up");
+	      throw new XMLStreamException("MIME+XML parser is messed up #2");
 	  }
 	}
-
-	xr.close();
 
 	return message != null ? message.getMessageID() : null;
       }
@@ -92,7 +105,7 @@ public class XMTPParser {
 				     ex);
       }
       catch (ClassCastException ex) {
-	throw new XMLStreamException("Unsupported MIME+XML format", ex);
+	throw new XMLStreamException("Unsupported MIME+XML format (CCE)", ex);
       }
     }
 
@@ -113,33 +126,8 @@ public class XMTPParser {
 
 	    String name = xr.getLocalName();
 
-	    System.err.println("Part element " + name);
-
 	    if (name.equals("Body")) {
-	      ContentType content_type = new ContentType(part.getContentType());
-
-	      String base_type = content_type.getBaseType().toLowerCase();
-	      String prim_type = content_type.getPrimaryType().toLowerCase();
-
-	      System.err.println("*** " + part.getContentType());
-	      
-	      if (prim_type.equals("multipart")) {
-		part.setContent(convertMultiPart(xr, content_type), 
-				part.getContentType());
-	      }
-	      else if (base_type.endsWith("/xml") || base_type.endsWith("+xml")) {
-//		part.setContent("<xml/>", part.getContentType());
-		part.setContent("<xml/>", "text/plain");
-		ignoreElement(xr);
-	      }
-	      else if (base_type.startsWith("text/")) {
-		part.setContent(convertTextPart(xr), 
-				part.getContentType());
-	      }
-	      else {
-		part.setContent("<xml/>", "text/plain");
-		ignoreElement(xr);
-	      }
+	      convertBody(xr, part);
 	    }
 	    else if (name.equals("Content-Type")) {
 	      ParameterList params = new ParameterList();
@@ -203,17 +191,17 @@ public class XMTPParser {
 	  }
 
 	  case END_ELEMENT:
-	    System.err.println("Part end element " + xr.getLocalName());
-
 	    if (xr.getLocalName().equals("Message")) {
 	      // We're done with this part; exit
 	      exit = true;
 	    }
 	    else {
-	      throw new XMLStreamException("Unsupported MIME+XML format");
+	      throw new XMLStreamException("MIME+XML parser is messed up #3");
 	    }
-
 	    break;
+
+	  default:
+	    throw new XMLStreamException("MIME+XML parser is messed up #4");
 	}
       }
     }
@@ -245,12 +233,58 @@ public class XMTPParser {
       }
     }
 
-    protected String convertTextPart(XMLStreamReader xr)
+    protected void convertBody(XMLStreamReader xr, Part part)
+      throws XMLStreamException, MessagingException {
+
+      ContentType content_type = new ContentType(part.getContentType());
+
+      String base_type = content_type.getBaseType().toLowerCase();
+      String prim_type = content_type.getPrimaryType().toLowerCase();
+
+      if (prim_type.equals("multipart")) {
+	part.setContent(convertMultiPartBody(xr, content_type), 
+			part.getContentType());
+      }
+      else if (base_type.equals("message/rfc822")) {
+	// Just link in MIMEParser, this is a little messed up, but
+	// whatever.
+	MimeMessage saved_message = message;
+	convertMessage(xr);
+	part.setContent(message, part.getContentType());
+	message = saved_message;
+      }
+      else if (base_type.endsWith("/xml") || base_type.endsWith("+xml")) {
+	part.setContent("<xml/>", "text/plain");
+	ignoreElement(xr);
+      }
+      else if (base_type.startsWith("text/")) {
+	part.setContent(convertTextBody(xr), 
+			part.getContentType());
+      }
+      else {
+	String encoding[] = part.getHeader("Content-Transfer-Encoding");
+
+	if (encoding != null && encoding.length >= 1 && !encoding[0].isEmpty()) {
+	  // Encoded content; dump to disk and add a DataHandler for it
+	  EncodedDataSource ds = new EncodedDataSource(xr,
+						       part.getFileName(),
+						       part.getContentType(),
+						       encoding[0]);
+	  part.setDataHandler(new javax.activation.DataHandler(ds));
+	}
+	else {
+	  throw new XMLStreamException("Unsupported Content-Type/Content-Transfer-Encoding " +
+				       "combination");
+	}
+      }
+    }
+
+    protected String convertTextBody(XMLStreamReader xr)
       throws XMLStreamException, MessagingException {
       return xr.getElementText();
     }
 
-    protected Multipart convertMultiPart(XMLStreamReader xr, ContentType content_type)
+    protected Multipart convertMultiPartBody(XMLStreamReader xr, ContentType content_type)
       throws XMLStreamException, MessagingException {
 
       boolean exit         = false;
@@ -315,18 +349,16 @@ public class XMTPParser {
 	switch (xr.next()) {
 	  case START_ELEMENT:
 	    ++level;
-	    System.err.println("Element " + xr.getLocalName() + " level " + level);
 	    break;
 
 	  case END_ELEMENT:
 	    --level;
-	    System.err.println("/Element " + xr.getLocalName() + " level " + level);
 	    break;
 	}
       }
     }
 
-    private void verifyNamespaceURI(XMLStreamReader xr)
+    private static void verifyNamespaceURI(XMLStreamReader xr)
       throws XMLStreamException {
       String nsuri = xr.getNamespaceURI();
 
@@ -335,28 +367,21 @@ public class XMTPParser {
       }
     }
 
-    private static class Base64DataSource
+
+    private static class EncodedDataSource
       implements javax.activation.DataSource {
-	public Base64DataSource(XMLStreamReader xr, Part part) 
-	  throws XMLStreamException, MessagingException, IOException {
-	  name = part.getFileName();
-	  contentType = part.getContentType();
-	  tempFile = File.createTempFile(XMTPParser.class.getName(), null);
-
-	  OutputStreamWriter out = new OutputStreamWriter(
-	    new Base64.OutputStream(new FileOutputStream(tempFile),
-				    Base64.DECODE),
-	    "iso-8859-1");
-
-	  int    length = 1024; 
-	  char[] buffer = new char[length]; 
-
-	  for (int offset = 0, done = length; done == length; offset += length) {
-	    done = xr.getTextCharacters(offset, buffer, 0, length);
-	    out.write(buffer, 0, done);
-	  }	  
-
-	  out.close();
+	public EncodedDataSource(XMLStreamReader xr, String fn, String ct, String enc) 
+	  throws XMLStreamException {
+	  try {
+	    name = fn;
+	    contentType = ct;
+	    encoding = enc;
+	    tempFile = dumpTextToTempFile(xr);
+	  }
+	  catch (IOException ex) {
+	    throw new XMLStreamException("Failed to write " + encoding + "-encoded data to disk: " +
+					 ex.getMessage(), ex);
+	  }
 	}
 
 	public void finalize() {
@@ -369,7 +394,13 @@ public class XMTPParser {
 
 	public InputStream getInputStream() 
 	  throws IOException {
-	  return new FileInputStream(tempFile);
+	  try {
+	    return MimeUtility.decode(new FileInputStream(tempFile), encoding);
+	  }
+	  catch (MessagingException ex) {
+	    throw new IOException("Unable to decode " + encoding + "-encoded data: " + 
+				  ex.getMessage(), ex);
+	  }
 	}
 
 	public String getName() {
@@ -378,20 +409,42 @@ public class XMTPParser {
 
 	public OutputStream getOutputStream()
 	  throws IOException {
-	  throw new IOException("Base64DataSource is for output only");
+	  throw new IOException("EncodedDataSource is for output only");
 	}
 
+
+	private static File dumpTextToTempFile(XMLStreamReader xr)
+	  throws XMLStreamException, IOException {
+	  File f = File.createTempFile(XMTPParser.class.getName(), null);
+
+	  OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(f),
+							  "iso-8859-1");
+
+	  int    length = 1024; 
+	  char[] buffer = new char[length]; 
+
+	  while (xr.next() != END_ELEMENT) {
+	    for (int offset = 0, done = length; done == length; offset += length) {
+	      done = xr.getTextCharacters(offset, buffer, 0, length);
+	      out.write(buffer, 0, done);
+	    }	  
+	  }
+
+	  out.close();
+
+	  return f;
+	}
+
+	File tempFile;
 	String name;
 	String contentType;
-	File tempFile;
+	String encoding;
     }
 
     private static Pattern validNS = Pattern.compile("(^" + MIMEParser.MIME_NAMESPACE + "$)|" +
 						     "(^" + MIMEParser.XMTP_NAMESPACE + "$)");
 
     private static MailDateFormat mailDateFormat = new MailDateFormat();
-//     private static java.text.SimpleDateFormat RFC2822_DATEFORMAT =
-//       new java.text.SimpleDateFormat("EEE', 'dd' 'MMM' 'yyyy' 'HH:mm:ss' 'Z", Locale.US);
 
     private Session session;
     private MimeMessage message;
@@ -401,9 +454,6 @@ public class XMTPParser {
 	XMTPParser xp = new XMTPParser();
 
 	xp.convertMessage(new FileInputStream(args[0]));
-	xp.getMessage().writeTo(System.out);
-
-	xp.convertMessage(new FileReader(args[0]));
 	xp.getMessage().writeTo(System.out);
       }
       catch (Exception ex) {
