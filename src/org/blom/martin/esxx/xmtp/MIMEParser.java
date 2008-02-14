@@ -206,11 +206,12 @@ public class MIMEParser {
 	  break;
 	}
 
-	case PLAIN_PART:
+	case PLAIN_PART: {
 	  Element msg = document.createElementNS(documentNS, documentPrefix + "Message");
 	  body.appendChild(msg);
 	  convertPart(msg, (Part) content, "cid:", null);
 	  break;
+	}
 
 	case HTML_PART: {
 	  // We can only arrive here if we're processing HTML parts
@@ -232,6 +233,19 @@ public class MIMEParser {
 	  // references, so we reparse the document from a string
 	  // instead.
 	  content = hc.getXmlAsString();
+
+	  // Update content type
+	  Element ct = (Element) element.getElementsByTagNameNS("*", "Content-Type").item(0);
+	  
+	  if (ct != null) {
+	    ct.setTextContent("application/xhtml+xml");
+
+	    NamedNodeMap nodes = ct.getAttributes();
+
+	    while (nodes.getLength() > 0) {
+	      nodes.removeNamedItem(nodes.item(0).getNodeName());
+	    }
+	  }
 	  
 	  // !!! FALL THROUGH TO XML_PART !!!
 	}
@@ -262,9 +276,12 @@ public class MIMEParser {
 	}
 
 	case RFC822_PART: {
+	  Element msg = document.createElementNS(documentNS, documentPrefix + "Message");
+	  body.appendChild(msg);
+
 	  // This is a bit ugly, but whatever
 	  MimeMessage saved_message = message;
-	  convertMessage(body, (MimeMessage) content);
+	  convertMessage(msg, (MimeMessage) content);
 	  message = saved_message;
 	  break;
 	}
