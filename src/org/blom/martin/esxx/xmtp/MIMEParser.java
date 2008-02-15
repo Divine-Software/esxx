@@ -110,7 +110,6 @@ public class MIMEParser {
 
     protected void convertPart(Element element, Part part, String about_prefix, String about)
       throws IOException, MessagingException {
-//      System.err.println("convertPart on " + message);
 
       if (about == null && part instanceof MimePart) {
 	about = ((MimePart) part).getContentID();
@@ -165,10 +164,6 @@ public class MIMEParser {
 	else if (procHTML && base_type.equals("text/html")) {
 	  part_type = HTML_PART;
 	}
-// 	else if (base_type.equals("message/rfc822")) {
-// 	  part_type = RFC822_PART;
-// 	  System.err.println("message/rfc822 got it!");
-// 	}
 	else {
 	  part_type = BASE64_PART;
 	}
