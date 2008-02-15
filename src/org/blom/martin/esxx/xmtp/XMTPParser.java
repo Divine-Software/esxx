@@ -22,8 +22,11 @@ package org.blom.martin.esxx.xmtp;
 import java.io.*;
 import java.util.*;
 import java.util.regex.*;
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
 import javax.mail.*;
 import javax.mail.internet.*;
+import javax.mail.util.ByteArrayDataSource;
 import javax.xml.stream.*;
 
 import static javax.xml.stream.XMLStreamConstants.*;
@@ -33,22 +36,20 @@ public class XMTPParser {
       this.session = Session.getDefaultInstance(System.getProperties());
     }
 
-    public String convertMessage(InputStream is) 
+    public MimeMessage convertMessage(InputStream is) 
       throws XMLStreamException {
       return convertMessage(XMLInputFactory.newInstance().createXMLStreamReader(is));
     }
 
-    public String convertMessage(Reader rd)
+    public MimeMessage convertMessage(Reader rd)
       throws XMLStreamException {
       return convertMessage(XMLInputFactory.newInstance().createXMLStreamReader(rd));
     }
 
-    public MimeMessage getMessage() {
-      return message;
-    }
-
-    private String convertMessage(XMLStreamReader xr)
+    public MimeMessage convertMessage(XMLStreamReader xr)
       throws XMLStreamException {
+
+      MimeMessage message = null;
 
       try {
 	boolean exit = false;
@@ -93,12 +94,20 @@ public class XMTPParser {
 	      exit = true;
 	      break;
 
+	    case DTD:
+	    case COMMENT:
+	    case ENTITY_DECLARATION:
+	    case NOTATION_DECLARATION:
+	    case PROCESSING_INSTRUCTION:
+	    case SPACE:
+	      break;
+
 	    default:
 	      throw new XMLStreamException("MIME+XML parser is messed up #2");
 	  }
 	}
 
-	return message != null ? message.getMessageID() : null;
+	return message;
       }
       catch (MessagingException ex) {
 	throw new XMLStreamException("Unsupported MIME+XML format: " + ex.getMessage(),
@@ -106,6 +115,17 @@ public class XMTPParser {
       }
       catch (ClassCastException ex) {
 	throw new XMLStreamException("Unsupported MIME+XML format (CCE)", ex);
+      }
+    }
+
+
+    public static void sendMessage(MimeMessage message, Address[] recipients)
+      throws MessagingException {
+      if (recipients == null) {
+	Transport.send(message);
+      }
+      else {
+	Transport.send(message, recipients);
       }
     }
 
@@ -246,20 +266,42 @@ public class XMTPParser {
 			part.getContentType());
       }
       else if (base_type.equals("message/rfc822")) {
-	// Just link in MIMEParser, this is a little messed up, but
-	// whatever.
-	MimeMessage saved_message = message;
-	convertMessage(xr);
-	part.setContent(message, part.getContentType());
-	message = saved_message;
+	part.setContent(convertMessage(xr), part.getContentType());
       }
       else if (base_type.endsWith("/xml") || base_type.endsWith("+xml")) {
-	part.setContent("<xml/>", "text/plain");
-	ignoreElement(xr);
+	// By serializing to a byte array, we can control the XML
+	// charset, and we select ASCII, which is 7-bit
+	// clean. Otherwise, JavaMail might decide to base64-encode
+	// the XML document, which is somewhat ugly-looking.
+	ByteArrayOutputStream bo = new ByteArrayOutputStream(4096);
+	XMLEventReader        er = XMLInputFactory.newInstance().createXMLEventReader(xr);
+	XMLEventWriter        ew = XMLOutputFactory.newInstance().createXMLEventWriter(bo, 
+										       "ASCII");
+
+	for (int level = 0;;) {
+	  javax.xml.stream.events.XMLEvent ev = er.nextEvent();
+
+	  if (ev.isStartElement()) {
+	    ++level;
+	  }
+	  else if (ev.isEndElement()) {
+	    --level;
+	  }
+
+	  if (level >= 0) {
+	    ew.add(ev);
+	  }
+	  else {
+	    break;
+	  }
+	}
+
+	ew.flush();
+	part.setDataHandler(new DataHandler(new ByteArrayDataSource(bo.toByteArray(),
+								    part.getContentType())));
       }
       else if (base_type.startsWith("text/")) {
-	part.setContent(convertTextBody(xr), 
-			part.getContentType());
+	part.setContent(convertTextBody(xr), part.getContentType());
       }
       else {
 	String encoding[] = part.getHeader("Content-Transfer-Encoding");
@@ -270,7 +312,7 @@ public class XMTPParser {
 						       part.getFileName(),
 						       part.getContentType(),
 						       encoding[0]);
-	  part.setDataHandler(new javax.activation.DataHandler(ds));
+	  part.setDataHandler(new DataHandler(ds));
 	}
 	else {
 	  throw new XMLStreamException("Unsupported Content-Type/Content-Transfer-Encoding " +
@@ -369,7 +411,7 @@ public class XMTPParser {
 
 
     private static class EncodedDataSource
-      implements javax.activation.DataSource {
+      implements DataSource {
 	public EncodedDataSource(XMLStreamReader xr, String fn, String ct, String enc) 
 	  throws XMLStreamException {
 	  try {
@@ -447,14 +489,29 @@ public class XMTPParser {
     private static MailDateFormat mailDateFormat = new MailDateFormat();
 
     private Session session;
-    private MimeMessage message;
 
     public static void main(String[] args) {
+
+      if (args.length != 2) {
+	System.err.println("Usage: XMTPParser <show|send> <MIME+XML file>");
+	System.exit(10);
+      }
+
       try {
 	XMTPParser xp = new XMTPParser();
+	
+	MimeMessage msg = xp.convertMessage(new FileInputStream(args[1]));
 
-	xp.convertMessage(new FileInputStream(args[0]));
-	xp.getMessage().writeTo(System.out);
+	if (args[0].equals("show")) {
+	  msg.writeTo(System.out);
+	}
+	else if (args[0].equals("send")) {
+	  XMTPParser.sendMessage(msg, null);
+	  System.err.println("Sent");
+	}
+	else {
+	  System.err.println("Unknown command.");
+	}
       }
       catch (Exception ex) {
 	ex.printStackTrace();
