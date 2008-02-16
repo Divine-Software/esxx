@@ -16,11 +16,18 @@ function MyApp(e) {
   this.handleGet = function(req) {
     esxx.debug.println("**** START GET HANDLER ****")
 
-    var db = new URI("jdbc:postgresql:esxx?user=esxx&password=secret");
+    var ldap = new URI("ldap://ldap.blom.org/ou=People,dc=blom,dc=org?givenName,sn,uid?sub?(sn=Blom)");
+
+//     ldap["java.naming.security.authentication"] = "simple";
+//     ldap["java.naming.security.principal"] = "uid=martin,ou=People,dc=blom,dc=org";
+//     ldap["java.naming.security.credentials"] = "hemli";
+//     esxx.debug.println(ldap.load());
+
+//     var db = new URI("jdbc:postgresql:esxx?user=esxx&password=secret");
     
-    return db.query("select * from customers where country = {c}", {
-	c : "Sweden"
-	  });
+//     return db.query("select * from customers where country = {c}", {
+// 	c : "Sweden"
+// 	  });
 
 //     var mail = new URI("Testmail-3.eml");
 //     return mail.load("message/rfc822; x-format=esxx;x-process-html=false");
