@@ -20,6 +20,7 @@
 package org.blom.martin.esxx;
 
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.*;
 import org.mozilla.javascript.*;
@@ -29,13 +30,25 @@ public class RequestMatcher {
       patterns = new LinkedList<Request>();
     }
 
+
     public void clear() {
       patterns.clear();
     }
 
-    public void addRequestPattern(String method, String uri, String handler) {
+
+    public void addRequestPattern(String method, String uri, String handler) 
+      throws ESXXException {
+      if (method.isEmpty()) {
+	method = "[^ ]+";
+      }
+
+      if (uri.isEmpty()) {
+	uri = ".*";
+      }
+
       patterns.add(new Request(method, uri, handler));
     }
+
 
     public void compile() {
       StringBuilder regex = new StringBuilder();
@@ -51,34 +64,60 @@ public class RequestMatcher {
       }
 
       compiledPattern = Pattern.compile(regex.toString());
-      System.out.println("compiledPattern: " + compiledPattern);
     }
 
-    public Match matchRequest(String method, String uri,
-			       Context cx, Scriptable scope) {
-      Matcher m = compiledPattern.matcher(method + "\0" + uri);
 
-      System.out.println("Checking " + method + " on " + uri);
+    public Match matchRequest(String method, String uri,
+			      Context cx, Scriptable scope) {
+      Matcher m = compiledPattern.matcher(method + ":" + uri);
 
       if (m.matches()) {
 	int group = 1;
 	
 	for (Request r : patterns) {
 	  if (m.start(group) != -1) {
-	    System.out.println(r.handlerTemplate + " matches!");
+	    Match       res = new Match();
 
-	    for (String name : r.namedGroups.keySet()) {
-	      System.out.println(name + " = " + m.group(group + r.namedGroups.get(name)));
+	    // We found the request that matched. Now calculate return
+	    // values and exit.
+
+	    res.params = cx.newObject(scope);
+
+//	    // Put unnamed groups, incl. a faked group 0
+//	    ScriptableObject.putProperty(res.params, 0, uri);
+	    for (int i = 0; i <= r.numGroups; ++i) {
+	      ScriptableObject.putProperty(res.params, i, m.group(group + i));
 	    }
 
-	    Match res = new Match();
+	    // Put named groups
+	    for (Map.Entry<String,Integer> e : r.namedGroups.entrySet()) {
+	      String  name = e.getKey();
+	      String value = m.group(group + e.getValue());
+
+	      ScriptableObject.putProperty(res.params, name, value);
+	    }
+	    
+	    StringBuffer sb = new StringBuffer();
+	    Matcher      tm = Request.namedReferencePattern.matcher(r.handlerTemplate);
+
+	    while (tm.find()) {
+	      String    ref = tm.group();
+	      String   name = ref.substring(1, ref.length() - 1);
+	      int group_num = group + r.namedGroups.get(name);
+
+	      tm.appendReplacement(sb, m.group(group_num));
+	    }
+	    tm.appendTail(sb);
+
+	    res.handler = sb.toString();
 
 	    return res;
 	  }
 
 	  group += r.numGroups + 1;
 	}
-	throw new InternalError("Internal error in matchRequest: Failed to find match!");
+
+	throw new InternalError("Internal error in matchRequest: Failed to find the match!");
       }
       else {
 	return null;
@@ -89,40 +128,66 @@ public class RequestMatcher {
     public static class Match {
 	String handler;
 	Scriptable params;
+
+	public String toString() {
+	  StringBuilder sb = new StringBuilder();
+
+	  sb.append("RequestMatcher.Match[");
+	  sb.append(handler);
+	  
+	  for (Object o : params.getIds()) {
+	    sb.append(", ");
+	    sb.append(o);
+	    sb.append(": ");
+	    if (o instanceof Integer) {
+	      sb.append(params.get((Integer) o, params));
+	    }
+	    else {
+	      sb.append(params.get((String) o, params));
+	    }
+	  }
+
+	  sb.append("] ");
+
+	  return sb.toString();
+	}
     }
 
+
     private static class Request {
-	public Request(String m, String u, String h) {
+	public Request(String m, String u, String h) 
+	  throws ESXXException {
 	  handlerTemplate = h;
 	  namedGroups = new TreeMap<String, Integer>();
 	  compilePattern(m, u);
 	}
 
-	private void compilePattern(String method, String uri) {
-	  String regex = "(?:" + method + ")\0(?:" + uri + ")";
-//	  String regex = "(?:(?:" + method + ")/(?:" + uri + "))";
-	  Matcher gm = groupPattern.matcher(regex);
-	  Matcher nm = namedGroupPattern.matcher(regex);
+	private void compilePattern(String method, String uri)
+	  throws ESXXException {
+	  String regex = "(?:" + method + "):(?:" + uri + ")";
+	  Matcher   gm = groupPattern.matcher(regex);
+	  Matcher   nm = namedGroupPattern.matcher(regex);
 
-//	  System.out.println("Processing pattern " + regex);
 
 	  TreeMap<Integer, Integer> offset2group = new TreeMap<Integer, Integer>();
 	  numGroups = 0;
 
+// 	  System.err.println(regex);
+
 	  while (gm.find()) {
 	    ++numGroups;
 	    offset2group.put(gm.start(1), numGroups);
-//	    System.out.println("Group #" + numGroups + " at " + gm.start(1) + ": " + gm.group(1));
+// 	    System.err.println(gm.group(1) + " at " + gm.start(1));
 	  }
 
 	  while (nm.find()) {
 	    Integer g = offset2group.get(nm.start(1));
 
+// 	    System.err.println(nm.group(1) + " at " + nm.start(1));
+
 	    if (g == null) {
 	      throw new InternalError("Internal error #1 in RequestMatcher.compilePattern()");
 	    }
-
-//	    System.out.println("Named #" + g + " at " + nm.start(1) + ": " + nm.group(1));
 
 	    String match = nm.group(1);
 	    String name = match.substring(3, match.length() - 1);
@@ -132,19 +197,20 @@ public class RequestMatcher {
 
 	  String unnamed = nm.replaceAll("(");
 
-	  System.out.println("Unnamed regex: " + unnamed + " (" + numGroups + " groups)");
-
 	  // Compile regex and make sure our group count is the same as Java's.
-	  pattern = Pattern.compile(unnamed);
-
-	  if (pattern.matcher("").groupCount() != numGroups) {
-	    throw new InternalError("Internal error #2 in RequestMatcher.compilePattern()");
+	  try {
+	    pattern = Pattern.compile(unnamed);
+	  }
+	  catch (PatternSyntaxException ex) {
+	    throw new ESXXException("Unable to compile request regex: " + unnamed);
 	  }
 
-
-// 	  for (String k : namedGroups.keySet()) {
-// 	    System.out.println(k + ": " + namedGroups.get(k));
-// 	  }
+	  if (pattern.matcher("").groupCount() != numGroups) {
+// 	    System.err.println(pattern.toString());
+// 	    System.err.println(pattern.matcher("").groupCount());
+// 	    System.err.println(numGroups);
+	    throw new InternalError("Internal error #2 in RequestMatcher.compilePattern()");
+	  }
 	}
 
 	private String handlerTemplate;
@@ -154,48 +220,49 @@ public class RequestMatcher {
 
 	/** A Pattern that matches '(' or '(?<' but not '\(' or '(?' */
 	private static Pattern groupPattern = Pattern.compile("(((^\\()|((?<!\\\\)\\())" +
-							      "([^?]|\\?<))");
+							      "(?=[^?]|\\?<))");
 
 	/** A Pattern that matches '(?<...>', where ... is anything but a '>' */
 	private static Pattern namedGroupPattern = Pattern.compile("(\\(\\?<[^>]+>)");
 
 	/** A Pattern that matches '{...}', where ... is anything but a '}' */
-	private static Pattern namedReferencePattern = Pattern.compile("(\\{[^\\}]+\\})");
+	static Pattern namedReferencePattern = Pattern.compile("(\\{[^\\}]+\\})");
     }
 
     private LinkedList<Request> patterns;
     private Pattern compiledPattern;
 
-    
-    public static void main(String args[]) {
+
+    public static void main(String args[]) 
+      throws ESXXException {
       RequestMatcher rm = new RequestMatcher();
       
       rm.addRequestPattern("GET", 
 			   "articles", 
 			   "1");
-      rm.addRequestPattern("GET|POST", 
+      rm.addRequestPattern("(GET|POST)", 
 			   "articles/books", 
 			   "2");
       rm.addRequestPattern("[^/]+", 
 			   "articles/(?<article>[a-z]+)/(?<id>\\d+)", 
 			   "3");
       rm.addRequestPattern("[^/]+", 
-			   "article\\(s\\)/(\\d+)/(?<article>[a-z]+)/(?<id>\\d+)", 
+			   "article\\(s\\)/(\\d+)/(?<article>[a-z]+)/(?<id>\\d+)",
 			   "3");
       rm.addRequestPattern("(?<method>[^/]+)", 
 			   "(?<cat>\\p{javaLetter}+)/(?<item>\\p{javaLetter}+)/(?<id>\\d+)",
-			   "4");
+			   "{method}_{cat}_{item}_{id}");
 
       rm.compile();
 
-      Context cx = null;
-      Scriptable scope = null;
+      Context cx = Context.enter();
+      Scriptable scope = new ImporterTopLevel(cx);
 
-      rm.matchRequest("POST", "articles/books", cx, scope);
-      rm.matchRequest("POST", "articles/", cx, scope);
-      rm.matchRequest("GET", "articles/books", cx, scope);
-      rm.matchRequest("GET", "articles/", cx, scope);
-      rm.matchRequest("REPORT", "article(s)/100/hejhopp/12", cx, scope);
-      rm.matchRequest("DELETE", "gröna/äpplen/10", cx, scope);
+      System.out.println(rm.matchRequest("POST", "articles/books", cx, scope));
+      System.out.println(rm.matchRequest("POST", "articles/", cx, scope));
+      System.out.println(rm.matchRequest("GET", "articles/books", cx, scope));
+      System.out.println(rm.matchRequest("GET", "articles/", cx, scope));
+      System.out.println(rm.matchRequest("REPORT", "article(s)/100/hejhopp/12", cx, scope));
+      System.out.println(rm.matchRequest("DELETE", "gröna/äpplen/10", cx, scope));
     }
 }

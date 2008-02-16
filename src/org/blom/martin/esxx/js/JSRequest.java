@@ -52,7 +52,7 @@ public class JSRequest
       this.headers = cx.newObject(scope);
       this.cookies = cx.newObject(scope);
       this.query   = cx.newObject(scope);
-
+      this.uri     = null;
       this.mimeHeaders = new MimeHeaders();
 
       Document accept_doc = esxx.createDocument("accept");
@@ -96,6 +96,9 @@ public class JSRequest
       parseMessage(esxx, workload, cx, scope);
     }
 
+    public void setURI(Scriptable uri_params) {
+      uri = uri_params;
+    }
 
     static public Object jsConstructor(Context cx, 
 				       java.lang.Object[] args, 
@@ -131,6 +134,10 @@ public class JSRequest
       return query;
     }
 
+    public Scriptable jsGet_uri() {
+      return uri;
+    }
+
 
     public Object jsGet_message() {
       return message;
@@ -148,6 +155,7 @@ public class JSRequest
     private Scriptable cookies;
     private Scriptable accept;
     private Scriptable query;
+    private Scriptable uri;
 
     private Object message;
 

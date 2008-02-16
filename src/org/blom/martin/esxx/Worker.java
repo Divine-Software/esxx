@@ -259,16 +259,18 @@ class Worker
 				    Context cx, Scriptable scope) 
       throws ESXXException {
       Object result;
-      String handler = parser.getHandlerFunction(request_method, path_info);
+      RequestMatcher.Match match = parser.getHandlerFunction(request_method, path_info, cx, scope);
 
-      if (handler == null) {
+      if (match == null) {
 	throw new ESXXException(501, "'" + request_method + "' handler not defined for URI "
 				+ "'" + path_info + "'");
       }
 
+      req.setURI(match.params);
+
       Object args[] = { req };
 
-      result = callJSMethod(handler,
+      result = callJSMethod(match.handler,
 			    args, "'" + request_method + "' handler", cx, scope);
 
       return result;

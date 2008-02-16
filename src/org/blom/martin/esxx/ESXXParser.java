@@ -170,20 +170,9 @@ public class ESXXParser {
       return gotESXX;
     }
 
-    public String getHandlerFunction(String http_method, String path_info) {
-      String key = http_method + path_info;
-
-      Matcher m = uriPrefixPattern.matcher(key);
-
-      if (m.matches()) {
-	for (int i = 1; i <= httpFunctions.length; ++i) {
-	  if (m.start(i) != -1) {
-	    return httpFunctions[i];
-	  }
-	}
-      }
-
-      return null;
+    public RequestMatcher.Match getHandlerFunction(String http_method, String path_info,
+						   Context cx, Scriptable scope) {
+      return requestMatcher.matchRequest(http_method, path_info, cx, scope);
     }
 
     public String getSOAPAction(String action) {
@@ -202,7 +191,7 @@ public class ESXXParser {
       }
 
       // Compile uri-matching regex pattern
-      compileRegEx();
+      requestMatcher.compile();
 
       // Create per-application top-level and global scopes
       applicationScope = new JSGlobal(cx);
@@ -222,31 +211,6 @@ public class ESXXParser {
 
 	hasExecuted = true;
       }
-    }
-
-    private void compileRegEx() {
-      StringBuilder                  regex   = new StringBuilder();
-      Set<Map.Entry<String, String>> reverse = httpHandlers.descendingMap().entrySet();
-
-      httpFunctions = new String[reverse.size() + 1];
-
-      int i = 1;
-
-      for (Map.Entry<String, String> e : reverse) {
-	if (i != 1) {
- 	  regex.append("|");
-	}
- 	
-	regex.append("^(");
- 	regex.append(e.getKey());
- 	regex.append(").*");
-
-	httpFunctions[i] = e.getValue();
-
-	++i;
-      }
-
-      uriPrefixPattern = Pattern.compile(regex.toString());
     }
 
     private void handleStylesheet(String data)
@@ -335,7 +299,7 @@ public class ESXXParser {
     private void handleHTTP(Element e) 
       throws org.xml.sax.SAXException {
       String method  = e.getAttributeNS(null, "method").trim();
-      String prefix  = e.getAttributeNS(null, "uri-prefix").trim();
+      String uri     = e.getAttributeNS(null, "uri").trim();
       String handler = e.getAttributeNS(null, "handler").trim();
 
       if (method.equals("")) {
@@ -353,7 +317,7 @@ public class ESXXParser {
 					   "should not include parentheses");
       }
 
-      httpHandlers.put(method + prefix, handler);
+      requestMatcher.addRequestPattern(method, uri, handler);
     }
 
     private void handleSOAP(Element e) 
@@ -420,11 +384,8 @@ public class ESXXParser {
     private StringBuilder code = new StringBuilder();
     private LinkedList<Code> codeList = new LinkedList<Code>();
 
-    private NavigableMap<String,String> httpHandlers = new TreeMap<String,String>();
+    private RequestMatcher requestMatcher = new RequestMatcher();
     private Map<String,String> soapActions  = new HashMap<String,String>();
     private Map<String,URL>    stylesheets  = new HashMap<String,URL>();
     private String errorHandler;
-
-    private String[] httpFunctions;
-    private Pattern  uriPrefixPattern;
 };
