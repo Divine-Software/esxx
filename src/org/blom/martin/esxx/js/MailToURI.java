@@ -44,17 +44,7 @@ public class MailToURI
 			  Object data, String type, HashMap<String,String> params)
       throws Exception {
       Properties props = getProperties(thisObj);
-
-      if (props.getProperty("mail.smtp.host") == null) {
-	props.setProperty("mail.smtp.host", props.getProperty("host", "localhost"));
-      }
-
-      if (props.getProperty("mail.smtp.user") == null && 
-	  props.getProperty("user") != null) {
-	props.setProperty("mail.smtp.user", props.getProperty("user"));
-      }
-
-      Session session = Session.getDefaultInstance(props);
+      Session  session = Session.getInstance(props);
 
       Message msg = new MimeMessage(session);
 

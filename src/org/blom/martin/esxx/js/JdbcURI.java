@@ -40,16 +40,7 @@ public class JdbcURI
     protected Object query(Context cx, Scriptable thisObj, Object[] args)
       throws SQLException {
       String     query      = Context.toString(args[0]);
-      Properties properties = new Properties();
-
-      for (Object id : ScriptableObject.getPropertyIds(thisObj)) {
-	if (id instanceof String) {
-	  String key   = (String) id;
-	  String value = Context.toString(ScriptableObject.getProperty(thisObj, key));
-
-	  properties.setProperty(key, value);
-	}
-      }
+      Properties properties = getProperties(thisObj);
 
       Connection db = DriverManager.getConnection(uri.toString(), properties);
 
