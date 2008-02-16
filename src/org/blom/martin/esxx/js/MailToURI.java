@@ -33,13 +33,6 @@ public class MailToURI
       super(esxx, uri);
     }
 
-    protected Object load(Context cx, Scriptable thisObj, 
-			String type, HashMap<String,String> params)
-      throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
-				       "' does not support load()."); 
-    }
-
     protected Object save(Context cx, Scriptable thisObj, 
 			  Object data, String type, HashMap<String,String> params)
       throws Exception {
