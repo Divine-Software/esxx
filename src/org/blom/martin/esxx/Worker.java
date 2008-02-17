@@ -48,8 +48,8 @@ class Worker
 
     public Object run(Context cx) {
       // Enable all optimizations
-      cx.setOptimizationLevel(9);
-//      cx.setOptimizationLevel(-1);
+//      cx.setOptimizationLevel(9);
+      cx.setOptimizationLevel(-1);
 
       // Provide a better mapping for primitive types on this context
       cx.getWrapFactory().setJavaPrimitiveWrap(false);
