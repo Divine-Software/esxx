@@ -51,6 +51,16 @@
     <delete dir="${dist.dir}"/>
   </target>
 
+  <target name="test" depends="dist">
+    <fail message="This target requires a 'test' property. Example: -Dtest=xml" unless="test"/>
+    <echo message="Running tests/${test}.esxx ..." level="info"/>
+    <java jar="${dist.dir}/esxx.jar" fork="true">
+      <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
+      <arg value="GET" />
+      <arg file="tests/${test}.esxx" />
+    </java>
+  </target>
+
   <target name="run" depends="dist">
     <java jar="${dist.dir}/esxx.jar" fork="true">
       <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
