@@ -37,53 +37,57 @@ public class JdbcURI
       super(esxx, uri);
     }
 
-    protected Object query(Context cx, Scriptable thisObj, Object[] args)
-      throws SQLException {
-      String     query      = Context.toString(args[0]);
-      Properties properties = getProperties(thisObj);
+    protected Object query(Context cx, Scriptable thisObj, Object[] args) {
+      try {
+	String     query      = Context.toString(args[0]);
+	Properties properties = getProperties(thisObj);
 
-      Connection db = DriverManager.getConnection(uri.toString(), properties);
+	Connection db = DriverManager.getConnection(uri.toString(), properties);
 
-      Query q = new Query(query, db);
+	Query q = new Query(query, db);
 
-      if (q.needParams()) {
-	if (args.length < 2 || args[1] == Context.getUndefinedValue()) {
-	  throw Context.reportRuntimeError("Missing parameter argument.");
-	}
+	if (q.needParams()) {
+	  if (args.length < 2 || args[1] == Context.getUndefinedValue()) {
+	    throw Context.reportRuntimeError("Missing parameter argument.");
+	  }
 	
-	q.bindParams((Scriptable) args[1]);
-      }
-
-      Object rc = q.execute();
-      
-      if (rc instanceof ResultSet) {
-	ResultSet          rs = (ResultSet) rc;
-	ResultSetMetaData rmd = rs.getMetaData();
-
-	Document   result = esxx.createDocument("result");
-	Element    root   = result.getDocumentElement();
-
-	int      count = rmd.getColumnCount();
-	String[] names = new String[count];
-
-	for (int i = 0; i < count; ++i) {
-	  names[i] = rmd.getColumnName(i + 1);
+	  q.bindParams(cx, (Scriptable) args[1]);
 	}
 
-	while (rs.next()) {
-	  Element row = result.createElement("entry");
-	    
+	Object rc = q.execute();
+      
+	if (rc instanceof ResultSet) {
+	  ResultSet          rs = (ResultSet) rc;
+	  ResultSetMetaData rmd = rs.getMetaData();
+
+	  Document   result = esxx.createDocument("result");
+	  Element    root   = result.getDocumentElement();
+
+	  int      count = rmd.getColumnCount();
+	  String[] names = new String[count];
+
 	  for (int i = 0; i < count; ++i) {
-	    addChild(row, names[i], rs.getString(i + 1));
+	    names[i] = rmd.getColumnName(i + 1);
 	  }
 
-	  root.appendChild(row);
-	}
+	  while (rs.next()) {
+	    Element row = result.createElement("entry");
+	    
+	    for (int i = 0; i < count; ++i) {
+	      addChild(row, names[i], rs.getString(i + 1));
+	    }
+
+	    root.appendChild(row);
+	  }
 	  
-	return esxx.domToE4X(result, cx, this);
+	  return esxx.domToE4X(result, cx, this);
+	}
+	else {
+	  return rc;
+	}
       }
-      else {
-	return rc;
+      catch (SQLException ex) {
+	throw Context.reportRuntimeError("SQL query failed: " + ex.getMessage()); 
       }
     }
 
@@ -113,12 +117,12 @@ public class JdbcURI
 	  return pmd.getParameterCount() != 0;
 	}
 
-	public void bindParams(Scriptable object) 
+	public void bindParams(Context cx, Scriptable object) 
 	  throws SQLException {
  
 	  int p = 1;
 	  for (String name : params) {
-	    String value = Context.toString(ScriptableObject.getProperty(object, name));
+	    String value = Context.toString(JSURI.evalProperty(cx, object, name));
 
 	    switch (pmd.getParameterType(p)) {
 	      default:
