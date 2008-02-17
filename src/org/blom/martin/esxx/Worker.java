@@ -161,7 +161,7 @@ class Worker
 			"\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">");
 	    out.println("<html><head><title>" + title + "</title></head><body>");
 	    out.println("<h1>ESXX Server Error</h1>");
-	    out.println("<h2>Unhandled exception</h2>");
+	    out.println("<h2>Unhandled exception: " + ex.getClass().getSimpleName() + "</h2>");
 	    if (ex instanceof ESXXException ||
 		ex instanceof XMLStreamException ||
 		ex instanceof TransformerException) {
