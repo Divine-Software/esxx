@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 import java.util.zip.Inflater;
-import javax.xml.stream.XMLStreamException;
 
 public abstract class CacheBase {
     public CacheBase(ESXX esxx, int max_entries, long max_size, long max_age) {

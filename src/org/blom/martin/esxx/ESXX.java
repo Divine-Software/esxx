@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
-import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
@@ -381,13 +380,13 @@ public class ESXX {
     }
 
     public ESXXParser getCachedESXXParser(URL url)
-      throws XMLStreamException, IOException {
+      throws IOException {
       return memoryCache.getCachedESXXParser(url);
     }
 
 
     public Transformer getCachedStylesheet(URL url)
-      throws ESXXException, XMLStreamException, IOException {
+      throws IOException {
       try {
 	if (url != null) {
 	  Templates t = transformerFactory.newTemplates(new StreamSource(openCachedURL(url)));

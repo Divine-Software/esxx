@@ -24,7 +24,6 @@ import java.net.URL;
 import java.util.Properties;
 import java.util.HashMap;
 import javax.xml.soap.*;
-import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;

@@ -70,7 +70,7 @@ public class ESXXParser {
     };
 
     public ESXXParser(ESXX esxx, URL url)
-      throws IOException, XMLStreamException {
+      throws IOException {
       
       esxxObject = esxx;
       baseURL = url;
@@ -156,11 +156,14 @@ public class ESXXParser {
 	catch(XPathExpressionException ex) {
 	  // Should never happen
 	  ex.printStackTrace();
-	  throw new XMLStreamException(ex.getMessage());
+	  throw new ESXXException("XPathExpressionException: " + ex.getMessage());
 	}
       }
-      catch (org.xml.sax.SAXException ex) {
-	throw new XMLStreamException(ex.getMessage());
+      catch (XMLStreamException ex) {
+	throw new ESXXException("XMLStreamException: " + ex.getMessage(), ex);
+      }
+      catch (DOMException ex) {
+	throw new ESXXException("DOMException: " + ex.getMessage(), ex);
       }
     }
 
@@ -237,23 +240,23 @@ public class ESXXParser {
 	if (xsr.next() == XMLStreamConstants.START_ELEMENT) {
 	  String type = xsr.getAttributeValue(null, "type");
 	  if (type == null || !type.equals("text/xsl")) {
-	    throw new XMLStreamException("<?esxx-stylesheet?> attribute 'type' " +
-					 "must be set to 'text/xsl'");
+	    throw new ESXXException("<?esxx-stylesheet?> attribute 'type' " +
+				    "must be set to 'text/xsl'");
 	  }
 
 	  String href = xsr.getAttributeValue(null, "href");
 
 	  if (href == null) {
-	    throw new XMLStreamException("<?esxx-stylesheet?> attribute 'href' " +
-					 "must be specified");
+	    throw new ESXXException("<?esxx-stylesheet?> attribute 'href' " +
+				    "must be specified");
 	  }
 
 	  try {
 	    stylesheets.put("", new URL(baseURL, href));
 	  }
 	  catch (MalformedURLException ex) {
-	    throw new XMLStreamException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
-					 ex.getMessage());
+	    throw new ESXXException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
+				    ex.getMessage());
 	  }
 	}
       }
@@ -272,8 +275,8 @@ public class ESXXParser {
 	  String href = xsr.getAttributeValue(null, "href");
 
 	  if (href == null) {
-	    throw new XMLStreamException("<?esxx-import?> attribute 'href' " +
-					 "must be specified");
+	    throw new ESXXException("<?esxx-import?> attribute 'href' " +
+				    "must be specified");
 	  }
 
 	  try {
@@ -293,12 +296,12 @@ public class ESXXParser {
 	    externalURLs.add(url);
 	  }
 	  catch (MalformedURLException ex) {
-	    throw new XMLStreamException("<?esxx-import?> attribute 'href' is invalid: " +
-					 ex.getMessage());
+	    throw new ESXXException("<?esxx-import?> attribute 'href' is invalid: " +
+				    ex.getMessage(), ex);
 	  }
 	  catch (IOException ex) {
-	    throw new XMLStreamException("<?esxx-import?> failed to include document: " +
-					 ex.getMessage());
+	    throw new ESXXException("<?esxx-import?> failed to include document: " +
+				    ex.getMessage(), ex);
 	  }
 	}
       }
@@ -310,74 +313,70 @@ public class ESXXParser {
       codeList.add(new Code(url, line, data));
     }
 
-    private void handleHTTP(Element e) 
-      throws org.xml.sax.SAXException {
+    private void handleHTTP(Element e) {
       String method  = e.getAttributeNS(null, "method").trim();
       String uri     = e.getAttributeNS(null, "uri").trim();
       String handler = e.getAttributeNS(null, "handler").trim();
 
       if (method.equals("")) {
-	throw new org.xml.sax.SAXException("<http> attribute 'method' must " +
-					   "must be specified");
+	throw new ESXXException("<http> attribute 'method' must " +
+				"must be specified");
       }
 
       if (handler.equals("")) {
-	throw new org.xml.sax.SAXException("<http> attribute 'handler' must " +
-					   "must be specified");
+	throw new ESXXException("<http> attribute 'handler' must " +
+				"must be specified");
       }
 
       if (handler.endsWith(")")) {
-	throw new org.xml.sax.SAXException("<http> attribute 'handler' value " +
-					   "should not include parentheses");
+	throw new ESXXException("<http> attribute 'handler' value " +
+				"should not include parentheses");
       }
 
       requestMatcher.addRequestPattern(method, uri, handler);
     }
 
-    private void handleSOAP(Element e) 
-      throws org.xml.sax.SAXException {
+    private void handleSOAP(Element e) {
       String object = e.getAttributeNS(null, "object").trim();
 
       if (object.equals("")) {
-	throw new org.xml.sax.SAXException("<soap> attribute 'object' must " +
-					   "must be specified");
+	throw new ESXXException("<soap> attribute 'object' must " +
+				"must be specified");
       }
 
       soapActions.put(e.getAttributeNS(null, "action"), object);
     }
 
-    private void handleStylesheet(Element e)
-      throws org.xml.sax.SAXException {
+    private void handleStylesheet(Element e) {
       String media_type = e.getAttributeNS(null, "media-type").trim();
       String href      = e.getAttributeNS(null, "href").trim();
       String type      = e.getAttributeNS(null, "type").trim();
       
       if (href.equals("")) {
-	throw new org.xml.sax.SAXException("<stylesheet> attribute 'href' " +
-					   "must be specified");
+	throw new ESXXException("<stylesheet> attribute 'href' " +
+				"must be specified");
       }
 
       if (!type.equals("") && !type.equals("text/xsl")) {
-	throw new org.xml.sax.SAXException("<stylesheet> attribute 'type' " +
-					   "must be set to 'text/xsl'");
+	throw new ESXXException("<stylesheet> attribute 'type' " +
+				"must be set to 'text/xsl'");
       }
 
       try {
 	stylesheets.put(media_type, new URL(baseURL, href));
       }
       catch (MalformedURLException ex) {
-	throw new org.xml.sax.SAXException("<stylesheet> attribute 'href' is invalid: " +
-					   ex.getMessage());
+	throw new ESXXException("<stylesheet> attribute 'href' is invalid: " +
+				ex.getMessage());
       }
     }
 
-    private void handleErrorHandler(Element e)
-      throws org.xml.sax.SAXException {
+    private void handleErrorHandler(Element e) {
       String handler = e.getAttributeNS(null, "handler").trim();
 
       if (handler.endsWith(")")) {
-	throw new org.xml.sax.SAXException("<error> attribute 'handler' value " +
-					   "should not include parentheses");
+	throw new ESXXException("<error> attribute 'handler' value " +
+				"should not include parentheses");
       }
 
       errorHandler = handler;

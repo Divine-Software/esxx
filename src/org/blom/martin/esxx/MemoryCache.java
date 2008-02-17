@@ -22,7 +22,6 @@ package org.blom.martin.esxx;
 import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
-import javax.xml.stream.XMLStreamException;
 
 public class MemoryCache
   extends CacheBase {
@@ -48,7 +47,7 @@ public class MemoryCache
     }
 
     public ESXXParser getCachedESXXParser(URL url)
-      throws XMLStreamException, IOException {
+      throws IOException {
 
       String url_string = url.toString();
       ESXXParser ep;
