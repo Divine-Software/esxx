@@ -19,25 +19,23 @@
 
 package org.blom.martin.esxx;
 
-//import org.blom.martin.esxx.js.*;
-
 import java.io.*;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URI;
-import java.util.Properties;
+import java.net.URL;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.*;
-import javax.xml.transform.dom.*;
+import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.*;
 import org.mozilla.javascript.*;
-import java.util.Collection;
-import org.w3c.dom.Document;
-import org.w3c.dom.DOMImplementation;
+import org.w3c.dom.*;
 import org.w3c.dom.bootstrap.*;
-import javax.xml.parsers.*;
+import org.w3c.dom.ls.*;
 
 
 public class ESXX {
@@ -53,9 +51,6 @@ public class ESXX {
      *  execution. Currently, only "esxx.worker_threads" is defined,
      *  which defaults to (number of CPUs * 2).
      *
-     *  @throws ParserConfigurationException If no XML parser could be
-     *  found.
-     *
      *  @throws ClassNotFoundException On DOM implementation errors
      *
      *  @throws InstantiationException On DOM implementation errors
@@ -64,7 +59,7 @@ public class ESXX {
      */
 
     public ESXX(Properties p)
-      throws ParserConfigurationException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+      throws ClassNotFoundException, InstantiationException, IllegalAccessException {
       settings = p;
 
       memoryCache = new MemoryCache(
@@ -76,36 +71,22 @@ public class ESXX {
       parsers = new Parsers(this);
 
       // Custom CGI-to-HTTP translations
+      cgiToHTTPMap = new HashMap<String,String>();
       cgiToHTTPMap.put("HTTP_SOAPACTION", "SOAPAction");
       cgiToHTTPMap.put("CONTENT_TYPE", "Content-Type");
       cgiToHTTPMap.put("CONTENT_LENGTH", "Content-Length");
 
-      documentBuilderFactory = DocumentBuilderFactory.newInstance();
-
-      documentBuilderFactory.setExpandEntityReferences(true);
-      documentBuilderFactory.setNamespaceAware(true);
-      documentBuilderFactory.setValidating(true);
-      documentBuilderFactory.setXIncludeAware(true);
-
       DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
       domImplementation = reg.getDOMImplementation("XML 3.0");
+      domImplementationLS = (DOMImplementationLS) domImplementation;
+
+      lsSerializer = domImplementationLS.createLSSerializer();
+
+      DOMConfiguration dc = lsSerializer.getDomConfig();
+      dc.setParameter("xml-declaration", false);
 
       transformerFactory = TransformerFactory.newInstance();
-      transformerFactory.setURIResolver(new URIResolver() {
-	    public Source resolve(String href,
-				  String base)
-	      throws TransformerException {
-	      try {
-		return new StreamSource(openCachedURL(new URL(new URL(base), href)));
-	      }
-	      catch (MalformedURLException ex) {
-		throw new TransformerException("MalformedURLException: " + ex.getMessage());
-	      }
-	      catch (IOException ex) {
-		throw new TransformerException("IOException: " + ex.getMessage());
-	      }
-	    }
-	});
+      transformerFactory.setURIResolver(new URIResolver(null));
 
       numWorkerThreads = Integer.parseInt(
 	settings.getProperty("esxx.worker_threads",
@@ -177,31 +158,17 @@ public class ESXX {
      *
      *  @param node  The Node to be serialized.
      *
-     *  @param omit_xml_declaration  Set to 'true' if you don't want the XML decl.
-     *
      *  @return A String containing the XML representation of the supplied Node.
      */
 
-    public String serializeNode(org.w3c.dom.Node node, boolean omit_xml_declaration) {
+    public String serializeNode(org.w3c.dom.Node node) {
       try {
-	StringWriter sw = new StringWriter();
-
-	Transformer tr = transformerFactory.newTransformer();
-
-	tr.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION,
-			     omit_xml_declaration ? "yes" : "no");
-	tr.setOutputProperty(OutputKeys.METHOD, "xml");
-
-	DOMSource src = new DOMSource(node);
-	StreamResult  dst = new StreamResult(sw);
-
-	tr.transform(src, dst);
-	return sw.toString();
+	return lsSerializer.writeToString(node);
       }
-      catch (TransformerException ex) {
+      catch (LSException ex) {
 	// Should never happen
 	ex.printStackTrace();
-	return "";
+	throw new ESXXException("Unable to serialize DOM Node: " + ex.getMessage(), ex);
       }
     }
 
@@ -223,7 +190,7 @@ public class ESXX {
 
       // Please, somebody kill me!
 
-      String cmd = serializeNode(node, true);
+      String cmd = serializeNode(node);
 
       try {
 	return cx.newObject(scope, "XML", new String[] { cmd });
@@ -347,69 +314,52 @@ public class ESXX {
     public Document parseXML(InputStream is, final URL is_url,
 			     final Collection<URL> external_urls,
 			     final PrintWriter err)
-      throws org.xml.sax.SAXException, IOException {
-      try {
-	DocumentBuilder db = documentBuilderFactory.newDocumentBuilder();
+      throws ESXXException {
+      LSInput in = domImplementationLS.createLSInput();
+      
+      in.setSystemId(is_url.toString());
+      in.setByteStream(is);
 
-	db.setErrorHandler(new org.xml.sax.ErrorHandler() {
-	      public void error(org.xml.sax.SAXParseException ex) {
-		if (err != null) {
-		  err.println("XML parser error in " + ex.getSystemId() + "#" +
-			      ex.getLineNumber() + ": " + ex.getMessage());
-		}
-	      }
+      LSParser p = domImplementationLS.createLSParser(DOMImplementationLS.MODE_SYNCHRONOUS, 
+						      null);
 
-	      public void fatalError(org.xml.sax.SAXParseException ex)
-		throws org.xml.sax.SAXParseException {
-		throw ex;
-	      }
+      DOMErrorHandler eh = new DOMErrorHandler() {
+	    public boolean handleError(DOMError error) {
+	      DOMLocator  dl = error.getLocation();
+	      String     pos = (dl.getUri() + ", line " + dl.getLineNumber() + 
+				", column " + dl.getColumnNumber());
+	      Throwable  rel = (Throwable) error.getRelatedException();
 
-	      public void warning(org.xml.sax.SAXParseException ex) {
-		err.println("XML parser warning in " + ex.getSystemId() + "#" +
-			    ex.getLineNumber() + ": " + ex.getMessage());
-	      }
-	  });
-
-	db.setEntityResolver(new org.xml.sax.EntityResolver() {
-	      public org.xml.sax.InputSource resolveEntity (String publicID,
-							    String systemID)
-		throws org.xml.sax.SAXException {
-
-		try {
-		  if (systemID != null) {
-		    URL url = new URL(is_url, systemID);
-
-		    org.xml.sax.InputSource src = new org.xml.sax.InputSource(openCachedURL(url));
-		    src.setSystemId(url.toString());
-
-		    if (external_urls != null) {
-		      external_urls.add(url);
-		    }
-
-		    return src;
+	      switch (error.getSeverity()) {
+		case DOMError.SEVERITY_FATAL_ERROR:
+		case DOMError.SEVERITY_ERROR:
+		  if (rel instanceof ESXXException) {
+		    throw (ESXXException) rel;
 		  }
 		  else {
-		    throw new org.xml.sax.SAXException("Missing system ID");
+		    throw new ESXXException(pos + ": " + error.getMessage(), rel);
 		  }
-		}
-		catch (MalformedURLException ex) {
-		  throw new org.xml.sax.SAXException("Malformed URL for system ID " +
-						     systemID + ": " + ex.getMessage());
-		}
-		catch (IOException ex) {
-		  throw new org.xml.sax.SAXException("Unable to load resource for system ID " +
-						     systemID + ": " + ex.getMessage());
-		}
+
+		case DOMError.SEVERITY_WARNING:
+		  err.println(pos + ": " + error.getMessage());
+		  return true;
 	      }
-	  });
 
-	return db.parse(is, is_url.toString());
-      }
-      catch (ParserConfigurationException ex) {
-	throw new org.xml.sax.SAXException("ParserConfigurationException: " + ex);
-      }
+	      return false;
+	    }
+	};
+
+      DOMConfiguration dc = p.getDomConfig();
+
+      dc.setParameter("comments", false);
+      dc.setParameter("cdata-sections", false);
+      dc.setParameter("entities", false);
+      dc.setParameter("validate-if-schema", true);
+      dc.setParameter("error-handler", eh);
+      dc.setParameter("resource-resolver", new URIResolver(external_urls));
+
+      return p.parse(in);
     }
-
 
     public InputStream openCachedURL(URL url, String[] content_type)
       throws IOException {
@@ -485,16 +435,83 @@ public class ESXX {
     }
 
 
+    private class URIResolver
+      implements javax.xml.transform.URIResolver, LSResourceResolver {
+	public URIResolver(Collection<URL> log_visited) {
+	  logVisited = log_visited;
+	}
+
+	public Source resolve(String href,
+			      String base) {
+	  URL url = getURL(href, base);
+	  return new StreamSource(getIS(url));
+	}
+
+
+	public LSInput resolveResource(String type,
+				       String namespaceURI,
+				       String publicId,
+				       String systemId,
+				       String baseURI) {
+	  LSInput lsi = domImplementationLS.createLSInput();
+	  URL     url = getURL(systemId, baseURI);
+	  
+	  lsi.setSystemId(url.toString());
+	  lsi.setByteStream(getIS(url));
+
+	  return lsi;
+	}
+
+	private URL getURL(String uri, String base_uri) {
+	  try {
+	    URL url = null;
+
+	    if (base_uri != null) {
+	      return new URL(new URL(base_uri), uri);
+	    }
+	    else {
+	      return new URL(uri);
+	    }
+	  }
+	  catch (MalformedURLException ex) {
+	    throw new ESXXException("URIResolver error: " + ex.getMessage(), ex);
+	  }
+	}
+
+	private InputStream getIS(URL url) {
+	  try {
+	    InputStream is = openCachedURL(url);
+
+	    if (logVisited != null) {
+	      // Log visited URLs if successfully opened
+	      logVisited.add(url);
+	    }
+
+	    return is;
+	  }
+	  catch (IOException ex) {
+	    throw new ESXXException("URIResolver error: " + ex.getMessage(), ex);
+	  }
+	}
+
+	private Collection<URL> logVisited;
+    }
+
+
+
     private static final int MAX_WORKLOADS = 16;
 
     private MemoryCache memoryCache;
     private Parsers parsers;
     private Properties settings;
-    private DocumentBuilderFactory documentBuilderFactory;
+    private HashMap<String,String> cgiToHTTPMap;
+
     private DOMImplementation domImplementation;
+    private DOMImplementationLS domImplementationLS;
+    private LSSerializer lsSerializer;
     private TransformerFactory  transformerFactory;
+
     private ThreadGroup workerThreads;
     private int numWorkerThreads;
     private LinkedBlockingQueue<Workload> workloadQueue;
-    private HashMap<String,String> cgiToHTTPMap = new HashMap<String,String>();
 };

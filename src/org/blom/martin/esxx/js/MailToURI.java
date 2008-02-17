@@ -94,7 +94,7 @@ public class MailToURI
       }
       else if (type.equals("text/xml")) {
 	if (data instanceof Scriptable) {
-	  data = esxx.serializeNode(esxx.e4xToDOM((Scriptable) data), true);
+	  data = esxx.serializeNode(esxx.e4xToDOM((Scriptable) data));
 	}
 	
 	msg.setDataHandler(new javax.activation.DataHandler(
