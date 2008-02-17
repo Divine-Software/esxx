@@ -46,6 +46,11 @@ public class XMTPParser {
       return convertMessage(XMLInputFactory.newInstance().createXMLStreamReader(rd));
     }
 
+    public MimeMessage convertMessage(javax.xml.transform.Source s)
+      throws XMLStreamException {
+      return convertMessage(XMLInputFactory.newInstance().createXMLStreamReader(s));
+    }
+
     public MimeMessage convertMessage(XMLStreamReader xr)
       throws XMLStreamException {
 
@@ -269,6 +274,9 @@ public class XMTPParser {
 	part.setContent(convertMessage(xr), part.getContentType());
       }
       else if (base_type.endsWith("/xml") || base_type.endsWith("+xml")) {
+	xr.next(); // I didn't think I needed this, but apparently I
+		   // do ...
+
 	// By serializing to a byte array, we can control the XML
 	// charset, and we select ASCII, which is 7-bit
 	// clean. Otherwise, JavaMail might decide to base64-encode

@@ -19,12 +19,18 @@
 
 package org.blom.martin.esxx.js;
 
+import java.io.ByteArrayInputStream;
+import java.io.StringReader;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Properties;
 import javax.mail.*;
 import javax.mail.internet.*;
-import org.blom.martin.esxx.ESXX;
+import javax.xml.transform.dom.DOMSource;
+import org.blom.martin.esxx.*;
+import org.blom.martin.esxx.xmtp.XMTPParser;
 import org.mozilla.javascript.*;
 
 public class MailToURI 
@@ -39,75 +45,132 @@ public class MailToURI
       Properties props = getProperties(thisObj);
       Session  session = Session.getInstance(props);
 
-      Message msg = new MimeMessage(session);
-
       String   specific = uri.getRawSchemeSpecificPart();
       String[] to_query = specific.split("\\?", 2);
       String   to       = JSURI.decodeURI(to_query[0], false);
 
-      // Set To header
-      msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+      if (type == null) {
+	type = "text/plain";
+      }
 
-      // Set remaining headers
-      if (to_query.length == 2) {
-	String[] headers = to_query[1].split("&");
+      if (type.equals("message/rfc822")) {
+	Message msg;
 
-	for (String header : headers) {
-	  String[] name_value = header.split("=", 2);
+	if (data instanceof String) {
+	  // Assume this is a real MIME message
+	  msg = new MimeMessage(session, 
+				new ByteArrayInputStream(((String) data).getBytes("UTF-8")));
+	}
+	else if (data instanceof Scriptable) {
+	  data = esxx.serializeNode(esxx.e4xToDOM((Scriptable) data));
 
-	  if (name_value.length == 2) {
-	    String name  = JSURI.decodeURI(name_value[0], false);
-	    String value = JSURI.decodeURI(name_value[1], false);
+	  XMTPParser xmtpp  = new XMTPParser();
 
-	    if (name.equalsIgnoreCase("From")) {
-	      msg.addFrom(InternetAddress.parse(value));
-	    }
-	    else if (name.equalsIgnoreCase("To")) {
-	      msg.addRecipients(Message.RecipientType.TO, InternetAddress.parse(value));
-	    }
-	    else if (name.equalsIgnoreCase("Cc")) {
-	      msg.addRecipients(Message.RecipientType.CC, InternetAddress.parse(value));
-	    }
-	    else if (name.equalsIgnoreCase("Bcc")) {
-	      msg.addRecipients(Message.RecipientType.BCC, InternetAddress.parse(value));
-	    }
-	    else if (name.equalsIgnoreCase("Reply-To")) {
-	      msg.setReplyTo(InternetAddress.parse(value));
-	    }
-	    else if (name.equalsIgnoreCase("Subject")) {
-	      msg.setSubject(value);
-	    }
-	    else if (name.equalsIgnoreCase("Body")) {
-	      if (data == null || data == Context.getUndefinedValue()) {
-		data = value;
+	  msg = xmtpp.convertMessage(new StringReader((String) data));
+	}
+	else {
+	  throw new ESXXException("Unsupported data type: " + data.getClass().getSimpleName());
+	}
+	
+	LinkedList<InternetAddress> recipients = new LinkedList<InternetAddress>(
+	  Arrays.asList(InternetAddress.parse(to)));
+
+	// Scan remaining headers for 'to' attributes
+	if (to_query.length == 2) {
+	  String[] headers = to_query[1].split("&");
+
+	  for (String header : headers) {
+	    String[] name_value = header.split("=", 2);
+
+	    if (name_value.length == 2) {
+	      String name  = JSURI.decodeURI(name_value[0], false);
+	      String value = JSURI.decodeURI(name_value[1], false);
+
+	      if (name.equalsIgnoreCase("To")) {
+		recipients.addAll(Arrays.asList(InternetAddress.parse(value)));
 	      }
-	    }
-	    else {
-	      msg.setHeader(name, value);
 	    }
 	  }
 	}
-      }
 
-      if (type == null || type.equals("text/plain")) {
-	msg.setText(data.toString());
-      }
-      else if (type.equals("text/xml")) {
-	if (data instanceof Scriptable) {
-	  data = esxx.serializeNode(esxx.e4xToDOM((Scriptable) data));
+	if (recipients.isEmpty()) {
+	  System.out.println("Sending");
+	  Transport.send(msg);
 	}
-	
-	msg.setDataHandler(new javax.activation.DataHandler(
-			     new javax.mail.util.ByteArrayDataSource((String) data, type)));
+	else {
+	  System.out.println("Sending to " + recipients);
+	  Transport.send(msg, recipients.toArray(new InternetAddress[] {}));
+	}
       }
       else {
-	msg.setContent(data, type);
+	// For any other format, just send the data as-is
+	Message msg = new MimeMessage(session);
+
+	// Set To header
+	msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+
+	// Set remaining headers
+	if (to_query.length == 2) {
+	  String[] headers = to_query[1].split("&");
+
+	  for (String header : headers) {
+	    String[] name_value = header.split("=", 2);
+
+	    if (name_value.length == 2) {
+	      String name  = JSURI.decodeURI(name_value[0], false);
+	      String value = JSURI.decodeURI(name_value[1], false);
+
+	      if (name.equalsIgnoreCase("From")) {
+		msg.addFrom(InternetAddress.parse(value));
+	      }
+	      else if (name.equalsIgnoreCase("To")) {
+		msg.addRecipients(Message.RecipientType.TO, InternetAddress.parse(value));
+	      }
+	      else if (name.equalsIgnoreCase("Cc")) {
+		msg.addRecipients(Message.RecipientType.CC, InternetAddress.parse(value));
+	      }
+	      else if (name.equalsIgnoreCase("Bcc")) {
+		msg.addRecipients(Message.RecipientType.BCC, InternetAddress.parse(value));
+	      }
+	      else if (name.equalsIgnoreCase("Reply-To")) {
+		msg.setReplyTo(InternetAddress.parse(value));
+	      }
+	      else if (name.equalsIgnoreCase("Subject")) {
+		msg.setSubject(value);
+	      }
+	      else if (name.equalsIgnoreCase("Body")) {
+		if (data == null || data == Context.getUndefinedValue()) {
+		  data = value;
+		}
+	      }
+	      else {
+		msg.setHeader(name, value);
+	      }
+	    }
+	  }
+	}
+
+	if (type.equals("text/plain")) {
+	  msg.setText(data.toString());
+	}
+	else if (type.equals("text/xml")) {
+	  if (data instanceof Scriptable) {
+	    data = esxx.serializeNode(esxx.e4xToDOM((Scriptable) data));
+	  }
+	
+	  msg.setDataHandler(new javax.activation.DataHandler(
+			       new javax.mail.util.ByteArrayDataSource((String) data, type)));
+	}
+	else {
+	  msg.setContent(data, type);
+	}
+
+	msg.setHeader("X-Mailer", "ESXX Application Server");
+	msg.setSentDate(new java.util.Date());
+
+	Transport.send(msg);
       }
 
-      msg.setHeader("X-Mailer", "ESXX Application Server");
-      msg.setSentDate(new java.util.Date());
-
-      Transport.send(msg);
       return null;
     }
 }
