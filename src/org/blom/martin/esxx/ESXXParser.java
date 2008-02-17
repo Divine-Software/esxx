@@ -43,6 +43,12 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.w3c.dom.*;
 
+/** This class is responsible for parsing the XML file the web server
+  * invokes ESXX with. The XML file may include ESXX-specific
+  * processing instructions or elements from the ESXX namespace, which
+  * will be interpreted. 
+  */
+
 public class ESXXParser {
 
     public static class Code {
