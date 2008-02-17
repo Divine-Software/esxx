@@ -10,6 +10,8 @@
   <property name="lib.dir"     location="lib"/>
   <property name="dist.dir"    location="dist"/>
 
+  <property name="build.compiler" value="modern"/>
+
   <path id="classpath">
     <pathelement path="${classes.dir}"/>
     <fileset dir="${lib.dir}" includes="**/*.jar"/>
@@ -21,7 +23,8 @@
   </target>
 
   <target name="compile" depends="init" description="compile everything">
-    <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" debug="true" />
+    <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" 
+           debug="true" deprecation="false" target="1.6" />
   </target>
 
   <target name="jar" depends="compile" description="generate all main jar files" >
