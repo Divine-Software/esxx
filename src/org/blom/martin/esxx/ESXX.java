@@ -187,16 +187,7 @@ public class ESXX {
 	return null;
       }
 
-      // Please, somebody kill me!
-
-      String cmd = serializeNode(node);
-
-      try {
-	return cx.newObject(scope, "XML", new String[] { cmd });
-      }
-      catch (Exception ex) {
-	return (Scriptable) cx.evaluateString(scope, cmd, "<domToE4X>", 0, null);
-      }
+      return cx.newObject(scope, "XML", new org.w3c.dom.Node[] { node });
     }
 
 
@@ -208,24 +199,7 @@ public class ESXX {
      */
 
     public org.w3c.dom.Node e4xToDOM(Scriptable node) {
-      try {
-	return org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(node);
-      }
-      catch (Exception ex) {
-	// Use Transformation API to convert node
-      }
-
-      try {
-	Source      src = new StreamSource(new StringReader(node.toString()));
-	Transformer tr  = transformerFactory.newTransformer();
-	DOMResult   res = new DOMResult();
-
-	tr.transform(src, res);
-	return res.getNode();
-      }
-      catch (Exception ex) {
-	return null;
-      }
+      return org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(node);
     }
 
 

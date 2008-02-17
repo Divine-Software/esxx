@@ -95,8 +95,7 @@ public class ESXXParser {
 	    });
 
 	  NodeList r = (NodeList) xpath.evaluate("//processing-instruction() | " +
-						 "//esxx:esxx/esxx:handlers/esxx:* |" +
-						 "//comment()", 
+						 "//esxx:esxx/esxx:handlers/esxx:*", 
 						 xml, XPathConstants.NODESET);
 	  
 	  for (int i = 0; i < r.getLength(); ++i) {
@@ -138,9 +137,9 @@ public class ESXXParser {
 		handleErrorHandler(e);
 	      }
 	    }
-	    else if (n.getNodeType() == Node.COMMENT_NODE) {
-	      n.getParentNode().removeChild(n);
-	    }
+// 	    else if (n.getNodeType() == Node.COMMENT_NODE) {
+// 	      n.getParentNode().removeChild(n);
+// 	    }
 	  }
 	}
 	catch(XPathExpressionException ex) {
