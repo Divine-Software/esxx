@@ -1,15 +1,9 @@
-Return-Path: <martin@blom.org>
-X-Original-To: martin@blom.org
-Delivered-To: martin@blom.org
-Received: from lisa.datan.blom.org (lisa.datan.blom.org [192.168.1.5])
-	by mail.blom.org (Postfix) with ESMTP id BB82C5FDF0;
-	Tue,  5 Jun 2007 22:25:47 +0200 (CEST)
 Message-ID: <4665C6CB.9070002@blom.org>
 Date: Tue, 05 Jun 2007 22:25:47 +0200
 From: Martin Blom <martin@blom.org>
 User-Agent: Thunderbird 2.0.0.0 (X11/20070419)
 MIME-Version: 1.0
-To: Martin Blom <martin@blom.org>,  lcs@lysator.liu.se
+To: Martin Blom <martin@blom.org>
 CC:  lcs@lysator.liu.se
 Subject: Testbrev nummer =?ISO-8859-1?Q?tv=E5?=
 Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg=sha1; boundary="------------ms000103060807060902070409"
