@@ -36,8 +36,7 @@ public class RequestMatcher {
     }
 
 
-    public void addRequestPattern(String method, String uri, String handler) 
-      throws ESXXException {
+    public void addRequestPattern(String method, String uri, String handler) {
       if (method.isEmpty()) {
 	method = "[^ ]+";
       }
@@ -155,15 +154,13 @@ public class RequestMatcher {
 
 
     private static class Request {
-	public Request(String m, String u, String h) 
-	  throws ESXXException {
+	public Request(String m, String u, String h) {
 	  handlerTemplate = h;
 	  namedGroups = new TreeMap<String, Integer>();
 	  compilePattern(m, u);
 	}
 
-	private void compilePattern(String method, String uri)
-	  throws ESXXException {
+	private void compilePattern(String method, String uri) {
 	  String regex = "(?:" + method + "):(?:" + uri + ")";
 	  Matcher   gm = groupPattern.matcher(regex);
 	  Matcher   nm = namedGroupPattern.matcher(regex);
@@ -198,12 +195,12 @@ public class RequestMatcher {
 	  String unnamed = nm.replaceAll("(");
 
 	  // Compile regex and make sure our group count is the same as Java's.
-	  try {
+//	  try {
 	    pattern = Pattern.compile(unnamed);
-	  }
-	  catch (PatternSyntaxException ex) {
-	    throw new ESXXException("Unable to compile request regex: " + unnamed);
-	  }
+// 	  }
+// 	  catch (PatternSyntaxException ex) {
+// 	    throw new ESXXException("Unable to compile request regex: " + unnamed);
+// 	  }
 
 	  if (pattern.matcher("").groupCount() != numGroups) {
 // 	    System.err.println(pattern.toString());
@@ -233,8 +230,7 @@ public class RequestMatcher {
     private Pattern compiledPattern;
 
 
-    public static void main(String args[]) 
-      throws ESXXException {
+    public static void main(String args[]) {
       RequestMatcher rm = new RequestMatcher();
       
       rm.addRequestPattern("GET", 
