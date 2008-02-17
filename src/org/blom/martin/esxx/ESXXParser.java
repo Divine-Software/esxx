@@ -98,8 +98,8 @@ public class ESXXParser {
 		}
 	    });
 
-	  NodeList r = (NodeList) xpath.evaluate("processing-instruction() | " +
-						 "esxx:esxx/esxx:handlers/esxx:*", 
+	  NodeList r = (NodeList) xpath.evaluate("//processing-instruction() | " +
+						 "//esxx:esxx/esxx:handlers/esxx:*", 
 						 xml, XPathConstants.NODESET);
 	  
 	  for (int i = 0; i < r.getLength(); ++i) {
@@ -107,14 +107,18 @@ public class ESXXParser {
 	    
 	    if (n.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE) {
 	      String name = n.getNodeName();
+
 	      if (name.equals("esxx-stylesheet")) {
 		handleStylesheet(n.getNodeValue());
+		n.getParentNode().removeChild(n);
 	      }
 	      else if (name.equals("esxx-import")) {
 		handleImport(n.getNodeValue());
+		n.getParentNode().removeChild(n);
 	      }
 	      else if (name.equals("esxx")) {
 		handleCode(url, 0, n.getNodeValue());
+		n.getParentNode().removeChild(n);
 	      }
 	    }
 	    else if (n.getNodeType() == Node.ELEMENT_NODE) {
