@@ -137,9 +137,6 @@ public class ESXXParser {
 		handleErrorHandler(e);
 	      }
 	    }
-// 	    else if (n.getNodeType() == Node.COMMENT_NODE) {
-// 	      n.getParentNode().removeChild(n);
-// 	    }
 	  }
 	}
 	catch(XPathExpressionException ex) {
