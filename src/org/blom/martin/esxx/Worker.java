@@ -196,7 +196,7 @@ class Worker
     }
 
     private String getSOAPAction(JSRequest req, ESXXParser parser) 
-      throws ESXXException, javax.xml.soap.SOAPException {
+      throws javax.xml.soap.SOAPException {
       String action = null;
 
       String soap_action = req.jsGet_soapAction();
@@ -216,7 +216,7 @@ class Worker
 
     private Object handleSOAPAction(String object, JSRequest req,
 				    Context cx, Scriptable scope) 
-      throws ESXXException, javax.xml.soap.SOAPException {
+      throws javax.xml.soap.SOAPException {
       Object result;
 
       SOAPMessage message = (SOAPMessage) req.jsGet_message();
@@ -256,8 +256,7 @@ class Worker
 
     private Object handleHTTPMethod(String request_method, String path_info,
 				    JSRequest req, ESXXParser parser,
-				    Context cx, Scriptable scope) 
-      throws ESXXException {
+				    Context cx, Scriptable scope) {
       Object result;
       RequestMatcher.Match match = parser.getHandlerFunction(request_method, path_info, cx, scope);
 
@@ -278,7 +277,7 @@ class Worker
 
 
     private void handleTransformation(JSResponse response, ESXXParser parser, Workload workload) 
-      throws ESXXException, IOException, UnsupportedEncodingException,
+      throws IOException, UnsupportedEncodingException,
       XMLStreamException, TransformerException {
 
       Node   node         = (Node) response.getResult();
@@ -425,8 +424,7 @@ class Worker
     }
 
     private Object handleError(Exception error, ESXXParser parser,
-			       Context cx, Scriptable scope) 
-      throws ESXXException {
+			       Context cx, Scriptable scope) {
       Object result;
       String handler = parser.getErrorHandlerFunction();
 
@@ -450,8 +448,7 @@ class Worker
 
     private Object callJSMethod(String expr,
 				Object[] args, String identifier,
-				Context cx, Scriptable scope)
-      throws ESXXException {
+				Context cx, Scriptable scope) {
       String object;
       String method;
 
@@ -471,8 +468,7 @@ class Worker
 
     private Object callJSMethod(String object, String method,
 				Object[] args, String identifier,
-				Context cx, Scriptable scope)
-      throws ESXXException {
+				Context cx, Scriptable scope) {
       Scriptable o;
 
       if (object == null) {

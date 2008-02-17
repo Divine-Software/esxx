@@ -44,8 +44,7 @@ public class JSRequest
       super();
     }
 
-    public JSRequest(ESXX esxx, Workload workload, Context cx, Scriptable scope) 
-      throws ESXXException {
+    public JSRequest(ESXX esxx, Workload workload, Context cx, Scriptable scope) {
       this();
 
       this.env     = cx.newObject(scope);
@@ -103,8 +102,7 @@ public class JSRequest
     static public Object jsConstructor(Context cx, 
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
-				       boolean inNewExpr) 
-      throws ESXXException {
+				       boolean inNewExpr) {
       return new JSRequest((ESXX) args[0], (Workload) args[1], cx, ctorObj);
     }
 
@@ -284,8 +282,7 @@ public class JSRequest
     }
     
 
-    public void handleContentHeader(String name, String value)
-      throws ESXXException {
+    public void handleContentHeader(String name, String value) {
       if (name.startsWith("Content-")) {
 	if (name.equals("Content-Type")) {
 	  contentType = value;
@@ -300,8 +297,7 @@ public class JSRequest
     }
 
 
-    private void parseMessage(ESXX esxx, Workload workload, Context cx, Scriptable scope)
-      throws ESXXException  {
+    private void parseMessage(ESXX esxx, Workload workload, Context cx, Scriptable scope) {
 
       // Consume SOAP message, if any
       // TODO: Add a SOAP handler in Parser.java

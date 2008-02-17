@@ -45,8 +45,7 @@ public class JSResponse
     static public Object jsConstructor(Context cx, 
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
-				       boolean inNewExpr) 
-      throws ESXXException {
+				       boolean inNewExpr) {
       String status;
       String content_type;
       Object result;

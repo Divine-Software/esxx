@@ -19,8 +19,12 @@
 
 package org.blom.martin.esxx;
 
+/** A runtime exception that indicates that the ESXX processing has
+  * failed. Unless the ECMAscript code catches the exception,
+  * processing of the current request will be aborted. */
+
 public class ESXXException 
-  extends Exception {
+  extends RuntimeException {
     public ESXXException(String why) { 
       super(why);
       statusCode = 500;
