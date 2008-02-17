@@ -22,25 +22,15 @@ package org.blom.martin.esxx;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.*;
 import javax.xml.stream.*;
 import javax.xml.xpath.*;
 import org.blom.martin.esxx.js.JSGlobal;
 import org.blom.martin.esxx.js.JSRequest;
 import org.blom.martin.esxx.js.JSURI;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ImporterTopLevel;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
 import org.w3c.dom.*;
 
 /** This class is responsible for parsing the XML file the web server
