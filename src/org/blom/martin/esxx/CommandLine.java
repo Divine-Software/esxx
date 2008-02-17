@@ -193,14 +193,13 @@ public class CommandLine {
 	}
 	catch (Exception ex) {
 	  // FCGI not available, try plain CGI
+	  cgi = new Properties();
+	  cgi.putAll(System.getenv());
 
-	  if (System.getenv().get("REQUEST_METHOD") != null) {
-	    cgi = new Properties();
-	    cgi.putAll(System.getenv());
-	  }
-	  else {
+	  if (System.getenv("REQUEST_METHOD") == null) {
 	    // CGI is not available either, use command line
 	    cgi = new Properties();
+	    cgi.putAll(System.getenv());
 	  
 	    cgi.setProperty("REQUEST_METHOD", args[0]);
 	    cgi.setProperty("PATH_TRANSLATED", new File(args[1]).getAbsolutePath());
