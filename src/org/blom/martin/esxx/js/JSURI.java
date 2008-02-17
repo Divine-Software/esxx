@@ -205,6 +205,19 @@ public class JSURI
     }
 
 
+    protected static Object evalProperty(Context cx, Scriptable obj, String key) {
+      Object rc;
+
+      if (obj instanceof org.mozilla.javascript.xml.XMLObject) {
+	rc = ((org.mozilla.javascript.xml.XMLObject) obj).ecmaGet(cx, key);
+      }
+      else {
+	rc = ScriptableObject.getProperty(obj, key);
+      }
+
+      return rc;
+    }
+
     protected static Properties getProperties(Scriptable obj) {
       Properties properties = new Properties();
 
