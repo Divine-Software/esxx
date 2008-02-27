@@ -233,7 +233,7 @@ public class MIMEParser {
 	  Element ct = (Element) element.getElementsByTagNameNS("*", "Content-Type").item(0);
 	  
 	  if (ct != null) {
-	    ct.setTextContent("application/xhtml+xml");
+	    ct.setTextContent("text/x-html+xml");
 
 	    NamedNodeMap nodes = ct.getAttributes();
 

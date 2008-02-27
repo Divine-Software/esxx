@@ -24,6 +24,9 @@ import java.util.*;
 import java.util.regex.*;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.*;
+import javax.xml.transform.stax.*;
 import javax.mail.*;
 import javax.mail.internet.*;
 import javax.mail.util.ByteArrayDataSource;
@@ -282,9 +285,21 @@ public class XMTPParser {
 	// clean. Otherwise, JavaMail might decide to base64-encode
 	// the XML document, which is somewhat ugly-looking.
 	ByteArrayOutputStream bo = new ByteArrayOutputStream(4096);
-	XMLEventReader        er = XMLInputFactory.newInstance().createXMLEventReader(xr);
-	XMLEventWriter        ew = XMLOutputFactory.newInstance().createXMLEventWriter(bo, 
+	XMLEventWriter        bw = XMLOutputFactory.newInstance().createXMLEventWriter(bo, 
 										       "ASCII");
+	DOMResult             dr = null;
+	XMLEventWriter        ew = null;
+	XMLEventReader        er = XMLInputFactory.newInstance().createXMLEventReader(xr);
+
+	if (base_type.equals("text/x-html+xml")) {
+	  // Convert XHTML to HTML -- copy content into a DOM node first
+	  dr = new DOMResult();
+	  ew = XMLOutputFactory.newInstance().createXMLEventWriter(dr);
+	}
+	else {
+	  // Copy XML as-is
+	  ew = bw;
+	}
 
 	for (int level = 0;;) {
 	  javax.xml.stream.events.XMLEvent ev = er.nextEvent();
@@ -305,8 +320,29 @@ public class XMTPParser {
 	}
 
 	ew.flush();
-	part.setDataHandler(new DataHandler(new ByteArrayDataSource(bo.toByteArray(),
-								    part.getContentType())));
+
+	if (base_type.equals("text/x-html+xml")) {
+	  try {
+	    // Convert XHTML to HTML -- transfrom DOM node using HTML rules
+	    TransformerFactory tf = TransformerFactory.newInstance();
+	    tf.setFeature(javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING, true);
+
+	    Transformer tr = tf.newTransformer();
+	    tr.setOutputProperty(OutputKeys.METHOD, "html");
+	    tr.transform(new DOMSource(dr.getNode()), new StAXResult(bw));
+	  }
+	  catch (TransformerException ex) {
+	    throw new XMLStreamException("Unable to transfrom 'text/x-html+xml' into 'text/xml': "
+					 + ex.getMessage(), ex);
+	  }
+
+	  part.setDataHandler(new DataHandler(new ByteArrayDataSource(bo.toByteArray(),
+								      "text/html")));
+	}
+	else {
+	  part.setDataHandler(new DataHandler(new ByteArrayDataSource(bo.toByteArray(),
+								      part.getContentType())));
+	}
       }
       else if (base_type.startsWith("text/")) {
 	part.setContent(convertTextBody(xr), part.getContentType());
