@@ -26,11 +26,13 @@ import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
-import javax.xml.transform.stax.*;
+import javax.xml.transform.stream.StreamResult;
 import javax.mail.*;
 import javax.mail.internet.*;
 import javax.mail.util.ByteArrayDataSource;
 import javax.xml.stream.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.bootstrap.DOMImplementationRegistry;
 
 import static javax.xml.stream.XMLStreamConstants.*;
 
@@ -93,7 +95,8 @@ public class XMTPParser {
 		exit = true;
 	      }
 	      else {
-		throw new XMLStreamException("MIME+XML parser is messed up #1");
+		throw new XMLStreamException("MIME+XML parser is messed up #1: "
+					     + xr.getLocalName());
 	      }
 	      break;
 
@@ -224,7 +227,8 @@ public class XMTPParser {
 	      exit = true;
 	    }
 	    else {
-	      throw new XMLStreamException("MIME+XML parser is messed up #3");
+	      throw new XMLStreamException("MIME+XML parser is messed up #3: "
+					   + xr.getLocalName());
 	    }
 	    break;
 
@@ -277,7 +281,7 @@ public class XMTPParser {
 	part.setContent(convertMessage(xr), part.getContentType());
       }
       else if (base_type.endsWith("/xml") || base_type.endsWith("+xml")) {
-	xr.next(); // I didn't think I needed this, but apparently I
+//	xr.next(); // I didn't think I needed this, but apparently I
 		   // do ...
 
 	// By serializing to a byte array, we can control the XML
@@ -285,20 +289,26 @@ public class XMTPParser {
 	// clean. Otherwise, JavaMail might decide to base64-encode
 	// the XML document, which is somewhat ugly-looking.
 	ByteArrayOutputStream bo = new ByteArrayOutputStream(4096);
-	XMLEventWriter        bw = XMLOutputFactory.newInstance().createXMLEventWriter(bo, 
-										       "ASCII");
 	DOMResult             dr = null;
 	XMLEventWriter        ew = null;
 	XMLEventReader        er = XMLInputFactory.newInstance().createXMLEventReader(xr);
 
 	if (base_type.equals("text/x-html+xml")) {
-	  // Convert XHTML to HTML -- copy content into a DOM node first
-	  dr = new DOMResult();
-	  ew = XMLOutputFactory.newInstance().createXMLEventWriter(dr);
+	  try {
+	    // Convert XHTML to HTML -- copy content into a DOM node first
+	    Document doc = DOMImplementationRegistry.newInstance().getDOMImplementation("XML 3.0").
+	      createDocument("", "root", null);
+	    dr = new DOMResult(doc.getDocumentElement());
+	    ew = XMLOutputFactory.newInstance().createXMLEventWriter(dr);
+	  }
+	  catch (Exception ex) {
+	    throw new XMLStreamException("Unable to transfrom 'text/x-html+xml' into 'text/xml': "
+					 + ex.getMessage(), ex);
+	  }
 	}
 	else {
 	  // Copy XML as-is
-	  ew = bw;
+	  ew = XMLOutputFactory.newInstance().createXMLEventWriter(bo, "ASCII");
 	}
 
 	for (int level = 0;;) {
@@ -329,7 +339,11 @@ public class XMTPParser {
 
 	    Transformer tr = tf.newTransformer();
 	    tr.setOutputProperty(OutputKeys.METHOD, "html");
-	    tr.transform(new DOMSource(dr.getNode()), new StAXResult(bw));
+	    tr.setOutputProperty(OutputKeys.VERSION, "4.0");
+	    tr.setOutputProperty(OutputKeys.ENCODING, "us-ascii");
+	    tr.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+	    tr.setOutputProperty(OutputKeys.MEDIA_TYPE, "text/html");
+	    tr.transform(new DOMSource(dr.getNode().getFirstChild()), new StreamResult(bo));
 	  }
 	  catch (TransformerException ex) {
 	    throw new XMLStreamException("Unable to transfrom 'text/x-html+xml' into 'text/xml': "
