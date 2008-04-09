@@ -17,7 +17,10 @@
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-package org.blom.martin.esxx;
+package org.blom.martin.esxx.cache;
+
+import org.blom.martin.esxx.*;
+import org.blom.martin.esxx.util.*;
 
 import java.io.*;
 import java.net.URL;

@@ -17,7 +17,7 @@
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-package org.blom.martin.esxx;
+package org.blom.martin.esxx.util;
 
 import java.util.LinkedList;
 import java.util.Map;
@@ -125,8 +125,8 @@ public class RequestMatcher {
 
 
     public static class Match {
-	String handler;
-	Scriptable params;
+        public String handler;
+	public Scriptable params;
 
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();

@@ -19,6 +19,9 @@
 
 package org.blom.martin.esxx;
 
+import org.blom.martin.esxx.cache.*;
+import org.blom.martin.esxx.util.*;
+
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;

@@ -19,6 +19,9 @@
 
 package org.blom.martin.esxx;
 
+import org.blom.martin.esxx.js.*;
+import org.blom.martin.esxx.util.*;
+
 import java.io.*;
 import java.net.URL;
 import java.util.Properties;
@@ -27,7 +30,6 @@ import javax.xml.soap.*;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
-import org.blom.martin.esxx.js.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
