@@ -26,7 +26,6 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Properties;
 import org.blom.martin.esxx.ESXX;
-import org.blom.martin.esxx.Workload;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -52,37 +51,41 @@ public class JSURI
 				       Function ctorObj, 
 				       boolean inNewExpr) 
       throws java.net.URISyntaxException {
-      ESXX esxx    = (ESXX) cx.getThreadLocal(ESXX.class);
-      URI base_uri = ((Workload) cx.getThreadLocal(Workload.class)).getURL().toURI();
-      URI uri      = null;
+      ESXX   esxx    = (ESXX) cx.getThreadLocal(ESXX.class);
+      URI    uri     = null;
 
       if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
-	uri = base_uri;
+	throw Context.reportRuntimeError("Missing argument"); 
       }
       else if (args.length < 2 || args[1] == Context.getUndefinedValue()) {
 	if (args[0] instanceof JSURI) {
-	  JSURI old = (JSURI) args[0];
-
-	  uri = old.uri;
+	  uri = ((JSURI) args[0]).uri;
 	}
 	else {
-	  uri = base_uri.resolve(Context.toString(args[0]));
+	  JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
+	  uri = js_esxx.jsGet_uri().uri.resolve(Context.toString(args[0]));
 	}
       }
       else if (args.length >= 2) {
 	try {
-	  JSURI old = (JSURI) args[0];
-	  uri = old.uri.resolve(Context.toString(args[1]));
+	  uri = ((JSURI) args[0]).uri.resolve(Context.toString(args[1]));
 	}
 	catch (ClassCastException ex) {
 	  throw Context.reportRuntimeError("Double argument must be URI and String"); 
 	}
       }
 
+      return createJSURI(esxx, uri);
+    }
+
+    static JSURI createJSURI(ESXX esxx, URI uri) {
       String scheme = uri.getScheme();
 
       if (scheme.equals("file")) {
 	return new FileURI(esxx, uri);
+      }
+      else if (scheme.startsWith("imap")) {
+	return new ImapURI(esxx, uri);
       }
       else if (scheme.startsWith("ldap")) {
 	return new LdapURI(esxx, uri);
@@ -156,7 +159,6 @@ public class JSURI
     public String toString() {
       return uri.toString();
     }
-
 
     protected Object load(Context cx, Scriptable thisObj, 
 			  String type, HashMap<String,String> params)

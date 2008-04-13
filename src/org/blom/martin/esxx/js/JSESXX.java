@@ -20,6 +20,7 @@
 package org.blom.martin.esxx.js;
 
 import org.blom.martin.esxx.ESXX;
+import org.blom.martin.esxx.ESXXException;
 import org.blom.martin.esxx.Workload;
 
 import java.io.PrintWriter;
@@ -36,12 +37,17 @@ public class JSESXX
 		  Context cx, Scriptable scope) {
       this();
 
-      this.esxx     = esxx;
-      this.debug    = new PrintWriter(workload.getDebugWriter());
-      this.error    = new PrintWriter(workload.getErrorWriter());
-      this.document = esxx.domToE4X(document, cx, scope);
-
-      markedForTermination = false;
+      try {
+	this.esxx     = esxx;
+	this.debug    = new PrintWriter(workload.getDebugWriter());
+	this.error    = new PrintWriter(workload.getErrorWriter());
+	this.document = esxx.domToE4X(document, cx, scope);
+	this.uri      = JSURI.createJSURI(esxx, workload.getURL().toURI());
+	this.workload = workload;
+      }
+      catch (java.net.URISyntaxException ex) {
+	throw new ESXXException("Failed to create JS ESXX object: " + ex.getMessage(), ex);
+      }
     }
 
     static public Object jsConstructor(Context cx, 
@@ -60,9 +66,9 @@ public class JSESXX
       return new Synchronizer(f);
     }
 
-     public Forker jsFunction_slow(Function f) {
-      return new Forker(f);
-    }
+//      public Forker jsFunction_slow(Function f) {
+//       return new Forker(f);
+//     }
 
     
 //      public static Forker jsFunction_slow(Context cx, Scriptable thisObj, 
@@ -80,36 +86,34 @@ public class JSESXX
       return document;
     }
 
-    public boolean isMarkedForTermination() {
-      return markedForTermination;
+    public JSURI jsGet_uri() {
+      return uri;
     }
 
     private ESXX esxx;
-
     private PrintWriter error;
     private PrintWriter debug;
-
     private Scriptable document;
+    private JSURI uri;
+    private Workload workload;
 
-    private boolean markedForTermination;
-
-    private static class Forker
-      extends Delegator {
+//     private static class Forker
+//       extends Delegator {
 	
-	public Forker(Scriptable obj) {
-	  super(obj);
-	}
+// 	public Forker(Scriptable obj) {
+// 	  super(obj);
+// 	}
 
-	public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
-	  JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
+// 	public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
+// 	  JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
 
-	  if (!js_esxx.markedForTermination) {
-	    // Make this thread die on completion and create a new one
-	    js_esxx.markedForTermination = true;
-	    js_esxx.esxx.createWorker();
-	  }
+// 	  if (!js_esxx.markedForTermination) {
+// 	    // Make this thread die on completion and create a new one
+// 	    js_esxx.markedForTermination = true;
+// 	    js_esxx.esxx.createWorker();
+// 	  }
 
-	  return ((Function) obj).call(cx,scope,thisObj,args);
-	}
-    }
+// 	  return ((Function) obj).call(cx,scope,thisObj,args);
+// 	}
+//     }
 }
