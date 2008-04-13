@@ -68,7 +68,7 @@
     <java jar="${dist.dir}/esxx.jar" fork="true">
       <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
       <arg value="GET" />
-      <arg file="tests/test-code.esxx" />
+      <arg file="tests/code.esxx" />
     </java>
 
 <!--
