@@ -29,10 +29,8 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Properties;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 import javax.xml.transform.*;
-import javax.xml.transform.dom.DOMResult;
-import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.*;
@@ -50,18 +48,11 @@ public class ESXX {
      *  threads and initialize the JavaScript contexts.
      *
      *  @param p A set of properties that can be used to tune the
-     *  execution. Currently, only "esxx.worker_threads" is defined,
-     *  which defaults to (number of CPUs * 2).
+     *  execution.
      *
-     *  @throws ClassNotFoundException On DOM implementation errors
-     *
-     *  @throws InstantiationException On DOM implementation errors
-     *
-     *  @throws IllegalAccessException On DOM implementation errors
      */
 
-    public ESXX(Properties p)
-      throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+    public ESXX(Properties p) {
       settings = p;
 
       memoryCache = new MemoryCache(
@@ -78,10 +69,16 @@ public class ESXX {
       cgiToHTTPMap.put("CONTENT_TYPE", "Content-Type");
       cgiToHTTPMap.put("CONTENT_LENGTH", "Content-Length");
 
-      DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
-      domImplementation = reg.getDOMImplementation("XML 3.0");
-      domImplementationLS = (DOMImplementationLS) domImplementation;
+      try {
+	DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
+	domImplementation = reg.getDOMImplementation("XML 3.0");
+      }
+      catch (Exception ex) {
+	throw new ESXXException("Unable to get a DOM implementation object: " 
+				+ ex.getMessage(), ex);
+      }
 
+      domImplementationLS = (DOMImplementationLS) domImplementation;
       lsSerializer = domImplementationLS.createLSSerializer();
 
       DOMConfiguration dc = lsSerializer.getDomConfig();
@@ -90,44 +87,43 @@ public class ESXX {
       transformerFactory = TransformerFactory.newInstance();
       transformerFactory.setURIResolver(new URIResolver(null));
 
-      numWorkerThreads = Integer.parseInt(
-	settings.getProperty("esxx.worker_threads",
-			     "" + Runtime.getRuntime().availableProcessors() * 2));
+      numWorkerThreads = Integer.parseInt(settings.getProperty("esxx.worker_threads", "0"));
 
-      // Set up shared main context
-      Context cx = Context.enter();
+      contextFactory = new ContextFactory();
 
-      try {
-	// Create worker threads
+      ThreadFactory tf = new ThreadFactory() {
+	  public Thread newThread(final Runnable r) { 
+	    return new Thread() {
+	      public void run() {
+		contextFactory.call(new ContextAction() {
+		    public Object run(Context cx) {
+		      // Enable all optimizations
+// 		      cx.setOptimizationLevel(9);
+		      cx.setOptimizationLevel(-1);
 
-	workerThreads = new ThreadGroup("ESXX worker threads");
-	workloadQueue = new LinkedBlockingQueue<Workload>(MAX_WORKLOADS);
+		      // Provide a better mapping for primitive types on this context
+		      cx.getWrapFactory().setJavaPrimitiveWrap(false);
 
-	for (int i = 0; i < numWorkerThreads; ++i) {
-	  createWorker();
-	}
+		      // Store a reference to the ESXX object
+		      cx.putThreadLocal(ESXX.class, ESXX.this);
+
+		      // Now call the Runnable
+		      r.run();
+
+		      return null;
+		    }
+		  });
+	      }
+	    };
+	  }
+	};
+
+      if (numWorkerThreads == 0) {
+	executorService = Executors.newCachedThreadPool(tf);
       }
-      catch (Exception ex) {
-	ex.printStackTrace();
+      else {
+	executorService = Executors.newFixedThreadPool(numWorkerThreads, tf);
       }
-      finally {
-	cx.exit();
-      }
-    }
-
-    public synchronized void createWorker() {
-      Thread t = new Thread(
-	workerThreads,
-	new Runnable() {
-	    public void run() {
-	      // Create the JavaScript thread context and invoke
-	      // run() on the new Worker object
-	      Context.call(new Worker(ESXX.this));
-	    }
-	},
-	"ESXX worker thread");
-
-      t.start();
     }
 
 
@@ -136,25 +132,19 @@ public class ESXX {
      *  Once the workload has been executed, Workload.finished will be
      *  called with an ignorable returncode and a set of HTTP headers.
      *
-     *  @param w  The Workload object that is to be executed.
+     *  @param workload  The Workload object that is to be executed.
      */
 
-    public void addWorkload(Workload w) {
-      while (true) {
-	try {
-	  workloadQueue.put(w);
-	  break;
-	}
-	catch (InterruptedException ex) {
-	  // Retry
-	}
-      }
+    public void addWorkload(final Workload workload) {
+      Future f = executorService.submit(new Runnable() {
+	  public void run() {
+	    Worker worker = new Worker(ESXX.this);
+
+	    worker.handleWorkload(Context.getCurrentContext(), workload);
+	  }
+	});
     }
 
-    public Workload getWorkload() 
-      throws InterruptedException {
-      return workloadQueue.take();
-    }
 
     /** Utility method that serializes a W3C DOM Node to a String.
      *
@@ -487,7 +477,7 @@ public class ESXX {
     private LSSerializer lsSerializer;
     private TransformerFactory  transformerFactory;
 
-    private ThreadGroup workerThreads;
+    private ContextFactory contextFactory;
+    private ExecutorService executorService;
     private int numWorkerThreads;
-    private LinkedBlockingQueue<Workload> workloadQueue;
 };

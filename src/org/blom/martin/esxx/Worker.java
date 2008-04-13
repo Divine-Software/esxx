@@ -37,162 +37,127 @@ import org.w3c.dom.Comment;
 import javax.xml.stream.*;
 import javax.xml.stream.events.XMLEvent;
 import javax.xml.namespace.NamespaceContext;
-class Worker 
-  implements ContextAction {
 
+class Worker {
     public Worker(ESXX esxx) {
       this.esxx = esxx;
-
-      xmlOutputFactory = XMLOutputFactory.newInstance();
-      xmlOutputFactory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, true);
     }
 
-    public Object run(Context cx) {
-      // Enable all optimizations
-//      cx.setOptimizationLevel(9);
-      cx.setOptimizationLevel(-1);
+    public void handleWorkload(Context cx, Workload workload) {
+      String request_method = workload.getProperties().getProperty("REQUEST_METHOD");
+      String path_info = workload.getProperties().getProperty("PATH_INFO");
 
-      // Provide a better mapping for primitive types on this context
-      cx.getWrapFactory().setJavaPrimitiveWrap(false);
+      try {
+	ESXXParser parser = esxx.getCachedESXXParser(workload.getURL());
 
-      // Store a reference to the ESXX object
-      cx.putThreadLocal(ESXX.class, esxx);
+	// Compile all <?esxx and <?esxx-import PIs, if not already done.
+	// compile() returns the application's global scope
+	Scriptable scope = parser.compile(cx);
 
-      // Now wait for workloads and execute them
-      while (true) {
+	// Make the JSESXX object available as the instance-level
+	// "esxx" variable (via magic in JSGlobal).
+	JSESXX js_esxx = (JSESXX) cx.newObject(scope, "ESXX", 
+					       new Object[] {esxx, workload, parser.getXML()});
+	cx.putThreadLocal(JSESXX.class, js_esxx);
+
+	// Execute all <?esxx and <?esxx-import PIs, if not already done
+	parser.execute(cx, scope);
+
+	Object    result = null;
+	Exception error  = null;
+
 	try {
-	  JSESXX js_esxx = null;
+	  // Create a Request object
+	  JSRequest req = (JSRequest) cx.newObject(scope, "Request", 
+						   new Object[] { esxx, workload });
 
-	  Workload workload = esxx.getWorkload();
-	  String request_method = workload.getProperties().getProperty("REQUEST_METHOD");
-	  String path_info = workload.getProperties().getProperty("PATH_INFO");
+	  // Execute the SOAP or HTTP handler (if available)
+	  String object = getSOAPAction(req, parser);
 
-	  cx.putThreadLocal(Workload.class, workload);
-
-	  try {
-	    ESXXParser parser = esxx.getCachedESXXParser(workload.getURL());
-
-	    // Compile all <?esxx and <?esxx-import PIs, if not already done.
-	    // compile() returns the application's global scope
-	    Scriptable scope = parser.compile(cx);
-
-	    // Make the JSESXX object available as the instance-level
-	    // "esxx" variable (via magic in JSGlobal).
-	    js_esxx = (JSESXX) cx.newObject(scope, "ESXX", 
-					    new Object[] {esxx, workload, parser.getXML()});
-	    cx.putThreadLocal(JSESXX.class, js_esxx);
-
-	    // Execute all <?esxx and <?esxx-import PIs, if not already done
-	    parser.execute(cx, scope);
-
-	    Object    result = null;
-	    Exception error  = null;
-
-	    try {
-	      // Create a Request object
-	      JSRequest req = (JSRequest) cx.newObject(scope, "Request", 
-						       new Object[] { esxx, workload });
-
-	      // Execute the SOAP or HTTP handler (if available)
-	      String object = getSOAPAction(req, parser);
-
-	      if (object != null) {
-		result = handleSOAPAction(object, req, cx, scope);
-	      }
-	      else if (parser.hasHandlers()) {
-		result = handleHTTPMethod(request_method, path_info, req, parser, cx, scope);
-	      }
-	      else {
-		// No handlers; the document is the result
-
-		result = js_esxx.jsGet_document();
-	      }
-	    }
-	    catch (org.mozilla.javascript.RhinoException ex) {
-	      error = ex;
-	    }
-	    catch (ESXXException ex) {
-	      error = ex;
-	    }
-
-	    // On errors, invoke error handler
-
-	    if (error != null) {
-	      if (parser.hasHandlers()) {
-		result = handleError(error, parser, cx, scope);
-	      }
-	      else {
-		// No error handler installed: throw away
-		throw error;
-	      }
-	    }
-
-	    // No error or error handled: Did we get a valid result?
-	    if (result == null || result == Context.getUndefinedValue()) {
-	      throw new ESXXException("No result from '" + workload.getURL() + "'");
-	    }
-
-	    JSResponse response;
-
-	    if (result instanceof JSResponse) {
-	      response = (JSResponse) result;
-	    }
-	    else {
-	      response = (JSResponse) cx.newObject(scope, "Response",  new Object[] { result });
-	    }
-
-	    if (response.getResult() instanceof Node) {
-	      handleTransformation(response, parser, workload);
-	    }
-
-	    // Return workload
-	    workload.finished(0, response);
+	  if (object != null) {
+	    result = handleSOAPAction(object, req, cx, scope);
 	  }
-	  catch (Exception ex) {
-	    Properties h = new Properties();
-	    String title = "ESXX Server Error";
-
-	    h.setProperty("Status", "500 " + title);
-	    h.setProperty("Content-Type", "text/html");
-
-	    StringWriter sw = new StringWriter();
-	    PrintWriter out = new PrintWriter(sw);
-
-	    out.println("<?xml version='1.0'?>");
-	    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" " +
-			"\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">");
-	    out.println("<html><head><title>" + title + "</title></head><body>");
-	    out.println("<h1>ESXX Server Error</h1>");
-	    out.println("<h2>Unhandled exception: " + ex.getClass().getSimpleName() + "</h2>");
-	    if (ex instanceof ESXXException ||
-		ex instanceof XMLStreamException ||
-		ex instanceof TransformerException) {
-	      out.println("<p><tt>" + ex.getMessage() + "</tt></p>");
-	    }
-	    else {
-	      out.println("<pre>");
-	      ex.printStackTrace(out);
-	      out.println("</pre>");
-	    }
-	    out.println("</body></html>");
-	    out.close();
-
-	    workload.finished(500, new JSResponse("500 " + title,
-						  "text/html",
-						  sw.toString()));
+	  else if (parser.hasHandlers()) {
+	    result = handleHTTPMethod(request_method, path_info, req, parser, cx, scope);
 	  }
+	  else {
+	    // No handlers; the document is the result
 
-	  if (js_esxx != null &&
-	      js_esxx.isMarkedForTermination()) {
-	    // End this thread
-	    return null;
+	    result = js_esxx.jsGet_document();
 	  }
 	}
-	catch (InterruptedException ex) {
-	  // Don't know what to do here ... die?
-	  ex.printStackTrace();
-	  return null;
+	catch (org.mozilla.javascript.RhinoException ex) {
+	  error = ex;
 	}
+	catch (ESXXException ex) {
+	  error = ex;
+	}
+
+	// On errors, invoke error handler
+
+	if (error != null) {
+	  if (parser.hasHandlers()) {
+	    result = handleError(error, parser, cx, scope);
+	  }
+	  else {
+	    // No error handler installed: throw away
+	    throw error;
+	  }
+	}
+
+	// No error or error handled: Did we get a valid result?
+	if (result == null || result == Context.getUndefinedValue()) {
+	  throw new ESXXException("No result from '" + workload.getURL() + "'");
+	}
+
+	JSResponse response;
+
+	if (result instanceof JSResponse) {
+	  response = (JSResponse) result;
+	}
+	else {
+	  response = (JSResponse) cx.newObject(scope, "Response",  new Object[] { result });
+	}
+
+	if (response.getResult() instanceof Node) {
+	  handleTransformation(response, parser, workload);
+	}
+
+	// Return workload
+	workload.finished(0, response);
+      }
+      catch (Exception ex) {
+	Properties h = new Properties();
+	String title = "ESXX Server Error";
+
+	h.setProperty("Status", "500 " + title);
+	h.setProperty("Content-Type", "text/html");
+
+	StringWriter sw = new StringWriter();
+	PrintWriter out = new PrintWriter(sw);
+
+	out.println("<?xml version='1.0'?>");
+	out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" " +
+		    "\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">");
+	out.println("<html><head><title>" + title + "</title></head><body>");
+	out.println("<h1>ESXX Server Error</h1>");
+	out.println("<h2>Unhandled exception: " + ex.getClass().getSimpleName() + "</h2>");
+	if (ex instanceof ESXXException ||
+	    ex instanceof XMLStreamException ||
+	    ex instanceof TransformerException) {
+	  out.println("<p><tt>" + ex.getMessage() + "</tt></p>");
+	}
+	else {
+	  out.println("<pre>");
+	  ex.printStackTrace(out);
+	  out.println("</pre>");
+	}
+	out.println("</body></html>");
+	out.close();
+
+	workload.finished(500, new JSResponse("500 " + title,
+					      "text/html",
+					      sw.toString()));
       }
     }
 
@@ -371,57 +336,6 @@ class Worker
 	response.setResult(bos);
 
       }
-      else if (false) {
-	StringWriter sw = new StringWriter();
-	
-	XMLEventWriter xew = xmlOutputFactory.createXMLEventWriter(sw);
-
-	tr.transform(new DOMSource(node), new javax.xml.transform.stax.StAXResult(xew));
-
-	content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
-	  ";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
-
-	// Attach debug log to document
-	workload.getDebugWriter().close();
-
-	String ds = workload.getDebugWriter().toString();
-	    
-	if (ds.length() != 0) {
-	  sw.write("<!-- Start ESXX Debug Log\n" + 
-		   ds.replaceAll("--", "\u2012\u2012") +
-		   "End ESXX Debug Log -->");
-	}
-
-	sw.close();
-
-	response.setContentType(content_type);
-	response.setResult(sw.toString());
-      }
-      else {
-	ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	tr.transform(new DOMSource(node), new StreamResult(bos));
-
-	content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
-	  ";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
-
-	// Attach debug log to document
-	workload.getDebugWriter().close();
-
-	String ds = workload.getDebugWriter().toString();
-	    
-	if (ds.length() != 0) {
-	  Writer out = workload.createWriter(bos, content_type);
-	  out.write("<!-- Start ESXX Debug Log\n" + 
-		    ds.replaceAll("--", "\u2012\u2012") +
-		    "End ESXX Debug Log -->");
-	  out.close();
-	}
-
-	bos.close();
-
-	response.setContentType(content_type);
-	response.setResult(bos);
-      }
     }
 
     private Object handleError(Exception error, ESXXParser parser,
@@ -494,89 +408,5 @@ class Worker
       }
     }
 
-//     private static class MyFactory extends ContextFactory {
-// 	protected boolean hasFeature(Context cx, int featureIndex) {
-// 	  if (featureIndex == Context.FEATURE_DYNAMIC_SCOPE) {
-// 	    return true;
-// 	  }
-//
-// 	  return super.hasFeature(cx, featureIndex);
-// 	}
-//     }
-//
-//     static {
-//       // Enable dynamic scopes
-//       ContextFactory.initGlobal(new MyFactory());
-//     }
-
-    private class ESXXResult
-      extends javax.xml.transform.stax.StAXResult {
-	public ESXXResult(StringWriter sw) 
-	  throws XMLStreamException {
-	  this(sw, xmlOutputFactory.createXMLEventWriter(sw));
-	}
-
-	private ESXXResult(StringWriter sw, XMLEventWriter xew) {
-	  super(new ESXXEventWriter(xew));
-	}	  
-    }
-
-    private class ESXXEventWriter
-      implements XMLEventWriter {
-
-	public ESXXEventWriter(XMLEventWriter xew) {
-	  xmEventWriter = xew;
-	}
-
-	public void add(XMLEvent event)
-	  throws XMLStreamException {
-	  xmEventWriter.add(event);
-	}
-
-	public void add(XMLEventReader reader)
-	  throws XMLStreamException {
-	  while (reader.hasNext()) {
-	    add((XMLEvent) reader.next());
-	  }
-	}
-
-	public void close()
-	  throws XMLStreamException {
-	  xmEventWriter.close();
-	}
-
-	public void flush()
-	  throws XMLStreamException {
-	  xmEventWriter.flush();
-	}
-
-	public NamespaceContext getNamespaceContext() {
-	  return xmEventWriter.getNamespaceContext();
-	}
-
-	public String getPrefix(String uri)
-	  throws XMLStreamException {
-	  return xmEventWriter.getPrefix(uri);
-	}
-
-	public void setDefaultNamespace(String uri)
-	  throws XMLStreamException {
-	  xmEventWriter.setDefaultNamespace(uri);
-	}
-
-	public void setNamespaceContext(NamespaceContext context)
-	  throws XMLStreamException {
-	  xmEventWriter.setNamespaceContext(context);
-	}
-
-	public void setPrefix(String prefix, String uri)
-	  throws XMLStreamException {
-	  xmEventWriter.setPrefix(prefix, uri);
-	}
-
-	private XMLEventWriter xmEventWriter;
-    }
-
     private ESXX esxx;
-    private XMLOutputFactory xmlOutputFactory;
 }
