@@ -44,7 +44,7 @@ public class JSRequest
       super();
     }
 
-    public JSRequest(ESXX esxx, Workload workload, Context cx, Scriptable scope) {
+    public JSRequest(ESXX esxx, Request request, Context cx, Scriptable scope) {
       this();
 
       this.env     = cx.newObject(scope);
@@ -56,8 +56,8 @@ public class JSRequest
 
       Document accept_doc = esxx.createDocument("accept");
 
-      for (String name :  workload.getProperties().stringPropertyNames()) {
-	String value = workload.getProperties().getProperty(name).trim();
+      for (String name :  request.getProperties().stringPropertyNames()) {
+	String value = request.getProperties().getProperty(name).trim();
 	
 	// Add environtment variable to esxx.env
 	ScriptableObject.putProperty(env, name, value);
@@ -92,7 +92,7 @@ public class JSRequest
       accept = esxx.domToE4X(accept_doc, cx, scope);
 
       // Now parse the POST/PUT/etc. message
-      parseMessage(esxx, workload, cx, scope);
+      parseMessage(esxx, request, cx, scope);
     }
 
     public void setURI(Scriptable uri_params) {
@@ -103,7 +103,7 @@ public class JSRequest
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
 				       boolean inNewExpr) {
-      return new JSRequest((ESXX) args[0], (Workload) args[1], cx, ctorObj);
+      return new JSRequest((ESXX) args[0], (Request) args[1], cx, ctorObj);
     }
 
 
@@ -297,7 +297,7 @@ public class JSRequest
     }
 
 
-    private void parseMessage(ESXX esxx, Workload workload, Context cx, Scriptable scope) {
+    private void parseMessage(ESXX esxx, Request request, Context cx, Scriptable scope) {
 
       // Consume SOAP message, if any
       // TODO: Add a SOAP handler in Parser.java
@@ -305,7 +305,7 @@ public class JSRequest
 	try {
 	  message = MessageFactory.newInstance(
 	    SOAPConstants.DYNAMIC_SOAP_PROTOCOL).createMessage(mimeHeaders, 
-							       workload.getInputStream());
+							       request.getInputStream());
 	}
 	catch (IOException ex) {
 	  throw new ESXXException("Unable to read SOAP message stream: " + ex.getMessage());
@@ -319,9 +319,9 @@ public class JSRequest
 	  HashMap<String,String> params = new HashMap<String,String>();
 	  String                 ct     = ESXX.parseMIMEType(contentType, params);
 
-	  message = esxx.parseStream(ct, params, workload.getInputStream(), workload.getURL(),
+	  message = esxx.parseStream(ct, params, request.getInputStream(), request.getURL(),
 				     null, 
-				     new java.io.PrintWriter(workload.getDebugWriter()),
+				     new java.io.PrintWriter(request.getDebugWriter()),
 				     cx, scope);
 	}
 	catch (Exception ex) {

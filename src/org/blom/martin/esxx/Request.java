@@ -32,11 +32,11 @@ import java.net.URL;
 import java.util.Properties;
 import java.util.HashMap;
 
-public abstract class Workload {
+public abstract class Request {
     public abstract void finished(int rc, JSResponse response);
 
-    public Workload(URL url, Properties properties,
-		    InputStream in, Writer error) {
+    public Request(URL url, Properties properties,
+		   InputStream in, Writer error) {
       streamURL       = url;
 
       this.in         = in;

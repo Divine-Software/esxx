@@ -127,20 +127,20 @@ public class ESXX {
     }
 
 
-    /** Adds a Workload to the work queue.
+    /** Adds a Request to the work queue.
      *
-     *  Once the workload has been executed, Workload.finished will be
+     *  Once the request has been executed, Request.finished will be
      *  called with an ignorable returncode and a set of HTTP headers.
      *
-     *  @param workload  The Workload object that is to be executed.
+     *  @param request  The Request object that is to be executed.
      */
 
-    public void addWorkload(final Workload workload) {
+    public void addRequest(final Request request) {
       Future f = executorService.submit(new Runnable() {
 	  public void run() {
 	    Worker worker = new Worker(ESXX.this);
 
-	    worker.handleWorkload(Context.getCurrentContext(), workload);
+	    worker.handleRequest(Context.getCurrentContext(), request);
 	  }
 	});
     }
@@ -463,9 +463,6 @@ public class ESXX {
 	private Collection<URL> logVisited;
     }
 
-
-
-    private static final int MAX_WORKLOADS = 16;
 
     private MemoryCache memoryCache;
     private Parsers parsers;

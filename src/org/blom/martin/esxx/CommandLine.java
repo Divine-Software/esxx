@@ -37,10 +37,10 @@ public class CommandLine {
     static private Integer cgiResult = null;
     static private Object cgiMutex = new Object();
 
-    static private class CGIWorkload
-      extends Workload {
+    static private class CGIRequest
+      extends Request {
 
-	public CGIWorkload(Properties cgi) {
+	public CGIRequest(Properties cgi) {
 	  this(cgi, 
 	       System.in,
 	       new OutputStreamWriter(System.err),
@@ -48,7 +48,7 @@ public class CommandLine {
 	}
 
 
-	public CGIWorkload(JFastRequest jfast) {
+	public CGIRequest(JFastRequest jfast) {
 	  this(jfast.properties,
 	       new ByteArrayInputStream(jfast.data),
 	       new OutputStreamWriter(System.err),
@@ -57,7 +57,7 @@ public class CommandLine {
 	}
 
 
-	private CGIWorkload(Properties   cgi,
+	private CGIRequest(Properties   cgi,
 			    InputStream  in,
 			    Writer       error,
 			    OutputStream out_stream) {
@@ -121,7 +121,7 @@ public class CommandLine {
 	    }
 	    else if (result instanceof String) {
 	      // Write result as-is, using the specified charset (if present)
-	      Writer ow = Workload.createWriter(outStream, response.getContentType());
+	      Writer ow = Request.createWriter(outStream, response.getContentType());
 	      ow.write((String) result);
 	      ow.close();
 	    }
@@ -214,7 +214,7 @@ public class CommandLine {
 	    try {
 	      JFastRequest req = fastcgi.acceptRequest();
 
-	      esxx.addWorkload(new CGIWorkload(req));
+	      esxx.addRequest(new CGIRequest(req));
 	    }
 	    catch (JFastException ex) {
 	      ex.printStackTrace();
@@ -226,7 +226,7 @@ public class CommandLine {
 	  }
 	}
 	else {
-	  esxx.addWorkload(new CGIWorkload(cgi));
+	  esxx.addRequest(new CGIRequest(cgi));
 	
 	  synchronized (cgiMutex) {
 	    while (cgiResult == null) {

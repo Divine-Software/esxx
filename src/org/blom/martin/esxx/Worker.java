@@ -43,12 +43,12 @@ class Worker {
       this.esxx = esxx;
     }
 
-    public void handleWorkload(Context cx, Workload workload) {
-      String request_method = workload.getProperties().getProperty("REQUEST_METHOD");
-      String path_info = workload.getProperties().getProperty("PATH_INFO");
+    public void handleRequest(Context cx, Request request) {
+      String request_method = request.getProperties().getProperty("REQUEST_METHOD");
+      String path_info = request.getProperties().getProperty("PATH_INFO");
 
       try {
-	ESXXParser parser = esxx.getCachedESXXParser(workload.getURL());
+	ESXXParser parser = esxx.getCachedESXXParser(request.getURL());
 
 	// Compile all <?esxx and <?esxx-import PIs, if not already done.
 	// compile() returns the application's global scope
@@ -57,7 +57,7 @@ class Worker {
 	// Make the JSESXX object available as the instance-level
 	// "esxx" variable (via magic in JSGlobal).
 	JSESXX js_esxx = (JSESXX) cx.newObject(scope, "ESXX", 
-					       new Object[] {esxx, workload, parser.getXML()});
+					       new Object[] {esxx, request, parser.getXML()});
 	cx.putThreadLocal(JSESXX.class, js_esxx);
 
 	// Execute all <?esxx and <?esxx-import PIs, if not already done
@@ -68,17 +68,17 @@ class Worker {
 
 	try {
 	  // Create a Request object
-	  JSRequest req = (JSRequest) cx.newObject(scope, "Request", 
-						   new Object[] { esxx, workload });
+	  JSRequest jsreq = (JSRequest) cx.newObject(scope, "Request", 
+						     new Object[] { esxx, request });
 
 	  // Execute the SOAP or HTTP handler (if available)
-	  String object = getSOAPAction(req, parser);
+	  String object = getSOAPAction(jsreq, parser);
 
 	  if (object != null) {
-	    result = handleSOAPAction(object, req, cx, scope);
+	    result = handleSOAPAction(object, jsreq, cx, scope);
 	  }
 	  else if (parser.hasHandlers()) {
-	    result = handleHTTPMethod(request_method, path_info, req, parser, cx, scope);
+	    result = handleHTTPMethod(request_method, path_info, jsreq, parser, cx, scope);
 	  }
 	  else {
 	    // No handlers; the document is the result
@@ -107,7 +107,7 @@ class Worker {
 
 	// No error or error handled: Did we get a valid result?
 	if (result == null || result == Context.getUndefinedValue()) {
-	  throw new ESXXException("No result from '" + workload.getURL() + "'");
+	  throw new ESXXException("No result from '" + request.getURL() + "'");
 	}
 
 	JSResponse response;
@@ -120,11 +120,11 @@ class Worker {
 	}
 
 	if (response.getResult() instanceof Node) {
-	  handleTransformation(response, parser, workload);
+	  handleTransformation(response, parser, request);
 	}
 
-	// Return workload
-	workload.finished(0, response);
+	// Return request
+	request.finished(0, response);
       }
       catch (Exception ex) {
 	Properties h = new Properties();
@@ -155,7 +155,7 @@ class Worker {
 	out.println("</body></html>");
 	out.close();
 
-	workload.finished(500, new JSResponse("500 " + title,
+	request.finished(500, new JSResponse("500 " + title,
 					      "text/html",
 					      sw.toString()));
       }
@@ -242,7 +242,7 @@ class Worker {
     }
 
 
-    private void handleTransformation(JSResponse response, ESXXParser parser, Workload workload) 
+    private void handleTransformation(JSResponse response, ESXXParser parser, Request request) 
       throws IOException, UnsupportedEncodingException,
       XMLStreamException, TransformerException {
 
@@ -318,12 +318,12 @@ class Worker {
 	  ";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
 
 	// Attach debug log to document
-	workload.getDebugWriter().flush();
+	request.getDebugWriter().flush();
 
-	String ds = workload.getDebugWriter().toString();
+	String ds = request.getDebugWriter().toString();
 	    
 	if (ds.length() != 0) {
-	  Writer out = workload.createWriter(bos, content_type);
+	  Writer out = request.createWriter(bos, content_type);
 	  out.write("<!-- Start ESXX Debug Log\n" + 
 		    ds.replaceAll("--", "\u2012\u2012") +
 		    "End ESXX Debug Log -->");

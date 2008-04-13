@@ -21,7 +21,7 @@ package org.blom.martin.esxx.js;
 
 import org.blom.martin.esxx.ESXX;
 import org.blom.martin.esxx.ESXXException;
-import org.blom.martin.esxx.Workload;
+import org.blom.martin.esxx.Request;
 
 import java.io.PrintWriter;
 import org.mozilla.javascript.*;
@@ -33,17 +33,17 @@ public class JSESXX
       super();
     }
 
-    public JSESXX(ESXX esxx, Workload workload, Document document,
+    public JSESXX(ESXX esxx, Request request, Document document,
 		  Context cx, Scriptable scope) {
       this();
 
       try {
 	this.esxx     = esxx;
-	this.debug    = new PrintWriter(workload.getDebugWriter());
-	this.error    = new PrintWriter(workload.getErrorWriter());
+	this.debug    = new PrintWriter(request.getDebugWriter());
+	this.error    = new PrintWriter(request.getErrorWriter());
 	this.document = esxx.domToE4X(document, cx, scope);
-	this.uri      = JSURI.createJSURI(esxx, workload.getURL().toURI());
-	this.workload = workload;
+	this.uri      = JSURI.createJSURI(esxx, request.getURL().toURI());
+	this.request  = request;
       }
       catch (java.net.URISyntaxException ex) {
 	throw new ESXXException("Failed to create JS ESXX object: " + ex.getMessage(), ex);
@@ -54,7 +54,7 @@ public class JSESXX
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
 				       boolean inNewExpr) {
-      return new JSESXX((ESXX) args[0], (Workload) args[1], (Document) args[2],
+      return new JSESXX((ESXX) args[0], (Request) args[1], (Document) args[2],
 			cx, ctorObj);
     }
 
@@ -95,7 +95,7 @@ public class JSESXX
     private PrintWriter debug;
     private Scriptable document;
     private JSURI uri;
-    private Workload workload;
+    private Request request;
 
 //     private static class Forker
 //       extends Delegator {
