@@ -2,11 +2,12 @@
 
 // Send a mail with an XML body to me
 var mailto = new URI("mailto:martin@blom.org?subject=XML%20Message");
-mailto.save(<xml>This is <empasis>XML</empasis>.</xml>, "text/xml");
+//mailto.save(<xml>This is <empasis>XML</empasis>.</xml>, "text/xml");
 
 // Load a real MIME message and mail it to the recipients specified in the message
-var mail = new URI("Testmail-3.eml").load("message/rfc822");
-new URI("mailto:?").save(mail, "message/rfc822");
+var mail = new URI("Testmail-3.eml").load("message/rfc822; x-format=xios");
+//esxx.error.println(mail);
+//new URI("mailto:?").save(mail, "message/rfc822");
 
 // Send martin@blom.org a copy too
 mailto.save(mail, "message/rfc822");
