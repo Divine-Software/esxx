@@ -97,7 +97,13 @@ public class JSURI
 	return new JdbcURI(esxx, uri);
       }
       else {
-	return new JSURI(esxx, uri);
+	try {
+	  uri.toURL();
+	  return new UrlURI(esxx, uri);
+	}
+	catch (java.net.MalformedURLException ex) {
+	  return new JSURI(esxx, uri);
+	}
       }
     }
 
