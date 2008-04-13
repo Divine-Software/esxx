@@ -214,7 +214,7 @@ public class CommandLine {
 	    try {
 	      JFastRequest req = fastcgi.acceptRequest();
 
-	      esxx.addRequest(new CGIRequest(req));
+	      esxx.addRequest(new CGIRequest(req), 0);
 	    }
 	    catch (JFastException ex) {
 	      ex.printStackTrace();
@@ -226,7 +226,7 @@ public class CommandLine {
 	  }
 	}
 	else {
-	  esxx.addRequest(new CGIRequest(cgi));
+	  esxx.addRequest(new CGIRequest(cgi), 0);
 	
 	  synchronized (cgiMutex) {
 	    while (cgiResult == null) {

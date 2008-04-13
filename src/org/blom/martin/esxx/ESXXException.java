@@ -49,5 +49,13 @@ public class ESXXException
       return statusCode;
     }
 
+  /** A subclass that will never be handled by an error handler */
+    public static class TimeOut
+      extends ESXXException {
+      public TimeOut() {
+	super(504, "Operation timed out.");
+      }
+    }
+
     private int statusCode;
 }

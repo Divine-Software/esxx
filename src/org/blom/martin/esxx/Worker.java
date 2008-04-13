@@ -86,6 +86,23 @@ class Worker {
 	    result = js_esxx.jsGet_document();
 	  }
 	}
+	catch (ESXXException.TimeOut ex) {
+	  // Never handle this exception
+	  throw ex;
+	}
+	catch (org.mozilla.javascript.WrappedException ex) {
+	  Throwable t = ex.getWrappedException();
+
+	  if (t instanceof ESXXException.TimeOut) {
+	    throw (ESXXException.TimeOut) t;
+	  }
+	  else if (t instanceof Exception) {
+	    error = (Exception) t;
+	  }
+	  else {
+	    error = ex;
+	  }
+	}
 	catch (org.mozilla.javascript.RhinoException ex) {
 	  error = ex;
 	}
@@ -127,11 +144,12 @@ class Worker {
 	request.finished(0, response);
       }
       catch (Exception ex) {
-	Properties h = new Properties();
 	String title = "ESXX Server Error";
-
-	h.setProperty("Status", "500 " + title);
-	h.setProperty("Content-Type", "text/html");
+	int    code  = 500;
+	
+	if (ex instanceof ESXXException) {
+	  code = ((ESXXException) ex).getStatus();
+	}
 
 	StringWriter sw = new StringWriter();
 	PrintWriter out = new PrintWriter(sw);
@@ -140,7 +158,7 @@ class Worker {
 	out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" " +
 		    "\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">");
 	out.println("<html><head><title>" + title + "</title></head><body>");
-	out.println("<h1>ESXX Server Error</h1>");
+	out.println("<h1>" + title + "</h1>");
 	out.println("<h2>Unhandled exception: " + ex.getClass().getSimpleName() + "</h2>");
 	if (ex instanceof ESXXException ||
 	    ex instanceof XMLStreamException ||
@@ -155,9 +173,9 @@ class Worker {
 	out.println("</body></html>");
 	out.close();
 
-	request.finished(500, new JSResponse("500 " + title,
-					      "text/html",
-					      sw.toString()));
+	request.finished(10, new JSResponse(code + " " + title,
+					    "text/html",
+					    sw.toString()));
       }
     }
 

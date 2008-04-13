@@ -21,18 +21,24 @@ package org.blom.martin.esxx;
 
 import org.blom.martin.esxx.cache.*;
 import org.blom.martin.esxx.util.*;
+import org.blom.martin.esxx.js.JSESXX;
 
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.*;
 import javax.xml.transform.*;
 import javax.xml.transform.stream.*;
-import org.mozilla.javascript.*;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextAction;
+import org.mozilla.javascript.ContextFactory;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.Scriptable;
 import org.w3c.dom.*;
 import org.w3c.dom.bootstrap.*;
 import org.w3c.dom.ls.*;
@@ -54,6 +60,8 @@ public class ESXX {
 
     public ESXX(Properties p) {
       settings = p;
+
+      defaultTimeout = Integer.parseInt(settings.getProperty("esxx.request.timeout", "60")) * 1000;
 
       memoryCache = new MemoryCache(
 	this,
@@ -87,9 +95,21 @@ public class ESXX {
       transformerFactory = TransformerFactory.newInstance();
       transformerFactory.setURIResolver(new URIResolver(null));
 
-      numWorkerThreads = Integer.parseInt(settings.getProperty("esxx.worker_threads", "0"));
+      contextFactory = new ContextFactory() {
+	  public void observeInstructionCount(Context cx, int instruction_count) {
+	    Workload workload = (Workload) cx.getThreadLocal(Workload.class);
 
-      contextFactory = new ContextFactory();
+	    if (workload == null) {
+	      return;
+	    }
+
+	    synchronized (workload) {
+	      if (workload.future != null && workload.future.isCancelled()) {
+		throw new ESXXException.TimeOut();
+	      }
+	    }
+	  }
+	};
 
       ThreadFactory tf = new ThreadFactory() {
 	  public Thread newThread(final Runnable r) { 
@@ -97,9 +117,10 @@ public class ESXX {
 	      public void run() {
 		contextFactory.call(new ContextAction() {
 		    public Object run(Context cx) {
-		      // Enable all optimizations
-// 		      cx.setOptimizationLevel(9);
+		      // Enable all optimizations, but do count instructions
+ 		      cx.setOptimizationLevel(9);
 		      cx.setOptimizationLevel(-1);
+		      cx.setInstructionObserverThreshold((int) 100e6);
 
 		      // Provide a better mapping for primitive types on this context
 		      cx.getWrapFactory().setJavaPrimitiveWrap(false);
@@ -118,12 +139,62 @@ public class ESXX {
 	  }
 	};
 
-      if (numWorkerThreads == 0) {
+      int worker_threads = Integer.parseInt(settings.getProperty("esxx.worker_threads", "0"));
+
+      if (worker_threads == 0) {
+	// Use an unbounded thread pool
 	executorService = Executors.newCachedThreadPool(tf);
       }
       else {
-	executorService = Executors.newFixedThreadPool(numWorkerThreads, tf);
+	// When using a bounded thread pool, SynchronousQueue and
+	// CallerRunsPolicy must be used in order to avoid deadlock
+	executorService = new ThreadPoolExecutor(worker_threads, worker_threads,
+						 0L, TimeUnit.MILLISECONDS,
+						 new SynchronousQueue<Runnable>(),
+						 tf, new ThreadPoolExecutor.CallerRunsPolicy());
       }
+
+      workloadSet = new PriorityBlockingQueue<Workload>(16, new Comparator<Workload>() {
+	  public int compare(Workload w1, Workload w2) {
+	    return Long.signum(w1.expires - w2.expires);
+	  }
+	});
+
+      // Start a thread that cancels exired Workloads
+      executorService.submit(new Runnable() {
+	  public void run() {
+	    main: while (true) {
+	      try {
+		Thread.sleep(1000);
+
+		long now = System.currentTimeMillis();
+
+		wl: while (true) {
+		  Workload w = workloadSet.peek();
+
+		  if (w == null) {
+		    break wl;
+		  }
+
+		  if (w.expires < now) {
+		    w.future.cancel(true);
+		    workloadSet.poll();
+		  }
+		  else {
+		    // No need to look futher, since the workloads are
+		    // sorted by expiration time
+		    break wl;
+		  }
+		}
+	      }
+	      catch (InterruptedException ex) {
+		// Preserve status and exit
+		Thread.currentThread().interrupt();
+		break main;
+	      }
+	    }
+	  }
+	});
     }
 
 
@@ -133,16 +204,99 @@ public class ESXX {
      *  called with an ignorable returncode and a set of HTTP headers.
      *
      *  @param request  The Request object that is to be executed.
+     *  @param timeout  The timeout in milliseconds. Note that this is
+     *                  the time from the time of submission, not from the 
+     *                  time the request actually starts processing.
      */
 
-    public void addRequest(final Request request) {
-      Future f = executorService.submit(new Runnable() {
-	  public void run() {
+    public Workload addRequest(final Request request, int timeout) {
+      return addContextAction(null, new ContextAction() {
+	  public Object run(Context cx) {
 	    Worker worker = new Worker(ESXX.this);
-
-	    worker.handleRequest(Context.getCurrentContext(), request);
+	    worker.handleRequest(cx, request);
+	    return request;
 	  }
-	});
+	}, timeout);
+    }
+
+    public Workload addJSFunction(Context old_cx, final Scriptable scope, final Function func, 
+				  final Object[] args, int timeout) {
+      return addContextAction(old_cx, new ContextAction() {
+	  public Object run(Context cx) {
+	    return func.call(cx, scope, scope, args);
+	  }
+
+	}, timeout);
+    }
+
+    public Workload addContextAction(Context old_cx, final ContextAction ca, int timeout) {
+      if (timeout == 0) {
+	timeout = defaultTimeout;
+      }
+
+      long         expires = System.currentTimeMillis() + timeout;
+      final JSESXX js_esxx;
+
+      if (old_cx != null) {
+	Workload old_work = (Workload) old_cx.getThreadLocal(Workload.class);
+
+	if (old_work != null && old_work.expires < expires) {
+	  // If we're already executing a workload, never extend the timeout
+	  expires = old_work.expires;
+	}
+
+	js_esxx = (JSESXX) old_cx.getThreadLocal(JSESXX.class);
+      }
+      else {
+	js_esxx = null;
+      }
+
+      final Workload workload = new Workload(expires);
+
+      workloadSet.add(workload);
+
+      synchronized (workload) {
+	workload.future = executorService.submit(new Callable() {
+	    public Object call()
+	      throws Exception {
+	      Context new_cx = Context.getCurrentContext();
+
+	      Object old_js_esxx  = new_cx.getThreadLocal(JSESXX.class);
+	      Object old_workload = new_cx.getThreadLocal(Workload.class);
+
+	      if (js_esxx != null) {
+		new_cx.putThreadLocal(JSESXX.class, js_esxx);
+	      }
+
+	      new_cx.putThreadLocal(Workload.class, workload);
+
+	      try {
+		workload.result = ca.run(new_cx);
+	      }
+	      finally {
+		if (old_js_esxx != null) {
+		  new_cx.putThreadLocal(JSESXX.class, old_js_esxx);
+		}
+		else {
+		  new_cx.removeThreadLocal(JSESXX.class);
+		}
+
+		if (old_workload != null) {
+		  new_cx.putThreadLocal(Workload.class, old_workload);
+		}
+		else {
+		  new_cx.removeThreadLocal(Workload.class);
+		}
+
+		workloadSet.remove(workload);
+	      }
+
+	      return workload.result;
+	    }
+	  });
+      }
+
+      return workload;
     }
 
 
@@ -464,6 +618,19 @@ public class ESXX {
     }
 
 
+    public static class Workload {
+      public Workload(long exp) {
+	future    = null;
+	expires   = exp;
+	result    = null;
+      }
+
+      public Future future;
+      public long expires;
+      public Object result;
+    }
+
+    private int defaultTimeout;
     private MemoryCache memoryCache;
     private Parsers parsers;
     private Properties settings;
@@ -476,5 +643,6 @@ public class ESXX {
 
     private ContextFactory contextFactory;
     private ExecutorService executorService;
-    private int numWorkerThreads;
+    private PriorityBlockingQueue<Workload> workloadSet;
+
 };
