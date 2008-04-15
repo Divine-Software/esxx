@@ -57,7 +57,7 @@ class Worker {
 	// Make the JSESXX object available as the instance-level
 	// "esxx" variable (via magic in JSGlobal).
 	JSESXX js_esxx = (JSESXX) cx.newObject(scope, "ESXX", 
-					       new Object[] {esxx, request, parser.getXML()});
+					       new Object[] { esxx, request, parser });
 	cx.putThreadLocal(JSESXX.class, js_esxx);
 
 	// Execute all <?esxx and <?esxx-import PIs, if not already done
