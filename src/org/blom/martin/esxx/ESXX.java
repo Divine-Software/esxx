@@ -500,9 +500,9 @@ public class ESXX {
       return parsers.parse(mime_type, mime_params, is, is_url, external_urls, err, cx, scope);
     }
 
-    public ESXXParser getCachedESXXParser(URL url)
+    public Application getCachedApplication(URL url)
       throws IOException {
-      return memoryCache.getCachedESXXParser(url);
+      return memoryCache.getCachedApplication(url);
     }
 
 

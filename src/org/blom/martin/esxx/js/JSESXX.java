@@ -22,7 +22,7 @@ package org.blom.martin.esxx.js;
 import org.blom.martin.esxx.ESXX;
 import org.blom.martin.esxx.ESXXException;
 import org.blom.martin.esxx.Request;
-import org.blom.martin.esxx.util.ESXXParser;
+import org.blom.martin.esxx.Application;
 
 import java.io.PrintWriter;
 import java.util.concurrent.*;
@@ -35,7 +35,7 @@ public class JSESXX
       super();
     }
 
-    public JSESXX(ESXX esxx, Request request, ESXXParser parser,
+    public JSESXX(ESXX esxx, Request request, Application app,
 		  Context cx, Scriptable scope) {
       this();
 
@@ -43,9 +43,9 @@ public class JSESXX
 	this.esxx     = esxx;
 	this.debug    = new PrintWriter(request.getDebugWriter());
 	this.error    = new PrintWriter(request.getErrorWriter());
-	this.document = esxx.domToE4X(parser.getXML(), cx, scope);
+	this.document = esxx.domToE4X(app.getXML(), cx, scope);
 	this.uri      = JSURI.createJSURI(esxx, request.getURL().toURI());
-	this.parser   = parser;
+	this.application = app;
 	this.request  = request;
       }
       catch (java.net.URISyntaxException ex) {
@@ -57,7 +57,7 @@ public class JSESXX
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
 				       boolean inNewExpr) {
-      return new JSESXX((ESXX) args[0], (Request) args[1], (ESXXParser) args[2],
+      return new JSESXX((ESXX) args[0], (Request) args[1], (Application) args[2],
 			cx, ctorObj);
     }
 
@@ -181,7 +181,7 @@ public class JSESXX
     private PrintWriter debug;
     private Scriptable document;
     private JSURI uri;
-    private ESXXParser parser;
+    private Application application;
     private Request request;
 
 //     private static class Forker

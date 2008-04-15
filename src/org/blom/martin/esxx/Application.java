@@ -17,7 +17,7 @@
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-package org.blom.martin.esxx.util;
+package org.blom.martin.esxx;
 import org.blom.martin.esxx.*;
 
 import java.io.*;
@@ -40,7 +40,7 @@ import org.w3c.dom.*;
   * will be interpreted. 
   */
 
-public class ESXXParser {
+public class Application {
 
     public static class Code {
 	public Code(URL u, int l, String s) {
@@ -60,7 +60,7 @@ public class ESXXParser {
 	public Script code;
     };
 
-    public ESXXParser(ESXX esxx, URL url)
+    public Application(ESXX esxx, URL url)
       throws IOException {
       
       esxxObject = esxx;

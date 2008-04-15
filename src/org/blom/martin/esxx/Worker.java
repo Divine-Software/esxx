@@ -48,20 +48,20 @@ class Worker {
       String path_info = request.getProperties().getProperty("PATH_INFO");
 
       try {
-	ESXXParser parser = esxx.getCachedESXXParser(request.getURL());
+	Application app = esxx.getCachedApplication(request.getURL());
 
 	// Compile all <?esxx and <?esxx-import PIs, if not already done.
 	// compile() returns the application's global scope
-	Scriptable scope = parser.compile(cx);
+	Scriptable scope = app.compile(cx);
 
 	// Make the JSESXX object available as the instance-level
 	// "esxx" variable (via magic in JSGlobal).
 	JSESXX js_esxx = (JSESXX) cx.newObject(scope, "ESXX", 
-					       new Object[] { esxx, request, parser });
+					       new Object[] { esxx, request, app });
 	cx.putThreadLocal(JSESXX.class, js_esxx);
 
 	// Execute all <?esxx and <?esxx-import PIs, if not already done
-	parser.execute(cx, scope);
+	app.execute(cx, scope);
 
 	Object    result = null;
 	Exception error  = null;
@@ -72,13 +72,13 @@ class Worker {
 						     new Object[] { esxx, request });
 
 	  // Execute the SOAP or HTTP handler (if available)
-	  String object = getSOAPAction(jsreq, parser);
+	  String object = getSOAPAction(jsreq, app);
 
 	  if (object != null) {
 	    result = handleSOAPAction(object, jsreq, cx, scope);
 	  }
-	  else if (parser.hasHandlers()) {
-	    result = handleHTTPMethod(request_method, path_info, jsreq, parser, cx, scope);
+	  else if (app.hasHandlers()) {
+	    result = handleHTTPMethod(request_method, path_info, jsreq, app, cx, scope);
 	  }
 	  else {
 	    // No handlers; the document is the result
@@ -113,8 +113,8 @@ class Worker {
 	// On errors, invoke error handler
 
 	if (error != null) {
-	  if (parser.hasHandlers()) {
-	    result = handleError(error, parser, cx, scope);
+	  if (app.hasHandlers()) {
+	    result = handleError(error, app, cx, scope);
 	  }
 	  else {
 	    // No error handler installed: throw away
@@ -137,7 +137,7 @@ class Worker {
 	}
 
 	if (response.getResult() instanceof Node) {
-	  handleTransformation(response, parser, request);
+	  handleTransformation(response, app, request);
 	}
 
 	// Return request
@@ -179,18 +179,18 @@ class Worker {
       }
     }
 
-    private String getSOAPAction(JSRequest req, ESXXParser parser) 
+    private String getSOAPAction(JSRequest req, Application app) 
       throws javax.xml.soap.SOAPException {
       String action = null;
 
       String soap_action = req.jsGet_soapAction();
 
       if (soap_action != null) {
-	action = parser.getSOAPAction(soap_action);
+	action = app.getSOAPAction(soap_action);
 
 	if (action == null) {
 	  // Try default action object
-	  action = parser.getSOAPAction("");
+	  action = app.getSOAPAction("");
 	}
       }
 
@@ -239,10 +239,10 @@ class Worker {
 
 
     private Object handleHTTPMethod(String request_method, String path_info,
-				    JSRequest req, ESXXParser parser,
+				    JSRequest req, Application app,
 				    Context cx, Scriptable scope) {
       Object result;
-      RequestMatcher.Match match = parser.getHandlerFunction(request_method, path_info, cx, scope);
+      RequestMatcher.Match match = app.getHandlerFunction(request_method, path_info, cx, scope);
 
       if (match == null) {
 	throw new ESXXException(501, "'" + request_method + "' handler not defined for URI "
@@ -260,7 +260,7 @@ class Worker {
     }
 
 
-    private void handleTransformation(JSResponse response, ESXXParser parser, Request request) 
+    private void handleTransformation(JSResponse response, Application app, Request request) 
       throws IOException, UnsupportedEncodingException,
       XMLStreamException, TransformerException {
 
@@ -274,10 +274,10 @@ class Worker {
       Transformer tr;
 
       try {
-	URL stylesheet = parser.getStylesheet(ct);
+	URL stylesheet = app.getStylesheet(ct);
 
 	if (stylesheet == null) {
-	  stylesheet = parser.getStylesheet("");
+	  stylesheet = app.getStylesheet("");
 	}
 
 	tr = esxx.getCachedStylesheet(stylesheet);
@@ -356,10 +356,10 @@ class Worker {
       }
     }
 
-    private Object handleError(Exception error, ESXXParser parser,
+    private Object handleError(Exception error, Application app,
 			       Context cx, Scriptable scope) {
       Object result;
-      String handler = parser.getErrorHandlerFunction();
+      String handler = app.getErrorHandlerFunction();
 
       try {
 	Object args[] = { cx.javaToJS(error, scope) };

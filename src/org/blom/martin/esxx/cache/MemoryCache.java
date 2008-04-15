@@ -49,27 +49,27 @@ public class MemoryCache
       }
     }
 
-    public ESXXParser getCachedESXXParser(URL url)
+    public Application getCachedApplication(URL url)
       throws IOException {
 
       String url_string = url.toString();
-      ESXXParser ep;
+      Application app;
 
-      synchronized (cachedESXXParsers) {
-	ep = cachedESXXParsers.get(url_string);
+      synchronized (cachedApplications) {
+	app = cachedApplications.get(url_string);
       }
 
-      if (ep == null || checkParserURLs(url, ep)) {
-	ep = new ESXXParser(esxx, url);
+      if (app == null || checkParserURLs(url, app)) {
+	app = new Application(esxx, url);
 
-//	System.err.println("Created new ESXXParser " + ep);
+//	System.err.println("Created new Application " + app);
 
-	synchronized (cachedESXXParsers) {
-	  cachedESXXParsers.put(url_string, ep);
+	synchronized (cachedApplications) {
+	  cachedApplications.put(url_string, app);
 	}
       }
 
-      return ep;
+      return app;
     }
 
     private boolean updateCachedURL(CacheBase.CachedURL cached)
@@ -91,13 +91,13 @@ public class MemoryCache
       }
     }
 
-    private boolean checkParserURLs(URL url, ESXXParser ep)
+    private boolean checkApplicationURLs(URL url, Application app)
       throws IOException {
       if (checkURL(url)) {
 	return true;
       }
 
-      for (URL u : ep.getExternalURLs()) {
+      for (URL u : app.getExternalURLs()) {
 	if (checkURL(u)) {
 	  return true;
 	}
@@ -116,5 +116,5 @@ public class MemoryCache
       }
     }
 
-    private HashMap<String, ESXXParser> cachedESXXParsers = new HashMap<String, ESXXParser>();
+    private HashMap<String, Application> cachedApplications = new HashMap<String, Application>();
 }

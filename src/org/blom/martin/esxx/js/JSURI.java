@@ -84,9 +84,9 @@ public class JSURI
       if (scheme.equals("file")) {
 	return new FileURI(esxx, uri);
       }
-      else if (scheme.startsWith("imap")) {
-	return new ImapURI(esxx, uri);
-      }
+//      else if (scheme.startsWith("imap")) {
+//	return new ImapURI(esxx, uri);
+//      }
       else if (scheme.startsWith("ldap")) {
 	return new LdapURI(esxx, uri);
       }
