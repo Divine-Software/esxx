@@ -59,7 +59,7 @@ public class MemoryCache
 	app = cachedApplications.get(url_string);
       }
 
-      if (app == null || checkParserURLs(url, app)) {
+      if (app == null || checkApplicationURLs(url, app)) {
 	app = new Application(esxx, url);
 
 //	System.err.println("Created new Application " + app);

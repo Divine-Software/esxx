@@ -18,7 +18,6 @@
 */
 
 package org.blom.martin.esxx;
-import org.blom.martin.esxx.*;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -29,6 +28,7 @@ import javax.xml.xpath.*;
 import org.blom.martin.esxx.js.JSGlobal;
 import org.blom.martin.esxx.js.JSRequest;
 import org.blom.martin.esxx.js.JSURI;
+import org.blom.martin.esxx.util.RequestMatcher;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
