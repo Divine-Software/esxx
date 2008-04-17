@@ -61,7 +61,9 @@ class Worker {
 	cx.putThreadLocal(JSESXX.class, js_esxx);
 
 	// Execute all <?esxx and <?esxx-import PIs, if not already done
-	app.execute(cx, scope);
+	app.execute(cx, scope, js_esxx);
+
+	js_esxx.setLocation(cx, scope, request.getURL());
 
 	Object    result = null;
 	Exception error  = null;

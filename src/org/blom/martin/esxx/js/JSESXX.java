@@ -25,6 +25,7 @@ import org.blom.martin.esxx.Request;
 import org.blom.martin.esxx.Application;
 
 import java.io.PrintWriter;
+import java.net.URL;
 import java.util.concurrent.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
@@ -35,30 +36,28 @@ public class JSESXX
       super();
     }
 
-    public JSESXX(ESXX esxx, Request request, Application app,
-		  Context cx, Scriptable scope) {
+    public JSESXX(Context cx, Scriptable scope,
+		  ESXX esxx, Request request, Application app) {
       this();
 
-      try {
-	this.esxx     = esxx;
-	this.debug    = new PrintWriter(request.getDebugWriter());
-	this.error    = new PrintWriter(request.getErrorWriter());
-	this.document = esxx.domToE4X(app.getXML(), cx, scope);
-	this.uri      = JSURI.createJSURI(esxx, request.getURL().toURI());
-	this.application = app;
-	this.request  = request;
-      }
-      catch (java.net.URISyntaxException ex) {
-	throw new ESXXException("Failed to create JS ESXX object: " + ex.getMessage(), ex);
-      }
+      this.esxx     = esxx;
+      this.debug    = new PrintWriter(request.getDebugWriter());
+      this.error    = new PrintWriter(request.getErrorWriter());
+      this.document = esxx.domToE4X(app.getXML(), cx, scope);
+      this.uri      = (JSURI) cx.newObject(scope, "URI", new Object[] { app.getBaseURL() });
+      this.app      = app;
+      this.request  = request;
+    }
+
+    public void setLocation(Context cx, Scriptable scope, URL url) {
+      location = (JSURI) cx.newObject(scope, "URI", new Object[] { url.toString() });
     }
 
     static public Object jsConstructor(Context cx, 
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
 				       boolean inNewExpr) {
-      return new JSESXX((ESXX) args[0], (Request) args[1], (Application) args[2],
-			cx, ctorObj);
+      return new JSESXX(cx, ctorObj, (ESXX) args[0], (Request) args[1], (Application) args[2]);
     }
 
     public String getClassName() {
@@ -69,8 +68,18 @@ public class JSESXX
       return new Synchronizer(f);
     }
 
+    public static void jsFunction_include(Context cx, Scriptable thisObj, 
+					  Object[] args, Function funcObj) 
+      throws java.net.MalformedURLException, java.io.IOException {
+      JSESXX   js_esxx = (JSESXX) thisObj;
+      Scriptable scope = funcObj.getParentScope();
+
+      js_esxx.app.importAndExecute(cx, scope, js_esxx, 
+				   js_esxx.location.uri.resolve(Context.toString(args[0])).toURL());
+    }
+
     public static boolean jsFunction_checkTimeout(Context cx, Scriptable thisObj, 
-					       Object[] args, Function funcObj) {
+						  Object[] args, Function funcObj) {
       if (Thread.currentThread().isInterrupted()) {
 	checkTimeout(cx);
       }
@@ -86,7 +95,7 @@ public class JSESXX
     }
 
     public static Object[] jsFunction_parallel(Context cx, Scriptable thisObj, 
-					     Object[] args, Function funcObj) {
+					       Object[] args, Function funcObj) {
       ESXX esxx = (ESXX) cx.getThreadLocal(ESXX.class);
       Scriptable scope = funcObj.getParentScope();
 
@@ -176,12 +185,17 @@ public class JSESXX
       return uri;
     }
 
+    public JSURI jsGet_location() {
+      return location;
+    }
+
     private ESXX esxx;
     private PrintWriter error;
     private PrintWriter debug;
     private Scriptable document;
     private JSURI uri;
-    private Application application;
+    private JSURI location;
+    private Application app;
     private Request request;
 
 //     private static class Forker

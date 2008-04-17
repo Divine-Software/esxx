@@ -26,6 +26,7 @@ import java.util.*;
 import javax.xml.stream.*;
 import javax.xml.xpath.*;
 import org.blom.martin.esxx.js.JSGlobal;
+import org.blom.martin.esxx.js.JSESXX;
 import org.blom.martin.esxx.js.JSRequest;
 import org.blom.martin.esxx.js.JSURI;
 import org.blom.martin.esxx.util.RequestMatcher;
@@ -41,13 +42,13 @@ import org.w3c.dom.*;
   */
 
 public class Application {
-
     public static class Code {
 	public Code(URL u, int l, String s) {
 	  url = u;
 	  line = l;
 	  source = s;
 	  code = null;
+	  hasExecuted = false;
 	}
 
 	public String toString() {
@@ -58,14 +59,20 @@ public class Application {
 	public int line;
 	public String source;
 	public Script code;
+        public boolean hasExecuted;
     };
 
-    public Application(ESXX esxx, URL url)
+    public Application(ESXX esxx, URL url /*, boolean is_xml */)
       throws IOException {
       
       esxxObject = esxx;
       baseURL = url;
       xmlInputFactory = XMLInputFactory.newInstance();
+
+//       if (!is_xml) {
+// 	importCode(url);
+// 	return;
+//       }
 
       // Load and parse the document
 
@@ -114,7 +121,7 @@ public class Application {
 		n.getParentNode().removeChild(n);
 	      }
 	      else if (name.equals("esxx")) {
-		handleCode(url, 0, n.getNodeValue());
+		addCode(url, 0, n.getNodeValue());
 		n.getParentNode().removeChild(n);
 	      }
 	    }
@@ -162,8 +169,12 @@ public class Application {
       return xml;
     }
 
+    public URL getBaseURL() {
+      return baseURL;
+    }
+
     public Collection<Code> getCodeList() {
-      return codeList;
+      return codeList.values();
     }
 
     public URL getStylesheet(String media_type) {
@@ -200,21 +211,64 @@ public class Application {
       // Create per-application top-level and global scopes
       applicationScope = new JSGlobal(cx);
 
-      for (Code c : codeList) {
+      for (Code c : codeList.values()) {
 	c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
       }
 
       return applicationScope;
     }
 
-    public synchronized void execute(Context cx, Scriptable scope) {
+    public synchronized void execute(Context cx, Scriptable scope, JSESXX js_esxx) {
       if (!hasExecuted) {
-	for (Code c : codeList) {
-	  c.code.exec(cx, scope);
+	for (Code c : codeList.values()) {
+	  if (!c.hasExecuted) {
+	    js_esxx.setLocation(cx, scope, c.url);
+	    c.code.exec(cx, scope);
+	    c.hasExecuted = true;
+	  }
 	}
 
 	hasExecuted = true;
       }
+    }
+
+    public synchronized void importAndExecute(Context cx, Scriptable scope, JSESXX js_esxx, 
+					      URL url)
+      throws IOException {
+      Code c = importCode(url);
+
+      if (c.code == null) {
+	c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
+      }
+
+      if (!c.hasExecuted) {
+	js_esxx.setLocation(cx, scope, c.url);
+	c.code.exec(cx, scope);
+	c.hasExecuted = true;
+      }
+    }
+
+
+  private Code importCode(URL url) 
+    throws IOException {
+      InputStream           is = esxxObject.openCachedURL(url);
+      ByteArrayOutputStream os = new ByteArrayOutputStream();
+      
+      ESXX.copyStream(is, os);
+      return addCode(url, 1, os.toString());
+    }
+
+    private Code addCode(URL url, int line, String data) {
+      String key = url.toString();
+      Code     c = codeList.get(key);
+
+      if (c == null) {
+	c = new Code(url, line, data);
+	codeList.put(url.toString(), c);
+	externalURLs.add(url);
+      }
+
+      return c;
     }
 
     private void handleStylesheet(String data)
@@ -239,7 +293,9 @@ public class Application {
 	  }
 
 	  try {
-	    stylesheets.put("", new URL(baseURL, href));
+	    URL url = new URL(baseURL, href);
+	    stylesheets.put("", url);
+	    externalURLs.add(url);
 	  }
 	  catch (MalformedURLException ex) {
 	    throw new ESXXException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
@@ -267,20 +323,7 @@ public class Application {
 	  }
 
 	  try {
-	    URL url = new URL(baseURL, href);
-	    BufferedReader br = new BufferedReader(new InputStreamReader(
-						     esxxObject.openCachedURL(url)));
-	    StringBuilder code = new StringBuilder();
-	    String line;
-
-	    while ((line = br.readLine()) != null) {
-	      code.append(line);
-	      code.append("\n");
-	    }
-
-	    handleCode(url, 1, code.toString());
-
-	    externalURLs.add(url);
+	    importCode(new URL(baseURL, href));
 	  }
 	  catch (MalformedURLException ex) {
 	    throw new ESXXException("<?esxx-import?> attribute 'href' is invalid: " +
@@ -294,10 +337,6 @@ public class Application {
       }
       
       xsr.close();
-    }
-
-    private void handleCode(URL url, int line, String data) {
-      codeList.add(new Code(url, line, data));
     }
 
     private void handleHTTP(Element e) {
@@ -350,7 +389,9 @@ public class Application {
       }
 
       try {
-	stylesheets.put(media_type, new URL(baseURL, href));
+	URL url = new URL(baseURL, href);
+	stylesheets.put(media_type, url);
+	externalURLs.add(url);
       }
       catch (MalformedURLException ex) {
 	throw new ESXXException("<stylesheet> attribute 'href' is invalid: " +
@@ -382,7 +423,7 @@ public class Application {
 
     private Document xml;
     private StringBuilder code = new StringBuilder();
-    private LinkedList<Code> codeList = new LinkedList<Code>();
+    private LinkedHashMap<String, Code> codeList = new LinkedHashMap<String, Code>();
 
     private RequestMatcher requestMatcher = new RequestMatcher();
     private Map<String,String> soapActions  = new HashMap<String,String>();

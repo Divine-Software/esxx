@@ -1,0 +1,8 @@
+<?esxx
+
+esxx.debug.println("In main: " + esxx.location);
+esxx.include("included.js");
+
+?>
+
+<dummy/>

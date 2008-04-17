@@ -46,6 +46,10 @@ public class JSURI
       return "URI";
     }
 
+    public String jsFunction_valueOf() { 
+      return uri.toString();
+    }
+
     static public Object jsConstructor(Context cx, 
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
@@ -63,7 +67,18 @@ public class JSURI
 	}
 	else {
 	  JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
-	  uri = js_esxx.jsGet_uri().uri.resolve(Context.toString(args[0]));
+
+	  if (js_esxx != null) {
+	    JSURI location = js_esxx.jsGet_location();
+
+	    if (location != null) {
+	      uri = location.uri.resolve(Context.toString(args[0]));
+	    }
+	  }
+
+	  if (uri == null) {
+	    uri = new URI(Context.toString(args[0]));
+	  }
 	}
       }
       else if (args.length >= 2) {
