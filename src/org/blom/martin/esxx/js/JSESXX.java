@@ -50,7 +50,15 @@ public class JSESXX
     }
 
     public void setLocation(Context cx, Scriptable scope, URL url) {
-      location = (JSURI) cx.newObject(scope, "URI", new Object[] { url.toString() });
+      setLocation((JSURI) cx.newObject(scope, "URI", new Object[] { url.toString() }));
+    }
+
+    public void setLocation(JSURI loc) {
+      location = loc;
+    }
+
+    public String getClassName() {
+      return "ESXX";
     }
 
     static public Object jsConstructor(Context cx, 
@@ -58,10 +66,6 @@ public class JSESXX
 				       Function ctorObj, 
 				       boolean inNewExpr) {
       return new JSESXX(cx, ctorObj, (ESXX) args[0], (Request) args[1], (Application) args[2]);
-    }
-
-    public String getClassName() {
-      return "ESXX";
     }
 
      public Synchronizer jsFunction_sync(Function f) {
@@ -161,14 +165,6 @@ public class JSESXX
       return result;
     }
 
-//      public Forker jsFunction_slow(Function f) {
-//       return new Forker(f);
-//     }
-
-    
-//      public static Forker jsFunction_slow(Context cx, Scriptable thisObj, 
-//  					    Object[] args, Function funcObj);
-
     public PrintWriter jsGet_error() {
       return error;
     }
@@ -198,23 +194,4 @@ public class JSESXX
     private Application app;
     private Request request;
 
-//     private static class Forker
-//       extends Delegator {
-	
-// 	public Forker(Scriptable obj) {
-// 	  super(obj);
-// 	}
-
-// 	public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
-// 	  JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
-
-// 	  if (!js_esxx.markedForTermination) {
-// 	    // Make this thread die on completion and create a new one
-// 	    js_esxx.markedForTermination = true;
-// 	    js_esxx.esxx.createWorker();
-// 	  }
-
-// 	  return ((Function) obj).call(cx,scope,thisObj,args);
-// 	}
-//     }
 }
