@@ -46,8 +46,8 @@ public class JSURI
       return "URI";
     }
 
-    public String jsFunction_valueOf() { 
-      return uri.toString();
+    public Object getDefaultValue(Class typeHint) {
+      return "[object URI: " + uri.toString() + "]";
     }
 
     static public Object jsConstructor(Context cx, 
