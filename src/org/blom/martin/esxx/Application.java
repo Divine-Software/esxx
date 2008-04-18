@@ -222,9 +222,11 @@ public class Application {
       if (!hasExecuted) {
 	for (Code c : codeList.values()) {
 	  if (!c.hasExecuted) {
+	    JSURI old_uri = js_esxx.jsGet_location();
 	    js_esxx.setLocation(cx, scope, c.url);
 	    c.code.exec(cx, scope);
 	    c.hasExecuted = true;
+	    js_esxx.setLocation(old_uri);
 	  }
 	}
 
@@ -242,9 +244,11 @@ public class Application {
       }
 
       if (!c.hasExecuted) {
+	JSURI old_uri = js_esxx.jsGet_location();
 	js_esxx.setLocation(cx, scope, c.url);
 	c.code.exec(cx, scope);
 	c.hasExecuted = true;
+	js_esxx.setLocation(old_uri);
       }
     }
 
