@@ -1,0 +1,105 @@
+#!/bin/bash
+#
+# @PROJECT_NAME@-binfmt This shell script enables @PROJECT_NAME@
+#   (@PACKAGE_DESCRIPTION_SUMMARY@) to directly execute .js files.
+#
+# chkconfig: 2345 66 34
+# description: @PACKAGE_DESCRIPTION@
+#
+# processname: @PROJECT_NAME@-binfmt
+
+### BEGIN INIT INFO
+# Provides: @PROJECT_NAME@-binfmt
+# Required-Start: $local_fs
+# Required-Stop: $local_fs
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: enable or disable direct .js execution by @PROJECT_NAME@
+# Description: @PACKAGE_DESCRIPTION@
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+prog=@PROJECT_NAME@
+absprog=@SBIN_INSTALL_DIR@/${prog}
+
+register=/proc/sys/fs/binfmt_misc/register
+js_entry=/proc/sys/fs/binfmt_misc/ExecutableJS
+
+if [ -f /etc/init.d/functions ]; then
+  # RedHat-style startup
+
+  . /etc/init.d/functions
+else
+    success() {
+	echo -n " success"
+    }
+
+    failure() {
+	echo -n " failed"
+    }
+fi
+
+start() {
+    echo -n "Enabling direct .js execution by ${prog} in the shell: "
+
+    if [ -f ${js_entry} -o ! -w ${register} ]; then
+	failure
+	RETVAL=1
+    else
+	echo ":ExecutableJS:E::js::${absprog}:" > ${register} && success
+	RETVAL=$?
+    fi
+
+    echo
+    return $RETVAL
+}
+
+stop() {
+    echo -n "Disabling direct .js execution by ${prog} in the shell: "
+
+    if [ ! -w ${js_entry} ]; then
+	failure
+	RETVAL=1
+    else
+	echo '-1' > ${js_entry}  && success
+	RETVAL=$?
+    fi
+
+    echo
+    return $RETVAL
+}
+
+status() {
+    echo -n "Direct direct .js execution by ${prog} in the shell is "
+    
+    if [ -f ${js_entry} ]; then
+	echo "enabled."
+    else
+	echo "disabled."
+    fi
+}
+
+case "$1" in
+    start)
+	start
+	;;
+    stop)
+	stop
+	;;
+
+    status)
+	status
+	;;
+
+    restart|force-reload)
+	stop
+	start
+	;;
+    reload)
+	exit 3
+	;;
+    *)
+	echo $"Usage: $0 {start|stop|status|restart|try-restart|force-reload}"
+	exit 2
+esac
