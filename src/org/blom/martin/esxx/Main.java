@@ -35,276 +35,257 @@ import org.apache.commons.cli.*;
 import org.bumblescript.jfast.*;
 
 public class Main {
-    static private Integer cgiResult = null;
-    static private Object cgiMutex = new Object();
+  static private Integer cgiResult = null;
+  static private Object cgiMutex = new Object();
 
-    static private class CGIRequest
-      extends Request {
+  static private class CGIRequest
+    extends Request {
 
-	public CGIRequest(Properties cgi) {
-	  this(cgi, 
-	       System.in,
-	       new OutputStreamWriter(System.err),
-	       System.out);
-	}
+    public CGIRequest(Properties cgi) {
+      this(cgi, 
+	   System.in,
+	   new OutputStreamWriter(System.err),
+	   System.out);
+    }
 
+    public CGIRequest(JFastRequest jfast) {
+      this(jfast.properties,
+	   new ByteArrayInputStream(jfast.data),
+	   new OutputStreamWriter(System.err),
+	   jfast.out);
+      jFast = jfast;
+    }
 
-	public CGIRequest(JFastRequest jfast) {
-	  this(jfast.properties,
-	       new ByteArrayInputStream(jfast.data),
-	       new OutputStreamWriter(System.err),
-	       jfast.out);
-	  jFast = jfast;
-	}
+    private CGIRequest(Properties   cgi,
+		       InputStream  in,
+		       Writer       error,
+		       OutputStream out_stream) {
+      super(createURL(cgi),
+	    cgi,
+	    in, error);
+      outStream  = out_stream;
+    }
 
+    public void finished(int rc, JSResponse response) {
+      try {
+	// Output HTTP headers
+	final PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
 
-	private CGIRequest(Properties   cgi,
-			    InputStream  in,
-			    Writer       error,
-			    OutputStream out_stream) {
-	  super(createURL(cgi),
-		cgi,
-		in, error);
-	  outStream  = out_stream;
-	}
-
-	public void finished(int rc, JSResponse response) {
-	  try {
-
-	    // Output HTTP headers
-	    final PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
-
-	    out.println("Status: " + response.getStatus());
-	    out.println("Content-Type: " + response.getContentType());
+	out.println("Status: " + response.getStatus());
+	out.println("Content-Type: " + response.getContentType());
 	    
-	    response.enumerateHeaders(new JSResponse.HeaderEnumerator() {
-		  public void header(String name, String value) {
-		    out.println(name + ": " + value);
-		  }
-	      });
-
-// 	    String content_type = "text/xml";
-
-// 	    for (Map.Entry<Object, Object> h : headers.entrySet()) {
-// 	      String name  = (String) h.getKey();
-// 	      String value = (String) h.getValue();
-
-// 	      if (name.equals("Content-Type")) {
-// 		content_type = value;
-// 	      }
-
-// 	      out.println(name + ": " + value);
-// 	    }
-
-	    out.println("");
-	    out.flush();
-
-	    Object result = response.getResult();
-
-	    // Output body
-	    if (result instanceof ByteArrayOutputStream) {
-	      ByteArrayOutputStream bos = (ByteArrayOutputStream) result;
-
-	      bos.writeTo(outStream);
+	response.enumerateHeaders(new JSResponse.HeaderEnumerator() {
+	    public void header(String name, String value) {
+	      out.println(name + ": " + value);
 	    }
-	    else if (result instanceof ByteBuffer) {
-	      // Write result as-is to output stream
-	      WritableByteChannel wbc = Channels.newChannel(outStream);
-	      ByteBuffer          bb  = (ByteBuffer) result;
+	  });
+
+	out.println();
+	out.flush();
+
+	Object result = response.getResult();
+
+	// Output body
+	writeResult(result, response.getContentType(), outStream);
+
+	getErrorWriter().flush();
+	getDebugWriter().flush();
+	outStream.flush();
+
+	if (jFast == null) {
+	  synchronized (cgiMutex) {
+	    cgiResult = rc;
+	    cgiMutex.notify();
+	  }
+	}
+	else {
+	  jFast.end();
+	}
+      }
+      catch (IOException ex) {
+	ex.printStackTrace();
+      }
+    }
+
+    private static URL createURL(Properties headers) {
+      try {
+	File file = new File(headers.getProperty("PATH_TRANSLATED"));
+
+	while (file != null && !file.exists()) {
+	  file = file.getParentFile();
+	}
+
+	return new URL("file", "", file.getAbsolutePath());
+      }
+      catch (MalformedURLException ex) {
+	ex.printStackTrace();
+	return null;
+      }
+    }
+
+    private OutputStream outStream;
+    private JFastRequest jFast;
+  }
+
+  private static void writeResult(Object result, String content_type, OutputStream out) 
+    throws IOException {
+    if (result instanceof ByteArrayOutputStream) {
+      ByteArrayOutputStream bos = (ByteArrayOutputStream) result;
+
+      bos.writeTo(out);
+    }
+    else if (result instanceof ByteBuffer) {
+      // Write result as-is to output stream
+      WritableByteChannel wbc = Channels.newChannel(out);
+      ByteBuffer          bb  = (ByteBuffer) result;
 	      
-	      bb.rewind();
+      bb.rewind();
 
-	      while (bb.hasRemaining()) {
-		wbc.write(bb);
-	      }
+      while (bb.hasRemaining()) {
+	wbc.write(bb);
+      }
 
-	      wbc.close();
-	    }
-	    else if (result instanceof String) {
-	      // Write result as-is, using the specified charset (if present)
-	      Writer ow = Request.createWriter(outStream, response.getContentType());
-	      ow.write((String) result);
-	      ow.close();
-	    }
-	    else if (result instanceof BufferedImage) {
-	      // TODO ...
-	      throw new InternalError("BufferedImage results not supported yet.");
-	    }
-	    else {
-	      throw new InternalError("Unsupported result class type: " + result.getClass());
-	    }
+      wbc.close();
+    }
+    else if (result instanceof String) {
+      // Write result as-is, using the specified charset (if present)
+      Writer ow = Request.createWriter(out, content_type);
+      ow.write((String) result);
+      ow.close();
+    }
+    else if (result instanceof BufferedImage) {
+      // TODO ...
+      throw new UnsupportedOperationException("BufferedImage results not supported yet.");
+    }
+    else {
+      throw new UnsupportedOperationException("Unsupported result class type: " + result.getClass());
+    }
+  }
 
-	    // Close streams
-//	    try { getInputStream().flush(); } catch (IOException ex) {}
-// 	    try { getErrorWriter().flush(); } catch (IOException ex) {}
-// 	    try { getDebugWriter().flush(); } catch (IOException ex) {}
-// 	    try { outStream.flush();        } catch (IOException ex) {}
-	    getErrorWriter().flush();
-	    getDebugWriter().flush();
-	    outStream.flush();
+  private static void usage(Options opt, String error, int rc) {
+    PrintWriter  err = new PrintWriter(System.err);
+    HelpFormatter hf = new HelpFormatter();
 
-	    if (jFast == null) {
-	      synchronized (cgiMutex) {
-		cgiResult = rc;
-		cgiMutex.notify();
-	      }
-	    }
-	    else {
-	      jFast.end();
-	    }
+    hf.printUsage(err, 80, "esxx.jar [OPTION...] [<script.js> -- SCRIPT ARGS...]");
+    hf.printOptions(err, 80, opt, 2, 8);
+
+    if (error != null) {
+      err.println();
+      hf.printWrapped(err, 80, "Invalid arguments: " + error + ".");
+    }
+
+    err.flush();
+    System.exit(rc);
+  }
+
+  public static void main(String[] args) {
+    Options opt = new Options();
+    OptionGroup mode_opt = new OptionGroup();
+
+    mode_opt.addOption(new Option("b", "bind",    true, ("Listen for FastCGI requests on " +
+							 "this <port>")));
+    mode_opt.addOption(new Option("c", "cgi",    false, "Force CGI mode."));
+    mode_opt.addOption(new Option("s", "script",  true, "Execute this JavaScript file."));
+
+    opt.addOptionGroup(mode_opt);
+    opt.addOption("m", "method",  true, "Override CGI request method");
+    opt.addOption("f", "file",    true, "Override CGI request file");
+
+    try {
+      CommandLineParser parser = new GnuParser();
+      CommandLine cmd = parser.parse(opt, args, false);
+
+      if (!cmd.hasOption('c') && 
+	  (cmd.hasOption('m') || cmd.hasOption('f'))) {
+	throw new ParseException("--method and --file can only be specified in --cgi mode");
+      }
+
+      int fastcgi_port = -1;
+      Properties   cgi = null;
+      String[]  script = null;
+
+      if (cmd.hasOption('b')) {
+	fastcgi_port = Integer.parseInt(cmd.getOptionValue('b'));
+      }
+      else if (cmd.hasOption('c')) {
+	cgi = new Properties();
+      }
+      else if (cmd.hasOption('s')) {
+	script = cmd.getArgs();
+      }
+      else {
+	// Guess execution mode by looking at FCGI_PORT and
+	// REQUEST_METHOD environment variables.
+	String fcgi_port  = System.getenv("FCGI_PORT");
+	String req_method = System.getenv("REQUEST_METHOD");
+
+	if (fcgi_port != null) {
+	  fastcgi_port = Integer.parseInt(fcgi_port);
+	}
+	else if (req_method != null) {
+	  cgi = new Properties();
+	}
+	else {
+	  // Default mode is to execute a JS script
+	  script = cmd.getArgs();
+	}
+      }
+
+      ESXX esxx = new ESXX(System.getProperties());
+
+      if (fastcgi_port != -1) {
+	JFast jfast = new JFast(fastcgi_port);
+	  
+	while (true) {
+	  try {
+	    JFastRequest req = jfast.acceptRequest();
+
+	    // Fire and forget
+	    esxx.addRequest(new CGIRequest(req), 0);
+	  }
+	  catch (JFastException ex) {
+	    ex.printStackTrace();
 	  }
 	  catch (IOException ex) {
 	    ex.printStackTrace();
 	  }
-
-//	  System.err.println("Request took " + (System.currentTimeMillis() - start) + " ms");
 	}
-//	private long start = System.currentTimeMillis();
+      }
+      else if (cgi != null) {
+	cgi.putAll(System.getenv());
 
-	static URL createURL(Properties headers) {
-	  try {
-	    File file = new File(headers.getProperty("PATH_TRANSLATED"));
-
-	    while (file != null && !file.exists()) {
-	      file = file.getParentFile();
-	    }
-
-	    return new URL("file", "", file.getAbsolutePath());
-	  }
-	  catch (MalformedURLException ex) {
-	    ex.printStackTrace();
-	    return null;
-	  }
+	if (cmd.hasOption('m')) {
+	  cgi.setProperty("REQUEST_METHOD", cmd.getOptionValue('m'));
 	}
 
-	private OutputStream outStream;
-	private JFastRequest jFast;
+	if (cmd.hasOption('f')) {
+	  String file = cmd.getOptionValue('f');
+
+	  cgi.setProperty("PATH_TRANSLATED", new File(file).getAbsolutePath());
+	  cgi.setProperty("PATH_INFO", file);
+	}
+
+	ESXX.Workload wl = esxx.addRequest(new CGIRequest(cgi), 0);
+
+	wl.future.get();
+	System.exit(cgiResult);
+      }
+      else {
+	System.err.println("Script mode not implemented yet.");
+      }
     }
-
-    private static void usage(Options opt, String error, int rc) {
-      PrintWriter  err = new PrintWriter(System.err);
-      HelpFormatter hf = new HelpFormatter();
-
-      hf.printUsage(err, 80, "esxx.jar [OPTION...] [<script.js> -- SCRIPT ARGS...]");
-      hf.printOptions(err, 80, opt, 2, 8);
-
-      if (error != null) {
-	err.println();
-	hf.printWrapped(err, 80, "Invalid arguments: " + error + ".");
-      }
-
-      err.flush();
-      System.exit(rc);
+    catch (ParseException ex) {
+      usage(opt, ex.getMessage(), 10);
     }
-
-    public static void main(String[] args) {
-      Options opt = new Options();
-      OptionGroup mode_opt = new OptionGroup();
-
-      mode_opt.addOption(new Option("b", "bind",    true, ("Listen for FastCGI requests on " +
-							   "this <port>")));
-      mode_opt.addOption(new Option("c", "cgi",    false, "Force CGI mode."));
-      mode_opt.addOption(new Option("s", "script",  true, "Execute this JavaScript file."));
-
-      opt.addOptionGroup(mode_opt);
-      opt.addOption("m", "method",  true, "Override CGI request method");
-      opt.addOption("f", "file",    true, "Override CGI request file");
-
-      try {
-	CommandLineParser parser = new GnuParser();
-	CommandLine cmd = parser.parse(opt, args, false);
-
-	if (!cmd.hasOption('c') && 
-	    (cmd.hasOption('m') || cmd.hasOption('f'))) {
-	  throw new ParseException("--method and --file can only be specified in --cgi mode");
-	}
-
-	int fastcgi_port = -1;
-	Properties   cgi = null;
-	String[]  script = null;
-
-	if (cmd.hasOption('b')) {
-	  fastcgi_port = Integer.parseInt(cmd.getOptionValue('b'));
-	}
-	else if (cmd.hasOption('c')) {
-	  cgi = new Properties();
-	}
-	else if (cmd.hasOption('s')) {
-	  script = cmd.getArgs();
-	}
-	else {
-	  // Guess execution mode by looking at FCGI_PORT and
-	  // REQUEST_METHOD environment variables.
-	  String fcgi_port  = System.getenv("FCGI_PORT");
-	  String req_method = System.getenv("REQUEST_METHOD");
-
-	  if (fcgi_port != null) {
-	    fastcgi_port = Integer.parseInt(fcgi_port);
-	  }
-	  else if (req_method != null) {
-	    cgi = new Properties();
-	  }
-	  else {
-	    // Default mode is to execute a JS script
-	    script = cmd.getArgs();
-	  }
-	}
-
-	ESXX esxx = new ESXX(System.getProperties());
-
-	if (fastcgi_port != -1) {
-	  JFast jfast = new JFast(fastcgi_port);
-	  
-	  while (true) {
-	    try {
-	      JFastRequest req = jfast.acceptRequest();
-
-	      // Fire and forget
-	      esxx.addRequest(new CGIRequest(req), 0);
-	    }
-	    catch (JFastException ex) {
-	      ex.printStackTrace();
-	    }
-	    catch (IOException ex) {
-	      ex.printStackTrace();
-	    }
-	  }
-	}
-	else if (cgi != null) {
-	  cgi.putAll(System.getenv());
-
-	  if (cmd.hasOption('m')) {
-	    cgi.setProperty("REQUEST_METHOD", cmd.getOptionValue('m'));
-	  }
-
-	  if (cmd.hasOption('f')) {
-	    String file = cmd.getOptionValue('f');
-
-	    cgi.setProperty("PATH_TRANSLATED", new File(file).getAbsolutePath());
-	    cgi.setProperty("PATH_INFO", file);
-	  }
-
-	  ESXX.Workload wl = esxx.addRequest(new CGIRequest(cgi), 0);
-
-	  wl.future.get();
-	  System.exit(cgiResult);
-	}
-	else {
-	  System.err.println("Script mode not implemented yet.");
-	}
-      }
-      catch (ParseException ex) {
-	usage(opt, ex.getMessage(), 10);
-      }
-      catch (IOException ex) {
-	System.err.println("I/O error: " + ex.getMessage());
-	System.exit(20);
-      }
-      catch (Exception ex) {
-	ex.printStackTrace();
-	System.exit(20);
-      }
+    catch (IOException ex) {
+      System.err.println("I/O error: " + ex.getMessage());
+      System.exit(20);
+    }
+    catch (Exception ex) {
+      ex.printStackTrace();
+      System.exit(20);
+    }
       
-      System.exit(0);
-    }
+    System.exit(0);
+  }
 };
