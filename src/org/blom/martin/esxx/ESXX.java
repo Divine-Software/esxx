@@ -256,7 +256,7 @@ public class ESXX {
       workloadSet.add(workload);
 
       synchronized (workload) {
-	workload.future = executorService.submit(new Callable() {
+	workload.future = executorService.submit(new Callable<Object>() {
 	    public Object call()
 	      throws Exception {
 	      Context new_cx = Context.getCurrentContext();
@@ -625,7 +625,7 @@ public class ESXX {
 	result    = null;
       }
 
-      public Future future;
+      public Future<Object> future;
       public long expires;
       public Object result;
     }
