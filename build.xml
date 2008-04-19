@@ -59,7 +59,10 @@
     <echo message="Running tests/${test}.esxx ..." level="info"/>
     <java classname="org.blom.martin.esxx.Main" classpathref="classpath" fork="true">
       <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
+      <arg value="--cgi" />
+      <arg value="--method" />
       <arg value="GET" />
+      <arg value="--file" />
       <arg file="tests/${test}.esxx" />
     </java>
   </target>
@@ -67,25 +70,11 @@
   <target name="run" depends="dist">
     <java jar="${dist.dir}/esxx.jar" fork="true">
       <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
+      <arg value="--cgi" />
+      <arg value="--method" />
       <arg value="GET" />
+      <arg value="--file" />
       <arg file="tests/code.esxx" />
     </java>
-
-<!--
-    <java jar="${dist.dir}/esxx.jar" fork="true">
-      <arg value="GET"/>
-      <arg file="test-xml.esxx" />
-    </java>
-
-    <java jar="${dist.dir}/esxx.jar" fork="true">
-      <arg value="GET"/>
-      <arg file="test-xslt.esxx" />
-    </java>
-
-    <java jar="${dist.dir}/esxx.jar" fork="true">
-      <arg value="GET"/>
-      <arg file="test-code.esxx" />
-    </java>
--->
   </target>
 </project>
