@@ -31,9 +31,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import org.apache.commons.cli.*;
 import org.bumblescript.jfast.*;
 
-public class CommandLine {
+public class Main {
     static private Integer cgiResult = null;
     static private Object cgiMutex = new Object();
 
@@ -180,40 +181,85 @@ public class CommandLine {
 	private JFastRequest jFast;
     }
 
+    private static void usage(Options opt, String error, int rc) {
+      PrintWriter  err = new PrintWriter(System.err);
+      HelpFormatter hf = new HelpFormatter();
+
+      hf.printUsage(err, 80, "esxx.jar [OPTION...] [<script.js> -- SCRIPT ARGS...]");
+      hf.printOptions(err, 80, opt, 2, 8);
+
+      if (error != null) {
+	err.println();
+	hf.printWrapped(err, 80, "Invalid arguments: " + error + ".");
+      }
+
+      err.flush();
+      System.exit(rc);
+    }
 
     public static void main(String[] args) {
+      Options opt = new Options();
+      OptionGroup mode_opt = new OptionGroup();
+
+      mode_opt.addOption(new Option("b", "bind",    true, ("Listen for FastCGI requests on " +
+							   "this <port>")));
+      mode_opt.addOption(new Option("c", "cgi",    false, "Force CGI mode."));
+      mode_opt.addOption(new Option("s", "script",  true, "Execute this JavaScript file."));
+
+      opt.addOptionGroup(mode_opt);
+      opt.addOption("m", "method",  true, "Override CGI request method");
+      opt.addOption("f", "file",    true, "Override CGI request file");
+
       try {
-	Properties settings = new Properties();
+	CommandLineParser parser = new GnuParser();
+	CommandLine cmd = parser.parse(opt, args, false);
 
-	JFast fastcgi  = null;
-	Properties cgi = null;
-
-	try {
-	  fastcgi = new JFast(Integer.parseInt(System.getenv().get("FCGI_PORT")));
+	if (!cmd.hasOption('c') && 
+	    (cmd.hasOption('m') || cmd.hasOption('f'))) {
+	  throw new ParseException("--method and --file can only be specified in --cgi mode");
 	}
-	catch (Exception ex) {
-	  // FCGI not available, try plain CGI
-	  cgi = new Properties();
-	  cgi.putAll(System.getenv());
 
-	  if (System.getenv("REQUEST_METHOD") == null) {
-	    // CGI is not available either, use command line
+	int fastcgi_port = -1;
+	Properties   cgi = null;
+	String[]  script = null;
+
+	if (cmd.hasOption('b')) {
+	  fastcgi_port = Integer.parseInt(cmd.getOptionValue('b'));
+	}
+	else if (cmd.hasOption('c')) {
+	  cgi = new Properties();
+	}
+	else if (cmd.hasOption('s')) {
+	  script = cmd.getArgs();
+	}
+	else {
+	  // Guess execution mode by looking at FCGI_PORT and
+	  // REQUEST_METHOD environment variables.
+	  String fcgi_port  = System.getenv("FCGI_PORT");
+	  String req_method = System.getenv("REQUEST_METHOD");
+
+	  if (fcgi_port != null) {
+	    fastcgi_port = Integer.parseInt(fcgi_port);
+	  }
+	  else if (req_method != null) {
 	    cgi = new Properties();
-	    cgi.putAll(System.getenv());
-	  
-	    cgi.setProperty("REQUEST_METHOD", args[0]);
-	    cgi.setProperty("PATH_TRANSLATED", new File(args[1]).getAbsolutePath());
-	    cgi.setProperty("PATH_INFO", args[1]);
+	  }
+	  else {
+	    // Default mode is to execute a JS script
+	    script = cmd.getArgs();
 	  }
 	}
 
-	ESXX esxx = new ESXX(settings);
+	ESXX esxx = new ESXX(System.getProperties());
 
-	if (fastcgi != null) {
+	if (fastcgi_port != -1) {
+	  JFast jfast = new JFast(fastcgi_port);
+	  
 	  while (true) {
 	    try {
-	      JFastRequest req = fastcgi.acceptRequest();
+	      JFastRequest req = jfast.acceptRequest();
 
+	      // Fire and forget
 	      esxx.addRequest(new CGIRequest(req), 0);
 	    }
 	    catch (JFastException ex) {
@@ -221,28 +267,44 @@ public class CommandLine {
 	    }
 	    catch (IOException ex) {
 	      ex.printStackTrace();
-	      System.exit(10);
 	    }
 	  }
 	}
-	else {
-	  esxx.addRequest(new CGIRequest(cgi), 0);
-	
-	  synchronized (cgiMutex) {
-	    while (cgiResult == null) {
-	      try {
-		cgiMutex.wait();
-	      }
-	      catch (InterruptedException ex) {
-	      }
-	    }
+	else if (cgi != null) {
+	  cgi.putAll(System.getenv());
+
+	  if (cmd.hasOption('m')) {
+	    cgi.setProperty("REQUEST_METHOD", cmd.getOptionValue('m'));
 	  }
 
+	  if (cmd.hasOption('f')) {
+	    String file = cmd.getOptionValue('f');
+
+	    cgi.setProperty("PATH_TRANSLATED", new File(file).getAbsolutePath());
+	    cgi.setProperty("PATH_INFO", file);
+	  }
+
+	  ESXX.Workload wl = esxx.addRequest(new CGIRequest(cgi), 0);
+
+	  wl.future.get();
 	  System.exit(cgiResult);
 	}
+	else {
+	  System.err.println("Script mode not implemented yet.");
+	}
+      }
+      catch (ParseException ex) {
+	usage(opt, ex.getMessage(), 10);
+      }
+      catch (IOException ex) {
+	System.err.println("I/O error: " + ex.getMessage());
+	System.exit(20);
       }
       catch (Exception ex) {
 	ex.printStackTrace();
+	System.exit(20);
       }
+      
+      System.exit(0);
     }
 };

@@ -30,7 +30,7 @@ desc="@PACKAGE_DESCRIPTION_SUMMARY@"
 pidfile=@LOCALSTATE_INSTALL_PREFIX@/run/$prog.pid
 timeout=10
 
-OPTIONS=
+OPTIONS="--bind 7654"
 
 if [ -f /etc/init.d/functions ]; then
   # RedHat-style startup

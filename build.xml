@@ -30,7 +30,7 @@
   <target name="jar" depends="compile" description="generate all main jar files" >
     <jar jarfile="${build.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
       <manifest>
-        <attribute name="Main-Class" value="org.blom.martin.esxx.CommandLine"/>
+        <attribute name="Main-Class" value="org.blom.martin.esxx.Main"/>
       </manifest>
     </jar>
   </target>
@@ -57,7 +57,7 @@
   <target name="test" depends="compile">
     <fail message="This target requires a 'test' property. Example: -Dtest=xml" unless="test"/>
     <echo message="Running tests/${test}.esxx ..." level="info"/>
-    <java classname="org.blom.martin.esxx.CommandLine" classpathref="classpath" fork="true">
+    <java classname="org.blom.martin.esxx.Main" classpathref="classpath" fork="true">
       <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
       <arg value="GET" />
       <arg file="tests/${test}.esxx" />
