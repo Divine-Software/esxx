@@ -35,10 +35,10 @@ import java.util.HashMap;
 public abstract class Request {
     public abstract void finished(int rc, JSResponse response);
 
-    public Request(URL url, Properties properties,
+    public Request(URL url, String[] command_line, Properties properties,
 		   InputStream in, Writer error) {
       streamURL       = url;
-
+      this.args       = command_line;
       this.in         = in;
       this.debug      = new StringWriter();
       this.error      = error;
@@ -47,6 +47,10 @@ public abstract class Request {
 
     public URL getURL() {
       return streamURL;
+    }
+
+    public String[] getCommandLine() {
+      return args;
     }
 
     public InputStream getInputStream() {
@@ -92,7 +96,7 @@ public abstract class Request {
     }
 
     private URL streamURL;
-
+    private String[] args;
     private InputStream in;
     private StringWriter debug;
     private Writer error;

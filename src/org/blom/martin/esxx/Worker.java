@@ -86,10 +86,14 @@ class Worker {
 
 	    result = handleHTTPMethod(request_method, path_info, jsreq, app, cx, scope);
 	  }
-	  else {
+	  else if (js_esxx.jsGet_document() != null) {
 	    // No handlers; the document is the result
 
 	    result = js_esxx.jsGet_document();
+	  }
+	  else {
+	    // No handlers, no document -- call main()
+	    result = handleMain(jsreq, app, cx, scope);
 	  }
 	}
 	catch (ESXXException.TimeOut ex) {
@@ -255,7 +259,7 @@ class Worker {
 				+ "'" + path_info + "'");
       }
 
-      req.setURI(match.params);
+      req.setArgs(match.params);
 
       Object args[] = { req };
 
@@ -265,6 +269,12 @@ class Worker {
       return result;
     }
 
+    private Object handleMain(JSRequest js_req, Application app, 
+			      Context cx, Scriptable scope) {
+      Object args[] = { js_req };
+
+      return callJSMethod("main", args, app.getBaseURL().toString(), cx, scope);
+    }
 
     private void handleTransformation(JSResponse response, Application app, Request request) 
       throws IOException, UnsupportedEncodingException,

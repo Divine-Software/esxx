@@ -103,10 +103,11 @@ public class JSResponse
 	}
       }
       else if (result instanceof String) {
-	if (content_type == null) {
-	  content_type = "text/plain;charset=" + 
-	    java.nio.charset.Charset.defaultCharset().name();
-	}
+	// Nothing to do
+      }
+      else if (result instanceof Number) {
+	status = "" + ((Number) result).intValue();
+	result = "";
       }
       else if (result instanceof BufferedImage) {
 	if (content_type == null) {
@@ -127,6 +128,11 @@ public class JSResponse
 	catch (Exception ex) {
 	  throw new ESXXException("Unsupported result type: " + result.getClass());
 	}
+      }
+
+      if (content_type == null) {
+	content_type = "text/plain;charset=" + 
+	  java.nio.charset.Charset.defaultCharset().name();
       }
 
       JSResponse res = new JSResponse(status, content_type, result);

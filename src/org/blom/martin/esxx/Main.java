@@ -42,37 +42,54 @@ public class Main {
     extends Request {
 
     public CGIRequest(Properties cgi) {
-      super(createURL(cgi), cgi, 
+      super(createURL(cgi), null, cgi, 
 	    System.in, 
 	    new OutputStreamWriter(System.err));
       jFast = null;
       outStream = System.out;
+      scriptMode = false;
     }
 
     public CGIRequest(JFastRequest jfast) {
-      super(createURL(jfast.properties), jfast.properties,
+      super(createURL(jfast.properties), null, jfast.properties,
 	    new ByteArrayInputStream(jfast.data),
 	    new OutputStreamWriter(System.err));
       jFast = jfast;
       outStream = jfast.out;
+      scriptMode = false;
+    }
+
+    public CGIRequest(URL url, String[] cmdline) {
+      super(url, cmdline, new Properties(), 
+	    System.in, 
+	    new OutputStreamWriter(System.err));
+      jFast = null;
+      outStream = System.out;
+      scriptMode = true;
     }
 
     public void finished(int rc, JSResponse response) {
       try {
-	// Output HTTP headers
-	final PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
+	if (!scriptMode) {
+	  // Output HTTP headers
+	  final PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
 
-	out.println("Status: " + response.getStatus());
-	out.println("Content-Type: " + response.getContentType());
+	  out.println("Status: " + response.getStatus());
+	  out.println("Content-Type: " + response.getContentType());
 	    
-	response.enumerateHeaders(new JSResponse.HeaderEnumerator() {
-	    public void header(String name, String value) {
-	      out.println(name + ": " + value);
-	    }
-	  });
+	  response.enumerateHeaders(new JSResponse.HeaderEnumerator() {
+	      public void header(String name, String value) {
+		out.println(name + ": " + value);
+	      }
+	    });
 
-	out.println();
-	out.flush();
+	  out.println();
+	  out.flush();
+	}
+	else {
+	  // Output debug stream first
+	  getErrorWriter().write(getDebugWriter().toString());
+	}
 
 	Object result = response.getResult();
 
@@ -116,6 +133,7 @@ public class Main {
 
     private OutputStream outStream;
     private JFastRequest jFast;
+    boolean scriptMode;
   }
 
   private static void writeResult(Object result, String content_type, OutputStream out) 
@@ -262,7 +280,13 @@ public class Main {
 	System.exit(cgiResult);
       }
       else {
-	System.err.println("Script mode not implemented yet.");
+	File file = new File(script[0]);
+	URL  url  = new URL("file", "", file.getAbsolutePath());
+
+	ESXX.Workload wl = esxx.addRequest(new CGIRequest(url, script), 0);
+
+	wl.future.get();
+	System.exit(cgiResult);
       }
     }
     catch (ParseException ex) {

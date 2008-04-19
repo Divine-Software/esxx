@@ -62,22 +62,52 @@ public class Application {
         public boolean hasExecuted;
     };
 
-    public Application(ESXX esxx, URL url /*, boolean is_xml */)
+    public Application(ESXX esxx, URL url)
       throws IOException {
       
       esxxObject = esxx;
       baseURL = url;
       xmlInputFactory = XMLInputFactory.newInstance();
 
-//       if (!is_xml) {
-// 	importCode(url);
-// 	return;
-//       }
+      BufferedInputStream is = new BufferedInputStream(esxxObject.openCachedURL(url));
 
-      // Load and parse the document
+      // Check if it's an XML document or a JS file
+      if (is.markSupported()) {
+	is.mark(4096);
+
+	if (is.read() == '#' &&
+	    is.read() == '!') {
+	  // Skip shebang
+	  while (is.read() != '\n');
+	  importCode(url, is);
+	  return;
+	}
+	else {
+	  is.reset();
+
+	  for (int i = 0; i < 4096; ++i) {
+	    int c = is.read();
+	    
+	    if (c == '<') {
+	      // '<' triggers XML mode
+	      break;
+	    }
+	    else if (!Character.isWhitespace(c)) {
+	      // Any other character except blanks triggers direct JS-mode
+	      is.reset();
+	      importCode(url, is);
+	      return;
+	    }
+	  }
+	}
+
+	is.reset();
+      }
+
+      // Load and parse the XML document
 
       try {
-	xml = esxxObject.parseXML(esxxObject.openCachedURL(url), url, externalURLs, null);
+	xml = esxxObject.parseXML(is, url, externalURLs, null);
 
 	// Extract ESXX information, if any
 
@@ -252,9 +282,13 @@ public class Application {
     }
 
 
-  private Code importCode(URL url) 
-    throws IOException {
-      InputStream           is = esxxObject.openCachedURL(url);
+    private Code importCode(URL url) 
+      throws IOException {
+      return importCode(url, esxxObject.openCachedURL(url));
+    }
+
+    private Code importCode(URL url, InputStream is) 
+      throws IOException {
       ByteArrayOutputStream os = new ByteArrayOutputStream();
       
       ESXX.copyStream(is, os);

@@ -1,0 +1,13 @@
+#!/usr/bin/env esxx
+
+esxx.debug.println("Direct JS, with shebang");
+
+function main(req) {
+  esxx.debug.println("main() called: " + req);
+
+  for each (a in req.args) {
+      esxx.debug.println("Argument: " + a);
+  }
+
+  return 202;
+}

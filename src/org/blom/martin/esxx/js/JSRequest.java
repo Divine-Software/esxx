@@ -51,7 +51,7 @@ public class JSRequest
       this.headers = cx.newObject(scope);
       this.cookies = cx.newObject(scope);
       this.query   = cx.newObject(scope);
-      this.uri     = null;
+      this.args    = null;
       this.mimeHeaders = new MimeHeaders();
 
       Document accept_doc = esxx.createDocument("accept");
@@ -93,10 +93,22 @@ public class JSRequest
 
       // Now parse the POST/PUT/etc. message
       parseMessage(esxx, request, cx, scope);
+
+      // If command line arguments are available, set them -- else
+      // somebody will call setArgs() later.
+      String[] cmdline = request.getCommandLine();
+
+      if (cmdline != null) {
+	args = cx.newObject(scope);
+
+	for (int i = 0; i < cmdline.length; ++i) {
+	  ScriptableObject.putProperty(args, i, cmdline[i]);
+	}
+      }
     }
 
-    public void setURI(Scriptable uri_params) {
-      uri = uri_params;
+    public void setArgs(Scriptable uri_params) {
+      args = uri_params;
     }
 
     static public Object jsConstructor(Context cx, 
@@ -132,8 +144,8 @@ public class JSRequest
       return query;
     }
 
-    public Scriptable jsGet_uri() {
-      return uri;
+    public Scriptable jsGet_args() {
+      return args;
     }
 
 
@@ -153,7 +165,7 @@ public class JSRequest
     private Scriptable cookies;
     private Scriptable accept;
     private Scriptable query;
-    private Scriptable uri;
+    private Scriptable args;
 
     private Object message;
 
@@ -354,20 +366,4 @@ public class JSRequest
     private static boolean isNameChar(char ch) {
       return (isNameStartChar(ch) || Character.isDigit(ch) || ch == '.' || ch == '-');
     }
-
-
-
-//     public static Object jsFunction_load(Context cx, Scriptable thisObj,
-// 					 Object[] args, Function funObj)
-//       throws Exception {
-//       JSURI  js_this = checkInstance(thisObj);
-//       String type    = null;
-//       HashMap<String,String> params = new HashMap<String,String>();
-
-//       if (args.length >= 1 && args[0] != Context.getUndefinedValue()) {
-// 	type = ESXX.parseMIMEType(Context.toString(args[0]), params);
-//       }
-
-//       return js_this.load(cx, thisObj, type, params);
-//     }
 }
