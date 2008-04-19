@@ -1,0 +1,146 @@
+#!/bin/bash
+#
+# @PROJECT_NAME@ This shell script takes care of starting and stopping \
+#   @PROJECT_NAME@ (@PACKAGE_DESCRIPTION_SUMMARY@).
+#
+# chkconfig: 2345 66 34
+# description: @PACKAGE_DESCRIPTION@
+#
+# processname: @PROJECT_NAME@
+# config:      /etc/sysconfig/@PROJECT_NAME@
+# pidfile:     @LOCALSTATE_INSTALL_PREFIX@/run/@PROJECT_NAME@.pid
+
+### BEGIN INIT INFO
+# Provides: @PROJECT_NAME@
+# Required-Start: $network $local_fs $remote_fs
+# Required-Stop: $network $local_fs $remote_fs
+# Should-Start: $syslog $named $time
+# Should-Stop: $syslog $named $time
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: start and stop @PROJECT_NAME@
+# Description: @PACKAGE_DESCRIPTION@
+### END INIT INFO
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+prog=@PROJECT_NAME@
+absprog=@SBIN_INSTALL_DIR@/$prog
+desc="@PACKAGE_DESCRIPTION_SUMMARY@"
+pidfile=@LOCALSTATE_INSTALL_PREFIX@/run/$prog.pid
+timeout=10
+
+OPTIONS=
+
+if [ -f /etc/init.d/functions ]; then
+  # RedHat-style startup
+  lockfile=@LOCALSTATE_INSTALL_PREFIX@/lock/subsys/$prog
+  OPTIONS="$OPTIONS --user apache"
+
+  if [ -f /etc/sysconfig/@PROJECT_NAME@ ]; then
+    . /etc/sysconfig/@PROJECT_NAME@
+  fi
+
+  . /etc/init.d/functions
+
+  start() {
+    echo -n $"Starting $prog: "
+    if [ $UID -ne 0 ]; then
+      RETVAL=1
+      failure
+    else
+      daemon --pidfile $pidfile $absprog --pidfile $pidfile $OPTIONS
+      RETVAL=$?
+      [ $RETVAL -eq 0 ] && touch $lockfile
+    fi
+    echo
+    return $RETVAL
+  }
+
+  stop() {
+    echo -n $"Shutting down $prog: "
+    if [ $UID -ne 0 ]; then
+      RETVAL=1
+      failure
+    else
+      killproc -p $pidfile -d $timeout $prog
+      RETVAL=$?
+      [ $RETVAL -eq 0 ] && rm -f $lockfile
+    fi
+    echo
+    return $RETVAL
+  }
+else
+  # Debian-style startup
+  lockfile=@LOCALSTATE_INSTALL_PREFIX@/lock/$prog
+  OPTIONS="$OPTIONS --user www-data"
+
+  if [ -f /etc/default/@PROJECT_NAME@ ]; then
+    . /etc/default/@PROJECT_NAME@
+  fi
+
+  start() {
+    echo -n "Starting $desc: $prog"
+    if [ $UID -ne 0 ]; then
+      RETVAL=1
+      echo -n " failed"
+    else
+      sh -c "start-stop-daemon --start --quiet --exec $absprog \
+    	       --pidfile $pidfile -- --pidfile $pidfile $OPTIONS"
+      RETVAL=$?
+      if [ $RETVAL -eq 0 ]; then
+        touch $lockfile
+      else
+        echo -n " already running"
+      fi
+    fi
+    echo "."
+    return $RETVAL
+  }
+
+  stop() {
+    echo -n "Stopping $desc: $prog"
+    if [ $UID -ne 0 ]; then
+      RETVAL=1
+      echo -n " failed"
+    else
+      start-stop-daemon --stop --quiet --name java \
+	                --pidfile $pidfile --retry $timeout
+      RETVAL=$?
+      if [ $RETVAL -eq 0 ]; then
+        rm -f $lockfile
+      else
+        echo -n " not running"
+      fi
+    fi
+    echo "."
+    return $RETVAL
+  }
+
+  status() {
+    return 4
+  }
+fi
+
+
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  status)
+    status -p $pidfile $prog
+    ;;
+  restart|force-reload)
+    stop
+    start
+    ;;
+  reload)
+    exit 3
+    ;;
+  *)
+    echo $"Usage: $0 {start|stop|status|restart|try-restart|force-reload}"
+    exit 2
+esac
