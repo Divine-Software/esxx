@@ -44,24 +44,25 @@ class Worker {
     }
 
     public void handleRequest(Context cx, Request request) {
-      String request_method = request.getProperties().getProperty("REQUEST_METHOD");
-      String path_info = request.getProperties().getProperty("PATH_INFO");
-
       try {
 	Application app = esxx.getCachedApplication(request.getURL());
+	Scriptable scope;
+	JSESXX js_esxx;
 
-	// Compile all <?esxx and <?esxx-import PIs, if not already done.
-	// compile() returns the application's global scope
-	Scriptable scope = app.compile(cx);
+	synchronized (app) {
+	  // Compile all <?esxx and <?esxx-import PIs, if not already done.
+	  // compile() returns the application's global scope
+	  scope = app.compile(cx);
 
-	// Make the JSESXX object available as the instance-level
-	// "esxx" variable (via magic in JSGlobal).
-	JSESXX js_esxx = (JSESXX) cx.newObject(scope, "ESXX", 
+	  // Make the JSESXX object available as the instance-level
+	  // "esxx" variable (via magic in JSGlobal).
+	  js_esxx = (JSESXX) cx.newObject(scope, "ESXX", 
 					       new Object[] { esxx, request, app });
-	cx.putThreadLocal(JSESXX.class, js_esxx);
+	  cx.putThreadLocal(JSESXX.class, js_esxx);
 
-	// Execute all <?esxx and <?esxx-import PIs, if not already done
-	app.execute(cx, scope, js_esxx);
+	  // Execute all <?esxx and <?esxx-import PIs, if not already done
+	  app.execute(cx, scope, js_esxx);
+	}
 
 	js_esxx.setLocation(cx, scope, request.getURL());
 
@@ -80,6 +81,9 @@ class Worker {
 	    result = handleSOAPAction(object, jsreq, cx, scope);
 	  }
 	  else if (app.hasHandlers()) {
+	    String request_method = request.getProperties().getProperty("REQUEST_METHOD");
+	    String path_info = request.getProperties().getProperty("PATH_INFO");
+
 	    result = handleHTTPMethod(request_method, path_info, jsreq, app, cx, scope);
 	  }
 	  else {

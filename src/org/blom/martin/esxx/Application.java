@@ -198,7 +198,7 @@ public class Application {
       return errorHandler;
     }
 
-    public synchronized Scriptable compile(Context cx)
+    public Scriptable compile(Context cx)
       throws IllegalAccessException, InstantiationException, 
       java.lang.reflect.InvocationTargetException {
       if (applicationScope != null) {
@@ -218,7 +218,7 @@ public class Application {
       return applicationScope;
     }
 
-    public synchronized void execute(Context cx, Scriptable scope, JSESXX js_esxx) {
+    public void execute(Context cx, Scriptable scope, JSESXX js_esxx) {
       if (!hasExecuted) {
 	for (Code c : codeList.values()) {
 	  if (!c.hasExecuted) {
@@ -234,8 +234,7 @@ public class Application {
       }
     }
 
-    public synchronized void importAndExecute(Context cx, Scriptable scope, JSESXX js_esxx, 
-					      URL url)
+    public void importAndExecute(Context cx, Scriptable scope, JSESXX js_esxx, URL url)
       throws IOException {
       Code c = importCode(url);
 

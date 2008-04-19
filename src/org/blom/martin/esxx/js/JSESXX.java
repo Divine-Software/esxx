@@ -77,9 +77,12 @@ public class JSESXX
       throws java.net.MalformedURLException, java.io.IOException {
       JSESXX   js_esxx = (JSESXX) thisObj;
       Scriptable scope = funcObj.getParentScope();
+      Application  app = js_esxx.app;
 
-      js_esxx.app.importAndExecute(cx, scope, js_esxx, 
-				   js_esxx.location.uri.resolve(Context.toString(args[0])).toURL());
+      synchronized (app) { // In case this method is called from a handler or main()
+	app.importAndExecute(cx, scope, js_esxx, 
+			     js_esxx.location.uri.resolve(Context.toString(args[0])).toURL());
+      }
     }
 
     public static boolean jsFunction_checkTimeout(Context cx, Scriptable thisObj, 

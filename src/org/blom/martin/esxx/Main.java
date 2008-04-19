@@ -42,28 +42,19 @@ public class Main {
     extends Request {
 
     public CGIRequest(Properties cgi) {
-      this(cgi, 
-	   System.in,
-	   new OutputStreamWriter(System.err),
-	   System.out);
+      super(createURL(cgi), cgi, 
+	    System.in, 
+	    new OutputStreamWriter(System.err));
+      jFast = null;
+      outStream = System.out;
     }
 
     public CGIRequest(JFastRequest jfast) {
-      this(jfast.properties,
-	   new ByteArrayInputStream(jfast.data),
-	   new OutputStreamWriter(System.err),
-	   jfast.out);
+      super(createURL(jfast.properties), jfast.properties,
+	    new ByteArrayInputStream(jfast.data),
+	    new OutputStreamWriter(System.err));
       jFast = jfast;
-    }
-
-    private CGIRequest(Properties   cgi,
-		       InputStream  in,
-		       Writer       error,
-		       OutputStream out_stream) {
-      super(createURL(cgi),
-	    cgi,
-	    in, error);
-      outStream  = out_stream;
+      outStream = jfast.out;
     }
 
     public void finished(int rc, JSResponse response) {
