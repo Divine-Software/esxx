@@ -69,40 +69,43 @@ public class Application {
       baseURL = url;
       xmlInputFactory = XMLInputFactory.newInstance();
 
-      BufferedInputStream is = new BufferedInputStream(esxxObject.openCachedURL(url));
+      InputStream is = esxxObject.openCachedURL(url);
 
       // Check if it's an XML document or a JS file
-      if (is.markSupported()) {
-	is.mark(4096);
 
-	if (is.read() == '#' &&
-	    is.read() == '!') {
-	  // Skip shebang
-	  while (is.read() != '\n');
-	  importCode(url, is);
-	  return;
-	}
-	else {
-	  is.reset();
+      if (!is.markSupported()) {
+	is = new BufferedInputStream(is);
+      }
 
-	  for (int i = 0; i < 4096; ++i) {
-	    int c = is.read();
+      is.mark(4096);
+
+      if (is.read() == '#' &&
+	  is.read() == '!') {
+	// Skip shebang
+	while (is.read() != '\n');
+	importCode(url, is);
+	return;
+      }
+      else {
+	is.reset();
+
+	for (int i = 0; i < 4096; ++i) {
+	  int c = is.read();
 	    
-	    if (c == '<') {
-	      // '<' triggers XML mode
-	      break;
-	    }
-	    else if (!Character.isWhitespace(c)) {
-	      // Any other character except blanks triggers direct JS-mode
-	      is.reset();
-	      importCode(url, is);
-	      return;
-	    }
+	  if (c == '<') {
+	    // '<' triggers XML mode
+	    break;
+	  }
+	  else if (!Character.isWhitespace(c)) {
+	    // Any other character except blanks triggers direct JS-mode
+	    is.reset();
+	    importCode(url, is);
+	    return;
 	  }
 	}
-
-	is.reset();
       }
+
+      is.reset();
 
       // Load and parse the XML document
 
