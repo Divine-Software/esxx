@@ -231,7 +231,7 @@ public class RequestMatcher {
 
 
     public static void main(String args[]) {
-      RequestMatcher rm = new RequestMatcher();
+      final RequestMatcher rm = new RequestMatcher();
       
       rm.addRequestPattern("GET", 
 			   "articles", 
@@ -251,14 +251,18 @@ public class RequestMatcher {
 
       rm.compile();
 
-      Context cx = Context.enter();
-      Scriptable scope = new ImporterTopLevel(cx);
+      ContextFactory.getGlobal().call(new ContextAction() {
+	  public Object run(Context cx) {
+	    Scriptable scope = new ImporterTopLevel(cx);
 
-      System.out.println(rm.matchRequest("POST", "articles/books", cx, scope));
-      System.out.println(rm.matchRequest("POST", "articles/", cx, scope));
-      System.out.println(rm.matchRequest("GET", "articles/books", cx, scope));
-      System.out.println(rm.matchRequest("GET", "articles/", cx, scope));
-      System.out.println(rm.matchRequest("REPORT", "article(s)/100/hejhopp/12", cx, scope));
-      System.out.println(rm.matchRequest("DELETE", "gröna/äpplen/10", cx, scope));
+	    System.out.println(rm.matchRequest("POST", "articles/books", cx, scope));
+	    System.out.println(rm.matchRequest("POST", "articles/", cx, scope));
+	    System.out.println(rm.matchRequest("GET", "articles/books", cx, scope));
+	    System.out.println(rm.matchRequest("GET", "articles/", cx, scope));
+	    System.out.println(rm.matchRequest("REPORT", "article(s)/100/hejhopp/12", cx, scope));
+	    System.out.println(rm.matchRequest("DELETE", "gröna/äpplen/10", cx, scope));
+	    return null;
+	  }
+	});
     }
 }
