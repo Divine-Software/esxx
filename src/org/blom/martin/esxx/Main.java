@@ -118,12 +118,18 @@ public class Main {
       }
     }
 
-    private static URL createURL(Properties headers) {
+    private static URL createURL(Properties headers) 
+      throws IOException {
       try {
 	File file = new File(headers.getProperty("PATH_TRANSLATED"));
 
 	while (file != null && !file.exists()) {
 	  file = file.getParentFile();
+	}
+
+	if (file.isDirectory()) {
+	  throw new IOException("Unable to find a file in path " 
+				+ headers.getProperty("PATH_TRANSLATED"));
 	}
 
 	return new URL("file", "", file.getAbsolutePath());
@@ -235,16 +241,11 @@ public class Main {
 	// REQUEST_METHOD environment variables.
 	String fcgi_port  = System.getenv("FCGI_PORT");
 	String req_method = System.getenv("REQUEST_METHOD");
-	String path_trans = System.getenv("PATH_TRANSLATED");
 
 	if (fcgi_port != null) {
 	  fastcgi_port = Integer.parseInt(fcgi_port);
 	}
 	else if (req_method != null) {
-	  if (path_trans == null) {
-	    usage(opt, "PATH_TRANSLATED not set", 10);
-	  }
-
 	  cgi = new Properties();
 	}
 	else {
@@ -285,6 +286,14 @@ public class Main {
 
 	  cgi.setProperty("PATH_TRANSLATED", new File(file).getAbsolutePath());
 	  cgi.setProperty("PATH_INFO", file);
+	}
+
+	if (cgi.getProperty("REQUEST_METHOD") == null) {
+	  usage(opt, "REQUEST_METHOD not set", 10);
+	}
+
+	if (cgi.getProperty("PATH_TRANSLATED") == null) {
+	  usage(opt, "PATH_TRANSLATED not set", 10);
 	}
 
 	ESXX.Workload wl = esxx.addRequest(new CGIRequest(cgi), 0);
