@@ -21,7 +21,7 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 prog=@PROJECT_NAME@-js
-absprog=@SBIN_INSTALL_DIR@/${prog}
+absprog=@BIN_INSTALL_DIR@/${prog}
 
 register=/proc/sys/fs/binfmt_misc/register
 js_entry=/proc/sys/fs/binfmt_misc/ExecutableJS
