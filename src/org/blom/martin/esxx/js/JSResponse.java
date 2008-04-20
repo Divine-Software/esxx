@@ -68,9 +68,16 @@ public class JSResponse
 
       switch (args.length) {
 	case 1:
-	  status       = "200 OK";
-	  content_type = null;
-	  result       = args[0];
+	  if (args[0] instanceof Number) {
+	    status       = "" + ((Number) args[0]).intValue();
+	    content_type = null;
+	    result       = "";
+	  }
+	  else {
+	    status       = "200 OK";
+	    content_type = null;
+	    result       = args[0];
+	  }
 	  break;
 	 
 	case 2:
@@ -87,7 +94,7 @@ public class JSResponse
 	  break;
 
 	default:
-	  throw Context.reportRuntimeError("Response() constructor requires 1-3 arguments."); 
+	  throw Context.reportRuntimeError("Response() constructor requires 1-4 arguments."); 
       }
 
       // Unwrap wrapped objects
@@ -104,10 +111,6 @@ public class JSResponse
       }
       else if (result instanceof String) {
 	// Nothing to do
-      }
-      else if (result instanceof Number) {
-	status = "" + ((Number) result).intValue();
-	result = "";
       }
       else if (result instanceof BufferedImage) {
 	if (content_type == null) {
