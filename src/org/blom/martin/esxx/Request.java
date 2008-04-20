@@ -35,7 +35,7 @@ import java.util.HashMap;
 import java.util.Properties;
 
 public abstract class Request {
-    public abstract void finished(int rc, JSResponse response);
+  //    public abstract void finished(int rc, JSResponse response);
 
     public Request(URL url, String[] command_line, Properties properties,
 		   InputStream in, Writer error) 

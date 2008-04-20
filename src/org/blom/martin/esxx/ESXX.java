@@ -22,6 +22,7 @@ package org.blom.martin.esxx;
 import org.blom.martin.esxx.cache.*;
 import org.blom.martin.esxx.util.*;
 import org.blom.martin.esxx.js.JSESXX;
+import org.blom.martin.esxx.js.JSResponse;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -209,12 +210,17 @@ public class ESXX {
      *                  time the request actually starts processing.
      */
 
-    public Workload addRequest(final Request request, int timeout) {
+    public Workload addRequest(final Request request, final ResponseHandler rh, int timeout) {
       return addContextAction(null, new ContextAction() {
 	  public Object run(Context cx) {
 	    Worker worker = new Worker(ESXX.this);
-	    worker.handleRequest(cx, request);
-	    return request;
+
+	    try {
+	      return rh.handleResponse(worker.handleRequest(cx, request));
+	    }
+	    catch (Throwable t) {
+	      return rh.handleError(t);
+	    }
 	  }
 	}, timeout);
     }
@@ -271,7 +277,7 @@ public class ESXX {
 	      new_cx.putThreadLocal(Workload.class, workload);
 
 	      try {
-		workload.result = ca.run(new_cx);
+		return ca.run(new_cx);
 	      }
 	      finally {
 		if (old_js_esxx != null) {
@@ -290,8 +296,6 @@ public class ESXX {
 
 		workloadSet.remove(workload);
 	      }
-
-	      return workload.result;
 	    }
 	  });
       }
@@ -622,12 +626,16 @@ public class ESXX {
       public Workload(long exp) {
 	future    = null;
 	expires   = exp;
-	result    = null;
       }
 
       public Future<Object> future;
       public long expires;
-      public Object result;
+    }
+  
+    public interface ResponseHandler {
+      Object handleResponse(JSResponse result) 
+	throws Exception;
+      Object handleError(Throwable error);
     }
 
     private int defaultTimeout;

@@ -1,17 +1,17 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007 Martin Blom <martin@blom.org>
-     
+
      This program is free software; you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation; either version 2
      of the License, or (at your option) any later version.
-     
+
      This program is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
      GNU General Public License for more details.
-     
+
      You should have received a copy of the GNU General Public License
      along with this program; if not, write to the Free Software
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -39,415 +39,376 @@ import javax.xml.stream.events.XMLEvent;
 import javax.xml.namespace.NamespaceContext;
 
 class Worker {
-    public Worker(ESXX esxx) {
-      this.esxx = esxx;
+  public Worker(ESXX esxx) {
+    this.esxx = esxx;
+  }
+
+  public JSResponse handleRequest(Context cx, Request request)
+    throws Exception {
+    Application app = esxx.getCachedApplication(request.getURL());
+    Scriptable scope;
+    JSESXX js_esxx;
+
+    synchronized (app) {
+      // Compile all <?esxx and <?esxx-import PIs, if not already done.
+      // compile() returns the application's global scope
+      scope = app.compile(cx);
+
+      // Make the JSESXX object available as the instance-level
+      // "esxx" variable (via magic in JSGlobal).
+      js_esxx = (JSESXX) cx.newObject(scope, "ESXX",
+				      new Object[] { esxx, request, app });
+      cx.putThreadLocal(JSESXX.class, js_esxx);
+
+      // Execute all <?esxx and <?esxx-import PIs, if not already done
+      app.execute(cx, scope, js_esxx);
     }
 
-    public void handleRequest(Context cx, Request request) {
-      try {
-	Application app = esxx.getCachedApplication(request.getURL());
-	Scriptable scope;
-	JSESXX js_esxx;
+    js_esxx.setLocation(cx, scope, request.getURL());
 
-	synchronized (app) {
-	  // Compile all <?esxx and <?esxx-import PIs, if not already done.
-	  // compile() returns the application's global scope
-	  scope = app.compile(cx);
+    Object    result = null;
+    Exception error  = null;
 
-	  // Make the JSESXX object available as the instance-level
-	  // "esxx" variable (via magic in JSGlobal).
-	  js_esxx = (JSESXX) cx.newObject(scope, "ESXX", 
-					  new Object[] { esxx, request, app });
-	  cx.putThreadLocal(JSESXX.class, js_esxx);
+    try {
+      // Create a Request object
+      JSRequest jsreq = (JSRequest) cx.newObject(scope, "Request",
+						 new Object[] { esxx, request });
 
-	  // Execute all <?esxx and <?esxx-import PIs, if not already done
-	  app.execute(cx, scope, js_esxx);
-	}
+      // Execute the SOAP or HTTP handler (if available)
+      String object = getSOAPAction(jsreq, app);
 
-	js_esxx.setLocation(cx, scope, request.getURL());
-
-	Object    result = null;
-	Exception error  = null;
-
-	try {
-	  // Create a Request object
-	  JSRequest jsreq = (JSRequest) cx.newObject(scope, "Request", 
-						     new Object[] { esxx, request });
-
-	  // Execute the SOAP or HTTP handler (if available)
-	  String object = getSOAPAction(jsreq, app);
-
-	  if (object != null) {
-	    result = handleSOAPAction(object, jsreq, cx, scope);
-	  }
-	  else if (app.hasHandlers()) {
-	    String request_method = request.getProperties().getProperty("REQUEST_METHOD");
-	    String path_info = request.getProperties().getProperty("PATH_INFO");
-
-	    result = handleHTTPMethod(request_method, path_info, jsreq, app, cx, scope);
-	  }
-	  else if (js_esxx.jsGet_document() != null) {
-	    // No handlers; the document is the result
-
-	    result = js_esxx.jsGet_document();
-	  }
-	  else {
-	    // No handlers, no document -- call main()
-	    result = handleMain(request.getCommandLine(), jsreq, app, cx, scope);
-	  }
-	}
-	catch (ESXXException.TimeOut ex) {
-	  // Never handle this exception
-	  throw ex;
-	}
-	catch (org.mozilla.javascript.WrappedException ex) {
-	  Throwable t = ex.getWrappedException();
-
-	  if (t instanceof ESXXException.TimeOut) {
-	    throw (ESXXException.TimeOut) t;
-	  }
-	  else if (t instanceof Exception) {
-	    error = (Exception) t;
-	  }
-	  else {
-	    error = ex;
-	  }
-	}
-	catch (org.mozilla.javascript.RhinoException ex) {
-	  error = ex;
-	}
-	catch (ESXXException ex) {
-	  error = ex;
-	}
-
-	// On errors, invoke error handler
-
-	if (error != null) {
-	  if (app.hasHandlers()) {
-	    result = handleError(error, app, cx, scope);
-	  }
-	  else {
-	    // No error handler installed: throw away
-	    throw error;
-	  }
-	}
-
-	// No error or error handled: Did we get a valid result?
-	if (result == null || result == Context.getUndefinedValue()) {
-	  throw new ESXXException("No result from '" + request.getURL() + "'");
-	}
-
-	JSResponse response;
-
-	if (result instanceof JSResponse) {
-	  response = (JSResponse) result;
-	}
-	else {
-	  response = (JSResponse) cx.newObject(scope, "Response",  new Object[] { result });
-	}
-
-	if (response.getResult() instanceof Node) {
-	  handleTransformation(response, app, request);
-	}
-
-	// Return request
-	request.finished(0, response);
+      if (object != null) {
+	result = handleSOAPAction(object, jsreq, cx, scope);
       }
-      catch (Exception ex) {
-	String title = "ESXX Server Error";
-	int    code  = 500;
-	
-	if (ex instanceof ESXXException) {
-	  code = ((ESXXException) ex).getStatus();
-	}
+      else if (app.hasHandlers()) {
+	String request_method = request.getProperties().getProperty("REQUEST_METHOD");
+	String path_info = request.getProperties().getProperty("PATH_INFO");
 
-	StringWriter sw = new StringWriter();
-	PrintWriter out = new PrintWriter(sw);
-
-	out.println("<?xml version='1.0'?>");
-	out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" " +
-		    "\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">");
-	out.println("<html><head><title>" + title + "</title></head><body>");
-	out.println("<h1>" + title + "</h1>");
-	out.println("<h2>Unhandled exception: " + ex.getClass().getSimpleName() + "</h2>");
-	if (ex instanceof ESXXException ||
-	    ex instanceof XMLStreamException ||
-	    ex instanceof TransformerException) {
-	  out.println("<p><tt>" + ex.getMessage() + "</tt></p>");
-	}
-	else {
-	  out.println("<pre>");
-	  ex.printStackTrace(out);
-	  out.println("</pre>");
-	}
-	out.println("</body></html>");
-	out.close();
-
-	request.finished(10, new JSResponse(code + " " + title,
-					    "text/html",
-					    sw.toString()));
+	result = handleHTTPMethod(request_method, path_info, jsreq, app, cx, scope);
       }
-    }
+      else if (js_esxx.jsGet_document() != null) {
+	// No handlers; the document is the result
 
-    private String getSOAPAction(JSRequest req, Application app) 
-      throws javax.xml.soap.SOAPException {
-      String action = null;
-
-      String soap_action = req.jsGet_soapAction();
-
-      if (soap_action != null) {
-	action = app.getSOAPAction(soap_action);
-
-	if (action == null) {
-	  // Try default action object
-	  action = app.getSOAPAction("");
-	}
-      }
-
-      return action;
-    }
-
-
-    private Object handleSOAPAction(String object, JSRequest req,
-				    Context cx, Scriptable scope) 
-      throws javax.xml.soap.SOAPException {
-      Object result;
-
-      SOAPMessage message = (SOAPMessage) req.jsGet_message();
-
-      if (!object.equals("")) {
-	// RPC style SOAP handler
-
-	org.w3c.dom.Node     soap_header = null;
-	org.w3c.dom.Document soap_body   = null;
-
-	try {
-	  soap_header = message.getSOAPHeader();
-	}
-	catch (SOAPException ex) {
-	  // The header is optional
-	}
-
-	soap_body = message.getSOAPBody().extractContentAsDocument();
-
-	Object args[] = { req, 
-			  esxx.domToE4X(soap_body, cx, scope),
-			  esxx.domToE4X(soap_header, cx, scope) };
-
-	result = callJSMethod(object,
-			      soap_body.getDocumentElement().getLocalName(),
-			      args, "SOAP method", cx, scope);
+	result = js_esxx.jsGet_document();
       }
       else {
-	// No RPC handler; the SOAP message itself is the result
-
-	result = esxx.domToE4X(message.getSOAPPart(), cx, scope);
+	// No handlers, no document -- call main()
+	result = handleMain(request.getCommandLine(), jsreq, app, cx, scope);
       }
+    }
+    catch (ESXXException.TimeOut ex) {
+      // Never handle this exception
+      throw ex;
+    }
+    catch (org.mozilla.javascript.WrappedException ex) {
+      Throwable t = ex.getWrappedException();
 
-      return result;
+      if (t instanceof ESXXException.TimeOut) {
+	throw (ESXXException.TimeOut) t;
+      }
+      else if (t instanceof Exception) {
+	error = (Exception) t;
+      }
+      else {
+	error = ex;
+      }
+    }
+    catch (org.mozilla.javascript.RhinoException ex) {
+      error = ex;
+    }
+    catch (ESXXException ex) {
+      error = ex;
     }
 
+    // On errors, invoke error handler
 
-    private Object handleHTTPMethod(String request_method, String path_info,
-				    JSRequest req, Application app,
-				    Context cx, Scriptable scope) {
-      Object result;
-      RequestMatcher.Match match = app.getHandlerFunction(request_method, path_info, cx, scope);
-
-      if (match == null) {
-	throw new ESXXException(501, "'" + request_method + "' handler not defined for URI "
-				+ "'" + path_info + "'");
+    if (error != null) {
+      if (app.hasHandlers()) {
+	result = handleError(error, app, cx, scope);
       }
-
-      req.setArgs(match.params);
-
-      Object args[] = { req };
-
-      result = callJSMethod(match.handler,
-			    args, "'" + request_method + "' handler", cx, scope);
-
-      return result;
+      else {
+	// No error handler installed: throw away
+	throw error;
+      }
     }
 
-    private Object handleMain(String[] cmdline, JSRequest req, Application app, 
+    // No error or error handled: Did we get a valid result?
+    if (result == null || result == Context.getUndefinedValue()) {
+      throw new ESXXException("No result from '" + request.getURL() + "'");
+    }
+
+    JSResponse response;
+
+    if (result instanceof JSResponse) {
+      response = (JSResponse) result;
+    }
+    else {
+      response = (JSResponse) cx.newObject(scope, "Response",  new Object[] { result });
+    }
+
+    if (response.getResult() instanceof Node) {
+      handleTransformation(response, app, request);
+    }
+
+    // Return response
+    return response;
+  }
+
+  private String getSOAPAction(JSRequest req, Application app)
+    throws javax.xml.soap.SOAPException {
+    String action = null;
+
+    String soap_action = req.jsGet_soapAction();
+
+    if (soap_action != null) {
+      action = app.getSOAPAction(soap_action);
+
+      if (action == null) {
+	// Try default action object
+	action = app.getSOAPAction("");
+      }
+    }
+
+    return action;
+  }
+
+
+  private Object handleSOAPAction(String object, JSRequest req,
+				  Context cx, Scriptable scope)
+    throws javax.xml.soap.SOAPException {
+    Object result;
+
+    SOAPMessage message = (SOAPMessage) req.jsGet_message();
+
+    if (!object.equals("")) {
+      // RPC style SOAP handler
+
+      org.w3c.dom.Node     soap_header = null;
+      org.w3c.dom.Document soap_body   = null;
+
+      try {
+	soap_header = message.getSOAPHeader();
+      }
+      catch (SOAPException ex) {
+	// The header is optional
+      }
+
+      soap_body = message.getSOAPBody().extractContentAsDocument();
+
+      Object args[] = { req,
+			esxx.domToE4X(soap_body, cx, scope),
+			esxx.domToE4X(soap_header, cx, scope) };
+
+      result = callJSMethod(object,
+			    soap_body.getDocumentElement().getLocalName(),
+			    args, "SOAP method", cx, scope);
+    }
+    else {
+      // No RPC handler; the SOAP message itself is the result
+
+      result = esxx.domToE4X(message.getSOAPPart(), cx, scope);
+    }
+
+    return result;
+  }
+
+
+  private Object handleHTTPMethod(String request_method, String path_info,
+				  JSRequest req, Application app,
+				  Context cx, Scriptable scope) {
+    Object result;
+    RequestMatcher.Match match = app.getHandlerFunction(request_method, path_info, cx, scope);
+
+    if (match == null) {
+      throw new ESXXException(501, "'" + request_method + "' handler not defined for URI "
+			      + "'" + path_info + "'");
+    }
+
+    req.setArgs(match.params);
+
+    Object args[] = { req };
+
+    result = callJSMethod(match.handler,
+			  args, "'" + request_method + "' handler", cx, scope);
+
+    return result;
+  }
+
+  private Object handleMain(String[] cmdline, JSRequest req, Application app,
+			    Context cx, Scriptable scope) {
+    Scriptable args = cx.newObject(scope);
+
+    for (int i = 0; i < cmdline.length; ++i) {
+      ScriptableObject.putProperty(args, i, cmdline[i]);
+    }
+
+    req.setArgs(args);
+
+    return callJSMethod("main", new Object[] { args }, app.getBaseURL().toString(), cx, scope);
+  }
+
+  private void handleTransformation(JSResponse response, Application app, Request request)
+    throws IOException, UnsupportedEncodingException,
+	   XMLStreamException, TransformerException {
+
+    Node   node         = (Node) response.getResult();
+    String content_type = response.getContentType();
+
+    HashMap<String,String> params = new HashMap<String,String>();
+    String                 ct     = ESXX.parseMIMEType(content_type, params);
+    String                 cs     = params.get("charset");
+
+    Transformer tr;
+
+    try {
+      URL stylesheet = app.getStylesheet(ct);
+
+      if (stylesheet == null) {
+	stylesheet = app.getStylesheet("");
+      }
+
+      tr = esxx.getCachedStylesheet(stylesheet);
+
+      // Set media-type on identity styleseet, if
+      // specified. User-specified stylesheets should set
+      // these keys directly in the stylesheet.
+      if (stylesheet == null && content_type != null) {
+
+	tr.setOutputProperty(OutputKeys.MEDIA_TYPE, ct);
+
+	if (cs != null) {
+	  tr.setOutputProperty(OutputKeys.ENCODING, cs);
+	}
+      }
+    }
+    catch (IOException ex) {
+      throw new ESXXException("Unable to load stylesheet: " + ex.getMessage(), ex);
+    }
+
+    if (!tr.getOutputProperty(OutputKeys.METHOD).equals("text")) {
+      // Get identity transformer
+      Transformer ntr = esxx.getCachedStylesheet(null);
+
+      // Copy all  properties
+      copyOutputKey(OutputKeys.CDATA_SECTION_ELEMENTS, tr, ntr);
+      copyOutputKey(OutputKeys.DOCTYPE_PUBLIC, tr, ntr);
+      copyOutputKey(OutputKeys.DOCTYPE_SYSTEM, tr, ntr);
+      copyOutputKey(OutputKeys.ENCODING, tr, ntr);
+      copyOutputKey(OutputKeys.INDENT, tr, ntr);
+      copyOutputKey(OutputKeys.MEDIA_TYPE, tr, ntr);
+      copyOutputKey(OutputKeys.METHOD, tr, ntr);
+      copyOutputKey(OutputKeys.OMIT_XML_DECLARATION, tr, ntr);
+      copyOutputKey(OutputKeys.STANDALONE, tr, ntr);
+      copyOutputKey(OutputKeys.VERSION, tr, ntr);
+
+      // Run user's transformation onto a new DOM node
+      DOMResult dr = new DOMResult();
+
+      // Force XML transformation
+      tr.setOutputProperty(OutputKeys.METHOD, "xml");
+      tr.setOutputProperty(OutputKeys.VERSION, "1.0");
+      tr.setOutputProperty(OutputKeys.CDATA_SECTION_ELEMENTS, "");
+      tr.transform(new DOMSource(node), dr);
+
+      tr = ntr;
+      node = dr.getNode();
+    }
+
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+    tr.transform(new DOMSource(node), new StreamResult(bos));
+
+    content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
+      ";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
+
+    // Attach debug log to document
+    request.getDebugWriter().flush();
+
+    String ds = request.getDebugWriter().toString();
+
+    if (ds.length() != 0) {
+      Writer out = request.createWriter(bos, content_type);
+      out.write("<!-- Start ESXX Debug Log\n" +
+		ds.replaceAll("--", "\u2012\u2012") +
+		"End ESXX Debug Log -->");
+      out.close();
+    }
+
+    bos.close();
+
+    response.setContentType(content_type);
+    response.setResult(bos);
+  }
+
+  private Object handleError(Exception error, Application app,
+			     Context cx, Scriptable scope) {
+    Object result;
+    String handler = app.getErrorHandlerFunction();
+
+    try {
+      Object args[] = { cx.javaToJS(error, scope) };
+
+      result = callJSMethod(handler, args, "Error handler", cx, scope);
+    }
+    catch (Exception ex) {
+      throw new ESXXException("Failed to handle error '" + error.toString() +
+			      "':\n" +
+			      "Error handler '" + handler +
+			      "' failed with message '" +
+			      ex.getMessage() + "'",
+			      ex);
+    }
+
+    return result;
+  }
+
+
+  private Object callJSMethod(String expr,
+			      Object[] args, String identifier,
 			      Context cx, Scriptable scope) {
-//       Object[]  = new Object[cmdline.length];
-      Scriptable args = cx.newObject(scope);
+    String object;
+    String method;
 
-      for (int i = 0; i < cmdline.length; ++i) {
-	ScriptableObject.putProperty(args, i, cmdline[i]);
-      }
+    int dot = expr.lastIndexOf('.');
 
-      req.setArgs(args);
-
-      return callJSMethod("main", new Object[] { args }, app.getBaseURL().toString(), cx, scope);
+    if (dot == -1) {
+      object = null;
+      method = expr;
+    }
+    else {
+      object = expr.substring(0, dot);
+      method = expr.substring(dot + 1);
     }
 
-    private void handleTransformation(JSResponse response, Application app, Request request) 
-      throws IOException, UnsupportedEncodingException,
-      XMLStreamException, TransformerException {
+    return callJSMethod(object, method, args, identifier, cx, scope);
+  }
 
-      Node   node         = (Node) response.getResult();
-      String content_type = response.getContentType();
+  private Object callJSMethod(String object, String method,
+			      Object[] args, String identifier,
+			      Context cx, Scriptable scope) {
+    Scriptable o;
 
-      HashMap<String,String> params = new HashMap<String,String>();
-      String                 ct     = ESXX.parseMIMEType(content_type, params);
-      String                 cs     = params.get("charset");
+    if (object == null) {
+      o = scope;
+    }
+    else {
+      o = (Scriptable) cx.evaluateString(scope, object, identifier, 1, null);
 
-      Transformer tr;
-
-      try {
-	URL stylesheet = app.getStylesheet(ct);
-
-	if (stylesheet == null) {
-	  stylesheet = app.getStylesheet("");
-	}
-
-	tr = esxx.getCachedStylesheet(stylesheet);
-
-	// Set media-type on identity styleseet, if
-	// specified. User-specified stylesheets should set
-	// these keys directly in the stylesheet.
-	if (stylesheet == null && content_type != null) {
-
-	  tr.setOutputProperty(OutputKeys.MEDIA_TYPE, ct);
-
-	  if (cs != null) {
-	    tr.setOutputProperty(OutputKeys.ENCODING, cs);
-	  }
-	}
-      }
-      catch (IOException ex) {
-	throw new ESXXException("Unable to load stylesheet: " + ex.getMessage(), ex);
-      }
-
-      if (true) {
-	if (!tr.getOutputProperty(OutputKeys.METHOD).equals("text")) {
-	  // Get identity transformer
-	  Transformer ntr = esxx.getCachedStylesheet(null);
-
-	  // Copy all  properties
-	  copyOutputKey(OutputKeys.CDATA_SECTION_ELEMENTS, tr, ntr);
-	  copyOutputKey(OutputKeys.DOCTYPE_PUBLIC, tr, ntr);
-	  copyOutputKey(OutputKeys.DOCTYPE_SYSTEM, tr, ntr);
-	  copyOutputKey(OutputKeys.ENCODING, tr, ntr);
-	  copyOutputKey(OutputKeys.INDENT, tr, ntr);
-	  copyOutputKey(OutputKeys.MEDIA_TYPE, tr, ntr);
-	  copyOutputKey(OutputKeys.METHOD, tr, ntr);
-	  copyOutputKey(OutputKeys.OMIT_XML_DECLARATION, tr, ntr);
-	  copyOutputKey(OutputKeys.STANDALONE, tr, ntr);
-	  copyOutputKey(OutputKeys.VERSION, tr, ntr);
-
-	  // Run user's transformation onto a new DOM node
-	  DOMResult dr = new DOMResult();
-
-	  // Force XML transformation
-	  tr.setOutputProperty(OutputKeys.METHOD, "xml");
-	  tr.setOutputProperty(OutputKeys.VERSION, "1.0");
-	  tr.setOutputProperty(OutputKeys.CDATA_SECTION_ELEMENTS, "");
-	  tr.transform(new DOMSource(node), dr);
-
-	  tr = ntr;
-	  node = dr.getNode();
-	}
-
-	ByteArrayOutputStream bos = new ByteArrayOutputStream();
-
-	tr.transform(new DOMSource(node), new StreamResult(bos));
-
-	content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
-	  ";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
-
-	// Attach debug log to document
-	request.getDebugWriter().flush();
-
-	String ds = request.getDebugWriter().toString();
-	    
-	if (ds.length() != 0) {
-	  Writer out = request.createWriter(bos, content_type);
-	  out.write("<!-- Start ESXX Debug Log\n" + 
-		    ds.replaceAll("--", "\u2012\u2012") +
-		    "End ESXX Debug Log -->");
-	  out.close();
-	}
-
-	bos.close();
-
-	response.setContentType(content_type);
-	response.setResult(bos);
-
+      if (o == null || o == ScriptableObject.NOT_FOUND) {
+	throw new ESXXException(identifier + " '" + object + "." + method + "' not found.");
       }
     }
 
-    private Object handleError(Exception error, Application app,
-			       Context cx, Scriptable scope) {
-      Object result;
-      String handler = app.getErrorHandlerFunction();
+    return ((ScriptableObject) scope).callMethod(cx, o, method, args);
+  }
 
-      try {
-	Object args[] = { cx.javaToJS(error, scope) };
+  private static void copyOutputKey(String key, Transformer from, Transformer to) {
+    String value = from.getOutputProperty(key);
 
-	result = callJSMethod(handler, args, "Error handler", cx, scope);
-      }
-      catch (Exception ex) {
-	throw new ESXXException("Failed to handle error '" + error.toString() +
-				"':\n" +
-				"Error handler '" + handler +
-				"' failed with message '" +
-				ex.getMessage() + "'", 
-				ex);
-      }
-
-      return result;
+    if (value != null) {
+      to.setOutputProperty(key, value);
     }
+  }
 
-
-    private Object callJSMethod(String expr,
-				Object[] args, String identifier,
-				Context cx, Scriptable scope) {
-      String object;
-      String method;
-
-      int dot = expr.lastIndexOf('.');
-
-      if (dot == -1) {
-	object = null;
-	method = expr;
-      }
-      else {
-	object = expr.substring(0, dot);
-	method = expr.substring(dot + 1);
-      }
-
-      return callJSMethod(object, method, args, identifier, cx, scope);
-    }
-
-    private Object callJSMethod(String object, String method,
-				Object[] args, String identifier,
-				Context cx, Scriptable scope) {
-      Scriptable o;
-
-      if (object == null) {
-	o = scope;
-      }
-      else {
-	o = (Scriptable) cx.evaluateString(scope, object, identifier, 1, null);
-
-	if (o == null || o == ScriptableObject.NOT_FOUND) {
-	  throw new ESXXException(identifier + " '" + object + "." + method + "' not found.");
-	}
-      }
-
-      return ((ScriptableObject) scope).callMethod(cx, o, method, args);
-    }
-
-    private static void copyOutputKey(String key, Transformer from, Transformer to) {
-      String value = from.getOutputProperty(key);
-      
-      if (value != null) {
-	to.setOutputProperty(key, value);
-      }
-    }
-
-    private ESXX esxx;
+  private ESXX esxx;
 }
