@@ -22,6 +22,7 @@ package org.blom.martin.esxx.js;
 import java.io.InputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Properties;
@@ -65,11 +66,14 @@ public class JSURI
 	if (args[0] instanceof JSURI) {
 	  uri = ((JSURI) args[0]).uri;
 	}
+	else if (args[0] instanceof URL) {
+	  uri = ((URL) args[0]).toURI();
+	}
 	else {
 	  JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
 
 	  if (js_esxx != null) {
-	    JSURI location = js_esxx.jsGet_location();
+	    JSURI location = js_esxx.jsGet_wd();
 
 	    if (location != null) {
 	      uri = location.uri.resolve(Context.toString(args[0]));

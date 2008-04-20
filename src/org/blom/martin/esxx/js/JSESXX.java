@@ -25,6 +25,7 @@ import org.blom.martin.esxx.Request;
 import org.blom.martin.esxx.Application;
 
 import java.io.PrintWriter;
+import java.io.File;
 import java.net.URL;
 import java.util.concurrent.*;
 import org.mozilla.javascript.*;
@@ -45,16 +46,20 @@ public class JSESXX
       this.error    = new PrintWriter(request.getErrorWriter());
       this.document = esxx.domToE4X(app.getXML(), cx, scope);
       this.uri      = (JSURI) cx.newObject(scope, "URI", new Object[] { app.getBaseURL() });
+      this.wd       = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getWD() });
       this.app      = app;
-      this.request  = request;
     }
 
     public void setLocation(Context cx, Scriptable scope, URL url) {
-      setLocation((JSURI) cx.newObject(scope, "URI", new Object[] { url.toString() }));
+      setLocation((JSURI) cx.newObject(scope, "URI", new Object[] { url }));
     }
 
     public void setLocation(JSURI loc) {
       location = loc;
+    }
+
+    public void setRequest(JSRequest req) {
+      request = req;
     }
 
     public String getClassName() {
@@ -184,8 +189,16 @@ public class JSESXX
       return uri;
     }
 
+    public JSURI jsGet_wd() {
+      return wd;
+    }
+
     public JSURI jsGet_location() {
       return location;
+    }
+
+    public JSRequest jsGet_request() {
+      return request;
     }
 
     private ESXX esxx;
@@ -193,8 +206,9 @@ public class JSESXX
     private PrintWriter debug;
     private Scriptable document;
     private JSURI uri;
+    private JSURI wd;
     private JSURI location;
     private Application app;
-    private Request request;
+    private JSRequest request;
 
 }

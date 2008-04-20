@@ -41,7 +41,8 @@ public class Main {
   static private class CGIRequest
     extends Request {
 
-    public CGIRequest(Properties cgi) {
+    public CGIRequest(Properties cgi)
+      throws IOException {
       super(createURL(cgi), null, cgi, 
 	    System.in, 
 	    new OutputStreamWriter(System.err));
@@ -50,7 +51,8 @@ public class Main {
       scriptMode = false;
     }
 
-    public CGIRequest(JFastRequest jfast) {
+    public CGIRequest(JFastRequest jfast) 
+      throws IOException {
       super(createURL(jfast.properties), null, jfast.properties,
 	    new ByteArrayInputStream(jfast.data),
 	    new OutputStreamWriter(System.err));
@@ -59,7 +61,8 @@ public class Main {
       scriptMode = false;
     }
 
-    public CGIRequest(URL url, String[] cmdline) {
+    public CGIRequest(URL url, String[] cmdline) 
+      throws IOException {
       super(url, cmdline, new Properties(), 
 	    System.in, 
 	    new OutputStreamWriter(System.err));

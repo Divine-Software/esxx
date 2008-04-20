@@ -1,4 +1,8 @@
 
+esxx.debug.println(esxx.wd);
+esxx.debug.println(esxx.uri);
+esxx.debug.println(esxx.location);
+
 var GLOB = "kalle";
 
 function MyApp(e) {

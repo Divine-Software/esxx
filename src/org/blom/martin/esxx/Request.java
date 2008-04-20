@@ -21,32 +21,47 @@ package org.blom.martin.esxx;
 
 import org.blom.martin.esxx.js.JSResponse;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.io.IOException;
 import java.io.Writer;
 import java.net.URL;
-import java.util.Properties;
 import java.util.HashMap;
+import java.util.Properties;
 
 public abstract class Request {
     public abstract void finished(int rc, JSResponse response);
 
     public Request(URL url, String[] command_line, Properties properties,
-		   InputStream in, Writer error) {
+		   InputStream in, Writer error) 
+      throws IOException {
       streamURL       = url;
       this.args       = command_line;
       this.in         = in;
       this.debug      = new StringWriter();
       this.error      = error;
       this.properties = properties;
+
+      try {
+	workingDirectory = new File("").toURI().toURL();
+      }
+      catch (java.net.MalformedURLException ex) {
+	throw new IOException("Unable to get current working directory as an URI: " 
+			      + ex.getMessage(), ex);
+      }
     }
 
     public URL getURL() {
       return streamURL;
+    }
+
+    public URL getWD() {
+      return workingDirectory;
     }
 
     public String[] getCommandLine() {
@@ -96,6 +111,7 @@ public abstract class Request {
     }
 
     private URL streamURL;
+    private URL workingDirectory;
     private String[] args;
     private InputStream in;
     private StringWriter debug;
