@@ -71,6 +71,21 @@ public class Main {
       scriptMode = true;
     }
 
+    public URL getWD() {
+      if (!scriptMode) {
+	try {
+	  URI main = super.getURL().toURI();
+
+	  return new File(main).getParentFile().toURI().toURL();
+	}
+	catch (Exception ex) {
+	  // Should not happen. Fall back to super method if it does.
+	}
+      }
+
+      return super.getWD();
+    }
+
     public void finished(int rc, JSResponse response) {
       try {
 	if (!scriptMode) {
