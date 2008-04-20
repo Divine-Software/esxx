@@ -193,6 +193,10 @@ public class JSESXX
       return wd;
     }
 
+    public void jsSet_wd(JSURI wd) {
+      this.wd = wd;
+    }
+
     public JSURI jsGet_location() {
       return location;
     }
