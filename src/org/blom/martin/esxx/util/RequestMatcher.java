@@ -68,7 +68,7 @@ public class RequestMatcher {
 
     public Match matchRequest(String method, String uri,
 			      Context cx, Scriptable scope) {
-      Matcher m = compiledPattern.matcher(method + ":" + uri);
+      Matcher m = compiledPattern.matcher(method + " " + uri);
 
       if (m.matches()) {
 	int group = 1;
@@ -161,7 +161,7 @@ public class RequestMatcher {
 	}
 
 	private void compilePattern(String method, String uri) {
-	  String regex = "(?:" + method + "):(?:" + uri + ")";
+	  String regex = "(?:" + method + ") (?:" + uri + ")";
 	  Matcher   gm = groupPattern.matcher(regex);
 	  Matcher   nm = namedGroupPattern.matcher(regex);
 
