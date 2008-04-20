@@ -93,7 +93,7 @@ class Worker {
 	  }
 	  else {
 	    // No handlers, no document -- call main()
-	    result = handleMain(jsreq, app, cx, scope);
+	    result = handleMain(request.getCommandLine(), jsreq, app, cx, scope);
 	  }
 	}
 	catch (ESXXException.TimeOut ex) {
@@ -269,11 +269,18 @@ class Worker {
       return result;
     }
 
-    private Object handleMain(JSRequest js_req, Application app, 
+    private Object handleMain(String[] cmdline, JSRequest req, Application app, 
 			      Context cx, Scriptable scope) {
-      Object args[] = { js_req };
+//       Object[]  = new Object[cmdline.length];
+      Scriptable args = cx.newObject(scope);
 
-      return callJSMethod("main", args, app.getBaseURL().toString(), cx, scope);
+      for (int i = 0; i < cmdline.length; ++i) {
+	ScriptableObject.putProperty(args, i, cmdline[i]);
+      }
+
+      req.setArgs(args);
+
+      return callJSMethod("main", new Object[] { args }, app.getBaseURL().toString(), cx, scope);
     }
 
     private void handleTransformation(JSResponse response, Application app, Request request) 

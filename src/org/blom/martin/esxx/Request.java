@@ -41,7 +41,7 @@ public abstract class Request {
 		   InputStream in, Writer error) 
       throws IOException {
       streamURL       = url;
-      this.args       = command_line;
+      this.args       = command_line != null ? command_line : new String[] {};
       this.in         = in;
       this.debug      = new StringWriter();
       this.error      = error;

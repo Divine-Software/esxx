@@ -20,7 +20,7 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
-prog=@PROJECT_NAME@
+prog=@PROJECT_NAME@-js
 absprog=@SBIN_INSTALL_DIR@/${prog}
 
 register=/proc/sys/fs/binfmt_misc/register

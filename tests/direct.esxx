@@ -1,7 +1,12 @@
 
 esxx.debug.println("Direct JS, no shebang");
 
-function main(req) {
-  esxx.debug.println("main() called: " + req);
+function main(args) {
+  esxx.debug.println("main() called: " + args);
+
+  for each (a in args) {
+      esxx.debug.println("Argument: " + a);
+  }
+
   return 201;
 }

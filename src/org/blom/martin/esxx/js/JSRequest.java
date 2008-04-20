@@ -93,18 +93,6 @@ public class JSRequest
 
       // Now parse the POST/PUT/etc. message
       parseMessage(esxx, request, cx, scope);
-
-      // If command line arguments are available, set them -- else
-      // somebody will call setArgs() later.
-      String[] cmdline = request.getCommandLine();
-
-      if (cmdline != null) {
-	args = cx.newObject(scope);
-
-	for (int i = 0; i < cmdline.length; ++i) {
-	  ScriptableObject.putProperty(args, i, cmdline[i]);
-	}
-      }
     }
 
     public void setArgs(Scriptable uri_params) {

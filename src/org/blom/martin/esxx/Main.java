@@ -178,7 +178,7 @@ public class Main {
     PrintWriter  err = new PrintWriter(System.err);
     HelpFormatter hf = new HelpFormatter();
 
-    hf.printUsage(err, 80, "esxx.jar [OPTION...] [<script.js> -- SCRIPT ARGS...]");
+    hf.printUsage(err, 80, "esxx.jar [OPTION...] [--script -- <script.js> SCRIPT ARGS...]");
     hf.printOptions(err, 80, opt, 2, 8);
 
     if (error != null) {
@@ -197,11 +197,12 @@ public class Main {
     mode_opt.addOption(new Option("b", "bind",    true, ("Listen for FastCGI requests on " +
 							 "this <port>")));
     mode_opt.addOption(new Option("c", "cgi",    false, "Force CGI mode."));
-    mode_opt.addOption(new Option("s", "script",  true, "Execute this JavaScript file."));
+    mode_opt.addOption(new Option("s", "script", false, "Force script mode."));
 
     opt.addOptionGroup(mode_opt);
-    opt.addOption("m", "method",  true, "Override CGI request method");
-    opt.addOption("f", "file",    true, "Override CGI request file");
+    opt.addOption("m", "method",  true,  "Override CGI request method");
+    opt.addOption("f", "file",    true,  "Override CGI request file");
+    opt.addOption("?", "help",    false, "Show help");
 
     try {
       CommandLineParser parser = new GnuParser();
@@ -215,6 +216,10 @@ public class Main {
       int fastcgi_port = -1;
       Properties   cgi = null;
       String[]  script = null;
+
+      if (cmd.hasOption('?')) {
+	usage(opt, null, 0);
+      }
 
       if (cmd.hasOption('b')) {
 	fastcgi_port = Integer.parseInt(cmd.getOptionValue('b'));
@@ -230,11 +235,16 @@ public class Main {
 	// REQUEST_METHOD environment variables.
 	String fcgi_port  = System.getenv("FCGI_PORT");
 	String req_method = System.getenv("REQUEST_METHOD");
+	String path_trans = System.getenv("PATH_TRANSLATED");
 
 	if (fcgi_port != null) {
 	  fastcgi_port = Integer.parseInt(fcgi_port);
 	}
 	else if (req_method != null) {
+	  if (path_trans == null) {
+	    usage(opt, "PATH_TRANSLATED not set", 10);
+	  }
+
 	  cgi = new Properties();
 	}
 	else {
@@ -282,7 +292,7 @@ public class Main {
 	wl.future.get();
 	System.exit(cgiResult);
       }
-      else {
+      else if (script != null && script.length != 0) {
 	File file = new File(script[0]);
 	URL  url  = new URL("file", "", file.getAbsolutePath());
 
@@ -290,6 +300,9 @@ public class Main {
 
 	wl.future.get();
 	System.exit(cgiResult);
+      }
+      else {
+	usage(opt, "Required argument missing", 10);
       }
     }
     catch (ParseException ex) {
