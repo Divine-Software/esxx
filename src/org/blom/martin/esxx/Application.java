@@ -231,7 +231,7 @@ public class Application {
       return errorHandler;
     }
 
-    public Scriptable compile(Context cx)
+    public JSGlobal compile(Context cx)
       throws IllegalAccessException, InstantiationException, 
       java.lang.reflect.InvocationTargetException {
       if (applicationScope != null) {
@@ -456,7 +456,7 @@ public class Application {
     private URL baseURL;
     private LinkedList<URL> externalURLs = new LinkedList<URL>();
 
-    private Scriptable applicationScope = null;
+    private JSGlobal applicationScope = null;
     private boolean hasExecuted = false;
 
     private boolean gotESXX = false;
