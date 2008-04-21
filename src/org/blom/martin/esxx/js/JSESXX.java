@@ -47,15 +47,20 @@ public class JSESXX
       this.document = esxx.domToE4X(app.getXML(), cx, scope);
       this.uri      = (JSURI) cx.newObject(scope, "URI", new Object[] { app.getBaseURL() });
       this.wd       = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getWD() });
+      this.location = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getURL() });
       this.app      = app;
     }
 
-    public void setLocation(Context cx, Scriptable scope, URL url) {
-      setLocation((JSURI) cx.newObject(scope, "URI", new Object[] { url }));
+    public JSURI setLocation(Context cx, Scriptable scope, URL url) {
+      JSURI old_location = location;
+      location = (JSURI) cx.newObject(scope, "URI", new Object[] { url });
+      return old_location;
     }
 
-    public void setLocation(JSURI loc) {
+    public JSURI setLocation(JSURI loc) {
+      JSURI old_location = location;
       location = loc;
+      return old_location;
     }
 
     public void setRequest(JSRequest req) {
