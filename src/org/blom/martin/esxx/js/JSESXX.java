@@ -73,8 +73,34 @@ public class JSESXX
       return new JSESXX(cx, ctorObj, (ESXX) args[0], (Request) args[1], (Application) args[2]);
     }
 
-     public Synchronizer jsFunction_sync(Function f) {
+    public Synchronizer jsFunction_sync(Function f) {
       return new Synchronizer(f);
+    }
+
+    public void jsFunction_notify(Object o) {
+      synchronized (o) {
+	o.notify();
+      }
+    }
+
+    public void jsFunction_notifyAll(Object o) {
+      synchronized (o) {
+	o.notifyAll();
+      }
+    }
+
+    public void jsFunction_wait(Object o)
+      throws InterruptedException {
+      synchronized (o) {
+	o.wait();
+      }
+    }
+
+    public void jsFunction_wait(Object o, int timeout_ms) 
+      throws InterruptedException {
+      synchronized (o) {
+	o.wait(timeout_ms);
+      }
     }
 
     public static void jsFunction_include(Context cx, Scriptable thisObj, 
