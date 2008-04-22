@@ -70,7 +70,7 @@ public class JSURI
 	  uri = ((URL) args[0]).toURI();
 	}
 	else {
-	  JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
+	  JSESXX js_esxx = JSGlobal.getJSESXX(cx, ctorObj);
 
 	  if (js_esxx != null) {
 	    JSURI location = js_esxx.jsGet_wd();

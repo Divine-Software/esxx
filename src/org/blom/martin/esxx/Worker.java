@@ -46,25 +46,34 @@ class Worker {
   public JSResponse handleRequest(Context cx, Request request)
     throws Exception {
     Application app = esxx.getCachedApplication(request.getURL());
+    JSGlobal global;
     Scriptable scope;
     JSESXX js_esxx;
 
     synchronized (app) {
       // Compile all <?esxx and <?esxx-import PIs, if not already done.
       // compile() returns the application's global scope
-      scope = app.compile(cx);
+      global = app.compile(cx);
 
-      // Make the JSESXX object available as the instance-level
-      // "esxx" variable (via magic in JSGlobal).
-      js_esxx = (JSESXX) cx.newObject(scope, "ESXX",
-				      new Object[] { esxx, request, app });
-      cx.putThreadLocal(JSESXX.class, js_esxx);
+      // Make the JSESXX object temporary available as "esxx" in the
+      // global scope, so the set-up code has access to it.
+      js_esxx = global.createJSESXX(cx, esxx, request, app);
 
       // Execute all <?esxx and <?esxx-import PIs, if not already done
-      app.execute(cx, scope, js_esxx);
+      app.execute(cx, global, js_esxx);
+
+      global.deleteJSESXX();
     }
 
-    js_esxx.setLocation(cx, scope, request.getURL());
+    // Create a new per-request "global" scope and store the JSESXX object in it
+    scope = cx.newObject(global);
+    scope.setPrototype(global);
+    scope.setParentScope(null);
+    scope.put("esxx", scope, js_esxx);
+
+    // The JSURI class' constructor requires access to the current
+    // JSESXX object, so define it again in the "thread global" scope
+    ScriptableObject.defineClass(scope, JSURI.class);
 
     Object    result = null;
     Exception error  = null;
@@ -123,13 +132,8 @@ class Worker {
     // On errors, invoke error handler
 
     if (error != null) {
-      if (app.hasHandlers()) {
-	result = handleError(error, app, cx, scope);
-      }
-      else {
-	// No error handler installed: throw away
-	throw error;
-      }
+      // handleError throws error if no handler is installed
+      result = handleError(error, app, cx, scope);
     }
 
     // No error or error handled: Did we get a valid result?
@@ -341,9 +345,15 @@ class Worker {
   }
 
   private Object handleError(Exception error, Application app,
-			     Context cx, Scriptable scope) {
+			     Context cx, Scriptable scope) 
+    throws Exception {
     Object result;
     String handler = app.getErrorHandlerFunction();
+
+    if (handler == null) {
+      // No installed error handler
+      throw error;
+    }
 
     try {
       Object args[] = { cx.javaToJS(error, scope) };
@@ -386,20 +396,37 @@ class Worker {
   private Object callJSMethod(String object, String method,
 			      Object[] args, String identifier,
 			      Context cx, Scriptable scope) {
-    Scriptable o;
+    Object o;
+    String function;
 
     if (object == null) {
       o = scope;
+      function = method;
     }
     else {
-      o = (Scriptable) cx.evaluateString(scope, object, identifier, 1, null);
+      o = cx.evaluateString(scope, object, identifier, 1, null);
+      function = object + "." + method;
 
       if (o == null || o == ScriptableObject.NOT_FOUND) {
-	throw new ESXXException(identifier + " '" + object + "." + method + "' not found.");
+	throw new ESXXException(identifier + " '" + object + "' not found.");
+      }
+
+      if (!(o instanceof Scriptable)) {
+	throw new ESXXException(identifier + " '" + object +  "' is not an object.");
       }
     }
 
-    return ((ScriptableObject) scope).callMethod(cx, o, method, args);
+    Object m = ScriptableObject.getProperty((Scriptable) o, method);
+
+    if (m == null || m == ScriptableObject.NOT_FOUND) {
+      throw new ESXXException(identifier + " '" + function + "' not found.");
+    }
+
+    if (!(m instanceof Function)) {
+      throw new ESXXException(identifier + " '" + function + "' is not a function.");
+    }
+
+    return ((Function) m).call(cx, scope, (Scriptable) o, new Object[] { object, method, args });
   }
 
   private static void copyOutputKey(String key, Transformer from, Transformer to) {

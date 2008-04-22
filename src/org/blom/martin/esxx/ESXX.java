@@ -1,17 +1,17 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007 Martin Blom <martin@blom.org>
-     
+
      This program is free software; you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation; either version 2
      of the License, or (at your option) any later version.
-     
+
      This program is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
      GNU General Public License for more details.
-     
+
      You should have received a copy of the GNU General Public License
      along with this program; if not, write to the Free Software
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -83,7 +83,7 @@ public class ESXX {
 	domImplementation = reg.getDOMImplementation("XML 3.0");
       }
       catch (Exception ex) {
-	throw new ESXXException("Unable to get a DOM implementation object: " 
+	throw new ESXXException("Unable to get a DOM implementation object: "
 				+ ex.getMessage(), ex);
       }
 
@@ -97,6 +97,15 @@ public class ESXX {
       transformerFactory.setURIResolver(new URIResolver(null));
 
       contextFactory = new ContextFactory() {
+	  public boolean hasFeature(Context cx, int feature) {
+	    if (feature == Context.FEATURE_DYNAMIC_SCOPE) {
+	      return true;
+	    }
+	    else {
+	      return super.hasFeature(cx, feature);
+	    }
+	  }
+
 	  public void observeInstructionCount(Context cx, int instruction_count) {
 	    Workload workload = (Workload) cx.getThreadLocal(Workload.class);
 
@@ -113,7 +122,7 @@ public class ESXX {
 	};
 
       ThreadFactory tf = new ThreadFactory() {
-	  public Thread newThread(final Runnable r) { 
+	  public Thread newThread(final Runnable r) {
 	    return new Thread() {
 	      public void run() {
 		contextFactory.call(new ContextAction() {
@@ -206,7 +215,7 @@ public class ESXX {
      *
      *  @param request  The Request object that is to be executed.
      *  @param timeout  The timeout in milliseconds. Note that this is
-     *                  the time from the time of submission, not from the 
+     *                  the time from the time of submission, not from the
      *                  time the request actually starts processing.
      */
 
@@ -225,7 +234,7 @@ public class ESXX {
 	}, timeout);
     }
 
-    public Workload addJSFunction(Context old_cx, final Scriptable scope, final Function func, 
+    public Workload addJSFunction(Context old_cx, final Scriptable scope, final Function func,
 				  final Object[] args, int timeout) {
       return addContextAction(old_cx, new ContextAction() {
 	  public Object run(Context cx) {
@@ -250,8 +259,6 @@ public class ESXX {
 	  // If we're already executing a workload, never extend the timeout
 	  expires = old_work.expires;
 	}
-
-	js_esxx = (JSESXX) old_cx.getThreadLocal(JSESXX.class);
       }
       else {
 	js_esxx = null;
@@ -267,12 +274,7 @@ public class ESXX {
 	      throws Exception {
 	      Context new_cx = Context.getCurrentContext();
 
-	      Object old_js_esxx  = new_cx.getThreadLocal(JSESXX.class);
 	      Object old_workload = new_cx.getThreadLocal(Workload.class);
-
-	      if (js_esxx != null) {
-		new_cx.putThreadLocal(JSESXX.class, js_esxx);
-	      }
 
 	      new_cx.putThreadLocal(Workload.class, workload);
 
@@ -280,13 +282,6 @@ public class ESXX {
 		return ca.run(new_cx);
 	      }
 	      finally {
-		if (old_js_esxx != null) {
-		  new_cx.putThreadLocal(JSESXX.class, old_js_esxx);
-		}
-		else {
-		  new_cx.removeThreadLocal(JSESXX.class);
-		}
-
 		if (old_workload != null) {
 		  new_cx.putThreadLocal(Workload.class, old_workload);
 		}
@@ -440,17 +435,17 @@ public class ESXX {
 			     final PrintWriter err)
       throws ESXXException {
       LSInput in = domImplementationLS.createLSInput();
-      
+
       in.setSystemId(is_url.toString());
       in.setByteStream(is);
 
-      LSParser p = domImplementationLS.createLSParser(DOMImplementationLS.MODE_SYNCHRONOUS, 
+      LSParser p = domImplementationLS.createLSParser(DOMImplementationLS.MODE_SYNCHRONOUS,
 						      null);
 
       DOMErrorHandler eh = new DOMErrorHandler() {
 	    public boolean handleError(DOMError error) {
 	      DOMLocator  dl = error.getLocation();
-	      String     pos = (dl.getUri() + ", line " + dl.getLineNumber() + 
+	      String     pos = (dl.getUri() + ", line " + dl.getLineNumber() +
 				", column " + dl.getColumnNumber());
 	      Throwable  rel = (Throwable) error.getRelatedException();
 
@@ -498,8 +493,8 @@ public class ESXX {
     public Object parseStream(String mime_type, HashMap<String,String> mime_params,
 			      InputStream is, URL is_url,
 			      Collection<URL> external_urls,
-			      PrintWriter err, 
-			      Context cx, Scriptable scope) 
+			      PrintWriter err,
+			      Context cx, Scriptable scope)
       throws Exception {
       return parsers.parse(mime_type, mime_params, is, is_url, external_urls, err, cx, scope);
     }
@@ -528,16 +523,16 @@ public class ESXX {
       }
     }
 
-    public static void copyStream(InputStream is, OutputStream os) 
+    public static void copyStream(InputStream is, OutputStream os)
       throws IOException {
       byte buffer[] = new byte[8192];
-               
+
       int bytesRead;
-               
+
       while ((bytesRead = is.read(buffer)) != -1) {
 	os.write(buffer, 0, bytesRead);
       }
-               
+
       os.flush();
       os.close();
     }
@@ -554,10 +549,52 @@ public class ESXX {
 	  params.put(attr[0].trim(), attr[1].trim());
 	}
       }
-      
+
       return type;
     }
 
+    public static void dumpScriptState(Scriptable scope) {
+      System.err.println("Scope trace:");
+      printScopeTrace(scope);
+      System.err.println();
+      System.err.flush();
+    }
+
+    public static void printScriptStackTrace() {
+      StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+
+      JSFilenameFilter filter = new JSFilenameFilter ();
+
+      for (StackTraceElement e : trace) {
+	File f = new File(e.getFileName());
+	if (filter.accept(f.getParentFile(), f.getName())) {
+	  System.err.println(e);
+	}
+      }
+    }
+
+    public static void printScopeTrace(Scriptable scope) {
+      if (scope == null) {
+	return;
+      }
+
+      printPrototypeTrace(scope);
+      printScopeTrace(scope.getParentScope());
+    }
+
+    public static void printPrototypeTrace(Scriptable scope) {
+      if (scope == null) {
+	System.err.println();
+      }
+      else {
+	System.err.print(toString(scope) + " ");
+	printPrototypeTrace(scope.getPrototype());
+      }
+    }
+
+    public static String toString(Object o) {
+      return o.getClass().getSimpleName() + "@" + Integer.toHexString(o.hashCode());
+    }
 
     private class URIResolver
       implements javax.xml.transform.URIResolver, LSResourceResolver {
@@ -579,7 +616,7 @@ public class ESXX {
 				       String baseURI) {
 	  LSInput lsi = domImplementationLS.createLSInput();
 	  URL     url = getURL(systemId, baseURI);
-	  
+
 	  lsi.setSystemId(url.toString());
 	  lsi.setByteStream(getIS(url));
 
@@ -622,6 +659,14 @@ public class ESXX {
     }
 
 
+    public static class JSFilenameFilter 
+      implements FilenameFilter {
+      public boolean accept(File dir, String name) {
+	boolean is_java = name.matches(".*\\.java");
+	return !is_java;
+      }
+    }
+
     public static class Workload {
       public Workload(long exp) {
 	future    = null;
@@ -631,9 +676,9 @@ public class ESXX {
       public Future<Object> future;
       public long expires;
     }
-  
+
     public interface ResponseHandler {
-      Object handleResponse(JSResponse result) 
+      Object handleResponse(JSResponse result)
 	throws Exception;
       Object handleError(Throwable error);
     }

@@ -49,7 +49,7 @@ public class UrlURI
 	}
       }
 
-      JSESXX js_esxx = (JSESXX) cx.getThreadLocal(JSESXX.class);
+      JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
       Object result  = esxx.parseStream(type, params,
 					is, url,
 					null, 

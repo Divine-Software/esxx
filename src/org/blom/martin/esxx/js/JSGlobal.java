@@ -19,30 +19,50 @@
 
 package org.blom.martin.esxx.js;
 
+import org.blom.martin.esxx.Application;
+import org.blom.martin.esxx.ESXX;
+import org.blom.martin.esxx.ESXXException;
+import org.blom.martin.esxx.Request;
 import org.mozilla.javascript.*;
 
 public class JSGlobal 
   extends ImporterTopLevel {
 
-    public JSGlobal(Context cx) 
-      throws IllegalAccessException, InstantiationException, 
-      java.lang.reflect.InvocationTargetException {
-      super(cx, false);
+  public JSGlobal(Context cx) 
+    throws IllegalAccessException, InstantiationException, 
+	   java.lang.reflect.InvocationTargetException {
+    super(cx, false);
 
-      ScriptableObject.defineClass(this, JSESXX.class);
-      ScriptableObject.defineClass(this, JSRequest.class);
-      ScriptableObject.defineClass(this, JSResponse.class);
-      ScriptableObject.defineClass(this, JSURI.class);
+    ScriptableObject.defineClass(this, JSESXX.class);
+    ScriptableObject.defineClass(this, JSRequest.class);
+    ScriptableObject.defineClass(this, JSResponse.class);
+    ScriptableObject.defineClass(this, JSURI.class);
+  }
+
+  public JSESXX createJSESXX(Context cx, ESXX esxx, Request request, Application app) {
+    JSESXX js_esxx = (JSESXX) cx.newObject(this, "ESXX", new Object[] { esxx, request, app });
+
+    put("esxx", this, js_esxx);
+
+    return js_esxx;
+  }
+
+  public void deleteJSESXX() {
+    delete("esxx");
+  }
+
+  static JSESXX getJSESXX(Context cx, Scriptable scope) {
+    // When an application is initialized, scope will be the JSGlobal
+    // object; however, once the requests are handled, scope will
+    // instead be the per-request "global" scope where the JSESXX
+    // object has been moved to.
+    scope = getTopLevelScope(scope);
+    Object result = scope.get("esxx", scope);
+    
+    if (result == cx.getUndefinedValue()) {
+      throw new ESXXException("'esxx' not found in top-level scope");
     }
 
-    public Object get(String name, Scriptable start) {
-      if (name.equals("esxx")) {
-	Context cx = Context.getCurrentContext();
-
-	return (JSESXX) cx.getThreadLocal(JSESXX.class);
-      }
-      else {
-	return super.get(name, start);
-      }
-    }
+    return (JSESXX) result;
+  }
 }
