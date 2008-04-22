@@ -426,7 +426,7 @@ class Worker {
       throw new ESXXException(identifier + " '" + function + "' is not a function.");
     }
 
-    return ((Function) m).call(cx, scope, (Scriptable) o, new Object[] { object, method, args });
+    return ((Function) m).call(cx, scope, (Scriptable) o, args);
   }
 
   private static void copyOutputKey(String key, Transformer from, Transformer to) {
