@@ -146,9 +146,6 @@ public class ESXX {
 		      // Provide a better mapping for primitive types on this context
 		      cx.getWrapFactory().setJavaPrimitiveWrap(false);
 
-		      // Store a reference to the ESXX object
-		      cx.putThreadLocal(ESXX.class, ESXX.this);
-
 		      // Now call the Runnable
 		      r.run();
 
