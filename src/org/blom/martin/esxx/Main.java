@@ -36,14 +36,6 @@ import org.bumblescript.jfast.*;
 import org.mozilla.javascript.RhinoException;
 
 public class Main {
-  static private class JSFilenameFilter 
-    implements FilenameFilter {
-    public boolean accept(File dir, String name) {
-      boolean is_java = name.matches(".*\\.java");
-      return !is_java;
-    }
-  }
-
   static private class ScriptRequest
     extends Request 
     implements ESXX.ResponseHandler {
@@ -99,7 +91,7 @@ public class Main {
 	RhinoException ex = (RhinoException) t;
 
 	System.err.println(ex.getClass().getSimpleName() + ": " + ex.getMessage());
-	System.err.println(ex.getScriptStackTrace(new JSFilenameFilter()));
+	System.err.println(ex.getScriptStackTrace(new ESXX.JSFilenameFilter()));
 	return 10;
       }
       else {
@@ -202,7 +194,7 @@ public class Main {
       else if (ex instanceof RhinoException) {
 	out.println("<pre>");
 	out.println(ex.getClass().getSimpleName() + ": " + ex.getMessage());
-	out.println(((RhinoException) ex).getScriptStackTrace(new JSFilenameFilter()));
+	out.println(((RhinoException) ex).getScriptStackTrace(new ESXX.JSFilenameFilter()));
 	out.println("</pre>");
       }
       else {
