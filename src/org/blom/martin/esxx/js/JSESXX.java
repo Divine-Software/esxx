@@ -139,7 +139,7 @@ public class JSESXX
 
     public static Object[] jsFunction_parallel(Context cx, Scriptable thisObj, 
 					       Object[] args, Function funcObj) {
-      ESXX esxx = (ESXX) cx.getThreadLocal(ESXX.class);
+      ESXX esxx = ESXX.getInstance();
       Scriptable scope = funcObj.getParentScope();
 
       int timeout;

@@ -49,6 +49,17 @@ public class ESXX {
     /** A string that defines the ESXX XML namespace */
     public static final String NAMESPACE = "http://martin.blom.org/esxx/1.0/";
 
+    private static ESXX esxx;
+
+    public static ESXX getInstance() {
+      return esxx;
+    }
+
+    public static ESXX initInstance(Properties p) {
+      esxx = new ESXX(p);
+      return esxx;
+    }
+
     /** The constructor.
      *
      *  Will initialize the operating environment, start the worker
@@ -59,7 +70,7 @@ public class ESXX {
      *
      */
 
-    public ESXX(Properties p) {
+    private ESXX(Properties p) {
       settings = p;
 
       defaultTimeout = Integer.parseInt(settings.getProperty("esxx.request.timeout", "60")) * 1000;

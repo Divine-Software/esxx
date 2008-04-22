@@ -56,7 +56,7 @@ public class JSURI
 				       Function ctorObj, 
 				       boolean inNewExpr) 
       throws java.net.URISyntaxException {
-      ESXX   esxx    = (ESXX) cx.getThreadLocal(ESXX.class);
+      ESXX   esxx    = ESXX.getInstance();
       URI    uri     = null;
 
       if (args.length < 1 || args[0] == Context.getUndefinedValue()) {

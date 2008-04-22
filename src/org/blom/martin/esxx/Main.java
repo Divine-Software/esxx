@@ -352,7 +352,7 @@ public class Main {
 	}
       }
 
-      ESXX esxx = new ESXX(System.getProperties());
+      ESXX esxx = ESXX.initInstance(System.getProperties());
 
       if (fastcgi_port != -1) {
 	JFast jfast = new JFast(fastcgi_port);
