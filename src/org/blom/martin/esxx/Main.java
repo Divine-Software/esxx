@@ -21,14 +21,11 @@ package org.blom.martin.esxx;
 
 import org.blom.martin.esxx.js.JSResponse;
 
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.commons.cli.*;
@@ -48,12 +45,19 @@ public class Main {
     }
 
     public Object handleResponse(JSResponse response) 
-      throws IOException {
+      throws Exception {
+      ESXX esxx = ESXX.getInstance();
+
       // Output debug stream to stderr first
       System.err.print(getDebugWriter().toString());
 
       // Then write result
-      writeResult(response.getResult(), response.getContentType(), System.out);
+      HashMap<String,String> mime_params = new HashMap<String,String>();
+      String mime_type = ESXX.parseMIMEType(response.getContentType(), mime_params);
+
+      esxx.serializeToStream(response.getResult(), null, null,
+			     mime_type, mime_params,
+			     System.out);
 
       try {
 	int rc = Integer.parseInt(response.getStatus().split(" ", 2)[0]);
@@ -137,7 +141,9 @@ public class Main {
     }
 
     public Object handleResponse(JSResponse response)
-      throws IOException {
+      throws Exception {
+      ESXX esxx = ESXX.getInstance();
+
       // Output HTTP headers
       final PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
 
@@ -156,7 +162,12 @@ public class Main {
       Object result = response.getResult();
 
       // Output body
-      writeResult(result, response.getContentType(), outStream);
+      HashMap<String,String> mime_params = new HashMap<String,String>();
+      String mime_type = ESXX.parseMIMEType(response.getContentType(), mime_params);
+
+      esxx.serializeToStream(result, null, null,
+			     mime_type, mime_params,
+			     outStream);
 
       getErrorWriter().flush();
       getDebugWriter().flush();
@@ -210,7 +221,7 @@ public class Main {
 					     "text/html",
 					     sw.toString()));
       }
-      catch (IOException ioex) {
+      catch (Exception ex2) {
 	// Hmm
 	return 20;
       }
@@ -243,40 +254,6 @@ public class Main {
     }
   }
 
-  private static void writeResult(Object result, String content_type, OutputStream out)
-    throws IOException {
-    if (result instanceof ByteArrayOutputStream) {
-      ByteArrayOutputStream bos = (ByteArrayOutputStream) result;
-
-      bos.writeTo(out);
-    }
-    else if (result instanceof ByteBuffer) {
-      // Write result as-is to output stream
-      WritableByteChannel wbc = Channels.newChannel(out);
-      ByteBuffer          bb  = (ByteBuffer) result;
-
-      bb.rewind();
-
-      while (bb.hasRemaining()) {
-	wbc.write(bb);
-      }
-
-      wbc.close();
-    }
-    else if (result instanceof String) {
-      // Write result as-is, using the specified charset (if present)
-      Writer ow = Request.createWriter(out, content_type);
-      ow.write((String) result);
-      ow.close();
-    }
-    else if (result instanceof BufferedImage) {
-      // TODO ...
-      throw new UnsupportedOperationException("BufferedImage results not supported yet.");
-    }
-    else {
-      throw new UnsupportedOperationException("Unsupported result class type: " + result.getClass());
-    }
-  }
 
   private static void usage(Options opt, String error, int rc) {
     PrintWriter  err = new PrintWriter(System.err);

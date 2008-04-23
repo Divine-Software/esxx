@@ -24,10 +24,14 @@ import org.blom.martin.esxx.util.*;
 import org.blom.martin.esxx.js.JSESXX;
 import org.blom.martin.esxx.js.JSResponse;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -505,6 +509,58 @@ public class ESXX {
 			      Context cx, Scriptable scope)
       throws Exception {
       return parsers.parse(mime_type, mime_params, is, is_url, external_urls, err, cx, scope);
+    }
+
+    public void serializeToStream(Object object, Context cx, Scriptable scope,
+				  String mime_type, HashMap<String,String> mime_params,
+				  OutputStream out)
+      throws Exception {
+      if (object instanceof Scriptable) {
+	object = e4xToDOM((Scriptable) object); // Might throw
+      }
+
+      if (object instanceof Node) {
+	object = serializeNode((Node) object);
+      }
+
+      if (object instanceof ByteArrayOutputStream) {
+	ByteArrayOutputStream bos = (ByteArrayOutputStream) object;
+
+	bos.writeTo(out);
+      }
+      else if (object instanceof ByteBuffer) {
+	// Write result as-is to output stream
+	WritableByteChannel wbc = Channels.newChannel(out);
+	ByteBuffer          bb  = (ByteBuffer) object;
+
+	bb.rewind();
+
+	while (bb.hasRemaining()) {
+	  wbc.write(bb);
+	}
+
+	wbc.close();
+      }
+      else if (object instanceof String) {
+	// Write object as-is, using the specified charset (if present)
+	String cs = mime_params.get("charset");
+
+	if (cs == null) {
+	  cs = java.nio.charset.Charset.defaultCharset().name();
+	}
+
+	Writer ow = new OutputStreamWriter(out, cs);
+	ow.write((String) object);
+	ow.close();
+      }
+      else if (object instanceof BufferedImage) {
+	// TODO ...
+	throw new UnsupportedOperationException("BufferedImage objects not supported yet.");
+      }
+      else {
+	throw new UnsupportedOperationException("Unsupported object class type: " 
+						+ object.getClass());
+      }
     }
 
     public Application getCachedApplication(URL url)
