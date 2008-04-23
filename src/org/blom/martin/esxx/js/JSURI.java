@@ -140,22 +140,6 @@ public class JSURI
       return js_this.load(cx, thisObj, type, params);
     }
 
-
-    public static Object jsFunction_query(Context cx, Scriptable thisObj,
-					  Object[] args, Function funObj)
-      throws Exception {
-      JSURI  js_this = checkInstance(thisObj);
-      String type    = null;
-      HashMap<String,String> params = new HashMap<String,String>();
-
-      if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
-	throw Context.reportRuntimeError("Missing query argument"); 
-      }
-
-      return js_this.query(cx, thisObj, args);
-    }
-
-
     public static Object jsFunction_save(Context cx, Scriptable thisObj,
 					 Object[] args, Function funObj)
       throws Exception {
@@ -163,27 +147,56 @@ public class JSURI
       String type    = null;
       HashMap<String,String> params = new HashMap<String,String>();
 
+      if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
+	throw Context.reportRuntimeError("Missing save() argument"); 
+      }
+
       if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
 	type = ESXX.parseMIMEType(Context.toString(args[1]), params);
       }
 
-      return js_this.save(cx, thisObj, args.length != 0 ? args[0] : null, type, params);
+      return js_this.save(cx, thisObj, args[0], type, params);
     }
 
-    public static Object jsFunction_delete(Context cx, Scriptable thisObj,
+    public static Object jsFunction_append(Context cx, Scriptable thisObj,
 					   Object[] args, Function funObj)
       throws Exception {
       JSURI  js_this = checkInstance(thisObj);
       String type    = null;
       HashMap<String,String> params = new HashMap<String,String>();
 
+      if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
+	throw Context.reportRuntimeError("Missing append() argument"); 
+      }
+
+      if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
+	type = ESXX.parseMIMEType(Context.toString(args[1]), params);
+      }
+
+      return js_this.append(cx, thisObj, args[0], type, params);
+    }
+
+    public static Object jsFunction_delete(Context cx, Scriptable thisObj,
+					   Object[] args, Function funObj)
+      throws Exception {
+      JSURI  js_this = checkInstance(thisObj);
+
       return js_this.delete(cx, thisObj);
+    }
+
+    public static Object jsFunction_query(Context cx, Scriptable thisObj,
+					  Object[] args, Function funObj)
+      throws Exception {
+      JSURI  js_this = checkInstance(thisObj);
+
+      return js_this.query(cx, thisObj, args);
     }
 
 
     public String toString() {
       return uri.toString();
     }
+
 
     protected Object load(Context cx, Scriptable thisObj, 
 			  String type, HashMap<String,String> params)
@@ -192,14 +205,6 @@ public class JSURI
 				       "' does not support load()."); 
     }
 
-
-    protected Object query(Context cx, Scriptable thisObj, Object[] args)
-      throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
-				       "' does not support query()."); 
-    }
-
-
     protected Object save(Context cx, Scriptable thisObj, 
 			  Object data, String type, HashMap<String,String> params)
       throws Exception {
@@ -207,10 +212,23 @@ public class JSURI
 				       "' does not support save()."); 
     }
 
+    protected Object append(Context cx, Scriptable thisObj, 
+			    Object data, String type, HashMap<String,String> params)
+      throws Exception {
+      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
+				       "' does not support append()."); 
+    }
+
     protected Object delete(Context cx, Scriptable thisObj)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
 				       "' does not support delete()."); 
+    }
+
+    protected Object query(Context cx, Scriptable thisObj, Object[] args)
+      throws Exception {
+      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
+				       "' does not support query()."); 
     }
 
 

@@ -48,7 +48,7 @@ public class JdbcURI
 
 	if (q.needParams()) {
 	  if (args.length < 2 || args[1] == Context.getUndefinedValue()) {
-	    throw Context.reportRuntimeError("Missing parameter argument.");
+	    throw Context.reportRuntimeError("Missing query() argument.");
 	  }
 	
 	  q.bindParams(cx, (Scriptable) args[1]);

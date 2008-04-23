@@ -20,6 +20,7 @@
 package org.blom.martin.esxx.js;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.net.URI;
 import java.util.HashMap;
 import org.blom.martin.esxx.ESXX;
@@ -34,20 +35,18 @@ public class FileURI
     }
 
     protected Object load(Context cx, Scriptable thisObj, 
-			String type, HashMap<String,String> params)
+			  String type, HashMap<String,String> params)
       throws Exception {
-
       // Default file: load() media type is XML
       if (type == null) {
 	type = "text/xml";
       }
 
       if (type.equals("text/xml")) {
-
 	File dir = new File(uri);
 	
 	if (dir.exists() && dir.isDirectory()) {
-	  Document result = createDirectoryListing(dir);
+	  Document result = createDirectoryListing(dir.listFiles());
 
 	  return esxx.domToE4X(result, cx, this);
 	}
@@ -56,10 +55,54 @@ public class FileURI
       return super.load(cx, thisObj, type, params);
     }
 
+    protected Object save(Context cx, Scriptable thisObj, 
+			  Object data, String type, HashMap<String,String> params)
+      throws Exception {
+      super.save(cx, thisObj, data, type, params);
+      return createDirectoryListing(new File[] { new File(uri) });
+    }
 
-    protected Document createDirectoryListing(File dir) {
-      File[] list = dir.listFiles();
+    protected Object append(Context cx, Scriptable thisObj, 
+			    Object data, String type, HashMap<String,String> params)
+      throws Exception {
+      File file = new File(uri);
+      
+      if (file.exists() && file.isDirectory()) {
+	String filename = params.get("name");
+	
+	if (filename == null) {
+	  throw Context.reportRuntimeError("append() to a directory reqires the 'name' parameter");
+	}
 
+	file = new File(file, filename);
+	
+	if (!file.createNewFile()) {
+	  throw Context.reportRuntimeError("Failed to create " + file);
+	}
+
+	esxx.serializeToStream(data, cx, thisObj, type, params, new FileOutputStream(file));
+      }
+      else {
+	esxx.serializeToStream(data, cx, thisObj, type, params, new FileOutputStream(file, true));
+      }
+
+      return createDirectoryListing(new File[] { file });
+    }
+
+    protected Object query(Context cx, Scriptable thisObj, Object[] args)
+      throws Exception {
+      return createDirectoryListing(new File[] { new File(uri) });
+    }
+
+    protected Object delete(Context cx, Scriptable thisObj)
+      throws Exception {
+      File file = new File(uri);
+
+      return new Boolean(file.delete());
+    }
+
+
+    protected Document createDirectoryListing(File[] list) {
       Document result = esxx.createDocument("result");
       Element  root   = result.getDocumentElement();
 
@@ -84,13 +127,5 @@ public class FileURI
       }
 
       return result;
-    }
-
-    protected Object delete(Context cx, Scriptable thisObj)
-      throws Exception {
-
-      File f = new File(uri);
-
-      return new Boolean(f.delete());
     }
 }
