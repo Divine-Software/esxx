@@ -174,12 +174,12 @@ public class JSURI
       return js_this.append(cx, thisObj, args[0], type, params);
     }
 
-    public static Object jsFunction_delete(Context cx, Scriptable thisObj,
+    public static Object jsFunction_remove(Context cx, Scriptable thisObj,
 					   Object[] args, Function funObj)
       throws Exception {
       JSURI  js_this = checkInstance(thisObj);
 
-      return js_this.delete(cx, thisObj);
+      return js_this.remove(cx, thisObj);
     }
 
     public static Object jsFunction_query(Context cx, Scriptable thisObj,
@@ -217,7 +217,7 @@ public class JSURI
 				       "' does not support append()."); 
     }
 
-    protected Object delete(Context cx, Scriptable thisObj)
+    protected Object remove(Context cx, Scriptable thisObj)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
 				       "' does not support delete()."); 

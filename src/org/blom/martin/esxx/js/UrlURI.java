@@ -22,6 +22,7 @@ package org.blom.martin.esxx.js;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.HashMap;
 import org.blom.martin.esxx.ESXX;
 import org.mozilla.javascript.*;
@@ -39,7 +40,7 @@ public class UrlURI
       URL        url = uri.toURL();
       String[]    ct = { null };
       InputStream is = esxx.openCachedURL(url, ct);
-      
+
       if (type == null) {
 	if (ct[0] != null) {
 	  params.clear();

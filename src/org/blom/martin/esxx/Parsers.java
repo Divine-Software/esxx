@@ -177,14 +177,9 @@ class Parsers {
 		cs = "UTF-8";
 	      }
 
-	      BufferedReader br = new BufferedReader(new InputStreamReader(is, cs));
-
-	      while ((s = br.readLine()) != null) {
-		sb.append(s);
-		sb.append('\n');
-	      }
-
-	      return sb.toString();
+	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	      esxx.copyStream(is, bos);
+	      return bos.toString(cs);
 	    }
 	});
 

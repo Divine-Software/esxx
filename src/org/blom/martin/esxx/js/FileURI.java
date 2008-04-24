@@ -60,8 +60,11 @@ public class FileURI
     protected Object save(Context cx, Scriptable thisObj, 
 			  Object data, String type, HashMap<String,String> params)
       throws Exception {
-      super.save(cx, thisObj, data, type, params);
-      return createDirectoryListing(new File[] { new File(uri) });
+      ESXX esxx = ESXX.getInstance();
+      File file = new File(uri);
+
+      esxx.serializeToStream(data, cx, thisObj, type, params, new FileOutputStream(file));
+      return createDirectoryListing(new File[] { file });
     }
 
     protected Object append(Context cx, Scriptable thisObj, 
@@ -97,7 +100,7 @@ public class FileURI
       return createDirectoryListing(new File[] { new File(uri) });
     }
 
-    protected Object delete(Context cx, Scriptable thisObj)
+    protected Object remove(Context cx, Scriptable thisObj)
       throws Exception {
       File file = new File(uri);
 

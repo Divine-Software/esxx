@@ -1,0 +1,19 @@
+<?esxx
+
+var file1 = new URI("uri.tmp");
+var file2 = new URI("uri.tmp");
+var file3 = new URI("uri.tmp");
+
+file1.save("Yo");
+file2.append("man");
+var content = file3.load("text/plain")
+
+file1.remove();
+
+if (content != "Yoman") {
+   throw content;
+}
+
+?>
+
+<dummy/> <!-- This is an XML file, rememeber? -->
