@@ -35,13 +35,14 @@ import org.mozilla.javascript.*;
 
 public class MailToURI 
   extends JSURI {
-    public MailToURI(ESXX esxx, URI uri) {
-      super(esxx, uri);
+    public MailToURI(URI uri) {
+      super(uri);
     }
 
     protected Object save(Context cx, Scriptable thisObj, 
 			  Object data, String type, HashMap<String,String> params)
       throws Exception {
+      ESXX        esxx = ESXX.getInstance();
       Properties props = getProperties(thisObj);
       Session  session = Session.getInstance(props);
 

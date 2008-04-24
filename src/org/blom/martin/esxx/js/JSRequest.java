@@ -44,8 +44,10 @@ public class JSRequest
       super();
     }
 
-    public JSRequest(ESXX esxx, Request request, Context cx, Scriptable scope) {
+    public JSRequest(Request request, Context cx, Scriptable scope) {
       this();
+
+      ESXX esxx    = ESXX.getInstance();
 
       this.env     = cx.newObject(scope);
       this.headers = cx.newObject(scope);
@@ -92,7 +94,7 @@ public class JSRequest
       accept = esxx.domToE4X(accept_doc, cx, scope);
 
       // Now parse the POST/PUT/etc. message
-      parseMessage(esxx, request, cx, scope);
+      parseMessage(request, cx, scope);
     }
 
     public void setArgs(Scriptable uri_params) {
@@ -103,7 +105,7 @@ public class JSRequest
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
 				       boolean inNewExpr) {
-      return new JSRequest((ESXX) args[0], (Request) args[1], cx, ctorObj);
+      return new JSRequest((Request) args[0], cx, ctorObj);
     }
 
 
@@ -297,7 +299,8 @@ public class JSRequest
     }
 
 
-    private void parseMessage(ESXX esxx, Request request, Context cx, Scriptable scope) {
+    private void parseMessage(Request request, Context cx, Scriptable scope) {
+      ESXX esxx = ESXX.getInstance();
 
       // Consume SOAP message, if any
       // TODO: Add a SOAP handler in Parser.java

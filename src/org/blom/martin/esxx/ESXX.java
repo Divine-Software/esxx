@@ -237,10 +237,10 @@ public class ESXX {
 	    Worker worker = new Worker(ESXX.this);
 
 	    try {
-	      return rh.handleResponse(worker.handleRequest(cx, request));
+	      return rh.handleResponse(ESXX.this, worker.handleRequest(cx, request));
 	    }
 	    catch (Throwable t) {
-	      return rh.handleError(t);
+	      return rh.handleError(ESXX.this, t);
 	    }
 	  }
 	}, timeout);
@@ -742,9 +742,9 @@ public class ESXX {
     }
 
     public interface ResponseHandler {
-      Object handleResponse(JSResponse result)
+      Object handleResponse(ESXX esxx, JSResponse result)
 	throws Exception;
-      Object handleError(Throwable error);
+      Object handleError(ESXX esxx, Throwable error);
     }
 
     private int defaultTimeout;

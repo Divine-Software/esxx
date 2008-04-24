@@ -39,8 +39,8 @@ public class JSGlobal
     ScriptableObject.defineClass(this, JSURI.class);
   }
 
-  public JSESXX createJSESXX(Context cx, ESXX esxx, Request request, Application app) {
-    JSESXX js_esxx = (JSESXX) cx.newObject(this, "ESXX", new Object[] { esxx, request, app });
+  public JSESXX createJSESXX(Context cx, Request request, Application app) {
+    JSESXX js_esxx = (JSESXX) cx.newObject(this, "ESXX", new Object[] { request, app });
 
     put("esxx", this, js_esxx);
 

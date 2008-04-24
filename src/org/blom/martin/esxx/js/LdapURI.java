@@ -33,13 +33,15 @@ import org.w3c.dom.Element;
 
 public class LdapURI 
   extends JSURI {
-    public LdapURI(ESXX esxx, URI uri) {
-      super(esxx, uri);
+    public LdapURI(URI uri) {
+      super(uri);
     }
 
     protected Object load(Context cx, Scriptable thisObj,
 			  String type, HashMap<String,String> params)
       throws Exception {
+      ESXX esxx = ESXX.getInstance();
+
       // Default ldap: load() media type is XML
       if (type == null) {
 	type = "text/xml";

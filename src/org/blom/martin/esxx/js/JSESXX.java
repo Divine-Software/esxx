@@ -38,10 +38,11 @@ public class JSESXX
     }
 
     public JSESXX(Context cx, Scriptable scope,
-		  ESXX esxx, Request request, Application app) {
+		  Request request, Application app) {
       this();
 
-      this.esxx     = esxx;
+      ESXX esxx     = ESXX.getInstance();
+
       this.debug    = new PrintWriter(request.getDebugWriter());
       this.error    = new PrintWriter(request.getErrorWriter());
       this.document = esxx.domToE4X(app.getXML(), cx, scope);
@@ -75,7 +76,7 @@ public class JSESXX
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
 				       boolean inNewExpr) {
-      return new JSESXX(cx, ctorObj, (ESXX) args[0], (Request) args[1], (Application) args[2]);
+      return new JSESXX(cx, ctorObj, (Request) args[0], (Application) args[1]);
     }
 
     public Synchronizer jsFunction_sync(Function f) {
@@ -236,7 +237,6 @@ public class JSESXX
       return request;
     }
 
-    private ESXX esxx;
     private PrintWriter error;
     private PrintWriter debug;
     private Scriptable document;

@@ -28,13 +28,14 @@ import org.mozilla.javascript.*;
 
 public class UrlURI 
   extends JSURI {
-    public UrlURI(ESXX esxx, URI uri) {
-      super(esxx, uri);
+    public UrlURI(URI uri) {
+      super(uri);
     }
 
     protected Object load(Context cx, Scriptable thisObj, 
 			  String type, HashMap<String,String> params)
       throws Exception {
+      ESXX      esxx = ESXX.getInstance();
       URL        url = uri.toURL();
       String[]    ct = { null };
       InputStream is = esxx.openCachedURL(url, ct);

@@ -44,10 +44,8 @@ public class Main {
 	    new OutputStreamWriter(System.err));
     }
 
-    public Object handleResponse(JSResponse response) 
+    public Object handleResponse(ESXX esxx, JSResponse response) 
       throws Exception {
-      ESXX esxx = ESXX.getInstance();
-
       // Output debug stream to stderr first
       System.err.print(getDebugWriter().toString());
 
@@ -83,7 +81,7 @@ public class Main {
       }
     }
 
-    public Object handleError(Throwable t) {
+    public Object handleError(ESXX esxx, Throwable t) {
       if (t instanceof ESXXException) {
 	ESXXException ex = (ESXXException) t;
 
@@ -140,10 +138,8 @@ public class Main {
       return super.getWD();
     }
 
-    public Object handleResponse(JSResponse response)
+    public Object handleResponse(ESXX esxx, JSResponse response)
       throws Exception {
-      ESXX esxx = ESXX.getInstance();
-
       // Output HTTP headers
       final PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
 
@@ -180,7 +176,7 @@ public class Main {
       return 0;
     }
 
-    public Object handleError(Throwable ex) {
+    public Object handleError(ESXX esxx, Throwable ex) {
       String title = "ESXX Server Error";
       int    code  = 500;
 	
@@ -217,9 +213,9 @@ public class Main {
       out.close();
 
       try {
-	return handleResponse(new JSResponse(code + " " + title,
-					     "text/html",
-					     sw.toString()));
+	return handleResponse(esxx, new JSResponse(code + " " + title,
+						   "text/html",
+						   sw.toString()));
       }
       catch (Exception ex2) {
 	// Hmm

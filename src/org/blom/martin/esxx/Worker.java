@@ -57,7 +57,7 @@ class Worker {
 
       // Make the JSESXX object temporary available as "esxx" in the
       // global scope, so the set-up code has access to it.
-      js_esxx = global.createJSESXX(cx, esxx, request, app);
+      js_esxx = global.createJSESXX(cx, request, app);
 
       // Execute all <?esxx and <?esxx-import PIs, if not already done
       app.execute(cx, global, js_esxx);
@@ -81,7 +81,7 @@ class Worker {
     try {
       // Create a Request object
       JSRequest jsreq = (JSRequest) cx.newObject(scope, "Request",
-						 new Object[] { esxx, request });
+						 new Object[] { request });
 
       // Execute the SOAP or HTTP handler (if available)
       String object = getSOAPAction(jsreq, app);

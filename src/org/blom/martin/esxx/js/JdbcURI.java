@@ -33,12 +33,13 @@ import org.w3c.dom.Element;
 
 public class JdbcURI 
   extends JSURI {
-    public JdbcURI(ESXX esxx, URI uri) {
-      super(esxx, uri);
+    public JdbcURI(URI uri) {
+      super(uri);
     }
 
     protected Object query(Context cx, Scriptable thisObj, Object[] args) {
       try {
+	ESXX       esxx       = ESXX.getInstance();
 	String     query      = Context.toString(args[0]);
 	Properties properties = getProperties(thisObj);
 

@@ -37,9 +37,8 @@ public class JSURI
       super();
     }
 
-    public JSURI(ESXX esxx, URI uri) {
+    public JSURI(URI uri) {
       this();
-      this.esxx = esxx;
       this.uri  = uri;
     }
 
@@ -56,8 +55,7 @@ public class JSURI
 				       Function ctorObj, 
 				       boolean inNewExpr) 
       throws java.net.URISyntaxException {
-      ESXX   esxx    = ESXX.getInstance();
-      URI    uri     = null;
+      URI uri = null;
 
       if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
 	throw Context.reportRuntimeError("Missing argument"); 
@@ -94,34 +92,34 @@ public class JSURI
 	}
       }
 
-      return createJSURI(esxx, uri);
+      return createJSURI(uri);
     }
 
-    static JSURI createJSURI(ESXX esxx, URI uri) {
+    static JSURI createJSURI(URI uri) {
       String scheme = uri.getScheme();
 
       if (scheme.equals("file")) {
-	return new FileURI(esxx, uri);
+	return new FileURI(uri);
       }
 //      else if (scheme.startsWith("imap")) {
-//	return new ImapURI(esxx, uri);
+//	return new ImapURI(uri);
 //      }
       else if (scheme.startsWith("ldap")) {
-	return new LdapURI(esxx, uri);
+	return new LdapURI(uri);
       }
       else if (scheme.startsWith("mailto")) {
-	return new MailToURI(esxx, uri);
+	return new MailToURI(uri);
       }
       else if (scheme.equals("jdbc")) {
-	return new JdbcURI(esxx, uri);
+	return new JdbcURI(uri);
       }
       else {
 	try {
 	  uri.toURL();
-	  return new UrlURI(esxx, uri);
+	  return new UrlURI(uri);
 	}
 	catch (java.net.MalformedURLException ex) {
-	  return new JSURI(esxx, uri);
+	  return new JSURI(uri);
 	}
       }
     }
@@ -397,6 +395,5 @@ public class JSURI
 
     private static final String URI_DECODE_RESERVED = ";/?:@&=+$,#";
 
-    protected ESXX esxx;
     protected URI uri;
 }
