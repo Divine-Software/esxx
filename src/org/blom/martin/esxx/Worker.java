@@ -240,11 +240,13 @@ class Worker {
 
   private Object handleMain(String[] cmdline, JSRequest req, Application app,
 			    Context cx, Scriptable scope) {
-    Scriptable args = cx.newObject(scope);
+    Object[] js_cmdline = new Object[cmdline.length];
 
     for (int i = 0; i < cmdline.length; ++i) {
-      ScriptableObject.putProperty(args, i, cmdline[i]);
+      js_cmdline[i] = cmdline[i];
     }
+
+    Scriptable args = cx.newArray(scope, js_cmdline);
 
     req.setArgs(args);
 
