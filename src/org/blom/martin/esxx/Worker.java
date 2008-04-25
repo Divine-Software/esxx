@@ -109,20 +109,17 @@ class Worker {
       // Never handle this exception
       throw ex;
     }
-    catch (org.mozilla.javascript.WrappedException ex) {
+    catch (WrappedException ex) {
       Throwable t = ex.getWrappedException();
 
       if (t instanceof ESXXException.TimeOut) {
 	throw (ESXXException.TimeOut) t;
       }
-      else if (t instanceof Exception) {
-	error = (Exception) t;
-      }
       else {
 	error = ex;
       }
     }
-    catch (org.mozilla.javascript.RhinoException ex) {
+    catch (RhinoException ex) {
       error = ex;
     }
     catch (ESXXException ex) {
@@ -132,7 +129,7 @@ class Worker {
     // On errors, invoke error handler
 
     if (error != null) {
-      // handleError throws error if no handler is installed
+      // handleError throws (unwrapped) error if no handler is installed
       result = handleError(error, app, cx, scope);
     }
 
@@ -353,7 +350,15 @@ class Worker {
     String handler = app.getErrorHandlerFunction();
 
     if (handler == null) {
-      // No installed error handler
+      // No installed error handler: throw (unwrapped) exception
+      if (error instanceof WrappedException) {
+	Throwable t = ((WrappedException) error).getWrappedException();
+
+	if (t instanceof Exception) {
+	  error = (Exception) t;
+	}
+      }
+
       throw error;
     }
 
