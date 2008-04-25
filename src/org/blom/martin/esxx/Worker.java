@@ -115,9 +115,9 @@ class Worker {
       if (t instanceof ESXXException.TimeOut) {
 	throw (ESXXException.TimeOut) t;
       }
-//       else if (t instanceof Exception) {
-// 	error = (Exception) t;
-//       }
+      else if (t instanceof Exception) {
+	error = (Exception) t;
+      }
       else {
 	error = ex;
       }
