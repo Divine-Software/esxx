@@ -379,7 +379,7 @@ public class Main {
 	URL  url  = new URL("file", "", file.getAbsolutePath());
 
 	ScriptRequest sr = new ScriptRequest(url, script);
-	ESXX.Workload wl = esxx.addRequest(sr, sr, 0);
+	ESXX.Workload wl = esxx.addRequest(sr, sr, -1 /* no timeout for scripts */);
 
 	Integer rc = (Integer) wl.future.get();
 	System.exit(rc);

@@ -257,7 +257,10 @@ public class ESXX {
     }
 
     public Workload addContextAction(Context old_cx, final ContextAction ca, int timeout) {
-      if (timeout == 0) {
+      if (timeout == -1) {
+	timeout = Integer.MAX_VALUE;
+      }
+      else if (timeout == 0) {
 	timeout = defaultTimeout;
       }
 

@@ -152,7 +152,7 @@ public class JSESXX
 	tasks   = args.length - 1;
       }
       else {
-	timeout = Integer.MAX_VALUE;
+	timeout = -1;
 	tasks   = args.length;
       }
 
