@@ -1,0 +1,7 @@
+ESXX is licensed under the GNU GPL version 2 or later. However, as a
+special exception, this program is allowed to use APL2-licensed code
+from the Apache Commons project, JavaMail from Sun, Rhino from the
+Mozilla project and Saxon.
+
+For contributed code, all rights must be given to Martin Blom, since
+this project is also available under an non-GPL license (for a fee).
