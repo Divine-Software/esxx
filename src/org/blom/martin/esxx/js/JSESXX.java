@@ -25,12 +25,12 @@ import org.blom.martin.esxx.Request;
 import org.blom.martin.esxx.Application;
 
 import java.io.PrintWriter;
-import java.io.File;
+import java.io.InputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.net.URI;
 import java.util.concurrent.*;
 import org.mozilla.javascript.*;
-import org.w3c.dom.Document;
 
 public class JSESXX
   extends ScriptableObject {
@@ -46,8 +46,6 @@ public class JSESXX
 
       this.debug    = new PrintWriter(request.getDebugWriter());
       this.error    = new PrintWriter(request.getErrorWriter());
-      this.document = esxx.domToE4X(app.getXML(), cx, scope);
-      this.uri      = (JSURI) cx.newObject(scope, "URI", new Object[] { app.getBaseURL() });
       this.wd       = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getWD() });
       this.location = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getURL() });
       this.app      = app;
@@ -112,22 +110,52 @@ public class JSESXX
 
     public static void jsFunction_include(Context cx, Scriptable thisObj, 
 					  Object[] args, Function funcObj) 
-      throws java.net.MalformedURLException, java.io.IOException {
+      throws java.net.MalformedURLException, IOException {
+      ESXX        esxx = ESXX.getInstance();
       JSESXX   js_esxx = (JSESXX) thisObj;
       Scriptable scope = funcObj.getParentScope();
       Application  app = js_esxx.app;
 
-      URI uri;
+      URI          uri = null;
+      InputStream   is = null;
 
       if (args[0] instanceof JSURI) {
 	uri = ((JSURI) args[0]).uri;
+	is  = esxx.openCachedURL(uri.toURL());
       }
       else {
-	uri = js_esxx.location.uri.resolve(Context.toString(args[0]));
+	String file = Context.toString(args[0]);
+
+	try {
+	  uri = js_esxx.location.uri.resolve(file);
+	  is  = esxx.openCachedURL(uri.toURL());
+	}
+	catch (IOException ex) {
+	  // Failed to resolve URL relative the current file's
+	  // location -- try the include path
+
+	  Object[] paths_to_try = cx.getElements(js_esxx.jsGet_paths());
+
+	  for (Object path : paths_to_try) {
+	    try {
+	      uri = ((JSURI) path).uri.resolve(file);
+	      is  = esxx.openCachedURL(uri.toURL());
+	      // On success, break
+	      break;
+	    }
+	    catch (IOException ex2) {
+	      // Try next
+	    }
+	  }
+
+	  if (is == null) {
+	    throw Context.reportRuntimeError("File '" + file + "' not found.");
+	  }
+	}
       }
 
       synchronized (app) { // In case this method is called from a handler or main()
-	app.importAndExecute(cx, scope, js_esxx, uri.toURL());
+	app.importAndExecute(cx, scope, js_esxx, uri.toURL(), is);
       }
     }
 
@@ -223,11 +251,19 @@ public class JSESXX
     }
 
     public Scriptable jsGet_document() {
-      return document;
+      return app.getMainDocument();
     }
 
     public JSURI jsGet_uri() {
-      return uri;
+      return app.getMainURI();
+    }
+
+    public Scriptable jsGet_paths() {
+      return app.getIncludePath();
+    }
+
+    public void jsSet_paths(Scriptable paths) {
+      app.setIncludePath(paths);
     }
 
     public JSURI jsGet_wd() {
@@ -246,13 +282,11 @@ public class JSESXX
       return request;
     }
 
+    private Application app;
     private PrintWriter error;
     private PrintWriter debug;
-    private Scriptable document;
-    private JSURI uri;
     private JSURI wd;
     private JSURI location;
-    private Application app;
     private JSRequest request;
 
 }

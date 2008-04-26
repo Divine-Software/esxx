@@ -28,6 +28,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
@@ -77,7 +78,19 @@ public class ESXX {
     private ESXX(Properties p) {
       settings = p;
 
-      defaultTimeout = Integer.parseInt(settings.getProperty("esxx.request.timeout", "60")) * 1000;
+      defaultTimeout = Integer.parseInt(settings.getProperty("esxx.app.timeout", "60")) * 1000;
+
+      try {
+	String[] path = settings.getProperty("esxx.app.include_path", "").split(File.pathSeparator);
+	includePath = new URL[path.length];
+
+	for (int i = 0; i < path.length; ++i) {
+	  includePath[i] = new File(path[i]).toURI().toURL();
+	}
+      }
+      catch (Exception ex) {
+	throw new ESXXException("Illegal esxx.app.include_path value: " + ex.getMessage(), ex);
+      }
 
       memoryCache = new MemoryCache(
 	this,
@@ -92,6 +105,7 @@ public class ESXX {
       cgiToHTTPMap.put("HTTP_SOAPACTION", "SOAPAction");
       cgiToHTTPMap.put("CONTENT_TYPE", "Content-Type");
       cgiToHTTPMap.put("CONTENT_LENGTH", "Content-Length");
+
 
       try {
 	DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
@@ -423,6 +437,9 @@ public class ESXX {
       }
     }
 
+    public URL[] getIncludePath() {
+      return includePath;
+    }
 
     /** Utility method that parses an InputStream into a W3C DOM
      *  Document.
@@ -751,6 +768,7 @@ public class ESXX {
     }
 
     private int defaultTimeout;
+    private URL[] includePath;
     private MemoryCache memoryCache;
     private Parsers parsers;
     private Properties settings;

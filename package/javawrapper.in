@@ -5,6 +5,15 @@ JVMARGS=
 RUNAS=
 PID=
 ARGS=()
+ESXX_PATH="@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@:@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@/site"
+
+if [ -f /etc/sysconfig/@PROJECT_NAME@ ]; then
+    . /etc/sysconfig/@PROJECT_NAME@
+fi
+
+if [ -f /etc/default/@PROJECT_NAME@ ]; then
+    . /etc/default/@PROJECT_NAME@
+fi
 
 if [ ! -z "${JAVA_HOME}" ]; then
     JAVA=${JAVA_HOME}/bin/java
@@ -59,8 +68,10 @@ while `[ $# -gt 0 ]` ; do
 done
 
 if [ -z "${PID}" ]; then
-    ${RUNAS} ${JAVA} ${JVMARGS} -jar @SBIN_INSTALL_DIR@/@PROJECT_NAME@.jar "${ARGS[@]}"
+    ${RUNAS} ${JAVA} ${JVMARGS} -Desxx.app.include_path="${ESXX_PATH}" \
+	-jar @SBIN_INSTALL_DIR@/@PROJECT_NAME@.jar "${ARGS[@]}"
 else
-    ${RUNAS} ${JAVA} ${JVMARGS} -jar @SBIN_INSTALL_DIR@/@PROJECT_NAME@.jar "${ARGS[@]}" > /dev/null 2> /dev/null &
+    ${RUNAS} ${JAVA} ${JVMARGS}  -Desxx.app.include_path="${ESXX_PATH}" \
+	-jar @SBIN_INSTALL_DIR@/@PROJECT_NAME@.jar "${ARGS[@]}" > /dev/null 2> /dev/null &
     echo $! > "${PID}"
 fi

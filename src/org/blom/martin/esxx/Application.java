@@ -21,6 +21,7 @@ package org.blom.martin.esxx;
 
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 import javax.xml.stream.*;
@@ -65,11 +66,11 @@ public class Application {
     public Application(ESXX esxx, URL url)
       throws IOException {
       
-      esxxObject = esxx;
+      this.esxx = esxx;
       baseURL = url;
       xmlInputFactory = XMLInputFactory.newInstance();
 
-      InputStream is = esxxObject.openCachedURL(url);
+      InputStream is = esxx.openCachedURL(url);
 
       // Check if it's an XML document or a JS file
 
@@ -110,7 +111,7 @@ public class Application {
       // Load and parse the XML document
 
       try {
-	xml = esxxObject.parseXML(is, url, externalURLs, null);
+	xml = esxx.parseXML(is, url, externalURLs, null);
 
 	// Extract ESXX information, if any
 
@@ -198,12 +199,20 @@ public class Application {
       return externalURLs;
     }
 
-    public Document getXML() {
-      return xml;
+    public Scriptable getMainDocument() {
+      return mainDocument;
     }
 
-    public URL getBaseURL() {
-      return baseURL;
+    public JSURI getMainURI() {
+      return mainURI;
+    }
+
+    public Scriptable getIncludePath() {
+      return includePath;
+    }
+
+    public void setIncludePath(Scriptable paths) {
+      includePath = paths;
     }
 
     public Collection<Code> getCodeList() {
@@ -248,36 +257,49 @@ public class Application {
 	c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
       }
 
+      // Create JS versions of the document, it's URI and the include path
+      mainDocument = esxx.domToE4X(xml, cx, applicationScope);
+      mainURI = (JSURI) cx.newObject(applicationScope, "URI", new Object[] { baseURL });
+      URL[] include_path = esxx.getIncludePath();
+
+      includePath = cx.newArray(applicationScope, include_path.length);
+
+      for (int i = 0; i < include_path.length; ++i) {
+	includePath.put(i, includePath, (JSURI) cx.newObject(applicationScope, "URI", 
+							     new Object[] { include_path[i] }));
+      }
+
       return applicationScope;
     }
 
     public void execute(Context cx, Scriptable scope, JSESXX js_esxx) {
       if (!hasExecuted) {
+	hasExecuted = true;
+
 	for (Code c : codeList.values()) {
 	  if (!c.hasExecuted) {
+	    c.hasExecuted = true;
 	    JSURI old_uri = js_esxx.setLocation(cx, scope, c.url);
 	    c.code.exec(cx, scope);
-	    c.hasExecuted = true;
 	    js_esxx.setLocation(old_uri);
 	  }
 	}
-
-	hasExecuted = true;
       }
     }
 
-    public void importAndExecute(Context cx, Scriptable scope, JSESXX js_esxx, URL url)
+    public void importAndExecute(Context cx, Scriptable scope, JSESXX js_esxx, 
+				 URL url, InputStream is)
       throws IOException {
-      Code c = importCode(url);
+      Code c = importCode(url, is);
 
       if (c.code == null) {
 	c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
       }
 
       if (!c.hasExecuted) {
+	c.hasExecuted = true;
 	JSURI old_uri = js_esxx.setLocation(cx, scope, c.url);
 	c.code.exec(cx, scope);
-	c.hasExecuted = true;
 	js_esxx.setLocation(old_uri);
       }
     }
@@ -285,28 +307,41 @@ public class Application {
 
     private Code importCode(URL url) 
       throws IOException {
-      return importCode(url, esxxObject.openCachedURL(url));
+      return importCode(url, esxx.openCachedURL(url));
     }
 
     private Code importCode(URL url, InputStream is) 
       throws IOException {
-      ByteArrayOutputStream os = new ByteArrayOutputStream();
+      try {
+	String key = url.toURI().normalize().toString();
+	Code     c = codeList.get(key);
+
+	if (c == null) {
+	  ByteArrayOutputStream os = new ByteArrayOutputStream();
       
-      ESXX.copyStream(is, os);
-      return addCode(url, 1, os.toString());
+	  ESXX.copyStream(is, os);
+	  c = addCode(url, 1, os.toString());
+	}
+      
+	return c;
+      }
+      catch (URISyntaxException ex) {
+	throw new IOException("Unable to import " + url + ": " + ex.getMessage(), ex);
+      }
     }
 
-    private Code addCode(URL url, int line, String data) {
-      String key = url.toString();
-      Code     c = codeList.get(key);
-
-      if (c == null) {
-	c = new Code(url, line, data);
-	codeList.put(url.toString(), c);
+    private Code addCode(URL url, int line, String data) 
+      throws IOException {
+      try {
+	Code c = new Code(url, line, data);
+	codeList.put(url.toURI().normalize().toString(), c);
 	externalURLs.add(url);
-      }
 
-      return c;
+	return c;
+      }
+      catch (URISyntaxException ex) {
+	throw new IOException("Unable to import " + url + ": " + ex.getMessage(), ex);
+      }
     }
 
     private void handleStylesheet(String data)
@@ -450,11 +485,14 @@ public class Application {
 
     private XMLInputFactory xmlInputFactory;
 
-    private ESXX esxxObject;
+    private ESXX esxx;
     private URL baseURL;
-    private LinkedList<URL> externalURLs = new LinkedList<URL>();
+    private HashSet<URL> externalURLs = new HashSet<URL>();
 
     private JSGlobal applicationScope = null;
+    private Scriptable mainDocument;
+    private JSURI mainURI;
+    private Scriptable includePath;
     private boolean hasExecuted = false;
 
     private boolean gotESXX = false;
