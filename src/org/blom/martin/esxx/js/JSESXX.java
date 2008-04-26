@@ -27,6 +27,7 @@ import org.blom.martin.esxx.Application;
 import java.io.PrintWriter;
 import java.io.File;
 import java.net.URL;
+import java.net.URI;
 import java.util.concurrent.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
@@ -116,9 +117,17 @@ public class JSESXX
       Scriptable scope = funcObj.getParentScope();
       Application  app = js_esxx.app;
 
+      URI uri;
+
+      if (args[0] instanceof JSURI) {
+	uri = ((JSURI) args[0]).uri;
+      }
+      else {
+	uri = js_esxx.location.uri.resolve(Context.toString(args[0]));
+      }
+
       synchronized (app) { // In case this method is called from a handler or main()
-	app.importAndExecute(cx, scope, js_esxx, 
-			     js_esxx.location.uri.resolve(Context.toString(args[0])).toURL());
+	app.importAndExecute(cx, scope, js_esxx, uri.toURL());
       }
     }
 
