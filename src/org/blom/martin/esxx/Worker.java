@@ -200,9 +200,9 @@ class Worker {
 			esxx.domToE4X(soap_body, cx, scope),
 			esxx.domToE4X(soap_header, cx, scope) };
 
-      result = callJSMethod(object,
-			    soap_body.getDocumentElement().getLocalName(),
-			    args, "SOAP method", cx, scope);
+      String method = soap_body.getDocumentElement().getLocalName();
+
+      result = callJSMethod(object, method, args, "SOAP handler", cx, scope);
     }
     else {
       // No RPC handler; the SOAP message itself is the result
@@ -229,8 +229,7 @@ class Worker {
 
     Object args[] = { req };
 
-    result = callJSMethod(match.handler,
-			  args, "'" + request_method + "' handler", cx, scope);
+    result = callJSMethod(match.handler, args, "'" + request_method + "' handler", cx, scope);
 
     return result;
   }
@@ -247,7 +246,7 @@ class Worker {
 
     req.setArgs(args);
 
-    return callJSMethod("main", new Object[] { args }, app.getBaseURL().toString(), cx, scope);
+    return callJSMethod("main", new Object[] { args }, "Program entry" , cx, scope);
   }
 
   private void handleTransformation(JSResponse response, Application app, Request request)
@@ -411,7 +410,7 @@ class Worker {
       function = method;
     }
     else {
-      o = cx.evaluateString(scope, object, identifier, 1, null);
+      o = cx.evaluateString(scope, object, identifier + " object " + object, 1, null);
       function = object + "." + method;
 
       if (o == null || o == ScriptableObject.NOT_FOUND) {
@@ -426,7 +425,7 @@ class Worker {
     Object m = ScriptableObject.getProperty((Scriptable) o, method);
 
     if (m == null || m == ScriptableObject.NOT_FOUND) {
-      throw new ESXXException(identifier + " '" + function + "' not found.");
+      throw new ESXXException(identifier + " '" + function + "()' not found.");
     }
 
     if (!(m instanceof Function)) {
