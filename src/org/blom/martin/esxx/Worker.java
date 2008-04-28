@@ -151,7 +151,7 @@ class Worker {
     }
 
     if (response.getResult() instanceof Node) {
-      handleTransformation(response, js_esxx, app, cx, scope);
+      handleTransformation(request, response, js_esxx, app, cx, scope);
     }
 
     // Return response
@@ -252,7 +252,8 @@ class Worker {
     return callJSMethod("main", new Object[] { args }, "Program entry" , cx, scope);
   }
 
-  private void handleTransformation(JSResponse response, JSESXX js_esxx, Application app,
+  private void handleTransformation(Request request, JSResponse response, 
+				    JSESXX js_esxx, Application app,
 				    Context cx, Scriptable scope)
     throws IOException, SaxonApiException {
     ESXX   esxx         = ESXX.getInstance();
@@ -284,6 +285,16 @@ class Worker {
       adopted = doc.importNode(node, true);
     }
     doc.appendChild(adopted);
+
+    // Append the debug output while we're at it, and let the
+    // stylesheet decide if it should be output or not.
+    js_esxx.jsGet_debug().flush();
+    String ds = request.getDebugWriter().toString();
+    if (ds.length() != 0) {
+      doc.appendChild(doc.createComment("Start ESXX Debug Log\n" + 
+					ds.replaceAll("--", "\u2012\u2012") + 
+					"End ESXX Debug Log"));
+    }
 
     tr.setSource(new DOMSource(doc));
     tr.setDestination(s);

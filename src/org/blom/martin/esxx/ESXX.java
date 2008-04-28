@@ -597,37 +597,27 @@ public class ESXX {
       return memoryCache.getCachedStylesheet(url, err);
     }
 
-//     public Transformer getCachedStylesheet(URL url, PrintWriter err)
-//       throws IOException {
-//       try {
-// 	if (url != null) {
-// 	  Templates t = transformerFactory.newTemplates(new StreamSource(openCachedURL(url)));
-
-// 	  return t.newTransformer();
-// 	}
-// 	else {
-// 	  // Identity transformer
-// 	  return transformerFactory.newTransformer();
-// 	}
-//       }
-//       catch (TransformerConfigurationException ex) {
-// 	throw new ESXXException("TransformerConfigurationException: " + ex.getMessage());
-//       }
-//     }
-
     public Processor getSaxonProcessor() {
       return saxonProcessor;
     }
 
-  private static String identityTransform = 
-      "<xsl:transform xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>" +
-      "<xsl:template match='*'>" +
-      "<xsl:copy>" +
-      "<xsl:copy-of select='@*'/>" +
-      "<xsl:apply-templates/>" +
-      "</xsl:copy>" +
+  private static String identityTransform =
+      "<xsl:transform xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='2.0'>" +
+      "<xsl:template match='/'>" +
+      "<xsl:copy-of select='.'/>" +
       "</xsl:template>" +
       "</xsl:transform>";
+
+//       "<xsl:transform xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='2.0'>" +
+//       "<xsl:template match='element()'>" +
+//       "<xsl:copy>" +
+//       "<xsl:apply-templates select='@*,node()'/>" +
+//       "</xsl:copy>" +
+//       "</xsl:template>" +
+//       "<xsl:template match='attribute()|text()|comment()|processing-instruction()'>" +
+//       "<xsl:copy/>" +
+//       "</xsl:template>" +
+//       "</xsl:transform>";
 
     public XsltExecutable compileStylesheet(InputStream is, URL is_url,
 					    Collection<URL> external_urls,
