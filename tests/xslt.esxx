@@ -40,7 +40,9 @@ validating the document, this page will also apply a server-side XSLT
 transform before sending the result to the client.</p>
 
   <p>The XSLT stylesheet has full access to the ESXX runtime via the
-<code>esxx</code> namespace.</p>
+<code>esxx</code> namespace:</p>
+
+  <p>Years since 1900: <span id='ext-java-func'/></p>
 
  </body>
 </html>

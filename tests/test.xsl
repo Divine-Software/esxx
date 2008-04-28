@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<xsl:stylesheet version="1.0" 
+<xsl:stylesheet version="2.0" 
 		xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 		xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
@@ -30,6 +30,12 @@
     <xsl:copy>
       <xsl:attribute name="class">red</xsl:attribute>
       <xsl:apply-templates select="@*|node()"/>
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="xhtml:span[@id='ext-java-func']">
+    <xsl:copy xmlns:date="java.util.Date">
+      <xsl:value-of select="date:get-year(date:new())"/>
     </xsl:copy>
   </xsl:template>
 
