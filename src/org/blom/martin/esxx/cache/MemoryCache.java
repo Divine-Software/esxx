@@ -20,18 +20,19 @@
 package org.blom.martin.esxx.cache;
 
 import org.blom.martin.esxx.*;
-import org.blom.martin.esxx.util.*;
 
 import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.HashSet;
+import net.sf.saxon.s9api.*;
+import javax.xml.transform.stream.StreamSource;
 
 public class MemoryCache
   extends CacheBase {
 
     public MemoryCache(ESXX esxx, int max_entries, long max_size, long max_age) {
       super(esxx, max_entries, max_size, max_age);
-//      System.err.println("Created memory cache");
     }
 
     public InputStream openCachedURL(URL url, String[] content_type) 
@@ -51,7 +52,6 @@ public class MemoryCache
 
     public Application getCachedApplication(URL url)
       throws IOException {
-
       String url_string = url.toString();
       Application app;
 
@@ -62,14 +62,45 @@ public class MemoryCache
       if (app == null || checkApplicationURLs(url, app)) {
 	app = new Application(esxx, url);
 
-//	System.err.println("Created new Application " + app);
-
 	synchronized (cachedApplications) {
 	  cachedApplications.put(url_string, app);
 	}
       }
 
       return app;
+    }
+
+    public XsltExecutable getCachedStylesheet(URL url, PrintWriter err)
+      throws IOException {
+      try {
+	if (url == null) {
+	  return esxx.compileStylesheet(null, null, null, null);
+	}
+
+	String url_string = url.toString();;
+	Stylesheet xslt;
+
+	synchronized (cachedStylesheets) {
+	  xslt = cachedStylesheets.get(url_string);
+	}
+
+	if (xslt == null || checkStylesheetURLs(url, xslt)) {
+	  xslt = new Stylesheet();
+	  xslt.xsltExecutable = esxx.compileStylesheet(esxx.openCachedURL(url), url, 
+						       xslt.externalURLs, err);
+	}
+
+	if (xslt == null) {
+	  synchronized (cachedStylesheets) {
+	    cachedStylesheets.put(url_string, xslt);
+	  }
+	}
+
+	return xslt.xsltExecutable;
+      }
+      catch (SaxonApiException ex) {
+	throw new IOException("Failed to compile XSLT stylesheet: " + ex.getMessage(), ex);
+      }
     }
 
     private boolean updateCachedURL(CacheBase.CachedURL cached)
@@ -106,6 +137,21 @@ public class MemoryCache
       return false;
     }
 
+    private boolean checkStylesheetURLs(URL url, Stylesheet xslt)
+      throws IOException {
+      if (checkURL(url)) {
+	return true;
+      }
+
+      for (URL u : xslt.externalURLs) {
+	if (checkURL(u)) {
+	  return true;
+	}
+      }
+
+      return false;
+    }
+
     private boolean checkURL(URL url)
       throws IOException {
       CacheBase.CachedURL cached = getCachedURL(url);
@@ -116,5 +162,11 @@ public class MemoryCache
       }
     }
 
+    private class Stylesheet {
+      HashSet<URL> externalURLs = new HashSet<URL>();
+      XsltExecutable xsltExecutable;
+    }
+
     private HashMap<String, Application> cachedApplications = new HashMap<String, Application>();
+    private HashMap<String, Stylesheet> cachedStylesheets = new HashMap<String, Stylesheet>();
 }

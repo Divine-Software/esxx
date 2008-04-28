@@ -48,6 +48,7 @@ import org.mozilla.javascript.Scriptable;
 import org.w3c.dom.*;
 import org.w3c.dom.bootstrap.*;
 import org.w3c.dom.ls.*;
+import net.sf.saxon.s9api.*;
 
 
 public class ESXX {
@@ -121,6 +122,8 @@ public class ESXX {
 
       DOMConfiguration dc = lsSerializer.getDomConfig();
       dc.setParameter("xml-declaration", false);
+
+      saxonProcessor = new Processor(false);
 
       transformerFactory = TransformerFactory.newInstance();
       transformerFactory.setURIResolver(new URIResolver(null));
@@ -334,6 +337,7 @@ public class ESXX {
      *
      *  @return A String containing the XML representation of the supplied Node.
      */
+
 
     public String serializeNode(org.w3c.dom.Node node) {
       try {
@@ -588,24 +592,76 @@ public class ESXX {
       return memoryCache.getCachedApplication(url);
     }
 
-
-    public Transformer getCachedStylesheet(URL url)
+    public XsltExecutable getCachedStylesheet(URL url, PrintWriter err) 
       throws IOException {
-      try {
-	if (url != null) {
-	  Templates t = transformerFactory.newTemplates(new StreamSource(openCachedURL(url)));
-
-	  return t.newTransformer();
-	}
-	else {
-	  // Identity transformer
-	  return transformerFactory.newTransformer();
-	}
-      }
-      catch (TransformerConfigurationException ex) {
-	throw new ESXXException("TransformerConfigurationException: " + ex.getMessage());
-      }
+      return memoryCache.getCachedStylesheet(url, err);
     }
+
+//     public Transformer getCachedStylesheet(URL url, PrintWriter err)
+//       throws IOException {
+//       try {
+// 	if (url != null) {
+// 	  Templates t = transformerFactory.newTemplates(new StreamSource(openCachedURL(url)));
+
+// 	  return t.newTransformer();
+// 	}
+// 	else {
+// 	  // Identity transformer
+// 	  return transformerFactory.newTransformer();
+// 	}
+//       }
+//       catch (TransformerConfigurationException ex) {
+// 	throw new ESXXException("TransformerConfigurationException: " + ex.getMessage());
+//       }
+//     }
+
+    public Processor getSaxonProcessor() {
+      return saxonProcessor;
+    }
+
+  private static String identityTransform = 
+      "<xsl:transform xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>" +
+      "<xsl:template match='*'>" +
+      "<xsl:copy>" +
+      "<xsl:copy-of select='@*'/>" +
+      "<xsl:apply-templates/>" +
+      "</xsl:copy>" +
+      "</xsl:template>" +
+      "</xsl:transform>";
+
+    public XsltExecutable compileStylesheet(InputStream is, URL is_url,
+					    Collection<URL> external_urls,
+					    final PrintWriter err)
+      throws SaxonApiException {
+      XsltCompiler compiler = saxonProcessor.newXsltCompiler();
+
+      if (is == null) {
+	return compiler.compile(new StreamSource(new StringReader(identityTransform)));
+      }
+
+      compiler.setURIResolver(new URIResolver(external_urls));
+      compiler.setErrorListener(new ErrorListener() {
+	  public void error(TransformerException ex)
+	    throws TransformerException {
+	    err.println(ex.getLocationAsString()  + ": " + ex.getMessage());
+	    throw ex;
+	  }
+
+	  public void fatalError(TransformerException ex)
+	    throws TransformerException {
+	    err.println(ex.getLocationAsString()  + ": " + ex.getMessage());
+	    throw ex;
+	  }
+
+	  public void warning(TransformerException ex) {
+	    err.println(ex.getLocationAsString()  + ": " + ex.getMessage());
+	  }
+	});
+
+      return compiler.compile(new StreamSource(is, is_url.toString()));
+    }
+
+
 
     public static void copyStream(InputStream is, OutputStream os)
       throws IOException {
@@ -777,6 +833,7 @@ public class ESXX {
     private DOMImplementation domImplementation;
     private DOMImplementationLS domImplementationLS;
     private LSSerializer lsSerializer;
+    private Processor saxonProcessor;
     private TransformerFactory  transformerFactory;
 
     private ContextFactory contextFactory;

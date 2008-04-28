@@ -25,7 +25,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 import javax.xml.stream.*;
-import javax.xml.xpath.*;
+//import javax.xml.xpath.*;
 import org.blom.martin.esxx.js.JSGlobal;
 import org.blom.martin.esxx.js.JSESXX;
 import org.blom.martin.esxx.js.JSRequest;
@@ -35,6 +35,9 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.w3c.dom.*;
+
+import net.sf.saxon.s9api.*;
+import net.sf.saxon.dom.*;
 
 /** This class is responsible for parsing the XML file the web server
   * invokes ESXX with. The XML file may include ESXX-specific
@@ -116,33 +119,18 @@ public class Application {
 	// Extract ESXX information, if any
 
 	try { 
-	  XPath xpath = XPathFactory.newInstance().newXPath();
-	  xpath.setNamespaceContext(new javax.xml.namespace.NamespaceContext() {
-		public String getNamespaceURI(String prefix) {
-		  if (prefix.equals("esxx")) {
-		    return ESXX.NAMESPACE;
-		  }
-		  else {
-		    return javax.xml.XMLConstants.NULL_NS_URI;
-		  }
-		}
+	  Processor processor = esxx.getSaxonProcessor();
 
-		public String getPrefix(String uri) {
-		  throw new UnsupportedOperationException();
-		}
+	  XPathCompiler xc = processor.newXPathCompiler();
+	  xc.declareNamespace("esxx", ESXX.NAMESPACE);
 
-		public java.util.Iterator getPrefixes(String uri) {
-		  throw new UnsupportedOperationException();
-		}
-	    });
+	  XPathSelector xs = xc.compile("//processing-instruction() | " +
+					"//esxx:esxx/esxx:handlers/esxx:*").load();
+	  xs.setContextItem(processor.newDocumentBuilder().wrap(xml));
 
-	  NodeList r = (NodeList) xpath.evaluate("//processing-instruction() | " +
-						 "//esxx:esxx/esxx:handlers/esxx:*", 
-						 xml, XPathConstants.NODESET);
+	  for (XdmItem i : xs) {
+	    Node n = (Node) ((NodeWrapper) i.getUnderlyingValue()).getUnderlyingNode();
 	  
-	  for (int i = 0; i < r.getLength(); ++i) {
-	    Node n = r.item(i);
-	    
 	    if (n.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE) {
 	      String name = n.getNodeName();
 
@@ -181,10 +169,10 @@ public class Application {
 	    }
 	  }
 	}
-	catch(XPathExpressionException ex) {
+	catch (SaxonApiException ex) {
 	  // Should never happen
 	  ex.printStackTrace();
-	  throw new ESXXException("XPathExpressionException: " + ex.getMessage());
+	  throw new ESXXException("SaxonApiException: " + ex.getMessage(), ex);
 	}
       }
       catch (XMLStreamException ex) {

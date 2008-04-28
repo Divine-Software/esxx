@@ -38,6 +38,9 @@ import javax.xml.stream.*;
 import javax.xml.stream.events.XMLEvent;
 import javax.xml.namespace.NamespaceContext;
 
+import net.sf.saxon.s9api.*;  
+import net.sf.saxon.dom.*;
+
 class Worker {
   public Worker(ESXX esxx) {
     this.esxx = esxx;
@@ -148,7 +151,7 @@ class Worker {
     }
 
     if (response.getResult() instanceof Node) {
-      handleTransformation(response, app, request);
+      handleTransformation(response, js_esxx, app, cx, scope);
     }
 
     // Return response
@@ -249,97 +252,47 @@ class Worker {
     return callJSMethod("main", new Object[] { args }, "Program entry" , cx, scope);
   }
 
-  private void handleTransformation(JSResponse response, Application app, Request request)
-    throws IOException, UnsupportedEncodingException,
-	   XMLStreamException, TransformerException {
-
+  private void handleTransformation(JSResponse response, JSESXX js_esxx, Application app,
+				    Context cx, Scriptable scope)
+    throws IOException, SaxonApiException {
+    ESXX   esxx         = ESXX.getInstance();
     Node   node         = (Node) response.getResult();
     String content_type = response.getContentType();
 
     HashMap<String,String> params = new HashMap<String,String>();
     String                 ct     = ESXX.parseMIMEType(content_type, params);
     String                 cs     = params.get("charset");
+    
+    URL stylesheet = app.getStylesheet(ct);
 
-    Transformer tr;
-
-    try {
-      URL stylesheet = app.getStylesheet(ct);
-
-      if (stylesheet == null) {
-	stylesheet = app.getStylesheet("");
-      }
-
-      tr = esxx.getCachedStylesheet(stylesheet);
-
-      // Set media-type on identity styleseet, if
-      // specified. User-specified stylesheets should set
-      // these keys directly in the stylesheet.
-      if (stylesheet == null && content_type != null) {
-
-	tr.setOutputProperty(OutputKeys.MEDIA_TYPE, ct);
-
-	if (cs != null) {
-	  tr.setOutputProperty(OutputKeys.ENCODING, cs);
-	}
-      }
-    }
-    catch (IOException ex) {
-      throw new ESXXException("Unable to load stylesheet: " + ex.getMessage(), ex);
+    if (stylesheet == null) {
+      stylesheet = app.getStylesheet("");
     }
 
-    if (!tr.getOutputProperty(OutputKeys.METHOD).equals("text")) {
-      // Get identity transformer
-      Transformer ntr = esxx.getCachedStylesheet(null);
+    XsltExecutable  xe = esxx.getCachedStylesheet(stylesheet, js_esxx.jsGet_error());
+    XsltTransformer tr = xe.load();
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    Serializer s = new Serializer();
+    s.setOutputStream(os);
 
-      // Copy all  properties
-      copyOutputKey(OutputKeys.CDATA_SECTION_ELEMENTS, tr, ntr);
-      copyOutputKey(OutputKeys.DOCTYPE_PUBLIC, tr, ntr);
-      copyOutputKey(OutputKeys.DOCTYPE_SYSTEM, tr, ntr);
-      copyOutputKey(OutputKeys.ENCODING, tr, ntr);
-      copyOutputKey(OutputKeys.INDENT, tr, ntr);
-      copyOutputKey(OutputKeys.MEDIA_TYPE, tr, ntr);
-      copyOutputKey(OutputKeys.METHOD, tr, ntr);
-      copyOutputKey(OutputKeys.OMIT_XML_DECLARATION, tr, ntr);
-      copyOutputKey(OutputKeys.STANDALONE, tr, ntr);
-      copyOutputKey(OutputKeys.VERSION, tr, ntr);
-
-      // Run user's transformation onto a new DOM node
-      DOMResult dr = new DOMResult();
-
-      // Force XML transformation
-      tr.setOutputProperty(OutputKeys.METHOD, "xml");
-      tr.setOutputProperty(OutputKeys.VERSION, "1.0");
-      tr.setOutputProperty(OutputKeys.CDATA_SECTION_ELEMENTS, "");
-      tr.transform(new DOMSource(node), dr);
-
-      tr = ntr;
-      node = dr.getNode();
+    // This is sad, but Saxon can only transform the DOM Document Element node.
+    org.w3c.dom.DOMImplementation di = node.getOwnerDocument().getImplementation();
+    Document doc = di.createDocument(null, null, null);
+    Node adopted = doc.adoptNode(node);
+    if (adopted == null) {
+      // Ugh ...
+      adopted = doc.importNode(node, true);
     }
+    doc.appendChild(adopted);
 
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    tr.setSource(new DOMSource(doc));
+    tr.setDestination(s);
 
-    tr.transform(new DOMSource(node), new StreamResult(bos));
+    tr.transform();
 
-    content_type = tr.getOutputProperty(OutputKeys.MEDIA_TYPE) +
-      ";charset=" + tr.getOutputProperty(OutputKeys.ENCODING);
-
-    // Attach debug log to document
-    request.getDebugWriter().flush();
-
-    String ds = request.getDebugWriter().toString();
-
-    if (ds.length() != 0) {
-      Writer out = request.createWriter(bos, content_type);
-      out.write("<!-- Start ESXX Debug Log\n" +
-		ds.replaceAll("--", "\u2012\u2012") +
-		"End ESXX Debug Log -->");
-      out.close();
-    }
-
-    bos.close();
-
-    response.setContentType(content_type);
-    response.setResult(bos);
+    response.setContentType(xe.getUnderlyingCompiledStylesheet().getOutputProperties().
+			    getProperty("media-type", content_type));
+    response.setResult(os);
   }
 
   private Object handleError(Exception error, Application app,
