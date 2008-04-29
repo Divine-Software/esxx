@@ -192,7 +192,6 @@ public class JSESXX
 	timeout = -1;
 	tasks   = args.length;
       }
-
       Object[] func_args;
 
       // If the second-last parameter (or last if no timeout was
@@ -205,6 +204,12 @@ public class JSESXX
       }
       else {
 	func_args = new Object[0];
+      }
+
+      if (tasks == 1 && args[0] instanceof NativeArray) {
+	NativeArray array = (NativeArray) args[0];
+	tasks = (int) array.getLength();
+	args  = cx.getElements(array);
       }
 
       ESXX.Workload[] workloads = new ESXX.Workload[tasks];
