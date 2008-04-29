@@ -50,7 +50,7 @@ public class JSResponse
       String content_type;
       Object result;
 
-      if (args.length == 1 args[0] instanceof NativeArray) {
+      if (args.length == 1 && args[0] instanceof NativeArray) {
 	// Automatically convert an JS Array into a Response
 	args = cx.getElements((NativeArray) args[0]);
       }
