@@ -50,20 +50,9 @@ public class JSResponse
       String content_type;
       Object result;
 
-      if (args.length == 1 && 
-	  args[0] instanceof NativeArray) {
+      if (args.length == 1 args[0] instanceof NativeArray) {
 	// Automatically convert an JS Array into a Response
-	NativeArray array = (NativeArray) args[0];
-	
-	if (array.getLength() > 4) {
-	  throw Context.reportRuntimeError("Array response requires 1-4 elements."); 
-	}
-
-	args = new Object[(int) array.getLength()];
-
-	for (int i = 0; i < (int) array.getLength(); ++i) {
-	  args[i] = array.get(i, array);
-	}
+	args = cx.getElements((NativeArray) args[0]);
       }
 
       switch (args.length) {
@@ -116,9 +105,6 @@ public class JSResponse
 	if (content_type == null) {
 	  content_type = "image/png";
 	}
-
-	// TODO ...
-	throw new ESXXException("BufferedImage results not supported yet.");
       }
       else {
 	try {
