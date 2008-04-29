@@ -29,7 +29,9 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URI;
+import java.util.LinkedList;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.mozilla.javascript.*;
 
 public class JSESXX
@@ -178,70 +180,110 @@ public class JSESXX
     public static Object[] jsFunction_parallel(Context cx, Scriptable thisObj, 
 					       Object[] args, Function funcObj) {
       ESXX esxx = ESXX.getInstance();
-      Scriptable scope = funcObj.getParentScope();
+      final Scriptable scope = funcObj.getParentScope();
 
-      int timeout;
-      int tasks;
-      
-      // If the last parameter is a number, it defines the timeout
-      if (args.length > 1 && args[args.length - 1] instanceof Number) {
-	timeout = ((Number) args[args.length - 1]).intValue();
-	tasks   = args.length - 1;
+      Object[] tasks = null;
+      Object[] fargs = Context.emptyArgs;
+      int    timeout = Integer.MAX_VALUE;
+      int  max_tasks = Integer.MAX_VALUE;
+
+      // The first argument in the workload array
+      if (args.length < 1 || !(args[0] instanceof NativeArray)) {
+	throw Context.reportRuntimeError("First argument must be an Array");
       }
       else {
-	timeout = -1;
-	tasks   = args.length;
-      }
-      Object[] func_args;
-
-      // If the second-last parameter (or last if no timeout was
-      // specified) is not a Function, it's an array that will be used
-      // as arguments to the functions.
-      if (tasks > 1 && args[tasks - 1] instanceof Scriptable && 
-	  !(args[tasks - 1] instanceof Function)) {
-	func_args = cx.getElements((Scriptable) args[tasks - 1]);
-	--tasks;
-      }
-      else {
-	func_args = new Object[0];
+	tasks = cx.getElements((NativeArray) args[0]);
       }
 
-      if (tasks == 1 && args[0] instanceof NativeArray) {
-	NativeArray array = (NativeArray) args[0];
-	tasks = (int) array.getLength();
-	args  = cx.getElements(array);
+      // The second (optional) argument is the function arguments
+      if (args.length > 1 && args[1] != Context.getUndefinedValue()) {
+	cx.getElements((Scriptable) args[1]);
       }
 
-      ESXX.Workload[] workloads = new ESXX.Workload[tasks];
+      // The third (optional) argument is the timeout in ms
+      if (args.length > 2 && args[2] != Context.getUndefinedValue()) {
+	timeout = ((Number) args[2]).intValue();
+      }
+
+      // The fourth (optional) argument is the parallel limit
+      if (args.length > 3 && args[3] != Context.getUndefinedValue()) {
+	max_tasks = ((Number) args[3]).intValue();
+      }
+
+      if (max_tasks <= 0) {
+	throw Context.reportRuntimeError("Workload limit must be greater than 0.");
+      }
+
+      ESXX.Workload[] workloads = new ESXX.Workload[tasks.length];
       
-      // Submit workloads
-      for (int i = 0; i < tasks; ++i) {
-	if (args[i] instanceof Function) {
-	  workloads[i] = esxx.addJSFunction(cx, scope, (Function) args[i], func_args, timeout);
+      // Submit workloads, limit if asked to
+      final Semaphore limit = new Semaphore(max_tasks, false);
+      final AtomicBoolean abort = new AtomicBoolean(false);
+
+      for (int i = 0; i < tasks.length && !abort.get(); ++i) {
+	if (tasks[i] instanceof Function) {
+	  try {
+	    limit.acquire();
+	  }
+	  catch (InterruptedException ex) {
+	    checkTimeout(cx);
+	    break;
+	  }
+	  
+	  final Function func = (Function) tasks[i];
+	  final Object[] jarg = fargs;
+ 
+	  workloads[i] = esxx.addContextAction(cx, new ContextAction() {
+	      public Object run(Context cx) {
+		boolean fine = false;
+
+		try {
+		  Object res = func.call(cx, scope, scope, jarg);
+		  fine = true;
+		  return res;
+		}
+		finally {
+		  if (!fine) {
+		    abort.set(true);
+		  }
+
+		  limit.release();
+		}
+	      }
+	    }, timeout);
 	}
       }
 
-      Object[] result = new Object[tasks];
+      Object[] result = new Object[tasks.length];
+      Object[] errors = new Object[tasks.length];
+      boolean  failed = false;
 
-      for (int i = 0; i < tasks; ++i) {
+      for (int i = 0; i < tasks.length; ++i) {
 	if (workloads[i] != null) {
 	  try {
 	    result[i] = workloads[i].future.get();
 	  }
 	  catch (ExecutionException ex) {
-	    result[i] = new WrappedException(ex);
+	    result[i] = Context.getUndefinedValue();
+	    errors[i] = new WrappedException(ex);
+	    failed   = true;
 	  }
 	  catch (CancellationException ex) {
-	    result[i] = new WrappedException(new ESXXException.TimeOut());
+	    result[i] = Context.getUndefinedValue();
+	    errors[i] = new WrappedException(new ESXXException.TimeOut());
+	    failed   = true;
 	  }
 	  catch (InterruptedException ex) {
-	    //	    Thread.currentThread().interrupt();
-	     	    checkTimeout(cx);
+	    checkTimeout(cx);
 	  }
 	}
 	else {
-	  result[i] = args[i];
+	  result[i] = tasks[i];
 	}
+      }
+
+      if (failed) {
+	throw new JavaScriptException(cx.newArray(scope, errors), null, 0);
       }
 
       return result;
