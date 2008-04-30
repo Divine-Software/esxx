@@ -39,4 +39,10 @@
     </xsl:copy>
   </xsl:template>
 
+  <xsl:template match="xhtml:span[@id='ext-js-func']">
+    <xsl:copy xmlns:date="javascript:scope">
+      <xsl:value-of select="date:method(1+2, 'banan', .)"/>
+    </xsl:copy>
+  </xsl:template>
+
 </xsl:stylesheet>

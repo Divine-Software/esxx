@@ -21,6 +21,7 @@ package org.blom.martin.esxx;
 
 import org.blom.martin.esxx.cache.*;
 import org.blom.martin.esxx.util.*;
+import org.blom.martin.esxx.saxon.*;
 import org.blom.martin.esxx.js.JSESXX;
 import org.blom.martin.esxx.js.JSResponse;
 
@@ -48,7 +49,11 @@ import org.mozilla.javascript.Scriptable;
 import org.w3c.dom.*;
 import org.w3c.dom.bootstrap.*;
 import org.w3c.dom.ls.*;
+
 import net.sf.saxon.s9api.*;
+import net.sf.saxon.*;
+import net.sf.saxon.functions.FunctionLibrary;
+import net.sf.saxon.functions.FunctionLibraryList;
 
 
 public class ESXX {
@@ -124,6 +129,14 @@ public class ESXX {
       dc.setParameter("xml-declaration", false);
 
       saxonProcessor = new Processor(false);
+
+      // Hook in our own extension functions
+      Configuration cfg = saxonProcessor.getUnderlyingConfiguration();
+      FunctionLibrary java = cfg.getExtensionBinder("java");
+      FunctionLibraryList fl = new FunctionLibraryList();
+      fl.addFunctionLibrary(new ESXXFunctionLibrary());
+      fl.addFunctionLibrary(java);
+      cfg.setExtensionBinder("java", fl);
 
       transformerFactory = TransformerFactory.newInstance();
       transformerFactory.setURIResolver(new URIResolver(null));

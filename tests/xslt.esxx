@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!-- Document is XHTML 1.1 -->
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">-->
 
 <!-- Server-side stylesheet -->
 <?esxx-stylesheet href="test.xsl" type="text/xsl" ?>
@@ -42,7 +42,8 @@ transform before sending the result to the client.</p>
   <p>The XSLT stylesheet has full access to the ESXX runtime via the
 <code>esxx</code> namespace:</p>
 
-  <p>Years since 1900: <span id='ext-java-func'/></p>
+  <p>Java years since 1900: <span id='ext-java-func'/></p>
+  <p>JS years since 1900: <span id='ext-js-func'/></p>
 
  </body>
 </html>
