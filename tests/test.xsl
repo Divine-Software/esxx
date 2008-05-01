@@ -59,6 +59,11 @@
     </xsl:copy>
   </xsl:template>
 
+  <xsl:template match="xhtml:span[@id='ext-js-test3']">
+    <!-- The xmlTest() function returns XML -->
+    <xsl:copy-of xmlns:test="javascript:" select="test:xmlTest()"/>
+  </xsl:template>
+
   <xsl:template match="xhtml:pre[@class='debug']">
      <xsl:copy>
        <!-- Extract comment(s) after the document element -->

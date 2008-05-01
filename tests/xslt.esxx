@@ -23,6 +23,15 @@ function test() {
          + Array.prototype.slice.call(arguments).join(", ");
 }
 
+function xmlTest() {
+  default xml namespace = "http://www.w3.org/1999/xhtml";
+
+  return <test>
+    <elem>An element: <tt>elem</tt></elem>
+    <elem>One more: <tt>elem</tt></elem>
+    </test>;
+}
+
 var currentDate = new Date();
 
 // Create the ESXX debug log comment

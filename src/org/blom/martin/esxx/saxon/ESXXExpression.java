@@ -21,6 +21,7 @@ package org.blom.martin.esxx.saxon;
 
 import net.sf.saxon.dom.NodeOverNodeInfo;
 import net.sf.saxon.dom.ElementOverNodeInfo;
+import net.sf.saxon.dom.DocumentWrapper;
 import net.sf.saxon.dom.DOMWriter;
 import net.sf.saxon.expr.*;
 import net.sf.saxon.functions.*;
@@ -72,7 +73,11 @@ public class ESXXExpression
     if (result instanceof NativeArray) {
       result = (Object) cx.getElements((NativeArray) result);
     }
-    
+
+    if (result instanceof org.mozilla.javascript.xml.XMLObject) {
+      result = ESXX.e4xToDOM((Scriptable) result);
+    }
+
     Value value = Value.convertJavaObjectToXPath(result, SequenceType.ANY_SEQUENCE, context);
     return value.iterate();
   }
