@@ -291,11 +291,9 @@ class Worker {
     // stylesheet decide if it should be output or not.
     js_esxx.jsGet_debug().flush();
     String ds = request.getDebugWriter().toString();
-    if (ds.length() != 0) {
-      doc.appendChild(doc.createComment("Start ESXX Debug Log\n" + 
-					ds.replaceAll("--", "\u2012\u2012") + 
-					"End ESXX Debug Log"));
-    }
+    doc.appendChild(doc.createComment("Start ESXX Debug Log\n" + 
+				      ds.replaceAll("--", "\u2012\u2012") + 
+				      "End ESXX Debug Log"));
 
     tr.setSource(new DOMSource(doc));
     tr.setDestination(s);
