@@ -33,6 +33,8 @@
     </xsl:copy>
   </xsl:template>
 
+  <!-- Test various Java/JS functions -->
+
   <xsl:template match="xhtml:span[@id='ext-java-func']">
     <xsl:copy xmlns:date="java.util.Date">
       <xsl:value-of select="date:get-year(date:new())"/>
@@ -40,9 +42,28 @@
   </xsl:template>
 
   <xsl:template match="xhtml:span[@id='ext-js-func']">
-    <xsl:copy xmlns:date="javascript:scope">
-      <xsl:value-of select="date:method(1+2, 'banan', .)"/>
+    <xsl:copy xmlns:date="javascript:currentDate">
+      <xsl:value-of select="date:getYear()"/>
     </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="xhtml:span[@id='ext-js-test1']">
+    <xsl:copy xmlns:test="javascript:">
+      <xsl:value-of select="test:test(1+2, 'banan', ., @*)"/>
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="xhtml:span[@id='ext-js-test2']">
+    <xsl:copy xmlns:test="javascript:myapp">
+      <xsl:value-of select="test:xsltCallback()"/>
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="xhtml:pre[@class='debug']">
+     <xsl:copy>
+       <!-- Extract comment(s) after the document element -->
+       <xsl:value-of select="/*/following::comment()"/>
+     </xsl:copy>
   </xsl:template>
 
 </xsl:stylesheet>

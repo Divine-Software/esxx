@@ -21,6 +21,7 @@ package org.blom.martin.esxx;
 
 import org.blom.martin.esxx.js.*;
 import org.blom.martin.esxx.util.*;
+import org.blom.martin.esxx.saxon.ESXXExpression;
 
 import java.io.*;
 import java.net.URL;
@@ -298,7 +299,15 @@ class Worker {
 
     tr.setSource(new DOMSource(doc));
     tr.setDestination(s);
-    tr.transform();
+
+    try {
+      // Make current scope available to ESXXExpression and begin transformation
+      cx.putThreadLocal(ESXXExpression.class, scope);
+      tr.transform();
+    }
+    finally {
+      cx.removeThreadLocal(ESXXExpression.class);
+    }
 
     response.setContentType(xe.getUnderlyingCompiledStylesheet().getOutputProperties().
 			    getProperty("media-type", content_type));

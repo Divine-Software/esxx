@@ -1,24 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!-- Document is XHTML 1.1 -->
-<!--<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 
 <!-- Server-side stylesheet -->
 <?esxx-stylesheet href="test.xsl" type="text/xsl" ?>
 
 <!-- Optinal JavaScript modules referred to in the stylesheet -->
-<!--<?esxx-import href="test.js" ?>-->
+<?esxx-import href="test.js" ?>
+
 <?esxx 
+
+var myapp = new MyApp(esxx);
+
 // Inline JavaScript code works too, but is not recommended here
-// A better place would be in the XSLT stylesheet or in an external
-// file.
 
 function test() { 
-  // "esxx:test()" is now available in XPath expressions if you bind the
-  // "esxx" namespace prefix to "http://martin.blom.org/esxx/1.0/" in your stylesheet
-  return "Test"; 
+  // "js:test()" is now available in XPath expressions if you bind the
+  // "javascript:" namespace to prefix "js:" in your stylesheet
+  return "Test called with " + arguments.length + " arguments: " 
+         + Array.prototype.slice.call(arguments).join(", ");
 }
+
+var currentDate = new Date();
+
+// Create the ESXX debug log comment
+esxx.debug.println(esxx.location + " loaded")
+
 ?>
 
 <!-- Client-side stylesheet -->
@@ -40,10 +49,16 @@ validating the document, this page will also apply a server-side XSLT
 transform before sending the result to the client.</p>
 
   <p>The XSLT stylesheet has full access to the ESXX runtime via the
-<code>esxx</code> namespace:</p>
+<code>javascript</code> namespace:</p>
 
   <p>Java years since 1900: <span id='ext-java-func'/></p>
   <p>JS years since 1900: <span id='ext-js-func'/></p>
+  <p>JS Test #1: <span id='ext-js-test1' class='APA2'>EXT-JS-TEST1</span></p>
+  <p>JS Test #2: <span id='ext-js-test2'/></p>
+  <p>JS Test #3: <span id='ext-js-test3'/></p>
+
+  <!-- The ESXX debug log will appear here -->
+  <pre class="debug"/>
 
  </body>
 </html>

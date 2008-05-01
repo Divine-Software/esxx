@@ -50,6 +50,10 @@ public class ESXXFunctionLibrary
     String object = uri.substring("javascript:".length());
     String method = function_name.getLocalName();
 
+    if ("".equals(object)) {
+      object = null;
+    }
+
     return new ESXXExpression(object, method, static_args);
   }
 
