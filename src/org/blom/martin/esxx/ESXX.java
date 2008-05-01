@@ -46,6 +46,7 @@ import org.mozilla.javascript.ContextAction;
 import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 import org.w3c.dom.*;
 import org.w3c.dom.bootstrap.*;
 import org.w3c.dom.ls.*;
@@ -374,7 +375,7 @@ public class ESXX {
      *  @return A Scriptable representing an E4X XML object.
      */
 
-    public Scriptable domToE4X(org.w3c.dom.Node node, Context cx, Scriptable scope) {
+    public static Scriptable domToE4X(org.w3c.dom.Node node, Context cx, Scriptable scope) {
       if (node == null) {
 	return null;
       }
@@ -390,7 +391,7 @@ public class ESXX {
      *  @return A W3C DOM Node.
      */
 
-    public org.w3c.dom.Node e4xToDOM(Scriptable node) {
+    public static org.w3c.dom.Node e4xToDOM(Scriptable node) {
       return org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(node);
     }
 
@@ -696,6 +697,63 @@ public class ESXX {
       return type;
     }
 
+    public static Object callJSMethod(String expr,
+				      Object[] args, String identifier,
+				      Context cx, Scriptable scope) {
+      String object;
+      String method;
+
+      int dot = expr.lastIndexOf('.');
+
+      if (dot == -1) {
+	object = null;
+	method = expr;
+      }
+      else {
+	object = expr.substring(0, dot);
+	method = expr.substring(dot + 1);
+      }
+
+      return callJSMethod(object, method, args, identifier, cx, scope);
+    }
+
+
+    public static Object callJSMethod(String object, String method,
+				      Object[] args, String identifier,
+				      Context cx, Scriptable scope) {
+      Object o;
+      String function;
+
+      if (object == null) {
+	o = scope;
+	function = method;
+      }
+      else {
+	o = cx.evaluateString(scope, object, identifier + " object " + object, 1, null);
+	function = object + "." + method;
+
+	if (o == null || o == ScriptableObject.NOT_FOUND) {
+	  throw new ESXXException(identifier + " '" + object + "' not found.");
+	}
+
+	if (!(o instanceof Scriptable)) {
+	  throw new ESXXException(identifier + " '" + object +  "' is not an object.");
+	}
+      }
+
+      Object m = ScriptableObject.getProperty((Scriptable) o, method);
+
+      if (m == null || m == ScriptableObject.NOT_FOUND) {
+	throw new ESXXException(identifier + " '" + function + "()' not found.");
+      }
+
+      if (!(m instanceof Function)) {
+	throw new ESXXException(identifier + " '" + function + "' is not a function.");
+      }
+
+      return ((Function) m).call(cx, scope, (Scriptable) o, args);
+    }
+
     public static void dumpScriptState(Scriptable scope) {
       System.err.println("Scope trace:");
       printScopeTrace(scope);
@@ -842,5 +900,4 @@ public class ESXX {
     private ContextFactory contextFactory;
     private ExecutorService executorService;
     private PriorityBlockingQueue<Workload> workloadSet;
-
 };

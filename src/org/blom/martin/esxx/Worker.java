@@ -205,7 +205,7 @@ class Worker {
 
       String method = soap_body.getDocumentElement().getLocalName();
 
-      result = callJSMethod(object, method, args, "SOAP handler", cx, scope);
+      result = ESXX.callJSMethod(object, method, args, "SOAP handler", cx, scope);
     }
     else {
       // No RPC handler; the SOAP message itself is the result
@@ -232,7 +232,7 @@ class Worker {
 
     Object args[] = { req };
 
-    result = callJSMethod(match.handler, args, "'" + request_method + "' handler", cx, scope);
+    result = ESXX.callJSMethod(match.handler, args, "'" + request_method + "' handler", cx, scope);
 
     return result;
   }
@@ -249,7 +249,7 @@ class Worker {
 
     req.setArgs(args);
 
-    return callJSMethod("main", new Object[] { args }, "Program entry" , cx, scope);
+    return ESXX.callJSMethod("main", new Object[] { args }, "Program entry" , cx, scope);
   }
 
   private void handleTransformation(Request request, JSResponse response, 
@@ -298,7 +298,6 @@ class Worker {
 
     tr.setSource(new DOMSource(doc));
     tr.setDestination(s);
-
     tr.transform();
 
     response.setContentType(xe.getUnderlyingCompiledStylesheet().getOutputProperties().
@@ -328,7 +327,7 @@ class Worker {
     try {
       Object args[] = { cx.javaToJS(error, scope) };
 
-      result = callJSMethod(handler, args, "Error handler", cx, scope);
+      result = ESXX.callJSMethod(handler, args, "Error handler", cx, scope);
     }
     catch (Exception ex) {
       throw new ESXXException("Failed to handle error '" + error.toString() +
@@ -340,71 +339,6 @@ class Worker {
     }
 
     return result;
-  }
-
-
-  private Object callJSMethod(String expr,
-			      Object[] args, String identifier,
-			      Context cx, Scriptable scope) {
-    String object;
-    String method;
-
-    int dot = expr.lastIndexOf('.');
-
-    if (dot == -1) {
-      object = null;
-      method = expr;
-    }
-    else {
-      object = expr.substring(0, dot);
-      method = expr.substring(dot + 1);
-    }
-
-    return callJSMethod(object, method, args, identifier, cx, scope);
-  }
-
-  private Object callJSMethod(String object, String method,
-			      Object[] args, String identifier,
-			      Context cx, Scriptable scope) {
-    Object o;
-    String function;
-
-    if (object == null) {
-      o = scope;
-      function = method;
-    }
-    else {
-      o = cx.evaluateString(scope, object, identifier + " object " + object, 1, null);
-      function = object + "." + method;
-
-      if (o == null || o == ScriptableObject.NOT_FOUND) {
-	throw new ESXXException(identifier + " '" + object + "' not found.");
-      }
-
-      if (!(o instanceof Scriptable)) {
-	throw new ESXXException(identifier + " '" + object +  "' is not an object.");
-      }
-    }
-
-    Object m = ScriptableObject.getProperty((Scriptable) o, method);
-
-    if (m == null || m == ScriptableObject.NOT_FOUND) {
-      throw new ESXXException(identifier + " '" + function + "()' not found.");
-    }
-
-    if (!(m instanceof Function)) {
-      throw new ESXXException(identifier + " '" + function + "' is not a function.");
-    }
-
-    return ((Function) m).call(cx, scope, (Scriptable) o, args);
-  }
-
-  private static void copyOutputKey(String key, Transformer from, Transformer to) {
-    String value = from.getOutputProperty(key);
-
-    if (value != null) {
-      to.setOutputProperty(key, value);
-    }
   }
 
   private ESXX esxx;
