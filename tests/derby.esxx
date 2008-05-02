@@ -49,7 +49,7 @@ function index(req) {
     </item>
   </items>
 
-  <esxx xmlns="http://martin.blom.org/esxx/1.0/">
+  <esxx xmlns="http://esxx.org/1.0/">
     <handlers>
       <http method="GET" handler="index"/>
     </handlers>

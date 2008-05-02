@@ -20,7 +20,7 @@ var myapp = new MyApp(esxx);
 //kalle();
 ?>
 
-<esxx xmlns="http://martin.blom.org/esxx/1.0/">
+<esxx xmlns="http://esxx.org/1.0/">
     <!-- First some information about the application -->
     <info>
       <title>ESXX test application</title>

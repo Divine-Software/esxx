@@ -608,7 +608,7 @@ world!</quote> as a plain <literal>text/plain</literal> document.</para>
 
       <programlisting linenumbering="numbered"><![CDATA[<?xml version="1.0"?>
 
-<esxx xmlns="http://martin.blom.org/esxx/1.0/">
+<esxx xmlns="http://esxx.org/1.0/">
     <handlers>
       <http method="GET" handler="handleGet" />
     </handlers>
@@ -631,7 +631,7 @@ transformed by an &xslt; stylesheet into an &html; document.</para>
 
       <programlisting linenumbering="numbered"><![CDATA[<?xml version="1.0"?>
 
-<esxx xmlns="http://martin.blom.org/esxx/1.0/">
+<esxx xmlns="http://esxx.org/1.0/">
     <handlers>
       <http method="GET" handler="handleGet" />
       <stylesheet media-type="text/html" href="html.xslt"/>
@@ -680,7 +680,7 @@ injection vulnerabilities.</para>
 
       <programlisting linenumbering="numbered"><![CDATA[<?xml version="1.0"?>
 
-<esxx xmlns="http://martin.blom.org/esxx/1.0/">
+<esxx xmlns="http://esxx.org/1.0/">
     <handlers>
       <http method="GET" handler="handleGet" />
       <stylesheet media-type="text/html" href="html.xslt"/>
@@ -738,7 +738,7 @@ like. More information is available in &esxx-home;.</para>
 
     <biblioentry id="esxx-home">
       <abbrev>ESXX</abbrev>
-      <title><ulink url="http://martin.blom.org/esxx/">The &esxx; project</ulink></title>
+      <title><ulink url="http://esxx.org/">The &esxx; project</ulink></title>
       <author>
 	<firstname>Martin</firstname>
 	<surname>Blom</surname>
