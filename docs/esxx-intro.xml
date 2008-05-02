@@ -146,7 +146,7 @@ file.</para>
 &apache;, make sure it's configured with
 <application>mod_fastcgi</application> enabled.</para>
 
-    <para>&esxx; is licensed under GPL version 2. It also includes
+    <para>&esxx; is licensed under GPL version 3. It also includes
 software components that use BSD-like licenses (&htmlcleaner; and
 &jfast;). </para>
 

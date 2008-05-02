@@ -68,13 +68,9 @@ you to design your web applications in this manner.
 License
 *******
 
-ESXX is available under the GPL version 2 license. It uses code
-licensed under the GPL version 2, the Apache License 2.0 and the
-Mozilla Public License 1.1.
-
-The Ice source code is available from ZeroC's download page,
-<URL:http://www.zeroc.com/download.html#src>, or by request from the
-ESXX author.
+ESXX is available under the GPL version 3 license. It uses code
+licensed under the Apache License 2.0, the Mozilla Public License (1.0
+and 1.1), various BSD-like licenses and Sun's JavaMail.
 
 
 Requirements
@@ -87,8 +83,6 @@ These required components are distributed with ESXX:
 
 * Rhino ("js.jar" from the Mozilla project)
 * XMLBeans ("xbean.jar" from the Apache project)
-* Ice (Ice.jar from ZeroC), which is only required if using multiple
-front-ends and a separate back-end service
 
 You will probably want a database to, like PostgreSQL, MySQL or the
 included Derby ("derby.jar" from the Apache project; note that you
