@@ -18,238 +18,13 @@
 
 package org.esxx;
 
-import org.esxx.js.JSResponse;
-
 import java.io.*;
-import java.net.*;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.HashMap;
+import java.net.URL;
 import java.util.Properties;
-import java.util.Set;
 import org.apache.commons.cli.*;
-import org.bumblescript.jfast.*;
-import org.mozilla.javascript.RhinoException;
+import org.esxx.request.*;
 
 public class Main {
-  static private class ScriptRequest
-    extends Request 
-    implements ESXX.ResponseHandler {
-
-    public ScriptRequest(URL url, String[] cmdline) 
-      throws IOException {
-      super(url, cmdline, new Properties(),
-	    System.in,
-	    new OutputStreamWriter(System.err));
-    }
-
-    public Object handleResponse(ESXX esxx, JSResponse response) 
-      throws Exception {
-      // Output debug stream to stderr first
-      System.err.print(getDebugWriter().toString());
-
-      // Then write result
-      HashMap<String,String> mime_params = new HashMap<String,String>();
-      String mime_type = ESXX.parseMIMEType(response.getContentType(), mime_params);
-
-      esxx.serializeToStream(response.getResult(), null, null,
-			     mime_type, mime_params,
-			     System.out);
-
-      try {
-	int rc = Integer.parseInt(response.getStatus().split(" ", 2)[0]);
-	
-	if (rc >= 500) {
-	  return 20;
-	}
-	else if (rc >= 400) {
-	  return 10;
-	}
-	else if (rc >= 300) {
-	  return 5;
-	}
-	else if (rc >= 200) {
-	  return 0;
-	}
-	else {
-	  return rc;
-	}
-      }
-      catch (NumberFormatException ex) {
-	return 20;
-      }
-    }
-
-    public Object handleError(ESXX esxx, Throwable t) {
-      if (t instanceof ESXXException) {
-	ESXXException ex = (ESXXException) t;
-
-	System.err.println(ex.getClass().getSimpleName() + " " + ex.getStatus() 
-			   + ": " + ex.getMessage());
-	return 10;
-      }
-      else if (t instanceof RhinoException) {
-	RhinoException ex = (RhinoException) t;
-
-	System.err.println(ex.getClass().getSimpleName() + ": " + ex.getMessage());
-	System.err.println(ex.getScriptStackTrace(new ESXX.JSFilenameFilter()));
-	return 10;
-      }
-      else {
-	t.printStackTrace();
-	return 20;
-      }
-    }
-  }
-
-  static private class CGIRequest
-    extends Request 
-    implements ESXX.ResponseHandler {
-
-    public CGIRequest(Properties cgi)
-      throws IOException {
-      super(createURL(cgi), null, cgi,
-	    System.in,
-	    new OutputStreamWriter(System.err));
-      jFast = null;
-      outStream = System.out;
-    }
-
-    public CGIRequest(JFastRequest jfast)
-      throws IOException {
-      super(createURL(jfast.properties), null, jfast.properties,
-	    new ByteArrayInputStream(jfast.data),
-	    new OutputStreamWriter(System.err));
-      jFast = jfast;
-      outStream = jfast.out;
-    }
-
-    public URL getWD() {
-      try {
-	URI main = super.getURL().toURI();
-
-	return new File(main).getParentFile().toURI().toURL();
-      }
-      catch (Exception ex) {
-	// Should not happen. Fall back to super method if it does.
-      }
-
-      return super.getWD();
-    }
-
-    public Object handleResponse(ESXX esxx, JSResponse response)
-      throws Exception {
-      // Output HTTP headers
-      final PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
-
-      out.println("Status: " + response.getStatus());
-      out.println("Content-Type: " + response.getContentType());
-
-      response.enumerateHeaders(new JSResponse.HeaderEnumerator() {
-	  public void header(String name, String value) {
-	    out.println(name + ": " + value);
-	  }
-	});
-	
-      out.println();
-      out.flush();
-
-      Object result = response.getResult();
-
-      // Output body
-      HashMap<String,String> mime_params = new HashMap<String,String>();
-      String mime_type = ESXX.parseMIMEType(response.getContentType(), mime_params);
-
-      esxx.serializeToStream(result, null, null,
-			     mime_type, mime_params,
-			     outStream);
-
-      getErrorWriter().flush();
-      getDebugWriter().flush();
-      outStream.flush();
-
-      if (jFast != null) {
-	jFast.end();
-      }
-
-      return 0;
-    }
-
-    public Object handleError(ESXX esxx, Throwable ex) {
-      String title = "ESXX Server Error";
-      int    code  = 500;
-	
-      if (ex instanceof ESXXException) {
-	code = ((ESXXException) ex).getStatus();
-      }
-
-      StringWriter sw = new StringWriter();
-      PrintWriter out = new PrintWriter(sw);
-
-      out.println("<?xml version='1.0'?>");
-      out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" " +
-		  "\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">");
-      out.println("<html><head><title>" + title + "</title></head><body>");
-      out.println("<h1>" + title + "</h1>");
-      out.println("<h2>Unhandled exception: " + ex.getClass().getSimpleName() + "</h2>");
-      if (ex instanceof ESXXException ||
-	  ex instanceof javax.xml.stream.XMLStreamException ||
-	  ex instanceof javax.xml.transform.TransformerException) {
-	out.println("<p><tt>" + ex.getMessage() + "</tt></p>");
-      }
-      else if (ex instanceof RhinoException) {
-	out.println("<pre>");
-	out.println(ex.getClass().getSimpleName() + ": " + ex.getMessage());
-	out.println(((RhinoException) ex).getScriptStackTrace(new ESXX.JSFilenameFilter()));
-	out.println("</pre>");
-      }
-      else {
-	out.println("<pre>");
-	ex.printStackTrace(out);
-	out.println("</pre>");
-      }
-      out.println("</body></html>");
-      out.close();
-
-      try {
-	return handleResponse(esxx, new JSResponse(code + " " + title,
-						   "text/html",
-						   sw.toString()));
-      }
-      catch (Exception ex2) {
-	// Hmm
-	return 20;
-      }
-    }
-
-    private OutputStream outStream;
-    private JFastRequest jFast;
-    boolean scriptMode;
-  }
-
-  private static URL createURL(Properties headers)
-    throws IOException {
-    try {
-      File file = new File(headers.getProperty("PATH_TRANSLATED"));
-
-      while (file != null && !file.exists()) {
-	file = file.getParentFile();
-      }
-
-      if (file.isDirectory()) {
-	throw new IOException("Unable to find a file in path "
-			      + headers.getProperty("PATH_TRANSLATED"));
-      }
-
-      return new URL("file", "", file.getAbsolutePath());
-    }
-    catch (MalformedURLException ex) {
-      ex.printStackTrace();
-      return null;
-    }
-  }
-
-
   private static void usage(Options opt, String error, int rc) {
     PrintWriter  err = new PrintWriter(System.err);
     HelpFormatter hf = new HelpFormatter();
@@ -270,15 +45,19 @@ public class Main {
     Options opt = new Options();
     OptionGroup mode_opt = new OptionGroup();
 
+    // (Remember: -u/--user, -p/--pidfile and -j/jvmargs are used by the wrapper script)
     mode_opt.addOption(new Option("b", "bind",    true, ("Listen for FastCGI requests on " +
+							 "this <port>")));
+    mode_opt.addOption(new Option("H", "http",    true, ("Listen for HTTP requests on " +
 							 "this <port>")));
     mode_opt.addOption(new Option("c", "cgi",    false, "Force CGI mode."));
     mode_opt.addOption(new Option("s", "script", false, "Force script mode."));
 
     opt.addOptionGroup(mode_opt);
-    opt.addOption("m", "method",  true,  "Override CGI request method");
-    opt.addOption("f", "file",    true,  "Override CGI request file");
-    opt.addOption("?", "help",    false, "Show help");
+    opt.addOption("m", "method",    true,  "Override CGI request method");
+    opt.addOption("f", "file",      true,  "Override CGI request file");
+    opt.addOption("r", "http-root", true,  "Set HTTP root directory or file");
+    opt.addOption("?", "help",      false, "Show help");
 
     try {
       CommandLineParser parser = new GnuParser();
@@ -290,6 +69,7 @@ public class Main {
       }
 
       int fastcgi_port = -1;
+      int    http_port = -1;
       Properties   cgi = null;
       String[]  script = null;
 
@@ -299,6 +79,9 @@ public class Main {
 
       if (cmd.hasOption('b')) {
 	fastcgi_port = Integer.parseInt(cmd.getOptionValue('b'));
+      }
+      else if (cmd.hasOption('H')) {
+	http_port = Integer.parseInt(cmd.getOptionValue('H'));
       }
       else if (cmd.hasOption('c')) {
 	cgi = new Properties();
@@ -327,23 +110,10 @@ public class Main {
       ESXX esxx = ESXX.initInstance(System.getProperties());
 
       if (fastcgi_port != -1) {
-	JFast jfast = new JFast(fastcgi_port);
-
-	while (true) {
-	  try {
-	    JFastRequest req = jfast.acceptRequest();
-
-	    // Fire and forget
-	    CGIRequest cr = new CGIRequest(req);
-	    esxx.addRequest(cr, cr, 0);
-	  }
-	  catch (JFastException ex) {
-	    ex.printStackTrace();
-	  }
-	  catch (IOException ex) {
-	    ex.printStackTrace();
-	  }
-	}
+	FCGIRequest.runServer(fastcgi_port);
+      }
+      else if (http_port != -1) {
+	HTTPRequest.runServer(http_port, cmd.getOptionValue('r', ""));
       }
       else if (cgi != null) {
 	cgi.putAll(System.getenv());
