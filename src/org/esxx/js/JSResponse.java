@@ -32,7 +32,7 @@ public class JSResponse
       super();
     }
 
-    public JSResponse(String status, String content_type, Object result) {
+    public JSResponse(int status, String content_type, Object result) {
       this();
 
       this.status  = status;
@@ -45,7 +45,7 @@ public class JSResponse
 				       java.lang.Object[] args, 
 				       Function ctorObj, 
 				       boolean inNewExpr) {
-      String status;
+      int status;
       String content_type;
       Object result;
 
@@ -57,26 +57,26 @@ public class JSResponse
       switch (args.length) {
 	case 1:
 	  if (args[0] instanceof Number) {
-	    status       = "" + ((Number) args[0]).intValue();
+	    status       = ((Number) args[0]).intValue();
 	    content_type = null;
 	    result       = "";
 	  }
 	  else {
-	    status       = "200 OK";
+	    status       = 200;
 	    content_type = null;
 	    result       = args[0];
 	  }
 	  break;
 	 
 	case 2:
-	  status       = "200 OK";
+	  status       = 200;
 	  content_type = Context.toString(args[0]);
 	  result       = args[1];
 	  break;
 	  
 	case 3:
 	case 4:
-	  status       = Context.toString(args[0]);
+	  status       = (int) Context.toNumber(args[0]);
 	  content_type = Context.toString(args[1]);
 	  result       = args[2];
 	  break;
@@ -156,7 +156,7 @@ public class JSResponse
       ScriptableObject.putProperty(this, name, value);
     }
 
-    public String getStatus() {
+    public int getStatus() {
       return status;
     }
 
@@ -194,7 +194,7 @@ public class JSResponse
       }
     }
 
-    private String status;
+    private int status;
     private String contentType;
     private Object result;
 }

@@ -121,7 +121,7 @@ public class WebRequest
     out.close();
 
     try {
-      return handleResponse(esxx, new JSResponse(code + " " + title,
+      return handleResponse(esxx, new JSResponse(code,
 						 "text/html",
 						 sw.toString()));
     }

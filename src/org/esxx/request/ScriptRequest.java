@@ -49,7 +49,7 @@ public class ScriptRequest
 			   System.out);
 
     try {
-      int rc = Integer.parseInt(response.getStatus().split(" ", 2)[0]);
+      int rc = response.getStatus();
 	
       if (rc >= 500) {
 	return 20;
