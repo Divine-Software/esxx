@@ -49,7 +49,7 @@ is launched.</description>
 
       <!-- Transformation stylesheets -->
       <stylesheet media-type="text/html" href="test.xsl" type="text/xsl" />
-      <stylesheet media-type="text/xml+my-soap" href="test-soap.xsl" />
+<!--      <stylesheet media-type="text/xml+my-soap" href="test-soap.xsl" />-->
 
       <!-- Handler for any kind of error -->
       <error handler="myapp.handleError" />
