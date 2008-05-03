@@ -20,9 +20,10 @@ package org.esxx.request;
 
 import com.sun.net.httpserver.*;
 import java.io.*;
-import java.util.Date;
+import java.util.*;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URL;
 import javax.activation.FileTypeMap;
 import javax.activation.MimetypesFileTypeMap;
 import org.esxx.*;
@@ -31,21 +32,99 @@ import org.esxx.js.JSResponse;
 public class HTTPRequest
   extends WebRequest {
 
-  public HTTPRequest(HttpExchange he)
+  public HTTPRequest(String root, String script_filename, String path_translated,
+		     URL url, HttpExchange he)
     throws IOException {
-    super(null, null, null, 
+    super(url, null, createProperties(root, script_filename, path_translated, he), 
 	  he.getRequestBody(), 
 	  new OutputStreamWriter(System.err),
 	  null);
     httpExchange = he;
   }
 
-  public Object handleResponse(ESXX esxx, JSResponse response) {
-    // Do not call super method
-    Object result = null;
-      
+  public Object handleResponse(ESXX esxx, JSResponse response)
+    throws Exception {
+    try {
+    // Do not call super method, since it has a null OutputStream.
+
+    final Headers headers = httpExchange.getResponseHeaders();
+    headers.set("Content-Type", response.getContentType());
+    response.enumerateHeaders(new JSResponse.HeaderEnumerator() {
+	public void header(String name, String value) {
+	  headers.set(name, value);
+	}
+      });
+
+    httpExchange.sendResponseHeaders(response.getStatus(), 0);
+
+    Object result = response.getResult();
+
+    // Output body
+    HashMap<String,String> mime_params = new HashMap<String,String>();
+    String mime_type = ESXX.parseMIMEType(response.getContentType(), mime_params);
+
+    esxx.serializeToStream(result, null, null,
+			   mime_type, mime_params,
+			   httpExchange.getResponseBody());
     httpExchange.close();
     return result;
+    }
+    catch (Exception ex) {
+      ex.printStackTrace();
+      throw ex;
+    }
+  }
+
+  private static Properties createProperties(String root, 
+					     String script_filename, 
+					     String path_translated, 
+					     HttpExchange he) {
+    Properties p = new Properties();
+    InetSocketAddress local  = he.getLocalAddress();
+    InetSocketAddress remote = he.getRemoteAddress();
+    String      query_string = he.getRequestURI().getRawQuery();
+
+    if (query_string == null) {
+      query_string = "";
+    }
+
+    p.setProperty("GATEWAY_INTERFACE", "CGI/1.1");
+    p.setProperty("SERVER_SOFTWARE",   "ESXX/1.0");
+    p.setProperty("REQUEST_METHOD",    he.getRequestMethod());
+    p.setProperty("REQUEST_URI",       he.getRequestURI().toString());
+    p.setProperty("SERVER_PROTOCOL",   he.getProtocol());
+    p.setProperty("REMOTE_ADDR",       remote.getAddress().toString().replaceFirst("[^/]*/", ""));
+    p.setProperty("REMOTE_PORT",       "" + remote.getPort());
+    p.setProperty("SERVER_ADDR",       local.getAddress().toString().replaceFirst("[^/]*/", ""));
+    p.setProperty("SERVER_PORT",       "" + local.getPort());
+    p.setProperty("PATH_TRANSLATED",   path_translated);
+    p.setProperty("SCRIPT_FILENAME",   script_filename);
+    p.setProperty("PATH_INFO",         path_translated.substring(script_filename.length()));
+    p.setProperty("SCRIPT_NAME",       script_filename.substring(root.length()));
+    p.setProperty("QUERY_STRING",      query_string);
+
+    for (Map.Entry<String, List<String>> e : he.getRequestHeaders().entrySet()) {
+      String key   = e.getKey();
+      String value = e.getValue().get(0);
+
+      if (key.equals("Content-Type")) {
+	key = "CONTENT_TYPE";
+      }
+      else if (key.equals("Content-Length")) {
+	key = "CONTENT_LENGTH";
+      }
+      else if (key.equals("Host")) {
+	p.setProperty("SERVER_NAME", value.replaceFirst(":.*", ""));
+	key = "HTTP_HOST";
+      }
+      else {
+	key = "HTTP_" + key.toUpperCase().replaceAll("-", "_");
+      }
+
+      p.setProperty(key, value);
+    }
+
+    return p;
   }
 
   private static final String htmlHeader =
@@ -84,26 +163,28 @@ public class HTTPRequest
 
   public static void runServer(int http_port, String fs_root) 
     throws IOException, java.net.URISyntaxException {
-    final String     root = new File(fs_root).getCanonicalPath();
-    final URI    root_uri = new File(root).toURI();
+    final ESXX    esxx = ESXX.getInstance();
+    final String  root = new File(fs_root).getCanonicalPath();
+    final URI root_uri = new File(root).toURI();
 
     HttpServer  hs = HttpServer.create(new InetSocketAddress(http_port), 0);
     HttpContext hc = hs.createContext("/", new HttpHandler() {
 	public void handle(HttpExchange he) 
 	  throws IOException {
-	  String ruri = he.getRequestURI().toString();
+	  String ruri = he.getRequestURI().getPath();
 	  String euri = encodeXMLContent(ruri);
 
 	  try {
-	    File file = new File(root_uri.resolve(ruri.substring(1)));
+	    File file = new File(root_uri.resolve(ruri.substring(1))).getCanonicalFile();
+	    File real = file;
 	    URI  uri  = file.toURI();
 
-	    if (!file.getCanonicalPath().startsWith(root)) {
+	    if (!file.getAbsolutePath().startsWith(root)) {
 	      // Deny access to files outside the root
 	      throw new FileNotFoundException("Not Found");
 	    }
 	    else {
-	      String body = null;
+	      URL code_url = null;
 
 	      if (file.exists()) {
 		if (file.isDirectory()) {
@@ -167,7 +248,10 @@ public class HTTPRequest
 		  respond(he, 200, "text/html", sb.toString());
 		}
 		else {
-		  if (!file.getName().endsWith(".esxx")) {
+		  if (fileTypeMap.getContentType(file).equals("application/x-esxx+xml")) {
+		    code_url = file.toURL();
+		  }
+		  else {
 		    he.getResponseHeaders().set("Content-Type", fileTypeMap.getContentType(file));
 		    he.sendResponseHeaders(200, file.length());
 		    ESXX.copyStream(new FileInputStream(file), he.getResponseBody());
@@ -175,12 +259,31 @@ public class HTTPRequest
 		}
 	      }
 	      else {
-		// Assume code
-	      }
-	      // Fire and forget
+		// Find a file that do exists
+		while (real != null && !real.exists()) {
+		  real = real.getParentFile();
+		}
 
-	      //HTTPRequest hr = new HTTPRequest(he);
-	      //esxx.addRequest(hr, hr, 0);
+		if (real.isDirectory()) {
+		  throw new FileNotFoundException("Not Found");
+		}
+
+		if (!fileTypeMap.getContentType(real).equals("application/x-esxx+xml")) {
+		  throw new FileNotFoundException("Only ESXX files are directories");
+		}
+		
+		code_url = real.toURL();
+	      }
+
+	      if (code_url != null) {
+		HTTPRequest hr = new HTTPRequest(root,
+						 real.getAbsolutePath(),
+						 file.getAbsolutePath(),
+						 code_url,
+						 he);
+		esxx.addRequest(hr, hr, 0);
+		he = null;
+	      }
 	    }
 	  }
 	  catch (Exception ex) {
@@ -197,10 +300,12 @@ public class HTTPRequest
 		    htmlHeader + "<h2>Request Failed</h2>" +
 		    "<p>The requested resource " + euri + " failed: " + 
 		    encodeXMLContent(ex.getMessage()) +
-		    "</p>" + htmlFooter);
+		    ".</p>" + htmlFooter);
 	  }
 	  finally {
-	    he.close();
+	    if (he != null) {
+	      he.close();
+	    }
 	  }
 	}
       });
@@ -238,7 +343,7 @@ public class HTTPRequest
       super();
 
       addIfMissing("css",   "text/css");
-      addIfMissing("esxx",  "application/x-esxx");
+      addIfMissing("esxx",  "application/x-esxx+xml");
       addIfMissing("gif",   "image/gif");
       addIfMissing("html",  "text/html");
       addIfMissing("jpg",   "image/jpeg");
