@@ -95,12 +95,9 @@ public class WebRequest
     StringWriter sw = new StringWriter();
     PrintWriter out = new PrintWriter(sw);
 
-    out.println("<?xml version='1.0'?>");
-    out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" " +
-		"\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">");
-    out.println("<html><head><title>" + title + "</title></head><body>");
-    out.println("<h1>" + title + "</h1>");
-    out.println("<h2>Unhandled exception: " + ex.getClass().getSimpleName() + "</h2>");
+    out.println(htmlHeader);
+    out.println("<h2>" + title + "</h2>");
+    out.println("<h3>Unhandled exception: " + ex.getClass().getSimpleName() + "</h3>");
     if (ex instanceof ESXXException ||
 	ex instanceof javax.xml.stream.XMLStreamException ||
 	ex instanceof javax.xml.transform.TransformerException) {
@@ -117,12 +114,12 @@ public class WebRequest
       ex.printStackTrace(out);
       out.println("</pre>");
     }
-    out.println("</body></html>");
+    out.println(htmlFooter);
     out.close();
 
     try {
       return handleResponse(esxx, new JSResponse(code,
-						 "text/html",
+						 "text/html; charset=UTF-8",
 						 sw.toString()));
     }
     catch (Exception ex2) {
@@ -160,6 +157,35 @@ public class WebRequest
   protected static String encodeXMLAttribute(String str) {
     return encodeXMLContent(str).replaceAll("'", "&apos;").replaceAll("\"", "&quot;");
   }
+
+  protected static final String htmlHeader =
+    "<?xml version='1.0' encoding='UTF-8'?>" +
+    "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' " +
+    "'http://www.w3.org/TR/2002/REC-xhtml1-20020801/DTD/xhtml1-strict.dtd'>" +
+    "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'><head>" +
+    "<title>ESXX - The friendly ECMAscript/XML Application Server</title>" +
+    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/blackwhite.css' title='Black &amp; white'/>" +
+    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/caribbean.css' title='Caribbean'/>" +
+    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/plain.css' title='Plain'/>" +
+    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/system.css' title='System default'/>" +
+    "<link rel='stylesheet' type='text/css' href='http://esxx.org/css/amiga.css' title='Workbench 1.x' />" +
+    "<script type='text/javascript' src='http://esxx.org/js/styleswitch.js'></script>" +
+    "</head><body>" +
+    "<h1>ESXX - The friendly ECMAscript/XML Application Server</h1>";
+
+  protected static final String htmlFooter =
+    "<br /><br /><br />" +
+    "<table class='switcher'>" +
+    "<tr>" +
+    "<td><a href='#' onclick='setActiveStyleSheet(\"Black &amp; white\"); return false;'>Black &amp; white</a></td>" +
+    "<td><a href='#' onclick='setActiveStyleSheet(\"Caribbean\"); return false;'>Caribbean</a></td>" +
+    "<td><a href='#' onclick='setActiveStyleSheet(\"Plain\"); return false;'>Plain</a></td>" +
+    "<td><a href='#' onclick='setActiveStyleSheet(\"System default\"); return false;'>System default</a></td>" +
+    "<td><a href='#' onclick='setActiveStyleSheet(\"Workbench 1.x\"); return false;'>Workbench 1.x</a></td>" +
+    "<td class='logo'><img src='http://esxx.org/gfx/logo.gif' alt='Leviticus, Divine Software' /></td>" +
+    "</tr>" +
+    "</table>" +
+    "</body></html>";
 
   private OutputStream outStream;
 }

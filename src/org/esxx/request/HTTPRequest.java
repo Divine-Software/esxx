@@ -127,35 +127,6 @@ public class HTTPRequest
     return p;
   }
 
-  private static final String htmlHeader =
-    "<?xml version='1.0' encoding='UTF-8'?>" +
-    "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' " +
-    "'http://www.w3.org/TR/2002/REC-xhtml1-20020801/DTD/xhtml1-strict.dtd'>" +
-    "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'><head>" +
-    "<title>ESXX - The friendly ECMAscript/XML Application Server</title>" +
-    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/blackwhite.css' title='Black &amp; white'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/caribbean.css' title='Caribbean'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/plain.css' title='Plain'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/system.css' title='System default'/>" +
-    "<link rel='stylesheet' type='text/css' href='http://esxx.org/css/amiga.css' title='Workbench 1.x' />" +
-    "<script type='text/javascript' src='http://esxx.org/js/styleswitch.js'></script>" +
-    "</head><body>" +
-    "<h1>ESXX - The friendly ECMAscript/XML Application Server</h1>";
-
-  private static final String htmlFooter =
-    "<br /><br /><br />" +
-    "<table class='switcher'>" +
-    "<tr>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Black &amp; white\"); return false;'>Black &amp; white</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Caribbean\"); return false;'>Caribbean</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Plain\"); return false;'>Plain</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"System default\"); return false;'>System default</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Workbench 1.x\"); return false;'>Workbench 1.x</a></td>" +
-    "<td class='logo'><img src='http://esxx.org/gfx/logo.gif' alt='Leviticus, Divine Software' /></td>" +
-    "</tr>" +
-    "</table>" +
-    "</body></html>";
-
   private static final java.text.SimpleDateFormat isoFormat = 
     new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
   
@@ -288,16 +259,19 @@ public class HTTPRequest
 	  }
 	  catch (Exception ex) {
 	    int code = 500;
+	    String title = "Internal Server Error";
 
 	    if (ex instanceof FileNotFoundException) {
 	      code = 404;
+	      title = "Not Found";
 	    }
 	    else {
 	      ex.printStackTrace();
 	    }
 
 	    respond(he, code, "text/html", 
-		    htmlHeader + "<h2>Request Failed</h2>" +
+		    htmlHeader + 
+		    "<h2>" + title + "</h2>" +
 		    "<p>The requested resource " + euri + " failed: " + 
 		    encodeXMLContent(ex.getMessage()) +
 		    ".</p>" + htmlFooter);
