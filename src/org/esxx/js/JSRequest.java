@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.HashMap;
 import javax.xml.soap.MessageFactory;
@@ -48,14 +49,14 @@ public class JSRequest
 
       ESXX esxx    = ESXX.getInstance();
 
-      this.env     = cx.newObject(scope);
-      this.headers = cx.newObject(scope);
-      this.cookies = cx.newObject(scope);
-      this.query   = cx.newObject(scope);
-      this.args    = null;
-      this.mimeHeaders = new MimeHeaders();
-
-      Document accept_doc = esxx.createDocument("accept");
+      env     = cx.newObject(scope);
+      headers = cx.newObject(scope);
+      cookies = cx.newObject(scope);
+      accept  = cx.newObject(scope);
+      query   = cx.newObject(scope);
+      args    = null;
+      mimeHeaders = new MimeHeaders();
+      acceptValueOf = new FunctionObject("valueOf", acceptValueOfMethod, accept);
 
       for (String name :  request.getProperties().stringPropertyNames()) {
 	String value = request.getProperties().getProperty(name).trim();
@@ -74,7 +75,7 @@ public class JSRequest
 	  handleCookieHeader(hdr, value);
 
 	  // Decode Accept* HTTP headers
-	  handleAcceptHeader(hdr, value, accept_doc);
+	  handleAcceptHeader(hdr, value, cx, accept);
 
 	  // Decode Content-* HTTP headers
 	  handleContentHeader(hdr, value);
@@ -89,8 +90,6 @@ public class JSRequest
 	  handleQueryHeader(value);
 	}
       }
-
-      accept = esxx.domToE4X(accept_doc, cx, scope);
 
       // Now parse the POST/PUT/etc. message
       parseMessage(request, cx, scope);
@@ -163,6 +162,25 @@ public class JSRequest
     private long contentLength;
     private MimeHeaders mimeHeaders;
 
+    private Scriptable acceptValueOf;
+    static private java.lang.reflect.Method acceptValueOfMethod;
+    private static Object acceptValueOf(Context cx, Scriptable thisObj, 
+					Object[] args, Function funObj) {
+      return thisObj.get("value", thisObj);
+    }
+    static {
+      try {
+	acceptValueOfMethod = JSRequest.class.getDeclaredMethod("acceptValueOf",
+								Context.class, 
+								Scriptable.class,
+								Object[].class,
+								Function.class);
+      }
+      catch (NoSuchMethodException ex) {
+	throw new ESXXException("Failed to find JSRequest.acceptValueOf(): ", ex);
+      }
+    }
+
 
     private void addHeader(String name, String value) {
       mimeHeaders.addHeader(name, value);
@@ -176,10 +194,9 @@ public class JSRequest
     }
 
 
-    private void handleAcceptHeader(String hdr, String value, Document doc) {
-      Element accept = doc.getDocumentElement();
-      String  subname;
-
+    private void handleAcceptHeader(String hdr, String value, Context cx, Scriptable accept) {
+      String subname;
+      
       if (hdr.equals("Accept")) {
 	subname = "media";
       }
@@ -191,7 +208,7 @@ public class JSRequest
 	return;
       }
 
-      TreeMap<Double, List<Element>> elements = new TreeMap<Double, List<Element>>();
+      Map<Double, List<Scriptable>> objects = new TreeMap<Double, List<Scriptable>>();
 
       String[] values = value.split(",");
 
@@ -200,9 +217,9 @@ public class JSRequest
 	double   w     = 0.0;
 	String[] parts = v.split(";");
 
-	Element element = doc.createElement(subname);
-	element.setAttribute("type", parts[0].trim());
-	element.appendChild(doc.createTextNode(parts[0].trim()));
+	Scriptable object = cx.newObject(accept);
+	object.put("valueOf", object, acceptValueOf);
+	object.put("value", object, parts[0].trim());
 
 	// Add all attributes
 	for (int i = 1; i < parts.length; ++i) {
@@ -214,12 +231,12 @@ public class JSRequest
 	      q = Double.parseDouble(attr[1].trim());
 	    }
 	    else {
-	      element.setAttribute(attr[0].trim(), attr[1].trim());
+	      object.put(attr[0].trim(), object, attr[1].trim());
 	    }
 	  }
 	}
 
-	element.setAttribute("q", "" + q);
+	object.put("q", object, "" + q);
 	
 	// Calculate implicit weight
 	if (parts[0].trim().equals("*/*")) {
@@ -239,19 +256,23 @@ public class JSRequest
 	// Add to tree multi-map, inverse order
 	double key = -(q + w);
 
-	List<Element> l = elements.get(key);
+	List<Scriptable> l = objects.get(key);
 
 	if (l == null) {
-	  l = new ArrayList<Element>();
-	  elements.put(key, l);
+	  l = new ArrayList<Scriptable>();
+	  objects.put(key, l);
 	}
 	
-	l.add(element);
+	l.add(object);
       }
 
-      for (List<Element> l : elements.values()) {
-	for (Element e : l) {
-	  accept.appendChild(e);
+      Scriptable object = cx.newArray(accept, objects.size());
+      accept.put(subname, accept, object);
+
+      int i = 0;
+      for (List<Scriptable> l : objects.values()) {
+	for (Scriptable s : l) {
+	  object.put(i++, object, s);
 	}
       }
     }
