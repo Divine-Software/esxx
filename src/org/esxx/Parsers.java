@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.HashMap;
 import org.htmlcleaner.HtmlCleaner;
+import org.json.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 
@@ -53,6 +54,82 @@ class Parsers {
 	      
 	      return java.nio.ByteBuffer.wrap(bos.toByteArray());
 	    }
+	});
+
+      parserMap.put("application/json", new Parser() {
+	  public Object parse(String mime_type, HashMap<String,String> mime_params,
+				InputStream is, URL is_url,
+			      Collection<URL> external_urls,
+			      PrintWriter err, 
+			      Context cx, Scriptable scope) 
+	    throws IOException {
+	    String cs = mime_params.get("charset");
+
+	    if (cs == null) {
+	      cs = "UTF-8";
+	    }
+
+	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	    esxx.copyStream(is, bos);
+
+	    try {
+	      JSONTokener tok = new JSONTokener(bos.toString(cs));
+
+	      char first = tok.nextClean();
+	      tok.back();
+
+	      if (first == '{') {
+		return jsonToJS(new JSONObject(tok), cx, scope);
+	      }
+	      else if (first == '[') {
+		return jsonToJS(new JSONArray(tok), cx, scope);
+	      }
+	      else {
+		throw new IOException("Not a JSON Array or Object");
+	      }
+	    }
+	    catch (JSONException ex) {
+	      throw new IOException("Failed to parse JSON data: " + ex.getMessage(), ex);
+	    }
+	  }
+
+	  private Object jsonToJS(Object json, Context cx, Scriptable scope) 
+	    throws IOException, JSONException {
+	    Scriptable res;
+
+	    if (json == JSONObject.NULL) {
+	      return null;
+	    }
+	    else if (json instanceof String ||
+		     json instanceof Number ||
+		     json instanceof Boolean) {
+	      return json;
+	    }
+	    else if (json instanceof JSONObject) {
+	      JSONObject jo = (JSONObject) json;
+	      res  = cx.newObject(scope);
+
+	      for (Iterator i = jo.keys(); i.hasNext();) {
+		String  key = (String) i.next();
+		Object  val = jsonToJS(jo.get(key), cx, scope);
+		res.put(key, res, val);
+	      }
+	    }
+	    else if (json instanceof JSONArray) {
+	      JSONArray ja = (JSONArray) json;
+	      res = cx.newArray(scope, ja.length());
+
+	      for (int i = 0; i < ja.length(); ++i) {
+		Object val = jsonToJS(ja.get(i), cx, scope);
+		res.put(i, res, val);
+	      }
+	    }
+	    else {
+	      res = Context.toObject(json, scope);
+	    }
+
+	    return res;
+	  }
 	});
 
 //       parserMap.put("application/xslt+xml", new Parser() {
@@ -168,9 +245,7 @@ class Parsers {
 				PrintWriter err, 
 				Context cx, Scriptable scope) 
 	      throws IOException {
-	      String        cs = mime_params.get("charset");
-	      StringBuilder sb = new StringBuilder();
-	      String        s;
+	      String cs = mime_params.get("charset");
 
 	      if (cs == null) {
 		cs = "UTF-8";
