@@ -178,4 +178,6 @@ public class ESXXExpression
       }
     }
   }
+
+  static final long serialVersionUID = 5149528466515089486L;
 }

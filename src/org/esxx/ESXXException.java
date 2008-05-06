@@ -54,7 +54,10 @@ public class ESXXException
       public TimeOut() {
 	super(504, "Operation timed out.");
       }
+
+      static final long serialVersionUID = -3255817762077660281L;
     }
 
     private int statusCode;
+    static final long serialVersionUID = -4367557567005962004L;
 }

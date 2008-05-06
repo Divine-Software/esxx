@@ -24,7 +24,9 @@
 
   <target name="compile" depends="init" description="compile everything">
     <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" 
-           debug="true" deprecation="false" target="1.6" />
+           debug="true" deprecation="true" target="1.6">
+<!--      <compilerarg value="-Xlint"/>-->
+    </javac>
   </target>
 
   <target name="jar" depends="compile" description="generate all main jar files" >

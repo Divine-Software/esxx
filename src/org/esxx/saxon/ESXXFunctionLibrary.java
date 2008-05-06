@@ -60,4 +60,6 @@ public class ESXXFunctionLibrary
     ESXXFunctionLibrary c = new ESXXFunctionLibrary();
     return c;
   }
+
+  static final long serialVersionUID = 7195200001425695176L;
 }

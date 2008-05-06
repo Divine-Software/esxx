@@ -220,7 +220,7 @@ public class HTTPRequest
 		}
 		else {
 		  if (fileTypeMap.getContentType(file).equals("application/x-esxx+xml")) {
-		    code_url = file.toURL();
+		    code_url = file.toURI().toURL();
 		  }
 		  else {
 		    he.getResponseHeaders().set("Content-Type", fileTypeMap.getContentType(file));
@@ -243,7 +243,7 @@ public class HTTPRequest
 		  throw new FileNotFoundException("Only ESXX files are directories");
 		}
 		
-		code_url = real.toURL();
+		code_url = real.toURI().toURL();
 	      }
 
 	      if (code_url != null) {

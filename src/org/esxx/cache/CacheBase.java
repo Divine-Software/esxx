@@ -182,6 +182,8 @@ public abstract class CacheBase {
 	  // Tell implementation not to auto-modify the hash table
 	  return false;
 	}
+
+	static final long serialVersionUID = 8565024717836226408L;
     }
 
     private LRUMap cachedURLs = new LRUMap();
