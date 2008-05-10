@@ -37,8 +37,6 @@ public class FileURI
     protected Object load(Context cx, Scriptable thisObj, 
 			  String type, HashMap<String,String> params)
       throws Exception {
-      ESXX esxx = ESXX.getInstance();
-
       // Default file: load() media type is XML
       if (type == null) {
 	type = "text/xml";
@@ -50,7 +48,7 @@ public class FileURI
 	if (dir.exists() && dir.isDirectory()) {
 	  Document result = createDirectoryListing(dir.listFiles());
 
-	  return esxx.domToE4X(result, cx, this);
+	  return ESXX.domToE4X(result, cx, this);
 	}
       }
 
