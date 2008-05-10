@@ -70,7 +70,7 @@ public abstract class CacheBase {
       if (uc instanceof HttpURLConnection) {
 	HttpURLConnection huc = (HttpURLConnection) uc;
 
-	huc.setFollowRedirects(true);
+	HttpURLConnection.setFollowRedirects(true);
 	huc.setRequestProperty("Accept-Encoding", "gzip, deflate");
 	huc.setRequestProperty("Accept", "text/xml,text/html;q=0.9,text/plain;q=0.8,*/*;q=0.1");
 

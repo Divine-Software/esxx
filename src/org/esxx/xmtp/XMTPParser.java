@@ -19,7 +19,6 @@
 package org.esxx.xmtp;
 
 import java.io.*;
-import java.util.*;
 import java.util.regex.*;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;

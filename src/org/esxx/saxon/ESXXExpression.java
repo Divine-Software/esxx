@@ -18,12 +18,9 @@
 
 package org.esxx.saxon;
 
-import net.sf.saxon.dom.NodeOverNodeInfo;
 import net.sf.saxon.dom.ElementOverNodeInfo;
-import net.sf.saxon.dom.DocumentWrapper;
 import net.sf.saxon.dom.DOMWriter;
 import net.sf.saxon.expr.*;
-import net.sf.saxon.functions.*;
 import net.sf.saxon.om.*;
 import net.sf.saxon.trans.XPathException;
 import net.sf.saxon.type.Type;
@@ -100,7 +97,7 @@ public class ESXXExpression
     }
 
     if (value instanceof Collection) {
-      value = ((Collection) value).toArray();
+      value = ((Collection<?>) value).toArray();
     }
 
     if (value instanceof Object[]) {
@@ -136,7 +133,7 @@ public class ESXXExpression
       this.data = data;
       this.handler = handler;
 
-      return data;
+      return old;
     }
 
     // Rhino depends on this method

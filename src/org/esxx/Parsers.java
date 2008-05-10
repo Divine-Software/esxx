@@ -107,7 +107,7 @@ class Parsers {
 	      JSONObject jo = (JSONObject) json;
 	      res  = cx.newObject(scope);
 
-	      for (Iterator i = jo.keys(); i.hasNext();) {
+	      for (Iterator<?> i = jo.keys(); i.hasNext();) {
 		String  key = (String) i.next();
 		Object  val = jsonToJS(jo.get(key), cx, scope);
 		res.put(key, res, val);

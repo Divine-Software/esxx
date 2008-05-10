@@ -28,7 +28,6 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URI;
-import java.util.LinkedList;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.mozilla.javascript.*;
@@ -42,8 +41,6 @@ public class JSESXX
     public JSESXX(Context cx, Scriptable scope,
 		  Request request, Application app) {
       this();
-
-      ESXX esxx     = ESXX.getInstance();
 
       this.debug    = new PrintWriter(request.getDebugWriter());
       this.error    = new PrintWriter(request.getErrorWriter());

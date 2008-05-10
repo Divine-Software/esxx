@@ -19,7 +19,6 @@
 package org.esxx.js;
 
 import org.esxx.Application;
-import org.esxx.ESXX;
 import org.esxx.ESXXException;
 import org.esxx.Request;
 import org.mozilla.javascript.*;
@@ -58,7 +57,7 @@ public class JSGlobal
     scope = getTopLevelScope(scope);
     Object result = scope.get("esxx", scope);
     
-    if (result == cx.getUndefinedValue()) {
+    if (result == Context.getUndefinedValue()) {
       throw new ESXXException("'esxx' not found in top-level scope");
     }
 

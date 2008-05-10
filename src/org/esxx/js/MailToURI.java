@@ -27,7 +27,6 @@ import java.util.LinkedList;
 import java.util.Properties;
 import javax.mail.*;
 import javax.mail.internet.*;
-import javax.xml.transform.dom.DOMSource;
 import org.esxx.*;
 import org.esxx.xmtp.XMTPParser;
 import org.mozilla.javascript.*;
@@ -62,7 +61,7 @@ public class MailToURI
 				new ByteArrayInputStream(((String) data).getBytes("UTF-8")));
 	}
 	else if (data instanceof Scriptable) {
-	  data = esxx.serializeNode(esxx.e4xToDOM((Scriptable) data));
+	  data = esxx.serializeNode(ESXX.e4xToDOM((Scriptable) data));
 
 	  XMTPParser xmtpp  = new XMTPParser();
 
@@ -155,7 +154,7 @@ public class MailToURI
 	}
 	else if (type.equals("text/xml")) {
 	  if (data instanceof Scriptable) {
-	    data = esxx.serializeNode(esxx.e4xToDOM((Scriptable) data));
+	    data = esxx.serializeNode(ESXX.e4xToDOM((Scriptable) data));
 	  }
 	
 	  msg.setDataHandler(new javax.activation.DataHandler(

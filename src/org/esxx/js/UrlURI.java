@@ -21,7 +21,6 @@ package org.esxx.js;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.HashMap;
 import org.esxx.ESXX;
 import org.mozilla.javascript.*;

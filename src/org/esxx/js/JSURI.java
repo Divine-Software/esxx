@@ -19,7 +19,6 @@
 package org.esxx.js;
 
 import java.io.InputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URISyntaxException;
@@ -45,7 +44,8 @@ public class JSURI
       return "URI";
     }
 
-    public Object getDefaultValue(Class typeHint) {
+    @SuppressWarnings("unchecked")
+	public Object getDefaultValue(Class typeHint) {
       return "[object URI: " + uri.toString() + "]";
     }
 

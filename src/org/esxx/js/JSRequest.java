@@ -32,10 +32,7 @@ import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPConstants;
 import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPMessage;
 import org.mozilla.javascript.*;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 
 public class JSRequest 
@@ -164,7 +161,8 @@ public class JSRequest
 
     private Scriptable acceptValueOf;
     static private java.lang.reflect.Method acceptValueOfMethod;
-    private static Object acceptValueOf(Context cx, Scriptable thisObj, 
+    @SuppressWarnings("unused")
+	private static Object acceptValueOf(Context cx, Scriptable thisObj, 
 					Object[] args, Function funObj) {
       return thisObj.get("value", thisObj);
     }

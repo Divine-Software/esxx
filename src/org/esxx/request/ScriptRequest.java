@@ -19,7 +19,6 @@
 package org.esxx.request;
 
 import java.io.IOException;
-import java.util.HashMap;
 import org.esxx.*;
 import org.mozilla.javascript.*;
 

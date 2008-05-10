@@ -259,7 +259,6 @@ class Worker {
 
     HashMap<String,String> params = new HashMap<String,String>();
     String                 ct     = ESXX.parseMIMEType(content_type, params);
-    String                 cs     = params.get("charset");
     
     URL stylesheet = app.getStylesheet(ct);
 

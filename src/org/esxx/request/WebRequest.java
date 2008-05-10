@@ -20,7 +20,6 @@ package org.esxx.request;
 
 import java.io.*;
 import java.net.*;
-import java.util.HashMap;
 import java.util.Properties;
 import org.esxx.*;
 import org.mozilla.javascript.*;

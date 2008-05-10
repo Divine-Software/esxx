@@ -485,7 +485,6 @@ public class Application {
     private boolean gotESXX = false;
 
     private Document xml;
-    private StringBuilder code = new StringBuilder();
     private LinkedHashMap<String, Code> codeList = new LinkedHashMap<String, Code>();
 
     private RequestMatcher requestMatcher = new RequestMatcher();

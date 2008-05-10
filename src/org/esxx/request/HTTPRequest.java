@@ -57,8 +57,6 @@ public class HTTPRequest
 
       httpExchange.sendResponseHeaders(response.getStatus(), 0);
 
-      Object result = response.getResult();
-
       // Output body
       response.writeResult(esxx, cx, httpExchange.getResponseBody());
       httpExchange.close();
@@ -134,7 +132,7 @@ public class HTTPRequest
     final URI root_uri = new File(root).toURI();
 
     HttpServer  hs = HttpServer.create(new InetSocketAddress(http_port), 0);
-    HttpContext hc = hs.createContext("/", new HttpHandler() {
+    hs.createContext("/", new HttpHandler() {
 	public void handle(HttpExchange he) 
 	  throws IOException {
 	  String ruri = he.getRequestURI().getPath();

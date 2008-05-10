@@ -82,8 +82,8 @@ public abstract class Request {
     public static Reader createReader(InputStream is, String content_type) 
       throws java.io.UnsupportedEncodingException {
       HashMap<String, String> params = new HashMap<String, String>();
-      String                  ct = ESXX.parseMIMEType(content_type, params);
-      String                  cs = params.get("charset");
+      ESXX.parseMIMEType(content_type, params);
+      String cs = params.get("charset");
 
       if (cs == null) {
 	cs = java.nio.charset.Charset.defaultCharset().name();
@@ -95,8 +95,8 @@ public abstract class Request {
     public static Writer createWriter(OutputStream os, String content_type)
       throws java.io.UnsupportedEncodingException {
       HashMap<String, String> params = new HashMap<String, String>();
-      String                  ct = ESXX.parseMIMEType(content_type, params);
-      String                  cs = params.get("charset");
+      ESXX.parseMIMEType(content_type, params);
+      String cs = params.get("charset");
 
       if (cs == null) {
 	cs = java.nio.charset.Charset.defaultCharset().name();

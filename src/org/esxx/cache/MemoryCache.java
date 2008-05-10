@@ -25,7 +25,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
 import net.sf.saxon.s9api.*;
-import javax.xml.transform.stream.StreamSource;
 
 public class MemoryCache
   extends CacheBase {
@@ -112,7 +111,7 @@ public class MemoryCache
 	
 //	System.err.println("Reloading modified URL " + cached);
 
-	esxx.copyStream(is, os);
+	ESXX.copyStream(is, os);
 	cached.content = os.toByteArray();
 	return true;
       }

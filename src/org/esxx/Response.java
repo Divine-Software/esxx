@@ -104,7 +104,7 @@ public class Response  {
     resultObject = result;
   }
 
-  public Map headers() {
+  public Map<String, String> headers() {
     return httpHeaders;
   }
 

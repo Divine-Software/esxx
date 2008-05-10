@@ -250,7 +250,7 @@ public class MIMEParser {
 	  try {
 	    LSInput  input  = domImplementationLS.createLSInput();
 	    LSParser parser = domImplementationLS.createLSParser(
-	      domImplementationLS.MODE_SYNCHRONOUS, null);
+	      DOMImplementationLS.MODE_SYNCHRONOUS, null);
 
 	    if (content_stream != null) {
 	      input.setByteStream(content_stream);
@@ -289,7 +289,7 @@ public class MIMEParser {
 
     private void convertHeaders(Element element,
 				Part part,
-				Enumeration headers,
+				Enumeration<?> headers,
 				String forced_encoding)
       throws MessagingException {
       while (headers.hasMoreElements()) {
@@ -409,7 +409,7 @@ public class MIMEParser {
 
 	e.appendChild(e2);
 
-	for (Enumeration names = params.getNames(); names.hasMoreElements(); ) {
+	for (Enumeration<?> names = params.getNames(); names.hasMoreElements(); ) {
 	  String param = (String) names.nextElement();
 
 	  e2 = document.createElementNS(XMTP_NAMESPACE, makeXMLName(param));
@@ -421,7 +421,7 @@ public class MIMEParser {
       else {
 	e.setTextContent(value.toLowerCase());
 
-	for (Enumeration names = params.getNames(); names.hasMoreElements(); ) {
+	for (Enumeration<?> names = params.getNames(); names.hasMoreElements(); ) {
 	  String param = (String) names.nextElement();
 
 	  e.setAttribute(makeXMLName(param), params.get(param));

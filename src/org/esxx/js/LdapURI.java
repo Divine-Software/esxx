@@ -20,10 +20,7 @@ package org.esxx.js;
 
 import java.net.URI;
 import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Properties;
 import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
 import javax.naming.directory.*;
 import org.esxx.ESXX;
 import org.mozilla.javascript.*;
@@ -52,7 +49,7 @@ public class LdapURI
       }
  
       DirContext        ctx    = new InitialDirContext(getProperties(thisObj));
-      NamingEnumeration answer = ctx.search(uri.toString(), "", null);
+      NamingEnumeration<?> answer = ctx.search(uri.toString(), "", null);
 
       Document          result = esxx.createDocument("result");
       Element           root   = result.getDocumentElement();
@@ -71,10 +68,10 @@ public class LdapURI
 	entry.setAttribute("path", path);
 	entry.setAttribute("uri", euri.toString());
 
-	for (NamingEnumeration ae = sr.getAttributes().getAll(); ae.hasMore();) {
+	for (NamingEnumeration<?> ae = sr.getAttributes().getAll(); ae.hasMore();) {
 	  Attribute attr = (Attribute)ae.next();
 
-	  for (NamingEnumeration e = attr.getAll(); e.hasMore();) {
+	  for (NamingEnumeration<?> e = attr.getAll(); e.hasMore();) {
 	    Object v = e.next();	
 
 	    addChild(entry, attr.getID(), v.toString());
@@ -84,6 +81,6 @@ public class LdapURI
 	root.appendChild(entry);
       }
       
-      return esxx.domToE4X(result, cx, this);
+      return ESXX.domToE4X(result, cx, this);
     }
 }

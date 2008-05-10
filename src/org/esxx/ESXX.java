@@ -20,8 +20,6 @@ package org.esxx;
 
 import org.esxx.cache.*;
 import org.esxx.saxon.*;
-import org.esxx.js.JSESXX;
-
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -290,8 +288,6 @@ public class ESXX {
       }
 
       long         expires = System.currentTimeMillis() + timeout;
-      final JSESXX js_esxx;
-
       if (old_cx != null) {
 	Workload old_work = (Workload) old_cx.getThreadLocal(Workload.class);
 
@@ -299,9 +295,6 @@ public class ESXX {
 	  // If we're already executing a workload, never extend the timeout
 	  expires = old_work.expires;
 	}
-      }
-      else {
-	js_esxx = null;
       }
 
       final Workload workload = new Workload(expires);
@@ -780,8 +773,6 @@ public class ESXX {
 
 	private URL getURL(String uri, String base_uri) {
 	  try {
-	    URL url = null;
-
 	    if (base_uri != null) {
 	      return new URL(new URL(base_uri), uri);
 	    }
