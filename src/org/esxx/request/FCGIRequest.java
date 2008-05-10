@@ -21,7 +21,7 @@ package org.esxx.request;
 import java.io.*;
 import org.bumblescript.jfast.*;
 import org.esxx.*;
-import org.esxx.js.JSResponse;
+import org.mozilla.javascript.*;
 
 public class FCGIRequest
   extends WebRequest {
@@ -35,9 +35,9 @@ public class FCGIRequest
     jFast = jfast;
   }
 
-  public Object handleResponse(ESXX esxx, JSResponse response)
+  public Integer handleResponse(ESXX esxx, Context cx, Response response)
     throws Exception {
-    Object result = super.handleResponse(esxx, response);
+    Integer result = super.handleResponse(esxx, cx, response);
     jFast.end();
     return result;
   }

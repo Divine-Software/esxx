@@ -18,8 +18,6 @@
 
 package org.esxx;
 
-import org.esxx.js.JSResponse;
-
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -34,8 +32,6 @@ import java.util.HashMap;
 import java.util.Properties;
 
 public abstract class Request {
-  //    public abstract void finished(int rc, JSResponse response);
-
     public Request(URL url, String[] command_line, Properties properties,
 		   InputStream in, Writer error) 
       throws IOException {

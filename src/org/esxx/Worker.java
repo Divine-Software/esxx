@@ -46,7 +46,7 @@ class Worker {
     this.esxx = esxx;
   }
 
-  public JSResponse handleRequest(Context cx, Request request)
+  public Response handleRequest(Context cx, Request request)
     throws Exception {
     Application app = esxx.getCachedApplication(request.getURL());
     JSGlobal global;
@@ -141,13 +141,14 @@ class Worker {
       throw new ESXXException("No result from '" + request.getURL() + "'");
     }
 
-    JSResponse response;
+    Response response;
 
     if (result instanceof JSResponse) {
-      response = (JSResponse) result;
+      response = ((JSResponse) result).getResponse();
     }
     else {
-      response = (JSResponse) cx.newObject(scope, "Response",  new Object[] { result });
+      response = ((JSResponse) cx.newObject(scope, "Response",  new Object[] { result }))
+	.getResponse();
     }
 
     if (response.getResult() instanceof Node) {
@@ -252,7 +253,7 @@ class Worker {
     return ESXX.callJSMethod("main", new Object[] { args }, "Program entry" , cx, scope);
   }
 
-  private void handleTransformation(Request request, JSResponse response, 
+  private void handleTransformation(Request request, Response response, 
 				    JSESXX js_esxx, Application app,
 				    Context cx, Scriptable scope)
     throws IOException, SaxonApiException {

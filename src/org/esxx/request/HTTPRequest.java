@@ -27,7 +27,7 @@ import java.net.URL;
 import javax.activation.FileTypeMap;
 import javax.activation.MimetypesFileTypeMap;
 import org.esxx.*;
-import org.esxx.js.JSResponse;
+import org.mozilla.javascript.*;
 
 public class HTTPRequest
   extends WebRequest {
@@ -42,32 +42,27 @@ public class HTTPRequest
     httpExchange = he;
   }
 
-  public Object handleResponse(ESXX esxx, JSResponse response)
+  public Integer handleResponse(ESXX esxx, Context cx, Response response)
     throws Exception {
     try {
-    // Do not call super method, since it has a null OutputStream.
+      // Do not call super method, since it has a null OutputStream.
 
-    final Headers headers = httpExchange.getResponseHeaders();
-    headers.set("Content-Type", response.getContentType());
-    response.enumerateHeaders(new JSResponse.HeaderEnumerator() {
-	public void header(String name, String value) {
-	  headers.set(name, value);
-	}
-      });
+      final Headers headers = httpExchange.getResponseHeaders();
+      headers.set("Content-Type", response.getContentType());
+      response.enumerateHeaders(new Response.HeaderEnumerator() {
+	  public void header(String name, String value) {
+	    headers.set(name, value);
+	  }
+	});
 
-    httpExchange.sendResponseHeaders(response.getStatus(), 0);
+      httpExchange.sendResponseHeaders(response.getStatus(), 0);
 
-    Object result = response.getResult();
+      Object result = response.getResult();
 
-    // Output body
-    HashMap<String,String> mime_params = new HashMap<String,String>();
-    String mime_type = ESXX.parseMIMEType(response.getContentType(), mime_params);
-
-    esxx.serializeToStream(result, null, null,
-			   mime_type, mime_params,
-			   httpExchange.getResponseBody());
-    httpExchange.close();
-    return result;
+      // Output body
+      response.writeResult(esxx, cx, httpExchange.getResponseBody());
+      httpExchange.close();
+      return 0;
     }
     catch (Exception ex) {
       ex.printStackTrace();

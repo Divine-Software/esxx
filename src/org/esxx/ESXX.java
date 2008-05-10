@@ -22,7 +22,6 @@ import org.esxx.cache.*;
 import org.esxx.util.*;
 import org.esxx.saxon.*;
 import org.esxx.js.JSESXX;
-import org.esxx.js.JSResponse;
 
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -267,10 +266,10 @@ public class ESXX {
 	    Worker worker = new Worker(ESXX.this);
 
 	    try {
-	      return rh.handleResponse(ESXX.this, worker.handleRequest(cx, request));
+	      return rh.handleResponse(ESXX.this, cx, worker.handleRequest(cx, request));
 	    }
 	    catch (Throwable t) {
-	      return rh.handleError(ESXX.this, t);
+	      return rh.handleError(ESXX.this, cx, t);
 	    }
 	  }
 	}, timeout);
@@ -314,8 +313,8 @@ public class ESXX {
       workloadSet.add(workload);
 
       synchronized (workload) {
-	workload.future = executorService.submit(new Callable<Object>() {
-	    public Object call()
+	workload.future = executorService.submit(new Callable<Integer>() {
+	    public Integer call()
 	      throws Exception {
 	      Context new_cx = Context.getCurrentContext();
 
@@ -324,7 +323,7 @@ public class ESXX {
 	      new_cx.putThreadLocal(Workload.class, workload);
 
 	      try {
-		return ca.run(new_cx);
+		return (Integer) ca.run(new_cx);
 	      }
 	      finally {
 		if (old_workload != null) {
@@ -548,58 +547,6 @@ public class ESXX {
       return parsers.parse(mime_type, mime_params, is, is_url, external_urls, err, cx, scope);
     }
 
-    public void serializeToStream(Object object, Context cx, Scriptable scope,
-				  String mime_type, HashMap<String,String> mime_params,
-				  OutputStream out)
-      throws Exception {
-      if (object instanceof Scriptable) {
-	object = e4xToDOM((Scriptable) object); // Might throw
-      }
-
-      if (object instanceof Node) {
-	object = serializeNode((Node) object);
-      }
-
-      if (object instanceof ByteArrayOutputStream) {
-	ByteArrayOutputStream bos = (ByteArrayOutputStream) object;
-
-	bos.writeTo(out);
-      }
-      else if (object instanceof ByteBuffer) {
-	// Write result as-is to output stream
-	WritableByteChannel wbc = Channels.newChannel(out);
-	ByteBuffer          bb  = (ByteBuffer) object;
-
-	bb.rewind();
-
-	while (bb.hasRemaining()) {
-	  wbc.write(bb);
-	}
-
-	wbc.close();
-      }
-      else if (object instanceof String) {
-	// Write object as-is, using the specified charset (if present)
-	String cs = mime_params.get("charset");
-
-	if (cs == null) {
-	  cs = java.nio.charset.Charset.defaultCharset().name();
-	}
-
-	Writer ow = new OutputStreamWriter(out, cs);
-	ow.write((String) object);
-	ow.close();
-      }
-      else if (object instanceof BufferedImage) {
-	// TODO ...
-	throw new UnsupportedOperationException("BufferedImage objects not supported yet.");
-      }
-      else {
-	throw new UnsupportedOperationException("Unsupported object class type: " 
-						+ object.getClass());
-      }
-    }
-
     public Application getCachedApplication(URL url)
       throws IOException {
       return memoryCache.getCachedApplication(url);
@@ -666,6 +613,19 @@ public class ESXX {
 
 
 
+    public static void copyReader(Reader r, Writer w)
+      throws IOException {
+      char buffer[] = new char[8192];
+
+      int charsRead;
+
+      while ((charsRead = r.read(buffer)) != -1) {
+	w.write(buffer, 0, charsRead);
+      }
+
+      w.flush();
+    }
+
     public static void copyStream(InputStream is, OutputStream os)
       throws IOException {
       byte buffer[] = new byte[8192];
@@ -677,7 +637,6 @@ public class ESXX {
       }
 
       os.flush();
-      os.close();
     }
 
     public static String parseMIMEType(String ct, HashMap<String,String> params) {
@@ -873,14 +832,14 @@ public class ESXX {
 	expires   = exp;
       }
 
-      public Future<Object> future;
+      public Future<Integer> future;
       public long expires;
     }
 
     public interface ResponseHandler {
-      Object handleResponse(ESXX esxx, JSResponse result)
+      Integer handleResponse(ESXX esxx, Context cx, Response result)
 	throws Exception;
-      Object handleError(ESXX esxx, Throwable error);
+      Integer handleError(ESXX esxx, Context cx, Throwable error);
     }
 
     private int defaultTimeout;

@@ -23,8 +23,7 @@ import java.net.*;
 import java.util.HashMap;
 import java.util.Properties;
 import org.esxx.*;
-import org.esxx.js.JSResponse;
-import org.mozilla.javascript.RhinoException;
+import org.mozilla.javascript.*;
 
 public class WebRequest
   extends Request 
@@ -50,7 +49,7 @@ public class WebRequest
     return super.getWD();
   }
 
-  public Object handleResponse(ESXX esxx, JSResponse response)
+  public Integer handleResponse(ESXX esxx, Context cx, Response response)
     throws Exception {
     // Output HTTP headers
     final PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
@@ -58,7 +57,7 @@ public class WebRequest
     out.println("Status: " + response.getStatus());
     out.println("Content-Type: " + response.getContentType());
 
-    response.enumerateHeaders(new JSResponse.HeaderEnumerator() {
+    response.enumerateHeaders(new Response.HeaderEnumerator() {
 	public void header(String name, String value) {
 	  out.println(name + ": " + value);
 	}
@@ -67,15 +66,7 @@ public class WebRequest
     out.println();
     out.flush();
 
-    Object result = response.getResult();
-
-    // Output body
-    HashMap<String,String> mime_params = new HashMap<String,String>();
-    String mime_type = ESXX.parseMIMEType(response.getContentType(), mime_params);
-
-    esxx.serializeToStream(result, null, null,
-			   mime_type, mime_params,
-			   outStream);
+    response.writeResult(esxx, cx, outStream);
 
     getErrorWriter().flush();
     getDebugWriter().flush();
@@ -84,7 +75,7 @@ public class WebRequest
     return 0;
   }
 
-  public Object handleError(ESXX esxx, Throwable ex) {
+  public Integer handleError(ESXX esxx, Context cx, Throwable ex) {
     String title = "ESXX Server Error";
     int    code  = 500;
 	
@@ -118,9 +109,9 @@ public class WebRequest
     out.close();
 
     try {
-      return handleResponse(esxx, new JSResponse(code,
-						 "text/html; charset=UTF-8",
-						 sw.toString()));
+      return handleResponse(esxx, cx,
+			    new Response(code, "text/html; charset=UTF-8",
+					 sw.toString(), null));
     }
     catch (Exception ex2) {
       // Hmm

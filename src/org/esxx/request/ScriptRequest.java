@@ -21,8 +21,7 @@ package org.esxx.request;
 import java.io.IOException;
 import java.util.HashMap;
 import org.esxx.*;
-import org.esxx.js.JSResponse;
-import org.mozilla.javascript.RhinoException;
+import org.mozilla.javascript.*;
 
 public class ScriptRequest
   extends Request 
@@ -35,18 +34,13 @@ public class ScriptRequest
 	  new java.io.OutputStreamWriter(System.err));
   }
 
-  public Object handleResponse(ESXX esxx, JSResponse response) 
+  public Integer handleResponse(ESXX esxx, Context cx, Response response) 
     throws Exception {
     // Output debug stream to stderr first
     System.err.print(getDebugWriter().toString());
 
     // Then write result
-    HashMap<String,String> mime_params = new HashMap<String,String>();
-    String mime_type = ESXX.parseMIMEType(response.getContentType(), mime_params);
-
-    esxx.serializeToStream(response.getResult(), null, null,
-			   mime_type, mime_params,
-			   System.out);
+    response.writeResult(esxx, cx, System.out);
 
     try {
       int rc = response.getStatus();
@@ -72,7 +66,7 @@ public class ScriptRequest
     }
   }
 
-  public Object handleError(ESXX esxx, Throwable t) {
+  public Integer handleError(ESXX esxx, Context cx, Throwable t) {
     if (t instanceof ESXXException) {
       ESXXException ex = (ESXXException) t;
 
