@@ -146,6 +146,11 @@ class Worker {
     if (result instanceof JSResponse) {
       response = ((JSResponse) result).getResponse();
     }
+    else if (result instanceof NativeArray) {
+      // Automatically convert an JS Array into a Response
+      response = ((JSResponse) cx.newObject(scope, "Response",  
+					    cx.getElements((NativeArray) result))).getResponse();
+    }
     else {
       response = ((JSResponse) cx.newObject(scope, "Response",  new Object[] { result }))
 	.getResponse();
