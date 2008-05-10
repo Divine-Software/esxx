@@ -23,6 +23,7 @@ import java.io.FileOutputStream;
 import java.net.URI;
 import java.util.HashMap;
 import org.esxx.ESXX;
+import org.esxx.Response;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -62,7 +63,7 @@ public class FileURI
       ESXX esxx = ESXX.getInstance();
       File file = new File(uri);
 
-      esxx.serializeToStream(data, cx, thisObj, type, params, new FileOutputStream(file));
+      Response.writeObject(data, type, params, esxx, cx, new FileOutputStream(file));
       return createDirectoryListing(new File[] { file });
     }
 
@@ -85,10 +86,10 @@ public class FileURI
 	  throw Context.reportRuntimeError("Failed to create " + file);
 	}
 
-	esxx.serializeToStream(data, cx, thisObj, type, params, new FileOutputStream(file));
+	Response.writeObject(data, type, params, esxx, cx, new FileOutputStream(file));
       }
       else {
-	esxx.serializeToStream(data, cx, thisObj, type, params, new FileOutputStream(file, true));
+	Response.writeObject(data, type, params, esxx, cx, new FileOutputStream(file, true));
       }
 
       return createDirectoryListing(new File[] { file });

@@ -122,8 +122,13 @@ public class Response  {
     HashMap<String,String> mime_params = new HashMap<String,String>();
     String mime_type = ESXX.parseMIMEType(contentType, mime_params);
 
-    Object object = resultObject;
+    writeObject(resultObject, mime_type, mime_params, esxx, cx, out);
+  }
 
+  public static void writeObject(Object object, 
+				 String mime_type, HashMap<String,String> mime_params,
+				 ESXX esxx, Context cx, OutputStream out)
+    throws IOException {
     if (object instanceof Node) {
       object = esxx.serializeNode((Node) object);
     }
