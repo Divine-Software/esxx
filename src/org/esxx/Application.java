@@ -27,7 +27,6 @@ import javax.xml.stream.*;
 //import javax.xml.xpath.*;
 import org.esxx.js.JSGlobal;
 import org.esxx.js.JSESXX;
-import org.esxx.js.JSRequest;
 import org.esxx.js.JSURI;
 import org.esxx.util.RequestMatcher;
 import org.mozilla.javascript.Context;
@@ -54,6 +53,7 @@ public class Application {
 	  hasExecuted = false;
 	}
 
+	@Override
 	public String toString() {
 	  return url.toString() + "::" + line + ": " + code;
 	}
@@ -245,14 +245,14 @@ public class Application {
       }
 
       // Create JS versions of the document, it's URI and the include path
-      mainDocument = esxx.domToE4X(xml, cx, applicationScope);
+      mainDocument = ESXX.domToE4X(xml, cx, applicationScope);
       mainURI = (JSURI) cx.newObject(applicationScope, "URI", new Object[] { baseURL });
       URL[] include_path = esxx.getIncludePath();
 
       includePath = cx.newArray(applicationScope, include_path.length);
 
       for (int i = 0; i < include_path.length; ++i) {
-	includePath.put(i, includePath, (JSURI) cx.newObject(applicationScope, "URI", 
+	includePath.put(i, includePath, cx.newObject(applicationScope, "URI", 
 							     new Object[] { include_path[i] }));
       }
 

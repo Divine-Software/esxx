@@ -19,19 +19,12 @@
 package org.esxx;
 
 import org.esxx.cache.*;
-import org.esxx.util.*;
 import org.esxx.saxon.*;
 import org.esxx.js.JSESXX;
 
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -141,7 +134,8 @@ public class ESXX {
       transformerFactory.setURIResolver(new URIResolver(null));
 
       contextFactory = new ContextFactory() {
-	  public boolean hasFeature(Context cx, int feature) {
+	  @Override
+	public boolean hasFeature(Context cx, int feature) {
 	    if (feature == Context.FEATURE_DYNAMIC_SCOPE) {
 	      return true;
 	    }
@@ -150,7 +144,8 @@ public class ESXX {
 	    }
 	  }
 
-	  public void observeInstructionCount(Context cx, int instruction_count) {
+	  @Override
+	public void observeInstructionCount(Context cx, int instruction_count) {
 	    Workload workload = (Workload) cx.getThreadLocal(Workload.class);
 
 	    if (workload == null) {
@@ -168,7 +163,8 @@ public class ESXX {
       ThreadFactory tf = new ThreadFactory() {
 	  public Thread newThread(final Runnable r) {
 	    return new Thread() {
-	      public void run() {
+	      @Override
+		public void run() {
 		contextFactory.call(new ContextAction() {
 		    public Object run(Context cx) {
 		      // Enable all optimizations, but do count instructions
@@ -690,7 +686,7 @@ public class ESXX {
 	o = cx.evaluateString(scope, object, identifier + " object " + object, 1, null);
 	function = object + "." + method;
 
-	if (o == null || o == ScriptableObject.NOT_FOUND) {
+	if (o == null || o == Scriptable.NOT_FOUND) {
 	  throw new ESXXException(identifier + " '" + object + "' not found.");
 	}
 
@@ -701,7 +697,7 @@ public class ESXX {
 
       Object m = ScriptableObject.getProperty((Scriptable) o, method);
 
-      if (m == null || m == ScriptableObject.NOT_FOUND) {
+      if (m == null || m == Scriptable.NOT_FOUND) {
 	throw new ESXXException(identifier + " '" + function + "()' not found.");
       }
 

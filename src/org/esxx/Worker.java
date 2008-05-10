@@ -24,22 +24,13 @@ import org.esxx.saxon.ESXXExpression;
 
 import java.io.*;
 import java.net.URL;
-import java.util.Properties;
 import java.util.HashMap;
 import javax.xml.soap.*;
-import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
-import javax.xml.transform.stream.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-import org.w3c.dom.Comment;
-import javax.xml.stream.*;
-import javax.xml.stream.events.XMLEvent;
-import javax.xml.namespace.NamespaceContext;
-
-import net.sf.saxon.s9api.*;  
-import net.sf.saxon.dom.*;
+import net.sf.saxon.s9api.*;
 
 class Worker {
   public Worker(ESXX esxx) {
@@ -206,8 +197,8 @@ class Worker {
       soap_body = message.getSOAPBody().extractContentAsDocument();
 
       Object args[] = { req,
-			esxx.domToE4X(soap_body, cx, scope),
-			esxx.domToE4X(soap_header, cx, scope) };
+			ESXX.domToE4X(soap_body, cx, scope),
+			ESXX.domToE4X(soap_header, cx, scope) };
 
       String method = soap_body.getDocumentElement().getLocalName();
 
@@ -216,7 +207,7 @@ class Worker {
     else {
       // No RPC handler; the SOAP message itself is the result
 
-      result = esxx.domToE4X(message.getSOAPPart(), cx, scope);
+      result = ESXX.domToE4X(message.getSOAPPart(), cx, scope);
     }
 
     return result;
@@ -337,7 +328,7 @@ class Worker {
     }
 
     try {
-      Object args[] = { cx.javaToJS(error, scope) };
+      Object args[] = { Context.javaToJS(error, scope) };
 
       result = ESXX.callJSMethod(handler, args, "Error handler", cx, scope);
     }

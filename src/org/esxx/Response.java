@@ -133,7 +133,7 @@ public class Response  {
       object = esxx.serializeNode((Node) object);
     }
     else if (object instanceof Scriptable) {
-      object = jsToJSON((Scriptable) object, cx).toString();
+      object = jsToJSON(object, cx).toString();
     }
     
     if (object instanceof ByteArrayOutputStream) {

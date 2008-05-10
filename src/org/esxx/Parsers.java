@@ -21,10 +21,8 @@ package org.esxx;
 import org.esxx.xmtp.MIMEParser;
 
 import java.io.ByteArrayOutputStream;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -50,7 +48,7 @@ class Parsers {
 	      throws IOException, org.xml.sax.SAXException {
 	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-	      esxx.copyStream(is, bos);
+	      ESXX.copyStream(is, bos);
 	      
 	      return java.nio.ByteBuffer.wrap(bos.toByteArray());
 	    }
@@ -70,7 +68,7 @@ class Parsers {
 	    }
 
 	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	    esxx.copyStream(is, bos);
+	    ESXX.copyStream(is, bos);
 
 	    try {
 	      JSONTokener tok = new JSONTokener(bos.toString(cs));
@@ -193,7 +191,7 @@ class Parsers {
 		MIMEParser p = new MIMEParser(xmtp, ns, html, true);
 		p.convertMessage(is);
 		Document result = p.getDocument();
-		return esxx.domToE4X(result, cx, scope);
+		return ESXX.domToE4X(result, cx, scope);
 	      }
 	      catch (Exception ex) {
 		throw new IOException("Unable to parse email message", ex);
@@ -209,7 +207,7 @@ class Parsers {
 				Context cx, Scriptable scope) 
 	      throws IOException, org.xml.sax.SAXException {
 	      Document result = esxx.parseXML(is, is_url, external_urls, err);
-	      return esxx.domToE4X(result, cx, scope);
+	      return ESXX.domToE4X(result, cx, scope);
 	    }
 	});
 
@@ -234,7 +232,7 @@ class Parsers {
 	      hc.setUseCdataForScriptAndStyle(false);
 	      hc.clean();
 	
-	      return esxx.domToE4X(hc.createDOM(), cx, scope);
+	      return ESXX.domToE4X(hc.createDOM(), cx, scope);
 	    }
 	});
 
@@ -252,7 +250,7 @@ class Parsers {
 	      }
 
 	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	      esxx.copyStream(is, bos);
+	      ESXX.copyStream(is, bos);
 	      return bos.toString(cs);
 	    }
 	});
