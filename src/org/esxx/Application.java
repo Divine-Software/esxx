@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -40,7 +40,7 @@ import net.sf.saxon.dom.*;
 /** This class is responsible for parsing the XML file the web server
   * invokes ESXX with. The XML file may include ESXX-specific
   * processing instructions or elements from the ESXX namespace, which
-  * will be interpreted. 
+  * will be interpreted.
   */
 
 public class Application {
@@ -67,7 +67,7 @@ public class Application {
 
     public Application(ESXX esxx, URL url)
       throws IOException {
-      
+
       this.esxx = esxx;
       baseURL = url;
       xmlInputFactory = XMLInputFactory.newInstance();
@@ -85,7 +85,7 @@ public class Application {
       if (is.read() == '#' &&
 	  is.read() == '!') {
 	// Skip shebang
-	while (is.read() != '\n');
+	while (is.read() != '\n') {}
 	importCode(url, is);
 	return;
       }
@@ -94,7 +94,7 @@ public class Application {
 
 	for (int i = 0; i < 4096; ++i) {
 	  int c = is.read();
-	    
+
 	  if (c == '<') {
 	    // '<' triggers XML mode
 	    break;
@@ -117,7 +117,7 @@ public class Application {
 
 	// Extract ESXX information, if any
 
-	try { 
+	try {
 	  Processor processor = esxx.getSaxonProcessor();
 
 	  XPathCompiler xc = processor.newXPathCompiler();
@@ -129,7 +129,7 @@ public class Application {
 
 	  for (XdmItem i : xs) {
 	    Node n = (Node) ((NodeWrapper) i.getUnderlyingValue()).getUnderlyingNode();
-	  
+
 	    if (n.getNodeType() == Node.PROCESSING_INSTRUCTION_NODE) {
 	      String name = n.getNodeName();
 
@@ -228,7 +228,7 @@ public class Application {
     }
 
     public JSGlobal compile(Context cx)
-      throws IllegalAccessException, InstantiationException, 
+      throws IllegalAccessException, InstantiationException,
       java.lang.reflect.InvocationTargetException {
       if (applicationScope != null) {
 	return applicationScope;
@@ -252,7 +252,7 @@ public class Application {
       includePath = cx.newArray(applicationScope, include_path.length);
 
       for (int i = 0; i < include_path.length; ++i) {
-	includePath.put(i, includePath, cx.newObject(applicationScope, "URI", 
+	includePath.put(i, includePath, cx.newObject(applicationScope, "URI",
 							     new Object[] { include_path[i] }));
       }
 
@@ -274,7 +274,7 @@ public class Application {
       }
     }
 
-    public void importAndExecute(Context cx, Scriptable scope, JSESXX js_esxx, 
+    public void importAndExecute(Context cx, Scriptable scope, JSESXX js_esxx,
 				 URL url, InputStream is)
       throws IOException {
       Code c = importCode(url, is);
@@ -292,12 +292,12 @@ public class Application {
     }
 
 
-    private Code importCode(URL url) 
+    private Code importCode(URL url)
       throws IOException {
       return importCode(url, esxx.openCachedURL(url));
     }
 
-    private Code importCode(URL url, InputStream is) 
+    private Code importCode(URL url, InputStream is)
       throws IOException {
       try {
 	String key = url.toURI().normalize().toString();
@@ -305,11 +305,11 @@ public class Application {
 
 	if (c == null) {
 	  ByteArrayOutputStream os = new ByteArrayOutputStream();
-      
+
 	  ESXX.copyStream(is, os);
 	  c = addCode(url, 1, os.toString());
 	}
-      
+
 	return c;
       }
       catch (URISyntaxException ex) {
@@ -317,7 +317,7 @@ public class Application {
       }
     }
 
-    private Code addCode(URL url, int line, String data) 
+    private Code addCode(URL url, int line, String data)
       throws IOException {
       try {
 	Code c = new Code(url, line, data);
@@ -395,7 +395,7 @@ public class Application {
 	  }
 	}
       }
-      
+
       xsr.close();
     }
 
@@ -437,7 +437,7 @@ public class Application {
       String media_type = e.getAttributeNS(null, "media-type").trim();
       String href      = e.getAttributeNS(null, "href").trim();
       String type      = e.getAttributeNS(null, "type").trim();
-      
+
       if (href.equals("")) {
 	throw new ESXXException("<stylesheet> attribute 'href' " +
 				"must be specified");

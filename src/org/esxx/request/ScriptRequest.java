@@ -23,17 +23,17 @@ import org.esxx.*;
 import org.mozilla.javascript.*;
 
 public class ScriptRequest
-  extends Request 
+  extends Request
   implements ESXX.ResponseHandler {
 
-  public ScriptRequest(java.net.URL url, String[] cmdline) 
+  public ScriptRequest(java.net.URL url, String[] cmdline)
     throws IOException {
     super(url, cmdline, new java.util.Properties(),
 	  System.in,
 	  new java.io.OutputStreamWriter(System.err));
   }
 
-  public Integer handleResponse(ESXX esxx, Context cx, Response response) 
+  public Integer handleResponse(ESXX esxx, Context cx, Response response)
     throws Exception {
     // Output debug stream to stderr first
     System.err.print(getDebugWriter().toString());
@@ -43,7 +43,7 @@ public class ScriptRequest
 
     try {
       int rc = response.getStatus();
-	
+
       if (rc >= 500) {
 	return 20;
       }
@@ -69,7 +69,7 @@ public class ScriptRequest
     if (t instanceof ESXXException) {
       ESXXException ex = (ESXXException) t;
 
-      System.err.println(ex.getClass().getSimpleName() + " " + ex.getStatus() 
+      System.err.println(ex.getClass().getSimpleName() + " " + ex.getStatus()
 			 + ": " + ex.getMessage());
       return 10;
     }

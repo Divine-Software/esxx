@@ -35,8 +35,8 @@ public class HTTPRequest
   public HTTPRequest(String root, String script_filename, String path_translated,
 		     URL url, HttpExchange he)
     throws IOException {
-    super(url, null, createProperties(root, script_filename, path_translated, he), 
-	  he.getRequestBody(), 
+    super(url, null, createProperties(root, script_filename, path_translated, he),
+	  he.getRequestBody(),
 	  new OutputStreamWriter(System.err),
 	  null);
     httpExchange = he;
@@ -68,9 +68,9 @@ public class HTTPRequest
     }
   }
 
-  private static Properties createProperties(String root, 
-					     String script_filename, 
-					     String path_translated, 
+  private static Properties createProperties(String root,
+					     String script_filename,
+					     String path_translated,
 					     HttpExchange he) {
     Properties p = new Properties();
     InetSocketAddress local  = he.getLocalAddress();
@@ -120,12 +120,12 @@ public class HTTPRequest
     return p;
   }
 
-  private static final java.text.SimpleDateFormat isoFormat = 
+  private static final java.text.SimpleDateFormat isoFormat =
     new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-  
+
   private static final FileTypeMap fileTypeMap = new ESXXFileTypeMap();
 
-  public static void runServer(int http_port, String fs_root) 
+  public static void runServer(int http_port, String fs_root)
     throws IOException, java.net.URISyntaxException {
     final ESXX    esxx = ESXX.getInstance();
     final String  root = new File(fs_root).getCanonicalPath();
@@ -133,7 +133,7 @@ public class HTTPRequest
 
     HttpServer  hs = HttpServer.create(new InetSocketAddress(http_port), 0);
     hs.createContext("/", new HttpHandler() {
-	public void handle(HttpExchange he) 
+	public void handle(HttpExchange he)
 	  throws IOException {
 	  String ruri = he.getRequestURI().getPath();
 	  String euri = encodeXMLContent(ruri);
@@ -152,7 +152,7 @@ public class HTTPRequest
 
 	      if (file.exists()) {
 		if (file.isDirectory()) {
-		  
+
 		  // Directory URIs must end with '/', or else the
 		  // client will fail to resolve our relative URIs in
 		  // the file listing.
@@ -162,28 +162,28 @@ public class HTTPRequest
 		  }
 
 		  StringBuilder sb = new StringBuilder();
-		  
+
 		  sb.append(htmlHeader +
-			    "<table summary='Directory Listing of " + 
+			    "<table summary='Directory Listing of " +
 			    encodeXMLAttribute(ruri) + "'>" +
 			    "<caption>Directory Listing of " + euri + "</caption>" +
 			    "<thead><tr>" +
-			    "<td>Name</td>" + 
-			    "<td>Last Modified</td>" + 
-			    "<td>Size</td>" + 
-			    "<td>Type</td>" + 
+			    "<td>Name</td>" +
+			    "<td>Last Modified</td>" +
+			    "<td>Size</td>" +
+			    "<td>Type</td>" +
 			    "</tr></thead>" +
 			    "<tbody>");
 
 		  if (!ruri.equals("/")) {
-		    sb.append("<tr>" + 
+		    sb.append("<tr>" +
 			      "<td><a href='..'>Parent Directory</a></td>" +
 			      "<td>&#160;</td>" +
 			      "<td>&#160;</td>" +
 			      "<td>&#160;</td>" +
 			      "</tr>");
 		  }
-		  
+
 		  File[] files = file.listFiles();
 		  java.util.Arrays.sort(files);
 
@@ -235,7 +235,7 @@ public class HTTPRequest
 		if (!fileTypeMap.getContentType(real).equals("application/x-esxx+xml")) {
 		  throw new FileNotFoundException("Only ESXX files are directories");
 		}
-		
+
 		code_url = real.toURI().toURL();
 	      }
 
@@ -262,10 +262,10 @@ public class HTTPRequest
 	      ex.printStackTrace();
 	    }
 
-	    respond(he, code, "text/html", 
-		    htmlHeader + 
+	    respond(he, code, "text/html",
+		    htmlHeader +
 		    "<h2>" + title + "</h2>" +
-		    "<p>The requested resource " + euri + " failed: " + 
+		    "<p>The requested resource " + euri + " failed: " +
 		    encodeXMLContent(ex.getMessage()) +
 		    ".</p>" + htmlFooter);
 	  }
@@ -278,7 +278,7 @@ public class HTTPRequest
       });
 
     hs.start();
-	
+
     while (true) {
       try {
 	Thread.sleep(1000);
@@ -292,7 +292,7 @@ public class HTTPRequest
 
   private static void respond(HttpExchange he, int status, String ct, String body)
     throws IOException {
-    if (ct.startsWith("text/") && 
+    if (ct.startsWith("text/") &&
 	!ct.contains("charset")) {
       ct = ct + "; charset=UTF-8";
     }

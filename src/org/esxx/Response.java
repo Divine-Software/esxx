@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -125,7 +125,7 @@ public class Response  {
     writeObject(resultObject, mime_type, mime_params, esxx, cx, out);
   }
 
-  public static void writeObject(Object object, 
+  public static void writeObject(Object object,
 				 String mime_type, HashMap<String,String> mime_params,
 				 ESXX esxx, Context cx, OutputStream out)
     throws IOException {
@@ -135,7 +135,7 @@ public class Response  {
     else if (object instanceof Scriptable) {
       object = jsToJSON(object, cx).toString();
     }
-    
+
     if (object instanceof ByteArrayOutputStream) {
       ByteArrayOutputStream bos = (ByteArrayOutputStream) object;
 
@@ -166,7 +166,7 @@ public class Response  {
       }
 
       Writer ow = new OutputStreamWriter(out, cs);
-      
+
       ESXX.copyReader((Reader) object, ow);
     }
     else if (object instanceof String) {
@@ -189,12 +189,12 @@ public class Response  {
       }
 
       ImageWriter writer = i.next();
-      
+
       writer.setOutput(ImageIO.createImageOutputStream(out));
       writer.write((RenderedImage) object);
     }
     else {
-      throw new UnsupportedOperationException("Unsupported object class type: " 
+      throw new UnsupportedOperationException("Unsupported object class type: "
 					      + object.getClass());
     }
   }
@@ -203,7 +203,7 @@ public class Response  {
     try {
       if (object instanceof NativeArray) {
 	Object[] array = cx.getElements((Scriptable) object);
-      
+
 	for (int i = 0; i < array.length; ++i) {
 	  array[i] = jsToJSON(array[i], cx);
 	}
@@ -225,11 +225,11 @@ public class Response  {
       else {
 	object = Context.jsToJava(object, Object.class);
       }
-    
+
       return object;
     }
     catch (JSONException ex) {
-      throw new ESXXException("Failed to convert JavaScript object to JSON: " + ex.getMessage(), 
+      throw new ESXXException("Failed to convert JavaScript object to JSON: " + ex.getMessage(),
 			      ex);
     }
   }

@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -28,13 +28,14 @@ import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-public class FileURI 
+public class FileURI
   extends UrlURI {
     public FileURI(URI uri) {
       super(uri);
     }
 
-    protected Object load(Context cx, Scriptable thisObj, 
+    @Override
+    protected Object load(Context cx, Scriptable thisObj,
 			  String type, HashMap<String,String> params)
       throws Exception {
       // Default file: load() media type is XML
@@ -44,7 +45,7 @@ public class FileURI
 
       if (type.equals("text/xml")) {
 	File dir = new File(uri);
-	
+
 	if (dir.exists() && dir.isDirectory()) {
 	  Document result = createDirectoryListing(dir.listFiles());
 
@@ -55,7 +56,8 @@ public class FileURI
       return super.load(cx, thisObj, type, params);
     }
 
-    protected Object save(Context cx, Scriptable thisObj, 
+    @Override
+    protected Object save(Context cx, Scriptable thisObj,
 			  Object data, String type, HashMap<String,String> params)
       throws Exception {
       ESXX esxx = ESXX.getInstance();
@@ -65,21 +67,22 @@ public class FileURI
       return createDirectoryListing(new File[] { file });
     }
 
-    protected Object append(Context cx, Scriptable thisObj, 
+    @Override
+    protected Object append(Context cx, Scriptable thisObj,
 			    Object data, String type, HashMap<String,String> params)
       throws Exception {
       ESXX esxx = ESXX.getInstance();
       File file = new File(uri);
-      
+
       if (file.exists() && file.isDirectory()) {
 	String filename = params.get("name");
-	
+
 	if (filename == null) {
 	  throw Context.reportRuntimeError("append() to a directory reqires the 'name' parameter");
 	}
 
 	file = new File(file, filename);
-	
+
 	if (!file.createNewFile()) {
 	  throw Context.reportRuntimeError("Failed to create " + file);
 	}
@@ -93,11 +96,13 @@ public class FileURI
       return createDirectoryListing(new File[] { file });
     }
 
+    @Override
     protected Object query(Context cx, Scriptable thisObj, Object[] args)
       throws Exception {
       return createDirectoryListing(new File[] { new File(uri) });
     }
 
+    @Override
     protected Object remove(Context cx, Scriptable thisObj)
       throws Exception {
       File file = new File(uri);
@@ -121,7 +126,7 @@ public class FileURI
 	  element = result.createElement("file");
 	  addChild(element, "length", Long.toString(f.length()));
 	}
-	      
+
 	addChild(element, "name", f.getName());
 	addChild(element, "path", f.getPath());
 	addChild(element, "uri", f.toURI().toString());

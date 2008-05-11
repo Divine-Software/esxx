@@ -30,14 +30,14 @@ public class ESXXFunctionLibrary
   public ESXXFunctionLibrary() {
   }
 
-  public boolean isAvailable(StructuredQName function_name, 
+  public boolean isAvailable(StructuredQName function_name,
 			     int             arity) {
     System.err.println("Checking for " + function_name + " with " + arity + " arguments.");
     return function_name.getNamespaceURI().startsWith("javascript:");
   }
 
-  public Expression bind(StructuredQName    function_name, 
-			 final Expression[] static_args, 
+  public Expression bind(StructuredQName    function_name,
+			 final Expression[] static_args,
 			 StaticContext      env)
     throws XPathException {
     String uri = function_name.getNamespaceURI();

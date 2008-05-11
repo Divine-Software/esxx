@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -43,13 +43,13 @@ class Parsers {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
 				InputStream is, URL is_url,
 				Collection<URL> external_urls,
-				PrintWriter err, 
-				Context cx, Scriptable scope) 
+				PrintWriter err,
+				Context cx, Scriptable scope)
 	      throws IOException, org.xml.sax.SAXException {
 	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
 	      ESXX.copyStream(is, bos);
-	      
+
 	      return java.nio.ByteBuffer.wrap(bos.toByteArray());
 	    }
 	});
@@ -58,8 +58,8 @@ class Parsers {
 	  public Object parse(String mime_type, HashMap<String,String> mime_params,
 				InputStream is, URL is_url,
 			      Collection<URL> external_urls,
-			      PrintWriter err, 
-			      Context cx, Scriptable scope) 
+			      PrintWriter err,
+			      Context cx, Scriptable scope)
 	    throws IOException {
 	    String cs = mime_params.get("charset");
 
@@ -91,7 +91,7 @@ class Parsers {
 	    }
 	  }
 
-	  private Object jsonToJS(Object json, Context cx, Scriptable scope) 
+	  private Object jsonToJS(Object json, Context cx, Scriptable scope)
 	    throws IOException, JSONException {
 	    Scriptable res;
 
@@ -134,8 +134,8 @@ class Parsers {
 // 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
 // 				InputStream is, URL is_url,
 // 				Collection<URL> external_urls,
-// 				PrintWriter err, 
-// 				Context cx, Scriptable scope) 
+// 				PrintWriter err,
+// 				Context cx, Scriptable scope)
 // 	      throws IOException, org.xml.sax.SAXException {
 // //	      Transformer transformer = esxx.getCachedStylesheet(is_url);
 // 	    }
@@ -145,8 +145,8 @@ class Parsers {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
 				InputStream is, URL is_url,
 				Collection<URL> external_urls,
-				PrintWriter err, 
-				Context cx, Scriptable scope) 
+				PrintWriter err,
+				Context cx, Scriptable scope)
 	      throws IOException, org.xml.sax.SAXException {
 	      boolean xmtp;
 	      boolean ns;
@@ -203,8 +203,8 @@ class Parsers {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
 				InputStream is, URL is_url,
 				Collection<URL> external_urls,
-				PrintWriter err, 
-				Context cx, Scriptable scope) 
+				PrintWriter err,
+				Context cx, Scriptable scope)
 	      throws IOException, org.xml.sax.SAXException {
 	      Document result = esxx.parseXML(is, is_url, external_urls, err);
 	      return ESXX.domToE4X(result, cx, scope);
@@ -215,8 +215,8 @@ class Parsers {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
 				InputStream is, URL is_url,
 				Collection<URL> external_urls,
-				PrintWriter err, 
-				Context cx, Scriptable scope) 
+				PrintWriter err,
+				Context cx, Scriptable scope)
 	      throws IOException, javax.xml.parsers.ParserConfigurationException  {
 	      String      cs = mime_params.get("charset");
 	      HtmlCleaner hc;
@@ -231,7 +231,7 @@ class Parsers {
 	      hc.setHyphenReplacementInComment("\u2012\u2012");
 	      hc.setUseCdataForScriptAndStyle(false);
 	      hc.clean();
-	
+
 	      return ESXX.domToE4X(hc.createDOM(), cx, scope);
 	    }
 	});
@@ -240,8 +240,8 @@ class Parsers {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
 				InputStream is, URL is_url,
 				Collection<URL> external_urls,
-				PrintWriter err, 
-				Context cx, Scriptable scope) 
+				PrintWriter err,
+				Context cx, Scriptable scope)
 	      throws IOException {
 	      String cs = mime_params.get("charset");
 
@@ -259,15 +259,15 @@ class Parsers {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
 				InputStream is, URL is_url,
 				Collection<URL> external_urls,
-				PrintWriter err, 
-				Context cx, Scriptable scope) 
+				PrintWriter err,
+				Context cx, Scriptable scope)
 	      throws IOException {
 	      if (mime_type.equals("image/*")) {
 		return ImageIO.read(is);
 	      }
 	      else {
 		Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType(mime_type);
-		
+
 		if (readers.hasNext()) {
 		  ImageReader reader = readers.next();
 		  String      index  = mime_params.get("x-index");
@@ -292,8 +292,8 @@ class Parsers {
     public Object parse(String mime_type, HashMap<String,String> mime_params,
 			InputStream is, final URL is_url,
 			Collection<URL> external_urls,
-			PrintWriter err, 
-			Context cx, Scriptable scope) 
+			PrintWriter err,
+			Context cx, Scriptable scope)
       throws Exception {
       // Read-only accesses; no syncronization required
       Parser parser = parserMap.get(mime_type);
@@ -302,7 +302,7 @@ class Parsers {
 	return null;
       }
       else {
-	return parser.parse(mime_type, mime_params, is, is_url, 
+	return parser.parse(mime_type, mime_params, is, is_url,
 			    external_urls, err, cx, scope);
       }
     }
@@ -311,11 +311,11 @@ class Parsers {
 	public Object parse(String mime_type, HashMap<String,String> mime_params,
 			    InputStream is, URL is_url,
 			    Collection<URL> external_urls,
-			    PrintWriter err, 
+			    PrintWriter err,
 			    Context cx, Scriptable scope)
 	  throws Exception;
-	
+
     }
-    
+
     private HashMap<String, Parser> parserMap = new HashMap<String, Parser>();
 }

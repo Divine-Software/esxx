@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -22,25 +22,25 @@ package org.esxx;
   * failed. Unless the ECMAscript code catches the exception,
   * processing of the current request will be aborted. */
 
-public class ESXXException 
+public class ESXXException
   extends RuntimeException {
-    public ESXXException(String why) { 
+    public ESXXException(String why) {
       super(why);
       statusCode = 500;
     }
 
-    public ESXXException(String why, Throwable cause) { 
-      super(why, cause); 
+    public ESXXException(String why, Throwable cause) {
+      super(why, cause);
       statusCode = 500;
     }
 
-    public ESXXException(int status, String why) { 
-      super(why); 
+    public ESXXException(int status, String why) {
+      super(why);
       statusCode = status;
     }
 
-    public ESXXException(int status, String why, Throwable cause) { 
-      super(why, cause); 
+    public ESXXException(int status, String why, Throwable cause) {
+      super(why, cause);
       statusCode = status;
     }
 

@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -33,7 +33,7 @@ import java.util.Properties;
 
 public abstract class Request {
     public Request(URL url, String[] command_line, Properties properties,
-		   InputStream in, Writer error) 
+		   InputStream in, Writer error)
       throws IOException {
       streamURL       = url;
       this.args       = command_line != null ? command_line : new String[] {};
@@ -46,7 +46,7 @@ public abstract class Request {
 	workingDirectory = new File("").toURI().toURL();
       }
       catch (java.net.MalformedURLException ex) {
-	throw new IOException("Unable to get current working directory as an URI: " 
+	throw new IOException("Unable to get current working directory as an URI: "
 			      + ex.getMessage(), ex);
       }
     }
@@ -79,7 +79,7 @@ public abstract class Request {
       return properties;
     }
 
-    public static Reader createReader(InputStream is, String content_type) 
+    public static Reader createReader(InputStream is, String content_type)
       throws java.io.UnsupportedEncodingException {
       HashMap<String, String> params = new HashMap<String, String>();
       ESXX.parseMIMEType(content_type, params);

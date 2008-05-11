@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -31,13 +31,14 @@ import org.esxx.*;
 import org.esxx.xmtp.XMTPParser;
 import org.mozilla.javascript.*;
 
-public class MailToURI 
+public class MailToURI
   extends JSURI {
     public MailToURI(URI uri) {
       super(uri);
     }
 
-    protected Object save(Context cx, Scriptable thisObj, 
+    @Override
+    protected Object save(Context cx, Scriptable thisObj,
 			  Object data, String type, HashMap<String,String> params)
       throws Exception {
       ESXX        esxx = ESXX.getInstance();
@@ -57,7 +58,7 @@ public class MailToURI
 
 	if (data instanceof String) {
 	  // Assume this is a real MIME message
-	  msg = new MimeMessage(session, 
+	  msg = new MimeMessage(session,
 				new ByteArrayInputStream(((String) data).getBytes("UTF-8")));
 	}
 	else if (data instanceof Scriptable) {
@@ -70,7 +71,7 @@ public class MailToURI
 	else {
 	  throw new ESXXException("Unsupported data type: " + data.getClass().getSimpleName());
 	}
-	
+
 	LinkedList<InternetAddress> recipients = new LinkedList<InternetAddress>(
 	  Arrays.asList(InternetAddress.parse(to)));
 
@@ -156,7 +157,7 @@ public class MailToURI
 	  if (data instanceof Scriptable) {
 	    data = esxx.serializeNode(ESXX.e4xToDOM((Scriptable) data));
 	  }
-	
+
 	  msg.setDataHandler(new javax.activation.DataHandler(
 			       new javax.mail.util.ByteArrayDataSource((String) data, type)));
 	}

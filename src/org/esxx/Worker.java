@@ -139,7 +139,7 @@ class Worker {
     }
     else if (result instanceof NativeArray) {
       // Automatically convert an JS Array into a Response
-      response = ((JSResponse) cx.newObject(scope, "Response",  
+      response = ((JSResponse) cx.newObject(scope, "Response",
 					    cx.getElements((NativeArray) result))).getResponse();
     }
     else {
@@ -249,7 +249,7 @@ class Worker {
     return ESXX.callJSMethod("main", new Object[] { args }, "Program entry" , cx, scope);
   }
 
-  private void handleTransformation(Request request, Response response, 
+  private void handleTransformation(Request request, Response response,
 				    JSESXX js_esxx, Application app,
 				    Context cx, Scriptable scope)
     throws IOException, SaxonApiException {
@@ -259,7 +259,7 @@ class Worker {
 
     HashMap<String,String> params = new HashMap<String,String>();
     String                 ct     = ESXX.parseMIMEType(content_type, params);
-    
+
     URL stylesheet = app.getStylesheet(ct);
 
     if (stylesheet == null) {
@@ -286,8 +286,8 @@ class Worker {
     // stylesheet decide if it should be output or not.
     js_esxx.jsGet_debug().flush();
     String ds = request.getDebugWriter().toString();
-    doc.appendChild(doc.createComment("Start ESXX Debug Log\n" + 
-				      ds.replaceAll("--", "\u2012\u2012") + 
+    doc.appendChild(doc.createComment("Start ESXX Debug Log\n" +
+				      ds.replaceAll("--", "\u2012\u2012") +
 				      "End ESXX Debug Log"));
 
     tr.setSource(new DOMSource(doc));
@@ -308,7 +308,7 @@ class Worker {
   }
 
   private Object handleError(Exception error, Application app,
-			     Context cx, Scriptable scope) 
+			     Context cx, Scriptable scope)
     throws Exception {
     Object result;
     String handler = app.getErrorHandlerFunction();

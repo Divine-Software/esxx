@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -20,7 +20,6 @@ package org.esxx.js;
 
 import java.net.URI;
 import java.sql.*;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -30,12 +29,13 @@ import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-public class JdbcURI 
+public class JdbcURI
   extends JSURI {
     public JdbcURI(URI uri) {
       super(uri);
     }
 
+    @Override
     protected Object query(Context cx, Scriptable thisObj, Object[] args) {
       try {
 	ESXX       esxx       = ESXX.getInstance();
@@ -50,12 +50,12 @@ public class JdbcURI
 	  if (args.length < 2 || args[1] == Context.getUndefinedValue()) {
 	    throw Context.reportRuntimeError("Missing query() argument.");
 	  }
-	
+
 	  q.bindParams(cx, (Scriptable) args[1]);
 	}
 
 	Object rc = q.execute();
-      
+
 	if (rc instanceof ResultSet) {
 	  ResultSet          rs = (ResultSet) rc;
 	  ResultSetMetaData rmd = rs.getMetaData();
@@ -72,22 +72,22 @@ public class JdbcURI
 
 	  while (rs.next()) {
 	    Element row = result.createElement("entry");
-	    
+
 	    for (int i = 0; i < count; ++i) {
 	      addChild(row, names[i], rs.getString(i + 1));
 	    }
 
 	    root.appendChild(row);
 	  }
-	  
-	  return esxx.domToE4X(result, cx, this);
+
+	  return ESXX.domToE4X(result, cx, this);
 	}
 	else {
 	  return rc;
 	}
       }
       catch (SQLException ex) {
-	throw Context.reportRuntimeError("SQL query failed: " + ex.getMessage()); 
+	throw Context.reportRuntimeError("SQL query failed: " + ex.getMessage());
       }
     }
 
@@ -108,7 +108,7 @@ public class JdbcURI
 
 	  if (pmd.getParameterCount() != params.size()) {
 	    throw Context.reportRuntimeError("JDBC and ESXX report different " +
-					     "number of arguments in SQL query"); 
+					     "number of arguments in SQL query");
 	  }
 	}
 
@@ -117,9 +117,9 @@ public class JdbcURI
 	  return pmd.getParameterCount() != 0;
 	}
 
-	public void bindParams(Context cx, Scriptable object) 
+	public void bindParams(Context cx, Scriptable object)
 	  throws SQLException {
- 
+
 	  int p = 1;
 	  for (String name : params) {
 	    String value = Context.toString(JSURI.evalProperty(cx, object, name));
@@ -165,7 +165,7 @@ public class JdbcURI
 	      m.appendReplacement(s, g);
 	    }
 	  }
-	
+
 	  m.appendTail(s);
 
 	  query = s.toString();

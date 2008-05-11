@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -39,7 +39,7 @@ public class XMTPParser {
       this.session = Session.getDefaultInstance(System.getProperties());
     }
 
-    public MimeMessage convertMessage(InputStream is) 
+    public MimeMessage convertMessage(InputStream is)
       throws XMLStreamException {
       return convertMessage(XMLInputFactory.newInstance().createXMLStreamReader(is));
     }
@@ -76,7 +76,7 @@ public class XMTPParser {
 	      if (lname.equals("Message")) {
 		// Accepted
 		message = new MimeMessage(session);
-	      
+
 		convertPart(xr, message);
 		message.saveChanges();
 	      }
@@ -161,7 +161,7 @@ public class XMTPParser {
 	    else if (name.equals("Content-Type")) {
 	      ParameterList params = new ParameterList();
 	      String value = convertResourceHeader(xr, params);
-	      
+
 	      ContentType ct = new ContentType(value);
 	      ct.setParameterList(params);
 
@@ -187,21 +187,21 @@ public class XMTPParser {
 	    }
 	    else if (name.equals("To")) {
 	      // Clean up often misspelled and misformatted header
-	      ((MimeMessage) part).addRecipients(Message.RecipientType.TO, 
+	      ((MimeMessage) part).addRecipients(Message.RecipientType.TO,
 						 convertAddressHeader(xr));
 	    }
 	    else if (name.equals("Cc")) {
 	      // Clean up often misspelled and misformatted header
-	      ((MimeMessage) part).addRecipients(Message.RecipientType.CC, 
+	      ((MimeMessage) part).addRecipients(Message.RecipientType.CC,
 						 convertAddressHeader(xr));
 	    }
 	    else if (name.equals("Bcc")) {
 	      // Clean up often misspelled and misformatted header
-	      ((MimeMessage) part).addRecipients(Message.RecipientType.BCC, 
+	      ((MimeMessage) part).addRecipients(Message.RecipientType.BCC,
 						 convertAddressHeader(xr));
 	    }
 	    else if (name.equals("Newsgroups")) {
-	      ((MimeMessage) part).addRecipients(MimeMessage.RecipientType.NEWSGROUPS, 
+	      ((MimeMessage) part).addRecipients(MimeMessage.RecipientType.NEWSGROUPS,
 						 convertAddressHeader(xr));
 	    }
 	    else if (name.equals("Date")) {
@@ -215,7 +215,7 @@ public class XMTPParser {
 	    else {
 	      part.addHeader(name, convertPlainHeader(xr));
 	    }
-	    
+
 	    break;
 	  }
 
@@ -272,7 +272,7 @@ public class XMTPParser {
       String prim_type = content_type.getPrimaryType().toLowerCase();
 
       if (prim_type.equals("multipart")) {
-	part.setContent(convertMultiPartBody(xr, content_type), 
+	part.setContent(convertMultiPartBody(xr, content_type),
 			part.getContentType());
       }
       else if (base_type.equals("message/rfc822")) {
@@ -420,7 +420,7 @@ public class XMTPParser {
 	    mp.addBodyPart(mbp);
 
 	    convertPart(xr, mbp);
-	    
+
 	    break;
 	  }
 
@@ -468,7 +468,7 @@ public class XMTPParser {
 
     private static class EncodedDataSource
       implements DataSource {
-	public EncodedDataSource(XMLStreamReader xr, String fn, String ct, String enc) 
+	public EncodedDataSource(XMLStreamReader xr, String fn, String ct, String enc)
 	  throws XMLStreamException {
 	  try {
 	    name = fn;
@@ -482,6 +482,7 @@ public class XMTPParser {
 	  }
 	}
 
+	@Override
 	public void finalize() {
 	  tempFile.delete();
 	}
@@ -490,13 +491,13 @@ public class XMTPParser {
 	  return contentType;
 	}
 
-	public InputStream getInputStream() 
+	public InputStream getInputStream()
 	  throws IOException {
 	  try {
 	    return MimeUtility.decode(new FileInputStream(tempFile), encoding);
 	  }
 	  catch (MessagingException ex) {
-	    throw new IOException("Unable to decode " + encoding + "-encoded data: " + 
+	    throw new IOException("Unable to decode " + encoding + "-encoded data: " +
 				  ex.getMessage(), ex);
 	  }
 	}
@@ -518,14 +519,14 @@ public class XMTPParser {
 	  OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(f),
 							  "iso-8859-1");
 
-	  int    length = 1024; 
-	  char[] buffer = new char[length]; 
+	  int    length = 1024;
+	  char[] buffer = new char[length];
 
 	  while (xr.next() != END_ELEMENT) {
 	    for (int offset = 0, done = length; done == length; offset += length) {
 	      done = xr.getTextCharacters(offset, buffer, 0, length);
 	      out.write(buffer, 0, done);
-	    }	  
+	    }
 	  }
 
 	  out.close();
@@ -555,7 +556,7 @@ public class XMTPParser {
 
       try {
 	XMTPParser xp = new XMTPParser();
-	
+
 	MimeMessage msg = xp.convertMessage(new FileInputStream(args[1]));
 
 	if (args[0].equals("show")) {

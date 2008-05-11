@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -65,13 +65,14 @@ public class JSESXX
       request = req;
     }
 
+    @Override
     public String getClassName() {
       return "ESXX";
     }
 
-    static public Object jsConstructor(Context cx, 
-				       java.lang.Object[] args, 
-				       Function ctorObj, 
+    static public Object jsConstructor(Context cx,
+				       java.lang.Object[] args,
+				       Function ctorObj,
 				       boolean inNewExpr) {
       return new JSESXX(cx, ctorObj, (Request) args[0], (Application) args[1]);
     }
@@ -99,15 +100,15 @@ public class JSESXX
       }
     }
 
-    public void jsFunction_wait(Object o, int timeout_ms) 
+    public void jsFunction_wait(Object o, int timeout_ms)
       throws InterruptedException {
       synchronized (o) {
 	o.wait(timeout_ms);
       }
     }
 
-    public static void jsFunction_include(Context cx, Scriptable thisObj, 
-					  Object[] args, Function funcObj) 
+    public static void jsFunction_include(Context cx, Scriptable thisObj,
+					  Object[] args, Function funcObj)
       throws java.net.MalformedURLException, IOException {
       ESXX        esxx = ESXX.getInstance();
       JSESXX   js_esxx = (JSESXX) thisObj;
@@ -157,7 +158,7 @@ public class JSESXX
       }
     }
 
-    public static boolean jsFunction_checkTimeout(Context cx, Scriptable thisObj, 
+    public static boolean jsFunction_checkTimeout(Context cx, Scriptable thisObj,
 						  Object[] args, Function funcObj) {
       if (Thread.currentThread().isInterrupted()) {
 	checkTimeout(cx);
@@ -173,7 +174,7 @@ public class JSESXX
       }
     }
 
-    public static Object[] jsFunction_parallel(Context cx, Scriptable thisObj, 
+    public static Object[] jsFunction_parallel(Context cx, Scriptable thisObj,
 					       Object[] args, Function funcObj) {
       ESXX esxx = ESXX.getInstance();
       final Scriptable scope = funcObj.getParentScope();
@@ -211,7 +212,7 @@ public class JSESXX
       }
 
       ESXX.Workload[] workloads = new ESXX.Workload[tasks.length];
-      
+
       // Submit workloads, limit if asked to
       final Semaphore limit = new Semaphore(max_tasks, false);
       final AtomicBoolean abort = new AtomicBoolean(false);
@@ -225,10 +226,10 @@ public class JSESXX
 	    checkTimeout(cx);
 	    break;
 	  }
-	  
+
 	  final Function func = (Function) tasks[i];
 	  final Object[] jarg = fargs;
- 
+
 	  workloads[i] = esxx.addContextAction(cx, new ContextAction() {
 	      public Object run(Context cx) {
 		boolean fine = false;

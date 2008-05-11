@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -23,11 +23,11 @@ import org.esxx.ESXXException;
 import org.esxx.Request;
 import org.mozilla.javascript.*;
 
-public class JSGlobal 
+public class JSGlobal
   extends ImporterTopLevel {
 
-  public JSGlobal(Context cx) 
-    throws IllegalAccessException, InstantiationException, 
+  public JSGlobal(Context cx)
+    throws IllegalAccessException, InstantiationException,
 	   java.lang.reflect.InvocationTargetException {
     super(cx, false);
 
@@ -56,7 +56,7 @@ public class JSGlobal
     // object has been moved to.
     scope = getTopLevelScope(scope);
     Object result = scope.get("esxx", scope);
-    
+
     if (result == Context.getUndefinedValue()) {
       throw new ESXXException("'esxx' not found in top-level scope");
     }

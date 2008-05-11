@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -71,7 +71,7 @@ public class RequestMatcher {
 
       if (m.matches()) {
 	int group = 1;
-	
+
 	for (Request r : patterns) {
 	  if (m.start(group) != -1) {
 	    Match       res = new Match();
@@ -94,7 +94,7 @@ public class RequestMatcher {
 
 	      ScriptableObject.putProperty(res.params, name, value);
 	    }
-	    
+
 	    StringBuffer sb = new StringBuffer();
 	    Matcher      tm = Request.namedReferencePattern.matcher(r.handlerTemplate);
 
@@ -127,12 +127,13 @@ public class RequestMatcher {
         public String handler;
 	public Scriptable params;
 
+	@Override
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();
 
 	  sb.append("RequestMatcher.Match[");
 	  sb.append(handler);
-	  
+
 	  for (Object o : params.getIds()) {
 	    sb.append(", ");
 	    sb.append(o);
@@ -231,20 +232,20 @@ public class RequestMatcher {
 
     public static void main(String args[]) {
       final RequestMatcher rm = new RequestMatcher();
-      
-      rm.addRequestPattern("GET", 
-			   "articles", 
+
+      rm.addRequestPattern("GET",
+			   "articles",
 			   "1");
-      rm.addRequestPattern("(GET|POST)", 
-			   "articles/books", 
+      rm.addRequestPattern("(GET|POST)",
+			   "articles/books",
 			   "2");
-      rm.addRequestPattern("[^/]+", 
-			   "articles/(?<article>[a-z]+)/(?<id>\\d+)", 
+      rm.addRequestPattern("[^/]+",
+			   "articles/(?<article>[a-z]+)/(?<id>\\d+)",
 			   "3");
-      rm.addRequestPattern("[^/]+", 
+      rm.addRequestPattern("[^/]+",
 			   "article\\(s\\)/(\\d+)/(?<article>[a-z]+)/(?<id>\\d+)",
 			   "3");
-      rm.addRequestPattern("(?<method>[^/]+)", 
+      rm.addRequestPattern("(?<method>[^/]+)",
 			   "(?<cat>\\p{javaLetter}+)/(?<item>\\p{javaLetter}+)/(?<id>\\d+)",
 			   "{method}_{cat}_{item}_{id}");
 

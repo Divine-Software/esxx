@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -28,8 +28,8 @@ import org.w3c.dom.ls.*;
 import org.w3c.dom.bootstrap.*;
 
 public class MIMEParser {
-    public MIMEParser(boolean xmtp, boolean use_ns, 
-		      boolean process_html, boolean add_preamble) 
+    public MIMEParser(boolean xmtp, boolean use_ns,
+		      boolean process_html, boolean add_preamble)
       throws MessagingException, IOException,
       ClassNotFoundException, InstantiationException, IllegalAccessException {
 
@@ -72,14 +72,14 @@ public class MIMEParser {
 
     public String getString() {
       LSSerializer ser = domImplementationLS.createLSSerializer();
-      
+
       return ser.writeToString(document);
     }
 
     public void writeDocument(Writer wr) {
       LSSerializer ser = domImplementationLS.createLSSerializer();
       LSOutput     out = domImplementationLS.createLSOutput();
-    
+
       out.setCharacterStream(wr);
       ser.write(document, out);
     }
@@ -126,14 +126,14 @@ public class MIMEParser {
 	  element.setAttribute("id", about_prefix + about);
 	}
       }
-      
+
       int    part_type = 0;
       Object content   = part.getContent();
 
       ContentType content_type = new ContentType(part.getContentType());
       String base_type = content_type.getBaseType().toLowerCase();
       InputStream content_stream = null;
-	
+
       if (content instanceof String) {
 	if (base_type.endsWith("/xml") || base_type.endsWith("+xml")) {
 	  part_type = XML_PART;
@@ -168,7 +168,7 @@ public class MIMEParser {
 	}
       }
 
-      convertHeaders(element, part, part.getAllHeaders(), 
+      convertHeaders(element, part, part.getAllHeaders(),
 		     part_type == BASE64_PART ? "base64" : null);
 
       Element body = document.createElementNS(documentNS, documentPrefix + "Body");
@@ -230,7 +230,7 @@ public class MIMEParser {
 
 	  // Update content type
 	  Element ct = (Element) element.getElementsByTagNameNS("*", "Content-Type").item(0);
-	  
+
 	  if (ct != null) {
 	    ct.setTextContent("text/x-html+xml");
 
@@ -240,7 +240,7 @@ public class MIMEParser {
 	      nodes.removeNamedItem(nodes.item(0).getNodeName());
 	    }
 	  }
-	  
+
 	  // !!! FALL THROUGH TO XML_PART !!!
 	}
 
@@ -258,7 +258,7 @@ public class MIMEParser {
 	    else {
 	      input.setStringData((String) content);
 	    }
-	  
+
 	    Document doc = parser.parse(input);
 	    convertDOMPart(body, doc);
 	  }
@@ -306,7 +306,7 @@ public class MIMEParser {
 	      ct.getParameterList().remove("boundary");
 	    }
 
-	    convertResourceHeader(element, "Content-Type", 
+	    convertResourceHeader(element, "Content-Type",
 				  ct.getBaseType(),  ct.getParameterList());
 	    continue;
 	  }
@@ -314,7 +314,7 @@ public class MIMEParser {
 	    // Parse Content-Disposition
 	    ContentDisposition cd = new ContentDisposition(hdr.getValue());
 
-	    convertResourceHeader(element, "Content-Disposition", 
+	    convertResourceHeader(element, "Content-Disposition",
 				  cd.getDisposition(),  cd.getParameterList());
 	    continue;
 	  }
@@ -350,7 +350,7 @@ public class MIMEParser {
 	  }
 	  else if (name.equalsIgnoreCase("Newsgroups")) {
 	    // Clean up often misspelled and misformatted header
-	    convertAddressHeader(element, "Newsgroups", 
+	    convertAddressHeader(element, "Newsgroups",
 				 message.getRecipients(MimeMessage.RecipientType.NEWSGROUPS));
 	    continue;
 	  }
@@ -380,7 +380,7 @@ public class MIMEParser {
 	convertPlainHeader(element, name, value);
       }
     }
-    
+
 
     protected void convertPlainHeader(Element element, String name, String value)
       throws MessagingException {
@@ -393,7 +393,7 @@ public class MIMEParser {
       }
     }
 
-    protected void convertResourceHeader(Element element, String name, 
+    protected void convertResourceHeader(Element element, String name,
 					 String value, ParameterList params)
       throws MessagingException {
       Element e = document.createElementNS(documentNS, documentPrefix + makeXMLName(name));
@@ -429,7 +429,7 @@ public class MIMEParser {
       }
     }
 
-    protected void convertAddressHeader(Element element, String name, Address[] addresses) 
+    protected void convertAddressHeader(Element element, String name, Address[] addresses)
       throws MessagingException {
       Element e = document.createElementNS(documentNS, documentPrefix + makeXMLName(name));
       e.setTextContent(InternetAddress.toString(addresses));
@@ -476,7 +476,7 @@ public class MIMEParser {
       Base64.OutputStream b64os = new Base64.OutputStream(bos, Base64.ENCODE);
       byte[] buffer = new byte[4096];
       int bytes_read;
-               
+
       while ((bytes_read = is.read(buffer)) != -1) {
 	b64os.write(buffer, 0, bytes_read);
       }
@@ -497,7 +497,7 @@ public class MIMEParser {
 	  chars[i] = '_';
 	}
       }
-      
+
       return new String(chars);
     }
 

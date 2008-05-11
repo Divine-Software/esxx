@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -38,7 +38,7 @@ public abstract class CacheBase {
       maxAge     = max_age;
     }
 
-    public abstract InputStream openCachedURL(URL url, String[] content_type) 
+    public abstract InputStream openCachedURL(URL url, String[] content_type)
       throws IOException;
 
     protected CachedURL getCachedURL(URL url) {
@@ -54,11 +54,11 @@ public abstract class CacheBase {
 	  cachedURLs.put(url_string, cached);
 	}
       }
-      
+
       return cached;
     }
 
-    protected InputStream getStreamIfModified(CachedURL cached) 
+    protected InputStream getStreamIfModified(CachedURL cached)
       throws IOException {
 
       URLConnection uc = cached.url.openConnection();
@@ -102,7 +102,7 @@ public abstract class CacheBase {
       }
       else {
 	uc.connect();
-	
+
 	if (uc.getLastModified() <= cached.lastModified) {
 	  return null;
 	}
@@ -115,7 +115,7 @@ public abstract class CacheBase {
       cached.lastModified  = uc.getLastModified();
       cached.contentType   = uc.getContentType();
       cached.contentLength = uc.getContentLength();
-      
+
       return is;
     }
 
@@ -132,8 +132,9 @@ public abstract class CacheBase {
 	  content = null;
 	}
 
+        @Override
 	public String toString() {
-	  return "CachedURL " + url + ", modified " + new java.util.Date(lastModified) + 
+	  return "CachedURL " + url + ", modified " + new java.util.Date(lastModified) +
 	    ", ETag " + eTag + ", type " + contentType + ", size " + contentLength;
 	}
 
@@ -148,7 +149,7 @@ public abstract class CacheBase {
 	public int contentLength;
 	public Object content;
     }
-    
+
     private class LRUMap
       extends LinkedHashMap<String, CachedURL> {
 
@@ -159,15 +160,16 @@ public abstract class CacheBase {
 	private boolean isFull(CachedURL eldest) {
 	  return (size() > maxEntries ||
 		  currentSize > maxSize ||
-		  (eldest.lastChecked != 0 && 
+		  (eldest.lastChecked != 0 &&
 		   eldest.lastChecked < (System.currentTimeMillis() - maxAge)));
 	}
 
+	@Override
 	protected boolean removeEldestEntry(Map.Entry<String, CachedURL> eldest) {
 	  if (isFull(eldest.getValue())) {
 
 	    Iterator<Map.Entry<String, CachedURL>> i = entrySet().iterator();
-	      
+
 	    while (i.hasNext()) {
 	      Map.Entry<String, CachedURL> e = i.next();
 

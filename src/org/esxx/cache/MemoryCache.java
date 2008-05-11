@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -33,7 +33,8 @@ public class MemoryCache
       super(esxx, max_entries, max_size, max_age);
     }
 
-    public InputStream openCachedURL(URL url, String[] content_type) 
+    @Override
+    public InputStream openCachedURL(URL url, String[] content_type)
       throws IOException {
       CacheBase.CachedURL cached = getCachedURL(url);
 
@@ -84,7 +85,7 @@ public class MemoryCache
 
 	if (xslt == null || checkStylesheetURLs(url, xslt)) {
 	  xslt = new Stylesheet();
-	  xslt.xsltExecutable = esxx.compileStylesheet(esxx.openCachedURL(url), url, 
+	  xslt.xsltExecutable = esxx.compileStylesheet(esxx.openCachedURL(url), url,
 						       xslt.externalURLs, err);
 	}
 
@@ -108,7 +109,7 @@ public class MemoryCache
       if (is != null) {
 	// URL is modified
 	ByteArrayOutputStream os = new ByteArrayOutputStream();
-	
+
 //	System.err.println("Reloading modified URL " + cached);
 
 	ESXX.copyStream(is, os);
@@ -153,7 +154,7 @@ public class MemoryCache
     private boolean checkURL(URL url)
       throws IOException {
       CacheBase.CachedURL cached = getCachedURL(url);
-	
+
       synchronized (cached) {
 //	System.err.println("Checking URL " + url);
 	return updateCachedURL(cached);

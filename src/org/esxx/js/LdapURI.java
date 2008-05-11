@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -27,12 +27,13 @@ import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-public class LdapURI 
+public class LdapURI
   extends JSURI {
     public LdapURI(URI uri) {
       super(uri);
     }
 
+    @Override
     protected Object load(Context cx, Scriptable thisObj,
 			  String type, HashMap<String,String> params)
       throws Exception {
@@ -44,16 +45,16 @@ public class LdapURI
       }
 
       if (!type.equals("text/xml")) {
-	throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
-					 "' can only load 'text/xml'."); 
+	throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+					 "' can only load 'text/xml'.");
       }
- 
+
       DirContext        ctx    = new InitialDirContext(getProperties(thisObj));
       NamingEnumeration<?> answer = ctx.search(uri.toString(), "", null);
 
       Document          result = esxx.createDocument("result");
       Element           root   = result.getDocumentElement();
-	  
+
       while (answer.hasMore()) {
 	SearchResult sr = (SearchResult) answer.next();
 
@@ -72,7 +73,7 @@ public class LdapURI
 	  Attribute attr = (Attribute)ae.next();
 
 	  for (NamingEnumeration<?> e = attr.getAll(); e.hasMore();) {
-	    Object v = e.next();	
+	    Object v = e.next();
 
 	    addChild(entry, attr.getID(), v.toString());
 	  }
@@ -80,7 +81,7 @@ public class LdapURI
 
 	root.appendChild(entry);
       }
-      
+
       return ESXX.domToE4X(result, cx, this);
     }
 }

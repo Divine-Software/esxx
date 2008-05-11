@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -23,7 +23,7 @@ import org.mozilla.javascript.*;
 import java.util.Map;
 import java.util.HashMap;
 
-public class JSResponse 
+public class JSResponse
   extends ScriptableObject {
   public JSResponse() {
     super();
@@ -36,9 +36,9 @@ public class JSResponse
   }
 
 
-  static public Object jsConstructor(Context cx, 
-				     java.lang.Object[] args, 
-				     Function ctorObj, 
+  static public Object jsConstructor(Context cx,
+				     java.lang.Object[] args,
+				     Function ctorObj,
 				     boolean inNewExpr) {
     int status;
     String content_type;
@@ -57,13 +57,13 @@ public class JSResponse
 	result       = args[0];
       }
       break;
-	 
+
     case 2:
       status       = 200;
       content_type = Context.toString(args[0]);
       result       = args[1];
       break;
-	  
+
     case 3:
     case 4:
       status       = (int) Context.toNumber(args[0]);
@@ -72,7 +72,7 @@ public class JSResponse
       break;
 
     default:
-      throw Context.reportRuntimeError("Response() constructor requires 1-4 arguments."); 
+      throw Context.reportRuntimeError("Response() constructor requires 1-4 arguments.");
     }
 
     JSResponse res = new JSResponse(status, content_type, result);
@@ -86,19 +86,20 @@ public class JSResponse
 	  if (hdr instanceof String) {
 	    String name  = (String) hdr;
 	    String value = Context.toString(ScriptableObject.getProperty(headers, name));
-	      
+
 	    ScriptableObject.putProperty(res, name, value);
 	  }
 	}
       }
       else {
-	throw Context.reportRuntimeError("Fourth Response() arguments must be an JS Object."); 
+	throw Context.reportRuntimeError("Fourth Response() arguments must be an JS Object.");
       }
     }
 
     return res;
   }
 
+  @Override
   public String getClassName() {
     return "Response";
   }

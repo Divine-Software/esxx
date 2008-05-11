@@ -541,7 +541,7 @@ public class ESXX {
       return memoryCache.getCachedApplication(url);
     }
 
-    public XsltExecutable getCachedStylesheet(URL url, PrintWriter err) 
+    public XsltExecutable getCachedStylesheet(URL url, PrintWriter err)
       throws IOException {
       return memoryCache.getCachedStylesheet(url, err);
     }
@@ -805,7 +805,7 @@ public class ESXX {
     }
 
 
-    public static class JSFilenameFilter 
+    public static class JSFilenameFilter
       implements FilenameFilter {
       public boolean accept(File dir, String name) {
 	boolean is_java = name.matches(".*\\.java");

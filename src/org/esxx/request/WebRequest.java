@@ -25,9 +25,9 @@ import org.esxx.*;
 import org.mozilla.javascript.*;
 
 public class WebRequest
-  extends Request 
+  extends Request
   implements ESXX.ResponseHandler {
-    
+
   public WebRequest(URL url, String[] command_line, Properties properties,
 		    InputStream in, Writer error, OutputStream out)
     throws IOException {
@@ -35,6 +35,7 @@ public class WebRequest
     outStream = out;
   }
 
+  @Override
   public URL getWD() {
     try {
       URI main = super.getURL().toURI();
@@ -61,7 +62,7 @@ public class WebRequest
 	  out.println(name + ": " + value);
 	}
       });
-	
+
     out.println();
     out.flush();
 
@@ -77,7 +78,7 @@ public class WebRequest
   public Integer handleError(ESXX esxx, Context cx, Throwable ex) {
     String title = "ESXX Server Error";
     int    code  = 500;
-	
+
     if (ex instanceof ESXXException) {
       code = ((ESXXException) ex).getStatus();
     }

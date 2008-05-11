@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -35,7 +35,7 @@ import javax.xml.soap.SOAPException;
 import org.mozilla.javascript.*;
 
 
-public class JSRequest 
+public class JSRequest
   extends ScriptableObject {
     public JSRequest() {
       super();
@@ -57,7 +57,7 @@ public class JSRequest
 
       for (String name :  request.getProperties().stringPropertyNames()) {
 	String value = request.getProperties().getProperty(name).trim();
-	
+
 	// Add environtment variable to esxx.env
 	ScriptableObject.putProperty(env, name, value);
 
@@ -67,7 +67,7 @@ public class JSRequest
 	if (hdr != null) {
 	  // Add real HTTP header to mimeHeaders and this.headers
 	  addHeader(hdr, value);
-	
+
 	  // Decode cookies
 	  handleCookieHeader(hdr, value);
 
@@ -96,14 +96,15 @@ public class JSRequest
       args = uri_params;
     }
 
-    static public Object jsConstructor(Context cx, 
-				       java.lang.Object[] args, 
-				       Function ctorObj, 
+    static public Object jsConstructor(Context cx,
+				       java.lang.Object[] args,
+				       Function ctorObj,
 				       boolean inNewExpr) {
       return new JSRequest((Request) args[0], cx, ctorObj);
     }
 
 
+    @Override
     public String getClassName() {
       return "Request";
     }
@@ -162,14 +163,14 @@ public class JSRequest
     private Scriptable acceptValueOf;
     static private java.lang.reflect.Method acceptValueOfMethod;
     @SuppressWarnings("unused")
-	private static Object acceptValueOf(Context cx, Scriptable thisObj, 
+	private static Object acceptValueOf(Context cx, Scriptable thisObj,
 					Object[] args, Function funObj) {
       return thisObj.get("value", thisObj);
     }
     static {
       try {
 	acceptValueOfMethod = JSRequest.class.getDeclaredMethod("acceptValueOf",
-								Context.class, 
+								Context.class,
 								Scriptable.class,
 								Object[].class,
 								Function.class);
@@ -194,7 +195,7 @@ public class JSRequest
 
     private void handleAcceptHeader(String hdr, String value, Context cx, Scriptable accept) {
       String subname;
-      
+
       if (hdr.equals("Accept")) {
 	subname = "media";
       }
@@ -235,7 +236,7 @@ public class JSRequest
 	}
 
 	object.put("q", object, "" + q);
-	
+
 	// Calculate implicit weight
 	if (parts[0].trim().equals("*/*")) {
 	  w = 0.0000;
@@ -243,7 +244,7 @@ public class JSRequest
 	else if (parts[0].trim().endsWith("/*")) {
 	  w = 0.0001;
 	}
-	else { 
+	else {
 	  w = 0.0002;
 	}
 
@@ -260,7 +261,7 @@ public class JSRequest
 	  l = new ArrayList<Scriptable>();
 	  objects.put(key, l);
 	}
-	
+
 	l.add(object);
       }
 
@@ -300,7 +301,7 @@ public class JSRequest
 	}
       }
     }
-    
+
 
     public void handleContentHeader(String name, String value) {
       if (name.startsWith("Content-")) {
@@ -325,7 +326,7 @@ public class JSRequest
       if (soapAction != null) {
 	try {
 	  message = MessageFactory.newInstance(
-	    SOAPConstants.DYNAMIC_SOAP_PROTOCOL).createMessage(mimeHeaders, 
+	    SOAPConstants.DYNAMIC_SOAP_PROTOCOL).createMessage(mimeHeaders,
 							       request.getInputStream());
 	}
 	catch (IOException ex) {
@@ -341,7 +342,7 @@ public class JSRequest
 	  String                 ct     = ESXX.parseMIMEType(contentType, params);
 
 	  message = esxx.parseStream(ct, params, request.getInputStream(), request.getURL(),
-				     null, 
+				     null,
 				     new java.io.PrintWriter(request.getDebugWriter()),
 				     cx, scope);
 	}
@@ -364,7 +365,7 @@ public class JSRequest
 	  chars[i] = '_';
 	}
       }
-      
+
       return new String(chars);
     }
 

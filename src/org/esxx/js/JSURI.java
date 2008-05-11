@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -18,7 +18,6 @@
 
 package org.esxx.js;
 
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.URISyntaxException;
@@ -29,7 +28,7 @@ import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-public class JSURI 
+public class JSURI
   extends ScriptableObject {
     public JSURI() {
       super();
@@ -40,24 +39,26 @@ public class JSURI
       this.uri  = uri;
     }
 
+    @Override
     public String getClassName() {
       return "URI";
     }
 
+    @Override
     @SuppressWarnings("unchecked")
-	public Object getDefaultValue(Class typeHint) {
+    public Object getDefaultValue(Class typeHint) {
       return "[object URI: " + uri.toString() + "]";
     }
 
-    static public Object jsConstructor(Context cx, 
-				       java.lang.Object[] args, 
-				       Function ctorObj, 
-				       boolean inNewExpr) 
+    static public Object jsConstructor(Context cx,
+				       java.lang.Object[] args,
+				       Function ctorObj,
+				       boolean inNewExpr)
       throws java.net.URISyntaxException {
       URI uri = null;
 
       if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
-	throw Context.reportRuntimeError("Missing argument"); 
+	throw Context.reportRuntimeError("Missing argument");
       }
       else if (args.length < 2 || args[1] == Context.getUndefinedValue()) {
 	if (args[0] instanceof JSURI) {
@@ -87,7 +88,7 @@ public class JSURI
 	  uri = ((JSURI) args[0]).uri.resolve(Context.toString(args[1]));
 	}
 	catch (ClassCastException ex) {
-	  throw Context.reportRuntimeError("Double argument must be URI and String"); 
+	  throw Context.reportRuntimeError("Double argument must be URI and String");
 	}
       }
 
@@ -145,7 +146,7 @@ public class JSURI
       HashMap<String,String> params = new HashMap<String,String>();
 
       if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
-	throw Context.reportRuntimeError("Missing save() argument"); 
+	throw Context.reportRuntimeError("Missing save() argument");
       }
 
       if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
@@ -163,7 +164,7 @@ public class JSURI
       HashMap<String,String> params = new HashMap<String,String>();
 
       if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
-	throw Context.reportRuntimeError("Missing append() argument"); 
+	throw Context.reportRuntimeError("Missing append() argument");
       }
 
       if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
@@ -190,42 +191,43 @@ public class JSURI
     }
 
 
+    @Override
     public String toString() {
       return uri.toString();
     }
 
 
-    protected Object load(Context cx, Scriptable thisObj, 
+    protected Object load(Context cx, Scriptable thisObj,
 			  String type, HashMap<String,String> params)
       throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
-				       "' does not support load()."); 
+      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+				       "' does not support load().");
     }
 
-    protected Object save(Context cx, Scriptable thisObj, 
+    protected Object save(Context cx, Scriptable thisObj,
 			  Object data, String type, HashMap<String,String> params)
       throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
-				       "' does not support save()."); 
+      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+				       "' does not support save().");
     }
 
-    protected Object append(Context cx, Scriptable thisObj, 
+    protected Object append(Context cx, Scriptable thisObj,
 			    Object data, String type, HashMap<String,String> params)
       throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
-				       "' does not support append()."); 
+      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+				       "' does not support append().");
     }
 
     protected Object remove(Context cx, Scriptable thisObj)
       throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
-				       "' does not support delete()."); 
+      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+				       "' does not support delete().");
     }
 
     protected Object query(Context cx, Scriptable thisObj, Object[] args)
       throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() + 
-				       "' does not support query()."); 
+      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+				       "' does not support query().");
     }
 
 
@@ -298,10 +300,13 @@ public class JSURI
 	    bufTop = k;
 	  }
 	  int start = k;
-	  if (k + 3 > length)
+	  if (k + 3 > length) {
 	    throw new URISyntaxException(str, "Illegal URI format");
+	  }
 	  int B = unHex(str.charAt(k + 1), str.charAt(k + 2));
-	  if (B < 0) throw new URISyntaxException(str, "Illegal URI format");
+	  if (B < 0) {
+	    throw new URISyntaxException(str, "Illegal URI format");
+	  }
 	  k += 3;
 	  if ((B & 0x80) == 0) {
 	    C = (char)B;
@@ -331,14 +336,17 @@ public class JSURI
 	      // First UTF-8 can not be 0xFF or 0xFE
 	      throw new URISyntaxException(str, "Illegal URI format");
 	    }
-	    if (k + 3 * utf8Tail > length)
+	    if (k + 3 * utf8Tail > length) {
 	      throw new URISyntaxException(str, "Illegal URI format");
+	    }
 	    for (int j = 0; j != utf8Tail; j++) {
-	      if (str.charAt(k) != '%')
+	      if (str.charAt(k) != '%') {
 		throw new URISyntaxException(str, "Illegal URI format");
+	      }
 	      B = unHex(str.charAt(k + 1), str.charAt(k + 2));
-	      if (B < 0 || (B & 0xC0) != 0x80)
+	      if (B < 0 || (B & 0xC0) != 0x80) {
 		throw new URISyntaxException(str, "Illegal URI format");
+	      }
 	      ucs4Char = (ucs4Char << 6) | (B & 0x3F);
 	      k += 3;
 	    }
@@ -350,8 +358,9 @@ public class JSURI
 	    }
 	    if (ucs4Char >= 0x10000) {
 	      ucs4Char -= 0x10000;
-	      if (ucs4Char > 0xFFFFF)
+	      if (ucs4Char > 0xFFFFF) {
 		throw new URISyntaxException(str, "Illegal URI format");
+	      }
 	      char H = (char)((ucs4Char >>> 10) + 0xD800);
 	      C = (char)((ucs4Char & 0x3FF) + 0xDC00);
 	      buf[bufTop++] = H;

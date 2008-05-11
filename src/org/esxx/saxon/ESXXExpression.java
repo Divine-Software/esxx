@@ -34,7 +34,7 @@ import org.w3c.dom.UserDataHandler;
 import org.w3c.dom.Node;
 import java.util.Collection;
 
-public class ESXXExpression 
+public class ESXXExpression
   extends SimpleExpression {
   private String object;
   private String method;
@@ -48,11 +48,13 @@ public class ESXXExpression
     setArguments(args);
   }
 
-  public int getImplementationMethod() {
+  @Override
+public int getImplementationMethod() {
     return ITERATE_METHOD;
   }
 
-  public SequenceIterator iterate(XPathContext context) 
+  @Override
+public SequenceIterator iterate(XPathContext context)
     throws XPathException {
     Context    cx    = Context.getCurrentContext();
     Scriptable scope = (Scriptable) cx.getThreadLocal(ESXXExpression.class);
@@ -67,7 +69,7 @@ public class ESXXExpression
     Object result = ESXX.callJSMethod(object, method, args, "XSLT Stylesheet", cx, scope);
 
     if (result instanceof NativeArray) {
-      result = (Object) cx.getElements((NativeArray) result);
+      result = cx.getElements((NativeArray) result);
     }
 
     if (result instanceof org.mozilla.javascript.xml.XMLObject) {
@@ -77,9 +79,9 @@ public class ESXXExpression
     Value value = Value.convertJavaObjectToXPath(result, SequenceType.ANY_SEQUENCE, context);
     return value.iterate();
   }
-  
-  private static Object contvertToJS(Object value, XPathContext context, 
-				     Context cx, Scriptable scope) 
+
+  private static Object contvertToJS(Object value, XPathContext context,
+				     Context cx, Scriptable scope)
     throws XPathException {
     if (value instanceof Value) {
       value = ((Value) value).convertToJava(Object.class, context);
@@ -126,6 +128,7 @@ public class ESXXExpression
     }
 
     // Rhino depends on this method
+    @Override
     public Object setUserData(String key, Object data, UserDataHandler handler) {
       Object old = data;
 
@@ -142,6 +145,7 @@ public class ESXXExpression
     }
 
     // Rhino depends on this method
+    @Override
     public Node cloneNode(boolean deep) {
       if (!deep) {
 	throw new UnsupportedOperationException();

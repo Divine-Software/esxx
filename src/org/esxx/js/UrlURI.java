@@ -1,7 +1,7 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
-     
+
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation, either version 3
@@ -25,13 +25,14 @@ import java.util.HashMap;
 import org.esxx.ESXX;
 import org.mozilla.javascript.*;
 
-public class UrlURI 
+public class UrlURI
   extends JSURI {
     public UrlURI(URI uri) {
       super(uri);
     }
 
-    protected Object load(Context cx, Scriptable thisObj, 
+    @Override
+    protected Object load(Context cx, Scriptable thisObj,
 			  String type, HashMap<String,String> params)
       throws Exception {
       ESXX      esxx = ESXX.getInstance();
@@ -52,10 +53,10 @@ public class UrlURI
       JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
       Object result  = esxx.parseStream(type, params,
 					is, url,
-					null, 
+					null,
 					js_esxx.jsGet_debug(),
 					cx, this);
-	
+
       if (result == null) {
 	return super.load(cx, thisObj, type, params);
       }
