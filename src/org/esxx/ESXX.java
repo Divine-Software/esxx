@@ -118,19 +118,6 @@ public class ESXX {
       DOMConfiguration dc = lsSerializer.getDomConfig();
       dc.setParameter("xml-declaration", false);
 
-      saxonProcessor = new Processor(false);
-
-      // Hook in our own extension functions
-      Configuration cfg = saxonProcessor.getUnderlyingConfiguration();
-      FunctionLibrary java = cfg.getExtensionBinder("java");
-      FunctionLibraryList fl = new FunctionLibraryList();
-      fl.addFunctionLibrary(new ESXXFunctionLibrary());
-      fl.addFunctionLibrary(java);
-      cfg.setExtensionBinder("java", fl);
-
-      transformerFactory = TransformerFactory.newInstance();
-      transformerFactory.setURIResolver(new URIResolver(null));
-
       contextFactory = new ContextFactory() {
 	  @Override
 	public boolean hasFeature(Context cx, int feature) {
@@ -547,6 +534,22 @@ public class ESXX {
     }
 
     public Processor getSaxonProcessor() {
+      if (saxonProcessor == null) {
+	synchronized (this) {
+	  if (saxonProcessor == null) {
+	    saxonProcessor = new Processor(false);
+
+	    // Hook in our own extension functions
+	    Configuration cfg = saxonProcessor.getUnderlyingConfiguration();
+	    FunctionLibrary java = cfg.getExtensionBinder("java");
+	    FunctionLibraryList fl = new FunctionLibraryList();
+	    fl.addFunctionLibrary(new ESXXFunctionLibrary());
+	    fl.addFunctionLibrary(java);
+	    cfg.setExtensionBinder("java", fl);
+	  }
+	}
+      }
+
       return saxonProcessor;
     }
 
@@ -572,7 +575,7 @@ public class ESXX {
 					    Collection<URL> external_urls,
 					    final PrintWriter err)
       throws SaxonApiException {
-      XsltCompiler compiler = saxonProcessor.newXsltCompiler();
+      XsltCompiler compiler = getSaxonProcessor().newXsltCompiler();
 
       if (is == null) {
 	return compiler.compile(new StreamSource(new StringReader(identityTransform)));
@@ -839,8 +842,7 @@ public class ESXX {
     private DOMImplementation domImplementation;
     private DOMImplementationLS domImplementationLS;
     private LSSerializer lsSerializer;
-    private Processor saxonProcessor;
-    private TransformerFactory  transformerFactory;
+    private volatile Processor saxonProcessor;
 
     private ContextFactory contextFactory;
     private ExecutorService executorService;
