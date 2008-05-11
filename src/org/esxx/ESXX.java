@@ -533,21 +533,17 @@ public class ESXX {
       return memoryCache.getCachedStylesheet(url, err);
     }
 
-    public Processor getSaxonProcessor() {
+    public synchronized Processor getSaxonProcessor() {
       if (saxonProcessor == null) {
-	synchronized (this) {
-	  if (saxonProcessor == null) {
-	    saxonProcessor = new Processor(false);
+	saxonProcessor = new Processor(false);
 
-	    // Hook in our own extension functions
-	    Configuration cfg = saxonProcessor.getUnderlyingConfiguration();
-	    FunctionLibrary java = cfg.getExtensionBinder("java");
-	    FunctionLibraryList fl = new FunctionLibraryList();
-	    fl.addFunctionLibrary(new ESXXFunctionLibrary());
-	    fl.addFunctionLibrary(java);
-	    cfg.setExtensionBinder("java", fl);
-	  }
-	}
+	// Hook in our own extension functions
+	Configuration cfg = saxonProcessor.getUnderlyingConfiguration();
+	FunctionLibrary java = cfg.getExtensionBinder("java");
+	FunctionLibraryList fl = new FunctionLibraryList();
+	fl.addFunctionLibrary(new ESXXFunctionLibrary());
+	fl.addFunctionLibrary(java);
+	cfg.setExtensionBinder("java", fl);
       }
 
       return saxonProcessor;
