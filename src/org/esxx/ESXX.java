@@ -102,22 +102,6 @@ public class ESXX {
       cgiToHTTPMap.put("CONTENT_TYPE", "Content-Type");
       cgiToHTTPMap.put("CONTENT_LENGTH", "Content-Length");
 
-
-      try {
-	DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
-	domImplementation = reg.getDOMImplementation("XML 3.0");
-      }
-      catch (Exception ex) {
-	throw new ESXXException("Unable to get a DOM implementation object: "
-				+ ex.getMessage(), ex);
-      }
-
-      domImplementationLS = (DOMImplementationLS) domImplementation;
-      lsSerializer = domImplementationLS.createLSSerializer();
-
-      DOMConfiguration dc = lsSerializer.getDomConfig();
-      dc.setParameter("xml-declaration", false);
-
       contextFactory = new ContextFactory() {
 	  @Override
 	public boolean hasFeature(Context cx, int feature) {
@@ -329,7 +313,7 @@ public class ESXX {
 
     public String serializeNode(org.w3c.dom.Node node) {
       try {
-	return lsSerializer.writeToString(node);
+	return getLSSerializer().writeToString(node);
       }
       catch (LSException ex) {
 	// Should never happen
@@ -378,7 +362,7 @@ public class ESXX {
      */
 
     public Document createDocument(String name) {
-      return domImplementation.createDocument(null, name, null);
+      return getDOMImplementation().createDocument(null, name, null);
     }
 
 
@@ -458,13 +442,13 @@ public class ESXX {
 			     final Collection<URL> external_urls,
 			     final PrintWriter err)
       throws ESXXException {
-      LSInput in = domImplementationLS.createLSInput();
+      DOMImplementationLS di = getDOMImplementationLS();
+      LSInput in = di.createLSInput();
 
       in.setSystemId(is_url.toString());
       in.setByteStream(is);
 
-      LSParser p = domImplementationLS.createLSParser(DOMImplementationLS.MODE_SYNCHRONOUS,
-						      null);
+      LSParser p = di.createLSParser(DOMImplementationLS.MODE_SYNCHRONOUS, null);
 
       DOMErrorHandler eh = new DOMErrorHandler() {
 	    public boolean handleError(DOMError error) {
@@ -531,6 +515,37 @@ public class ESXX {
     public XsltExecutable getCachedStylesheet(URL url, PrintWriter err)
       throws IOException {
       return memoryCache.getCachedStylesheet(url, err);
+    }
+
+
+    public DOMImplementationLS getDOMImplementationLS() {
+      return (DOMImplementationLS) getDOMImplementation();
+    }
+
+    public synchronized DOMImplementation getDOMImplementation() {
+      if (domImplementation == null) {
+	try {
+	  DOMImplementationRegistry reg  = DOMImplementationRegistry.newInstance();
+	  domImplementation = reg.getDOMImplementation("XML 3.0");
+	}
+	catch (Exception ex) {
+	  throw new ESXXException("Unable to get a DOM implementation object: "
+				  + ex.getMessage(), ex);
+	}
+      }
+
+      return domImplementation;
+    }
+
+    public synchronized LSSerializer getLSSerializer() {
+      if (lsSerializer == null) {
+	lsSerializer = getDOMImplementationLS().createLSSerializer();
+
+	DOMConfiguration dc = lsSerializer.getDomConfig();
+	dc.setParameter("xml-declaration", false);
+      }
+
+      return lsSerializer;
     }
 
     public synchronized Processor getSaxonProcessor() {
@@ -761,7 +776,7 @@ public class ESXX {
 				       String publicId,
 				       String systemId,
 				       String baseURI) {
-	  LSInput lsi = domImplementationLS.createLSInput();
+	  LSInput lsi = getDOMImplementationLS().createLSInput();
 	  URL     url = getURL(systemId, baseURI);
 
 	  lsi.setSystemId(url.toString());
@@ -836,9 +851,8 @@ public class ESXX {
     private HashMap<String,String> cgiToHTTPMap;
 
     private DOMImplementation domImplementation;
-    private DOMImplementationLS domImplementationLS;
     private LSSerializer lsSerializer;
-    private volatile Processor saxonProcessor;
+    private Processor saxonProcessor;
 
     private ContextFactory contextFactory;
     private ExecutorService executorService;
