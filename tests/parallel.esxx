@@ -24,7 +24,7 @@ function sleep(a, b, c) {
 
 esxx.debug.println("Executing work in parallel: " + java.lang.System.currentTimeMillis());
 
-var results = esxx.parallel(count, load, sleep, 1.0, [10, 20], 3000);
+var results = esxx.parallel([count, load, sleep], [1.0, [10, 20]], 3000);
 
 esxx.debug.println("Executed work in parallel: " + java.lang.System.currentTimeMillis());
 
