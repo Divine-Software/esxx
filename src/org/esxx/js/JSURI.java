@@ -101,6 +101,9 @@ public class JSURI
       if (scheme.equals("file")) {
 	return new FileURI(uri);
       }
+      else if (scheme.startsWith("http")) {
+	return new HttpURI(uri);
+      }
 //      else if (scheme.startsWith("imap")) {
 //	return new ImapURI(uri);
 //      }
@@ -178,8 +181,14 @@ public class JSURI
 					   Object[] args, Function funObj)
       throws Exception {
       JSURI  js_this = checkInstance(thisObj);
+      String type    = null;
+      HashMap<String,String> params = new HashMap<String,String>();
 
-      return js_this.remove(cx, thisObj);
+      if (args.length >= 1 && args[0] != Context.getUndefinedValue()) {
+	type = ESXX.parseMIMEType(Context.toString(args[0]), params);
+      }
+
+      return js_this.remove(cx, thisObj, type, params);
     }
 
     public static Object jsFunction_query(Context cx, Scriptable thisObj,
@@ -218,7 +227,8 @@ public class JSURI
 				       "' does not support append().");
     }
 
-    protected Object remove(Context cx, Scriptable thisObj)
+    protected Object remove(Context cx, Scriptable thisObj,
+			    String type, HashMap<String,String> params)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
 				       "' does not support delete().");

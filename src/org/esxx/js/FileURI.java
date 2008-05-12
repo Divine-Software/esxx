@@ -103,7 +103,8 @@ public class FileURI
     }
 
     @Override
-    protected Object remove(Context cx, Scriptable thisObj)
+    protected Object remove(Context cx, Scriptable thisObj,
+			    String type, HashMap<String,String> params)
       throws Exception {
       File file = new File(uri);
 

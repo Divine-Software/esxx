@@ -42,7 +42,6 @@ public class UrlURI
 
       if (type == null) {
 	if (ct[0] != null) {
-	  params.clear();
 	  type = ESXX.parseMIMEType(ct[0], params);
 	}
 	else {
