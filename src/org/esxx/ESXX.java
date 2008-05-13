@@ -646,14 +646,16 @@ public class ESXX {
       String[] parts = ct.split(";");
       String   type  = parts[0].trim();
 
-      params.clear();
+      if (params != null) {
+	params.clear();
 
-      // Add all attributes
-      for (int i = 1; i < parts.length; ++i) {
-	String[] attr = parts[i].split("=", 2);
+	// Add all attributes
+	for (int i = 1; i < parts.length; ++i) {
+	  String[] attr = parts[i].split("=", 2);
 
-	if (attr.length == 2) {
-	  params.put(attr[0].trim(), attr[1].trim());
+	  if (attr.length == 2) {
+	    params.put(attr[0].trim(), attr[1].trim());
+	  }
 	}
       }
 
