@@ -18,6 +18,8 @@
 
 package org.esxx.js;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import org.esxx.ESXX;
@@ -25,11 +27,13 @@ import org.esxx.Response;
 import org.mozilla.javascript.*;
 
 import org.apache.http.*;
+import org.apache.http.auth.*;
 import org.apache.http.client.*;
 import org.apache.http.client.methods.*;
 import org.apache.http.conn.*;
 import org.apache.http.conn.params.*;
 import org.apache.http.conn.ssl.*;
+import org.apache.http.entity.*;
 import org.apache.http.impl.client.*;
 import org.apache.http.impl.conn.tsccm.*;
 import org.apache.http.params.*;
@@ -40,52 +44,6 @@ public class HttpURI
   public HttpURI(URI uri) {
     super(uri);
   }
-
-  private static class Result {
-    public int status;
-    public Header[] headers;
-    public Object object;
-  }
-
-  private Result sendRequest(Context cx, Scriptable thisObj, 
-			     String type, HashMap<String,String> params,
-			     HttpUriRequest msg) 
-    throws Exception {
-    HttpResponse response = getHttpClient().execute(msg);
-    StatusLine   status   = response.getStatusLine();
-    HttpEntity   entity   = response.getEntity();
-
-    try {
-      Result result  = new Result();
-      result.status  = response.getStatusLine().getStatusCode();
-      result.headers = response.getAllHeaders();
-
-      if (entity.getContentLength() > 0) {
-	if (type == null) {
-	  Header hdr = entity.getContentType();
-
-	  type = ESXX.parseMIMEType(hdr == null ? "application/octet-stream" : hdr.getValue(), 
-				    params);
-	}
-
-	ESXX   esxx    = ESXX.getInstance();
-	JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
-	result.object  =  esxx.parseStream(type, params,
-					   entity.getContent(), uri.toURL(),
-					   null,
-					   js_esxx.jsGet_debug(),
-					   cx, this);
-      }
-
-      return result;
-    }
-    finally {
-      if (entity != null) {
-	entity.consumeContent();
-      }
-    }
-  }
-  
 
   @Override
   protected Object load(Context cx, Scriptable thisObj,
@@ -100,28 +58,48 @@ public class HttpURI
     return result.object;
   }
 
-  //   @Override
-  //   protected Object save(Context cx, Scriptable thisObj,
-  // 			Object data, String type, HashMap<String,String> params)
-  //     throws Exception {
+  @Override
+  protected Object save(Context cx, Scriptable thisObj,
+  			Object data, String type, HashMap<String,String> params)
+    throws Exception {
+    HttpPut put = new HttpPut(uri);
 
-  //     return null;
-  //   }
+    attachObject(data, type, params, put, cx);
 
-  //   @Override
-  //   protected Object append(Context cx, Scriptable thisObj,
-  // 			  Object data, String type, HashMap<String,String> params)
-  //     throws Exception {
-
-  //     return null;
-  //   }
-
-  //   @Override
-  //   protected Object query(Context cx, Scriptable thisObj, Object[] args)
-  //     throws Exception {
+    Result result = sendRequest(cx, thisObj, null, null, put);
     
-  //     return null;
-  //   }
+    if (result.status / 100 != 2) {
+      throw Context.reportRuntimeError("HTTP status code not 2xx.");
+    }
+
+    return result.object;
+  }
+
+  @Override
+  protected Object append(Context cx, Scriptable thisObj,
+  			  Object data, String type, HashMap<String,String> params)
+    throws Exception {
+    HttpPost post = new HttpPost(uri);
+
+    attachObject(data, type, params, post, cx);
+
+    Result result = sendRequest(cx, thisObj, null, null, post);
+    
+    if (result.status / 100 != 2) {
+      throw Context.reportRuntimeError("HTTP status code not 2xx.");
+    }
+
+    return result.object;
+  }
+
+
+  @Override
+  protected Object query(Context cx, Scriptable thisObj, Object[] args)
+    throws Exception {
+    
+    return null;
+  }
+
 
   @Override
   protected Object remove(Context cx, Scriptable thisObj,
@@ -163,12 +141,97 @@ public class HttpURI
   private synchronized HttpClient getHttpClient() {
     if (httpClient == null) {
       httpClient = new DefaultHttpClient(getConnectionManager(), getHttpParams());
+      
+      httpClient.setCredentialsProvider(new CredentialsProvider() {
+	  public void clear() {
+	    throw new UnsupportedOperationException();
+	  }
+
+	  public void setCredentials(AuthScope authscope, Credentials credentials) {
+	    throw new UnsupportedOperationException();
+	  }
+
+	  public Credentials getCredentials(AuthScope authscope) {
+	    String username = "", password = "";
+	    
+	    System.out.println(authscope.getScheme());
+	    System.out.println(authscope.getHost());
+	    System.out.println(authscope.getPort());
+	    System.out.println(authscope.getRealm());
+
+	    return new UsernamePasswordCredentials(username, password);
+	  }
+	});
     }
 
     return httpClient;
   }
 
+  private static class Result {
+    public int status;
+    public Header[] headers;
+    public Object object;
+  }
+
+  private Result sendRequest(Context cx, Scriptable thisObj, 
+			     String type, HashMap<String,String> params,
+			     HttpUriRequest msg) 
+    throws Exception {
+    HttpResponse response = getHttpClient().execute(msg);
+    StatusLine   status   = response.getStatusLine();
+    HttpEntity   entity   = response.getEntity();
+
+    if (params == null) {
+      params = new HashMap<String,String>();
+    }
+
+    try {
+      Result result  = new Result();
+      result.status  = response.getStatusLine().getStatusCode();
+      result.headers = response.getAllHeaders();
+
+      if (entity.getContentLength() != 0) {
+	if (type == null) {
+	  Header hdr = entity.getContentType();
+
+	  type = ESXX.parseMIMEType(hdr == null ? "application/octet-stream" : hdr.getValue(), 
+				    params);
+	}
+
+	ESXX   esxx    = ESXX.getInstance();
+	JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
+	result.object  =  esxx.parseStream(type, params,
+					   entity.getContent(), uri.toURL(),
+					   null,
+					   js_esxx.jsGet_debug(),
+					   cx, this);
+      }
+
+      return result;
+    }
+    finally {
+      if (entity != null) {
+	entity.consumeContent();
+      }
+    }
+  }
+  
+  private void attachObject(Object data, String type, HashMap<String,String> params,
+			    HttpEntityEnclosingRequest entity, Context cx) 
+    throws IOException {
+    // FIXME: This may store the data three times in memory -- If
+    // there were a way to turn the Object into an InputStream
+    // instead, we would not have this problem.
+    ESXX esxx = ESXX.getInstance();
+    Response response = new Response(0, type, data, null);
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    //    Response.writeObject(data, type, params, esxx, cx, bos);
+    response.writeResult(esxx, cx, bos);
+    entity.setHeader("Content-Type", response.getContentType());
+    entity.setEntity(new ByteArrayEntity(bos.toByteArray()));
+  }
+
   private static HttpParams httpParams;
   private static ClientConnectionManager connectionManager;
-  private HttpClient httpClient;
+  private DefaultHttpClient httpClient;
 }
