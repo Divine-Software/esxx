@@ -199,7 +199,7 @@ class Parsers {
 	    }
 	});
 
-      parserMap.put("text/xml", new Parser() {
+      Parser xml_parser =  new Parser() {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
 				InputStream is, URL is_url,
 				Collection<URL> external_urls,
@@ -209,7 +209,10 @@ class Parsers {
 	      Document result = esxx.parseXML(is, is_url, external_urls, err);
 	      return ESXX.domToE4X(result, cx, scope);
 	    }
-	});
+	};
+
+      parserMap.put("text/xml", xml_parser);
+      parserMap.put("application/xml", xml_parser);
 
       parserMap.put("text/html", new Parser() {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
@@ -299,12 +302,16 @@ class Parsers {
       Parser parser = parserMap.get(mime_type);
 
       if (parser == null) {
-	return null;
+	if (mime_type.endsWith("+xml")) {
+	  parser = parserMap.get("application/xml");
+	}
+	else {
+	  parser = parserMap.get("application/octet-stream");
+	}
       }
-      else {
-	return parser.parse(mime_type, mime_params, is, is_url,
-			    external_urls, err, cx, scope);
-      }
+      System.err.println("got parser " + parser + " for " + mime_type);
+      return parser.parse(mime_type, mime_params, is, is_url,
+			  external_urls, err, cx, scope);
     }
 
     private interface Parser {
