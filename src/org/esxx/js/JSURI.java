@@ -21,10 +21,10 @@ package org.esxx.js;
 import java.net.URI;
 import java.net.URL;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Properties;
+import java.util.*;
 import org.esxx.ESXX;
 import org.mozilla.javascript.*;
+import org.mozilla.javascript.regexp.NativeRegExp;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -238,6 +238,125 @@ public class JSURI
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
 				       "' does not support query().");
+    }
+
+
+    protected Properties getParams(Context cx, URI uri) {
+      final Properties props = new Properties();
+
+      enumerateProperty(cx, "params", new PropEnumerator() {
+	  public void handleProperty(Scriptable p, int s) {
+	    props.setProperty(Context.toString(p.get("name", p)), 
+			      Context.toString(p.get("value", p)));
+	  }
+	}, uri, "");
+
+      return props;
+    }
+
+    protected Scriptable getAuth(Context cx, URI uri, String realm) {
+      return getBestProperty(cx, "auth", uri, realm);
+    }
+
+    protected Scriptable getCookieJar(Context cx, URI uri) {
+      return getBestProperty(cx, "jar", uri, "");
+    }
+
+    protected Collection<Map.Entry<String,String>> getHeaders(Context cx, URI uri) {
+      final ArrayList<Map.Entry<String,String>> list = new ArrayList<Map.Entry<String,String>>(10);
+
+      enumerateProperty(cx, "headers", new PropEnumerator() {
+	  public void handleProperty(Scriptable p, int s) {
+	    list.add(new AbstractMap.SimpleImmutableEntry<String, String>
+		     (Context.toString(p.get("name", p)), 
+		      Context.toString(p.get("value", p))));
+	  }
+	}, uri, "");
+
+      return list;
+    }
+
+    private Scriptable getBestProperty(Context cx, String name, URI uri, String realm) {
+      final Scriptable[] res = { null };
+      final int[]      score = { -1 };
+
+      enumerateProperty(cx, name, new PropEnumerator() {
+	  public void handleProperty(Scriptable p, int s) {
+	    if (s > score[0]) {
+	      res[0] = p;
+	    }
+	  }
+	}, uri, realm);
+
+      return res[0];
+    }
+
+    private interface PropEnumerator {
+      void handleProperty(Scriptable prop, int score);
+    }
+
+    private void enumerateProperty(Context cx, String name, PropEnumerator pe,
+				   URI uri, String realm) {
+      String  scheme = uri.getScheme();
+      String  host   = uri.getHost();
+      Integer port   = uri.getPort();
+      String  path   = uri.getPath();
+
+      Object p = ScriptableObject.getProperty(this, name);
+
+      if (p instanceof Scriptable) {
+	Scriptable params = (Scriptable) p;
+
+	for (Object key : params.getIds()) {
+	  if (key instanceof Integer) {
+	    p = params.get((Integer) key, params);
+	  }
+	  else {
+	    p = params.get((String) key, params);
+	  }
+
+	  System.out.print(this + "." + name + "." + key + ": " + p + ": ");
+
+	  if (p instanceof Scriptable) {
+	    Scriptable param = (Scriptable) p;
+	      
+	    int score = 0;
+
+	    score += filterProperty(cx, param, "scheme", scheme) * 1;
+	    score += filterProperty(cx, param, "realm",  realm)  * 2;
+	    score += filterProperty(cx, param, "path",   path)   * 4;
+	    score += filterProperty(cx, param, "port",   port)   * 8;
+	    score += filterProperty(cx, param, "host",   host)   * 16;
+
+	    System.out.print(score);
+
+	    if (score >= 0) {
+	      pe.handleProperty((Scriptable) param, score);
+	    }
+	  }
+
+	  System.out.println();
+	}
+      }
+    }
+
+    private int filterProperty(Context cx, Scriptable param, String key, Object value) {
+      Object rule = param.get(key, param);
+
+      if (rule == null || rule == Scriptable.NOT_FOUND) {
+	return 0;
+      }
+
+      if (rule instanceof Number && value instanceof Number) {
+	return ((Number) rule).doubleValue() == ((Number) value).doubleValue() ? 1 : -1000;
+      }
+      else if (rule instanceof NativeRegExp) {
+	return ((NativeRegExp) rule).call(cx, this, (NativeRegExp) rule,
+					  new Object[] { value }) != null ? 1 : -1000;
+      }
+      else {
+	return Context.toString(rule).equals(value.toString()) ? 1 : -1000;
+      }
     }
 
 
