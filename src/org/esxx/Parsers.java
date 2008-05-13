@@ -309,7 +309,7 @@ class Parsers {
 	  parser = parserMap.get("application/octet-stream");
 	}
       }
-      System.err.println("got parser " + parser + " for " + mime_type);
+
       return parser.parse(mime_type, mime_params, is, is_url,
 			  external_urls, err, cx, scope);
     }
