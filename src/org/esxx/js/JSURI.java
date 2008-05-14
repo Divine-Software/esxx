@@ -95,6 +95,17 @@ public class JSURI
       return createJSURI(uri);
     }
 
+    public static void finishInit(Scriptable scope, 
+				  FunctionObject constructor,
+				  Scriptable prototype) {
+      // Create and make these properties in the prototype visible
+      Context cx = Context.getCurrentContext();
+      defineProperty(prototype, "params",  cx.newArray(prototype, 0), ScriptableObject.PERMANENT);
+      defineProperty(prototype, "auth",    cx.newArray(prototype, 0), ScriptableObject.PERMANENT);
+      defineProperty(prototype, "jars",    cx.newArray(prototype, 0), ScriptableObject.PERMANENT);
+      defineProperty(prototype, "headers", cx.newArray(prototype, 0), ScriptableObject.PERMANENT);
+    }
+
     static JSURI createJSURI(URI uri) {
       String scheme = uri.getScheme();
 
@@ -259,22 +270,8 @@ public class JSURI
     }
 
     protected Scriptable getCookieJar(Context cx, URI uri) {
-      return getBestProperty(cx, "jar", uri, "");
+      return getBestProperty(cx, "jars", uri, "");
     }
-
-//     protected Collection<Map.Entry<String,String>> getHeaders(Context cx, URI uri) {
-//       final ArrayList<Map.Entry<String,String>> list = new ArrayList<Map.Entry<String,String>>(10);
-
-//       enumerateProperty(cx, "headers", new PropEnumerator() {
-// 	  public void handleProperty(Scriptable p, int s) {
-// 	    list.add(new AbstractMap.SimpleImmutableEntry<String, String>
-// 		     (Context.toString(p.get("name", p)), 
-// 		      Context.toString(p.get("value", p))));
-// 	  }
-// 	}, uri, "");
-
-//       return list;
-//     }
 
     protected void enumerateHeaders(Context cx, PropEnumerator pe, URI uri) {
       enumerateProperty(cx, "headers", pe, uri, "");
@@ -319,8 +316,6 @@ public class JSURI
 	    p = params.get((String) key, params);
 	  }
 
-// 	  System.out.print(this + "." + name + "." + key + ": " + p + ": ");
-
 	  if (p instanceof Scriptable) {
 	    Scriptable param = (Scriptable) p;
 	      
@@ -332,14 +327,10 @@ public class JSURI
 	    score += filterProperty(cx, param, "port",   port)   * 8;
 	    score += filterProperty(cx, param, "host",   host)   * 16;
 
-// 	    System.out.print(score);
-
 	    if (score >= 0) {
 	      pe.handleProperty((Scriptable) param, score);
 	    }
 	  }
-
-// 	  System.out.println();
 	}
       }
     }
