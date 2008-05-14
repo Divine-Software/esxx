@@ -97,17 +97,76 @@ public class HttpURI
   @Override
   protected Object query(Context cx, Scriptable thisObj, Object[] args)
     throws Exception {
-    if (args.length < 5) {
+    if (args.length < 1) {
       throw Context.reportRuntimeError("Missing arguments to URI.query().");
     }
 
-    String     method   = Context.toString(args[0]);
-    Scriptable headers  = (Scriptable) args[1];
-    String     send_ct  = Context.toString(args[2]);
-    Object     send_obj = args[3];
-    String     recv_ct  = Context.toString(args[4]);
+    final String method   = Context.toString(args[0]);
+    Scriptable   headers  = null;
+    Object       send_obj = null;
+    String       send_ct  = null;
+    String       recv_ct  = null;
 
-    return null;
+    HashMap<String,String> send_params = new HashMap<String,String>();
+    HashMap<String,String> recv_params = new HashMap<String,String>();
+
+    if (args.length >= 2) {
+      if (!(args[1] instanceof Scriptable)) {
+	throw Context.reportRuntimeError("Second URI.query() argument must be an Object");
+      }
+      
+      headers = (Scriptable) args[1];
+    }
+
+    if (args.length >= 3) {
+      send_obj = args[2];
+    }
+
+    if (args.length >= 4) {
+      send_ct = ESXX.parseMIMEType(Context.toString(args[3]), send_params);
+    }
+
+    if (args.length >= 5) {
+      recv_ct = ESXX.parseMIMEType(Context.toString(args[4]), recv_params);
+    }
+
+    HttpPost req = new HttpPost() {
+	@Override
+        public String getMethod() {
+	  return method;
+	}
+
+	public URI getURI() {
+	  return uri;
+	}
+      };
+
+    if (headers != null) {
+      for (Object p : headers.getIds()) {
+	if (p instanceof String) {
+	  req.addHeader((String) p,
+			Context.toString(headers.get((String) p, headers)));
+	}
+      }
+    }
+
+    if (send_obj != null && send_obj != Context.getUndefinedValue()) {
+      attachObject(send_obj, send_ct, send_params, req, cx);
+    }
+
+    Result result = sendRequest(cx, this, recv_ct, recv_params, req);
+
+    Scriptable hdr = cx.newObject(this);
+
+    for (Header h : result.headers) {
+      hdr.put(h.getName(), hdr, h.getValue());
+    }
+
+    Scriptable rc = cx.newArray(this, new Object[] { 
+	result.status, result.contentType, result.object, hdr 
+      });
+
+    return rc;
   }
 
 
@@ -193,6 +252,7 @@ public class HttpURI
   private static class Result {
     public int status;
     public Header[] headers;
+    public String contentType;
     public Object object;
   }
 
@@ -224,17 +284,19 @@ public class HttpURI
       if (entity.getContentLength() != 0) {
 	if (type == null) {
 	  Header hdr = entity.getContentType();
-
-	  type = ESXX.parseMIMEType(hdr == null ? "application/octet-stream" : hdr.getValue(), 
-				    params);
+	  type = hdr == null ? "application/octet-stream" : hdr.getValue();
 	}
 
+	result.contentType = type;
+
+	type = ESXX.parseMIMEType(type, params);
+
 	ESXX   esxx    = ESXX.getInstance();
-	JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
+	//	JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
 	result.object  =  esxx.parseStream(type, params,
 					   entity.getContent(), uri.toURL(),
 					   null,
-					   js_esxx.jsGet_debug(),
+					   null,//js_esxx.jsGet_debug(),
 					   cx, this);
       }
 
