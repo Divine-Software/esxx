@@ -21,11 +21,8 @@ package org.esxx.js;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
-import org.esxx.ESXX;
-import org.esxx.Response;
-import org.mozilla.javascript.*;
-
 import org.apache.http.*;
 import org.apache.http.auth.*;
 import org.apache.http.client.*;
@@ -38,6 +35,10 @@ import org.apache.http.impl.client.*;
 import org.apache.http.impl.conn.tsccm.*;
 import org.apache.http.params.*;
 import org.apache.http.protocol.*;
+import org.esxx.ESXX;
+import org.esxx.ESXXException;
+import org.esxx.Response;
+import org.mozilla.javascript.*;
 
 public class HttpURI
   extends UrlURI {
@@ -96,7 +97,16 @@ public class HttpURI
   @Override
   protected Object query(Context cx, Scriptable thisObj, Object[] args)
     throws Exception {
-    
+    if (args.length < 5) {
+      throw Context.reportRuntimeError("Missing arguments to URI.query().");
+    }
+
+    String     method   = Context.toString(args[0]);
+    Scriptable headers  = (Scriptable) args[1];
+    String     send_ct  = Context.toString(args[2]);
+    Object     send_obj = args[3];
+    String     recv_ct  = Context.toString(args[4]);
+
     return null;
   }
 
@@ -144,22 +154,35 @@ public class HttpURI
       
       httpClient.setCredentialsProvider(new CredentialsProvider() {
 	  public void clear() {
-	    throw new UnsupportedOperationException();
+	    throw new UnsupportedOperationException("HttpURI.CredentialsProvider.clear()"
+						    + " not implemented.");
 	  }
 
 	  public void setCredentials(AuthScope authscope, Credentials credentials) {
-	    throw new UnsupportedOperationException();
+	    throw new UnsupportedOperationException("HttpURI.CredentialsProvider.setCredentials()"
+						    + " not implemented.");
 	  }
 
 	  public Credentials getCredentials(AuthScope authscope) {
-	    String username = "", password = "";
-	    
-	    System.out.println(authscope.getScheme());
-	    System.out.println(authscope.getHost());
-	    System.out.println(authscope.getPort());
-	    System.out.println(authscope.getRealm());
+	    try {
+	      Scriptable auth = getAuth(Context.getCurrentContext(),
+					new URI(authscope.getScheme(),
+						null,
+						authscope.getHost(),
+						authscope.getPort(),
+						null, null, null),
+					authscope.getRealm());
 
-	    return new UsernamePasswordCredentials(username, password);
+	      if (auth == null) {
+		return null;
+	      }
+
+	      return new UsernamePasswordCredentials(Context.toString(auth.get("username", auth)),
+						   Context.toString(auth.get("password", auth)));
+	    }
+	    catch (URISyntaxException ex) {
+	      throw new ESXXException("Failed to convert AuthScope to URI: " + ex.getMessage(), ex);
+	    }
 	  }
 	});
     }
@@ -175,8 +198,16 @@ public class HttpURI
 
   private Result sendRequest(Context cx, Scriptable thisObj, 
 			     String type, HashMap<String,String> params,
-			     HttpUriRequest msg) 
+			     final HttpUriRequest msg) 
     throws Exception {
+    // Add HTTP headers
+    enumerateHeaders(cx, new JSURI.PropEnumerator() {
+	  public void handleProperty(Scriptable p, int s) {
+	    msg.addHeader(Context.toString(p.get("name", p)),
+			  Context.toString(p.get("value", p)));
+	  }
+      }, uri);
+
     HttpResponse response = getHttpClient().execute(msg);
     StatusLine   status   = response.getStatusLine();
     HttpEntity   entity   = response.getEntity();

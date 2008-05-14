@@ -262,18 +262,22 @@ public class JSURI
       return getBestProperty(cx, "jar", uri, "");
     }
 
-    protected Collection<Map.Entry<String,String>> getHeaders(Context cx, URI uri) {
-      final ArrayList<Map.Entry<String,String>> list = new ArrayList<Map.Entry<String,String>>(10);
+//     protected Collection<Map.Entry<String,String>> getHeaders(Context cx, URI uri) {
+//       final ArrayList<Map.Entry<String,String>> list = new ArrayList<Map.Entry<String,String>>(10);
 
-      enumerateProperty(cx, "headers", new PropEnumerator() {
-	  public void handleProperty(Scriptable p, int s) {
-	    list.add(new AbstractMap.SimpleImmutableEntry<String, String>
-		     (Context.toString(p.get("name", p)), 
-		      Context.toString(p.get("value", p))));
-	  }
-	}, uri, "");
+//       enumerateProperty(cx, "headers", new PropEnumerator() {
+// 	  public void handleProperty(Scriptable p, int s) {
+// 	    list.add(new AbstractMap.SimpleImmutableEntry<String, String>
+// 		     (Context.toString(p.get("name", p)), 
+// 		      Context.toString(p.get("value", p))));
+// 	  }
+// 	}, uri, "");
 
-      return list;
+//       return list;
+//     }
+
+    protected void enumerateHeaders(Context cx, PropEnumerator pe, URI uri) {
+      enumerateProperty(cx, "headers", pe, uri, "");
     }
 
     private Scriptable getBestProperty(Context cx, String name, URI uri, String realm) {
@@ -291,7 +295,7 @@ public class JSURI
       return res[0];
     }
 
-    private interface PropEnumerator {
+    protected interface PropEnumerator {
       void handleProperty(Scriptable prop, int score);
     }
 
