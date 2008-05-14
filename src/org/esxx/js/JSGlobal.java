@@ -49,7 +49,7 @@ public class JSGlobal
     delete("esxx");
   }
 
-  static JSESXX getJSESXX(Context cx, Scriptable scope) {
+  public static JSESXX getJSESXX(Context cx, Scriptable scope) {
     // When an application is initialized, scope will be the JSGlobal
     // object; however, once the requests are handled, scope will
     // instead be the per-request "global" scope where the JSESXX
