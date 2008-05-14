@@ -246,7 +246,8 @@ class Worker {
 
     req.setArgs(args);
 
-    return ESXX.callJSMethod("main", new Object[] { args }, "Program entry" , cx, scope);
+    return ESXX.callJSMethod("main", js_cmdline, "Program entry" , cx, scope);
+    //return ESXX.callJSMethod("main", new Object[] { args }, "Program entry" , cx, scope);
   }
 
   private void handleTransformation(Request request, Response response,
