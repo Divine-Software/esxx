@@ -16,7 +16,7 @@
      along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package org.esxx.js;
+package org.esxx.js.protocol;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,17 +38,18 @@ import org.apache.http.protocol.*;
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
 import org.esxx.Response;
+import org.esxx.js.*;
 import org.mozilla.javascript.*;
 
-public class HttpURI
-  extends UrlURI {
-  public HttpURI(URI uri) {
-    super(uri);
+public class HTTPHandler
+  extends URLHandler {
+  public HTTPHandler(URI uri, JSURI jsuri) {
+    super(uri, jsuri);
   }
 
   @Override
-  protected Object load(Context cx, Scriptable thisObj,
-			String type, HashMap<String,String> params)
+    public Object load(Context cx, Scriptable thisObj,
+		       String type, HashMap<String,String> params)
     throws Exception {
     Result result = sendRequest(cx, thisObj, type, params, new HttpGet(uri));
 
@@ -60,8 +61,8 @@ public class HttpURI
   }
 
   @Override
-  protected Object save(Context cx, Scriptable thisObj,
-  			Object data, String type, HashMap<String,String> params)
+    public Object save(Context cx, Scriptable thisObj,
+		       Object data, String type, HashMap<String,String> params)
     throws Exception {
     HttpPut put = new HttpPut(uri);
 
@@ -77,8 +78,8 @@ public class HttpURI
   }
 
   @Override
-  protected Object append(Context cx, Scriptable thisObj,
-  			  Object data, String type, HashMap<String,String> params)
+    public Object append(Context cx, Scriptable thisObj,
+			 Object data, String type, HashMap<String,String> params)
     throws Exception {
     HttpPost post = new HttpPost(uri);
 
@@ -95,7 +96,7 @@ public class HttpURI
 
 
   @Override
-  protected Object query(Context cx, Scriptable thisObj, Object[] args)
+    public Object query(Context cx, Scriptable thisObj, Object[] args)
     throws Exception {
     if (args.length < 1) {
       throw Context.reportRuntimeError("Missing arguments to URI.query().");
@@ -132,7 +133,7 @@ public class HttpURI
 
     HttpPost req = new HttpPost() {
 	@Override
-        public String getMethod() {
+	  public String getMethod() {
 	  return method;
 	}
 
@@ -154,15 +155,15 @@ public class HttpURI
       attachObject(send_obj, send_ct, send_params, req, cx);
     }
 
-    Result result = sendRequest(cx, this, recv_ct, recv_params, req);
+    Result result = sendRequest(cx, thisObj, recv_ct, recv_params, req);
 
-    Scriptable hdr = cx.newObject(this);
+    Scriptable hdr = cx.newObject(thisObj);
 
     for (Header h : result.headers) {
       hdr.put(h.getName(), hdr, h.getValue());
     }
 
-    Scriptable rc = cx.newArray(this, new Object[] { 
+    Scriptable rc = cx.newArray(thisObj, new Object[] { 
 	result.status, result.contentType, result.object, hdr 
       });
 
@@ -171,8 +172,8 @@ public class HttpURI
 
 
   @Override
-  protected Object remove(Context cx, Scriptable thisObj,
-			  String type, HashMap<String,String> params)
+    public Object remove(Context cx, Scriptable thisObj,
+			 String type, HashMap<String,String> params)
     throws Exception {
     Result result = sendRequest(cx, thisObj, type, params, new HttpDelete(uri));
 
@@ -224,20 +225,20 @@ public class HttpURI
 
 	  public Credentials getCredentials(AuthScope authscope) {
 	    try {
-	      Scriptable auth = getAuth(Context.getCurrentContext(),
-					new URI(authscope.getScheme(),
-						null,
-						authscope.getHost(),
-						authscope.getPort(),
-						null, null, null),
-					authscope.getRealm());
+	      Scriptable auth = jsuri.getAuth(Context.getCurrentContext(),
+					      new URI(authscope.getScheme(),
+						      null,
+						      authscope.getHost(),
+						      authscope.getPort(),
+						      null, null, null),
+					      authscope.getRealm());
 
 	      if (auth == null) {
 		return null;
 	      }
 
 	      return new UsernamePasswordCredentials(Context.toString(auth.get("username", auth)),
-						   Context.toString(auth.get("password", auth)));
+						     Context.toString(auth.get("password", auth)));
 	    }
 	    catch (URISyntaxException ex) {
 	      throw new ESXXException("Failed to convert AuthScope to URI: " + ex.getMessage(), ex);
@@ -261,11 +262,11 @@ public class HttpURI
 			     final HttpUriRequest msg) 
     throws Exception {
     // Add HTTP headers
-    enumerateHeaders(cx, new JSURI.PropEnumerator() {
-	  public void handleProperty(Scriptable p, int s) {
-	    msg.addHeader(Context.toString(p.get("name", p)),
-			  Context.toString(p.get("value", p)));
-	  }
+    jsuri.enumerateHeaders(cx, new JSURI.PropEnumerator() {
+	public void handleProperty(Scriptable p, int s) {
+	  msg.addHeader(Context.toString(p.get("name", p)),
+			Context.toString(p.get("value", p)));
+	}
       }, uri);
 
     HttpResponse response = getHttpClient().execute(msg);
@@ -297,7 +298,7 @@ public class HttpURI
 					   entity.getContent(), uri.toURL(),
 					   null,
 					   null,//js_esxx.jsGet_debug(),
-					   cx, this);
+					   cx, thisObj);
       }
 
       return result;

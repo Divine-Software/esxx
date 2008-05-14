@@ -16,51 +16,52 @@
      along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package org.esxx.js;
+package org.esxx.js.protocol;
 
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
-import org.esxx.ESXX;
+import org.esxx.*;
+import org.esxx.js.*;
 import org.mozilla.javascript.*;
 
-public class UrlURI
-  extends JSURI {
-    public UrlURI(URI uri) {
-      super(uri);
-    }
+public class URLHandler
+  extends ProtocolHandler {
+  public URLHandler(URI uri, JSURI jsuri) {
+    super(uri, jsuri);
+  }
 
-    @Override
-    protected Object load(Context cx, Scriptable thisObj,
-			  String type, HashMap<String,String> params)
-      throws Exception {
-      ESXX      esxx = ESXX.getInstance();
-      URL        url = uri.toURL();
-      String[]    ct = { null };
-      InputStream is = esxx.openCachedURL(url, ct);
+  @Override
+  public Object load(Context cx, Scriptable thisObj,
+		     String type, HashMap<String,String> params)
+    throws Exception {
+    ESXX      esxx = ESXX.getInstance();
+    URL        url = uri.toURL();
+    String[]    ct = { null };
+    InputStream is = esxx.openCachedURL(url, ct);
 
-      if (type == null) {
-	if (ct[0] != null) {
-	  type = ESXX.parseMIMEType(ct[0], params);
-	}
-	else {
-	  type = "text/xml";
-	}
-      }
-
-      JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
-      Object result  = esxx.parseStream(type, params,
-					is, url,
-					null,
-					js_esxx.jsGet_debug(),
-					cx, this);
-
-      if (result == null) {
-	return super.load(cx, thisObj, type, params);
+    if (type == null) {
+      if (ct[0] != null) {
+	type = ESXX.parseMIMEType(ct[0], params);
       }
       else {
-	return result;
+	type = "text/xml";
       }
     }
+
+    //    JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
+    Object result  = esxx.parseStream(type, params,
+				      is, url,
+				      null,
+				      null, //js_esxx.jsGet_debug(),
+				      cx, thisObj);
+
+    if (result == null) {
+      return super.load(cx, thisObj, type, params);
+    }
+    else {
+      return result;
+    }
+  }
 }
