@@ -313,7 +313,12 @@ public class ESXX {
 
     public String serializeNode(org.w3c.dom.Node node) {
       try {
-	return getLSSerializer().writeToString(node);
+	LSSerializer ser = getDOMImplementationLS().createLSSerializer();
+
+ 	DOMConfiguration dc = ser.getDomConfig();
+ 	dc.setParameter("xml-declaration", false);
+
+	return ser.writeToString(node);
       }
       catch (LSException ex) {
 	// Should never happen
@@ -535,17 +540,6 @@ public class ESXX {
       }
 
       return domImplementation;
-    }
-
-    public synchronized LSSerializer getLSSerializer() {
-      if (lsSerializer == null) {
-	lsSerializer = getDOMImplementationLS().createLSSerializer();
-
-	DOMConfiguration dc = lsSerializer.getDomConfig();
-	dc.setParameter("xml-declaration", false);
-      }
-
-      return lsSerializer;
     }
 
     public synchronized Processor getSaxonProcessor() {
