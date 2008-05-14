@@ -140,7 +140,7 @@ public class Main {
 	CGIRequest    cr = new CGIRequest(cgi);
 	ESXX.Workload wl = esxx.addRequest(cr, cr, 0);
 
-	Integer rc = wl.future.get();
+	Integer rc = (Integer) wl.future.get();
 	System.exit(rc);
       }
       else if (script != null && script.length != 0) {
@@ -150,7 +150,7 @@ public class Main {
 	ScriptRequest sr = new ScriptRequest(url, script);
 	ESXX.Workload wl = esxx.addRequest(sr, sr, -1 /* no timeout for scripts */);
 
-	Integer rc = wl.future.get();
+	Integer rc = (Integer) wl.future.get();
 	System.exit(rc);
       }
       else {
