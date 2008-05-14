@@ -104,8 +104,11 @@ public class ESXX {
 
       contextFactory = new ContextFactory() {
 	  @Override
-	public boolean hasFeature(Context cx, int feature) {
-	    if (feature == Context.FEATURE_DYNAMIC_SCOPE) {
+	  public boolean hasFeature(Context cx, int feature) {
+	    if (feature == Context.FEATURE_DYNAMIC_SCOPE ||
+		feature == Context.FEATURE_LOCATION_INFORMATION_IN_ERROR ||
+		feature == Context.FEATURE_STRICT_MODE ||
+		feature == Context.FEATURE_WARNING_AS_ERROR) {
 	      return true;
 	    }
 	    else {
@@ -114,7 +117,7 @@ public class ESXX {
 	  }
 
 	  @Override
-	public void observeInstructionCount(Context cx, int instruction_count) {
+	  public void observeInstructionCount(Context cx, int instruction_count) {
 	    Workload workload = (Workload) cx.getThreadLocal(Workload.class);
 
 	    if (workload == null) {
