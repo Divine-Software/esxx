@@ -319,7 +319,7 @@ public class JSURI
 	    p = params.get((String) key, params);
 	  }
 
-	  System.out.print(this + "." + name + "." + key + ": " + p + ": ");
+// 	  System.out.print(this + "." + name + "." + key + ": " + p + ": ");
 
 	  if (p instanceof Scriptable) {
 	    Scriptable param = (Scriptable) p;
@@ -332,14 +332,14 @@ public class JSURI
 	    score += filterProperty(cx, param, "port",   port)   * 8;
 	    score += filterProperty(cx, param, "host",   host)   * 16;
 
-	    System.out.print(score);
+// 	    System.out.print(score);
 
 	    if (score >= 0) {
 	      pe.handleProperty((Scriptable) param, score);
 	    }
 	  }
 
-	  System.out.println();
+// 	  System.out.println();
 	}
       }
     }
