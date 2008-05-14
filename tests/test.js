@@ -1,4 +1,6 @@
 
+default xml namespace = "http://www.w3.org/1999/xhtml";
+
 function MyApp(e) {
   this.local = "an instance variable";
 }
@@ -8,7 +10,7 @@ MyApp.prototype.handleError = function(ex) {
   esxx.debug.println(ex);
   esxx.debug.println("**** END ERROR HANDLER ****");
   return <html><body>{ex}</body></html>
-};
+}
 
 MyApp.prototype.handleGet = function(req) {
   esxx.debug.println("**** START GET HANDLER ****")
@@ -34,7 +36,6 @@ MyApp.prototype.handleGet = function(req) {
 
   esxx.debug.println("**** END GET HANDLER ****");
 
-  default xml namespace = "http://www.w3.org/1999/xhtml";
   return new Response("text/html", 
 		      <html><body><p>Hello, world och Örjan!</p><div/></body></html>);
 };
