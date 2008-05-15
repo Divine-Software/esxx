@@ -27,7 +27,7 @@ import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-public abstract class ProtocolHandler {
+public class ProtocolHandler {
     public ProtocolHandler(URI uri, JSURI jsuri) {
       this.uri   = uri;
       this.jsuri = jsuri;

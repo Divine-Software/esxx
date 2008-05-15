@@ -42,11 +42,7 @@ public class JSURI
     super();
     this.uri = uri;
 
-    protocolHandler = getProtocolHandler(uri.getScheme());
-
-    if (protocolHandler == null) {
-      protocolHandler = getProtocolHandler("url");
-    }
+    protocolHandler = getProtocolHandler();
   }
 
   @Override
@@ -296,16 +292,40 @@ public class JSURI
     }
   }
 
-  private ProtocolHandler getProtocolHandler(String scheme) {
+  private ProtocolHandler getProtocolHandler() {
+    String key     = uri.getScheme();
+    String handler = "org.esxx.js.protocol." + uri.getScheme().toUpperCase() + "Handler";
+
+    ProtocolHandler res = getProtocolHandler(key, handler);
+
+    if (res == null) {
+      try {
+	java.net.URL url = uri.toURL(); // Throws if the is no protocol handler for this URL
+	res = getProtocolHandler(key, "org.esxx.js.protocol.URLHandler");
+      }
+      catch (java.net.MalformedURLException ex) {}
+    }
+    
+    if (res == null) {
+      res = getProtocolHandler(key, "org.esxx.js.protocol.ProtocolHandler");
+    }
+
+    if (res == null) {
+      throw new IllegalStateException("Unable to create a ProtocolHandler for URI " + uri);
+    }
+    
+    return res;
+  }
+
+  private ProtocolHandler getProtocolHandler(String key, String handler) {
     try {
-      Constructor<? extends ProtocolHandler> constr = schemeConstructors.get(scheme);
+      Constructor<? extends ProtocolHandler> constr = schemeConstructors.get(key);
 
       if (constr == null) {
 	Class<? extends ProtocolHandler> cls;
-	String name = "org.esxx.js.protocol." + scheme.toUpperCase() + "Handler";
-	cls = Class.forName(name).asSubclass(ProtocolHandler.class);
+	cls = Class.forName(handler).asSubclass(ProtocolHandler.class);
 	constr = cls.getConstructor(URI.class, JSURI.class);
-	schemeConstructors.put(scheme, constr);
+	schemeConstructors.put(key, constr);
       }
 
       return constr.newInstance(uri, this);
