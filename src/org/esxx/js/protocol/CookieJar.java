@@ -209,9 +209,6 @@ class CookieJar
   }
     
   private Scriptable cookieToScriptable(Context cx, Cookie cookie) {
-    System.err.println("To Scriptable: " + cookie);
-
-
     Scriptable js  = cx.newObject(jsuri);
     Scriptable raw = cx.newObject(js);
       
@@ -263,8 +260,6 @@ class CookieJar
     cookie.setVersion(        intValue(cx, js, raw, cookie, ClientCookie.VERSION_ATTR));
 
     setRawValue(raw, cookie, ClientCookie.MAX_AGE_ATTR);
-
-    System.err.println("From Scriptable: " + cookie);
 
     return cookie;
   }
