@@ -45,7 +45,8 @@ public class Response  {
       // Set default content-type, if missing
       if (resultObject instanceof InputStream ||
 	  resultObject instanceof ByteArrayOutputStream ||
-	  resultObject instanceof ByteBuffer) {
+	  resultObject instanceof ByteBuffer ||
+	  resultObject instanceof byte[]) {
 	content_type = "application/octet-stream";
       }
       else if (resultObject instanceof Reader ||
@@ -55,7 +56,8 @@ public class Response  {
       else if (resultObject instanceof RenderedImage) {
 	content_type = "image/png";
       }
-      else if (resultObject instanceof Node) {
+      else if (resultObject instanceof Node ||
+	       resultObject instanceof org.mozilla.javascript.xml.XMLObject) {
 	content_type = "application/xml";
       }
       else if (resultObject instanceof Scriptable) {
@@ -93,14 +95,6 @@ public class Response  {
       result = ((Wrapper) result).unwrap();
     }
 
-    // Convert to "primitive" types
-    if (result instanceof org.mozilla.javascript.xml.XMLObject) {
-      result = ESXX.e4xToDOM((Scriptable) result);
-    }
-    else if (result instanceof byte[]) {
-      result = new ByteArrayInputStream((byte[]) result);
-    }
-
     resultObject = result;
   }
 
@@ -129,11 +123,18 @@ public class Response  {
 				 String mime_type, HashMap<String,String> mime_params,
 				 ESXX esxx, Context cx, OutputStream out)
     throws IOException {
-    if (object instanceof Node) {
+    // Convert to "primitive" types
+    if (object instanceof org.mozilla.javascript.xml.XMLObject) {
+      object = esxx.serializeNode(ESXX.e4xToDOM((Scriptable) object));
+    }
+    else if (object instanceof Node) {
       object = esxx.serializeNode((Node) object);
     }
     else if (object instanceof Scriptable) {
       object = jsToJSON(object, cx).toString();
+    }
+    else if (object instanceof byte[]) {
+      object = new ByteArrayInputStream((byte[]) object);
     }
 
     if (object instanceof ByteArrayOutputStream) {

@@ -29,10 +29,11 @@ public class JSResponse
     super();
   }
 
-  public JSResponse(int status, String content_type, Object result) {
+  public JSResponse(int status, String content_type, Object result, Scriptable headers) {
     this();
 
-    responseObject = new Response(status, content_type, result, new HashMap<String, String>());
+    this.response = new Response(status, content_type, result, new HashMap<String, String>());
+    this.headers  = headers;
   }
 
 
@@ -43,6 +44,7 @@ public class JSResponse
     int status;
     String content_type;
     Object result;
+    Scriptable headers;
 
     switch (args.length) {
     case 1:
@@ -75,28 +77,19 @@ public class JSResponse
       throw Context.reportRuntimeError("Response() constructor requires 1-4 arguments.");
     }
 
-    JSResponse res = new JSResponse(status, content_type, result);
-
-    // Copy properties from fouth argument
     if (args.length == 4) {
-      if (args[3] instanceof NativeObject) {
-	Scriptable headers = (Scriptable) args[3];
-
-	for (Object hdr : headers.getIds()) {
-	  if (hdr instanceof String) {
-	    String name  = (String) hdr;
-	    String value = Context.toString(ScriptableObject.getProperty(headers, name));
-
-	    ScriptableObject.putProperty(res, name, value);
-	  }
-	}
+      if (args[3] instanceof Scriptable) {
+	headers = (Scriptable) args[3];
       }
       else {
 	throw Context.reportRuntimeError("Fourth Response() arguments must be an JS Object.");
       }
     }
+    else {
+      headers = cx.newObject(ctorObj);
+    }
 
-    return res;
+    return new JSResponse(status, content_type, result, headers);
   }
 
   @Override
@@ -104,20 +97,53 @@ public class JSResponse
     return "Response";
   }
 
+  public int jsGet_status() {
+    return response.getStatus();
+  }
+
+  public void jsSet_status(int status) {
+    response.setStatus(status);
+  }
+
+  public String jsGet_contentType() {
+    return response.getContentType();
+  }
+
+  public void jsSet_contentType(String content_type) {
+    response.setContentType(content_type);
+  }
+
+  public Object jsGet_data() {
+    return response.getResult();
+  }
+
+  public void jsSet_data(Object data) {
+    response.setResult(data);
+  }
+
+  public Scriptable jsGet_headers() {
+    return headers;
+  }
+
+  public void jsSet_headers(Scriptable headers) {
+    this.headers = headers;
+  }
+
   public Response getResponse() {
-    Map<String, String> headers = responseObject.headers();
+    Map<String, String> headers = response.headers();
 
     headers.clear();
 
-    for (Object hdr : getIds()) {
+    for (Object hdr : this.headers.getIds()) {
       if (hdr instanceof String) {
 	String name = (String) hdr;
 	headers.put(name, Context.toString(ScriptableObject.getProperty(this, name)));
       }
     }
 
-    return responseObject;
+    return response;
   }
-
-  private Response responseObject;
+  
+  private Response response;
+  private Scriptable headers;
 }

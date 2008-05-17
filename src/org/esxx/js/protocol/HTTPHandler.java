@@ -165,16 +165,9 @@ public class HTTPHandler
       hdr.put(h.getName(), hdr, h.getValue());
     }
 
-
-//     return cx.newObject("Response", thisObj, new Object[] { 
-// 	result.status, result.contentType, result.object, hdr 
-//       });
-
-    Scriptable rc = cx.newArray(thisObj, new Object[] { 
+    return cx.newObject(thisObj, "Response", new Object[] { 
 	result.status, result.contentType, result.object, hdr 
       });
-
-    return rc;
   }
 
 
