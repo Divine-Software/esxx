@@ -92,11 +92,11 @@ public class WebRequest
     if (ex instanceof ESXXException ||
 	ex instanceof javax.xml.stream.XMLStreamException ||
 	ex instanceof javax.xml.transform.TransformerException) {
-      out.println("<p><tt>" + ex.getMessage() + "</tt></p>");
+      out.println("<p><tt>" + encodeXMLContent(ex.getMessage()) + "</tt></p>");
     }
     else if (ex instanceof RhinoException) {
       out.println("<pre>");
-      out.println(ex.getClass().getSimpleName() + ": " + ex.getMessage());
+      out.println(ex.getClass().getSimpleName() + ": " + encodeXMLContent(ex.getMessage()));
       out.println(((RhinoException) ex).getScriptStackTrace(new ESXX.JSFilenameFilter()));
       out.println("</pre>");
     }
