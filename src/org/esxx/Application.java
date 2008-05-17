@@ -137,7 +137,7 @@ public class Application {
 		handleStylesheet(n.getNodeValue());
 		n.getParentNode().removeChild(n);
 	      }
-	      else if (name.equals("esxx-import")) {
+	      else if (name.equals("esxx-include")) {
 		handleImport(n.getNodeValue());
 		n.getParentNode().removeChild(n);
 	      }
@@ -313,7 +313,7 @@ public class Application {
 	return c;
       }
       catch (URISyntaxException ex) {
-	throw new IOException("Unable to import " + url + ": " + ex.getMessage(), ex);
+	throw new IOException("Unable to include " + url + ": " + ex.getMessage(), ex);
       }
     }
 
@@ -327,7 +327,7 @@ public class Application {
 	return c;
       }
       catch (URISyntaxException ex) {
-	throw new IOException("Unable to import " + url + ": " + ex.getMessage(), ex);
+	throw new IOException("Unable to include " + url + ": " + ex.getMessage(), ex);
       }
     }
 
@@ -371,14 +371,14 @@ public class Application {
       throws XMLStreamException {
 
       XMLStreamReader xsr = xmlInputFactory.createXMLStreamReader(
-	new StringReader("<esxx-import " + data + "/>"));
+	new StringReader("<esxx-include " + data + "/>"));
 
       while (xsr.hasNext()) {
 	if (xsr.next() == XMLStreamConstants.START_ELEMENT) {
 	  String href = xsr.getAttributeValue(null, "href");
 
 	  if (href == null) {
-	    throw new ESXXException("<?esxx-import?> attribute 'href' " +
+	    throw new ESXXException("<?esxx-include?> attribute 'href' " +
 				    "must be specified");
 	  }
 
@@ -386,11 +386,11 @@ public class Application {
 	    importCode(new URL(baseURL, href));
 	  }
 	  catch (MalformedURLException ex) {
-	    throw new ESXXException("<?esxx-import?> attribute 'href' is invalid: " +
+	    throw new ESXXException("<?esxx-include?> attribute 'href' is invalid: " +
 				    ex.getMessage(), ex);
 	  }
 	  catch (IOException ex) {
-	    throw new ESXXException("<?esxx-import?> failed to include document: " +
+	    throw new ESXXException("<?esxx-include?> failed to include document: " +
 				    ex.getMessage(), ex);
 	  }
 	}
