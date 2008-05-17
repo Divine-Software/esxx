@@ -12,6 +12,8 @@
 
 <?esxx 
 
+default xml namespace = "http://www.w3.org/1999/xhtml";
+
 var myapp = new MyApp(esxx);
 
 // Inline JavaScript code works too, but is not recommended here
@@ -24,8 +26,6 @@ function test() {
 }
 
 function xmlTest() {
-  default xml namespace = "http://www.w3.org/1999/xhtml";
-
   return <test>
     <elem>An element: <tt>elem</tt></elem>
     <elem>One more: <tt>elem</tt></elem>
