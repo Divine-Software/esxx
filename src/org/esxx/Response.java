@@ -90,12 +90,19 @@ public class Response  {
   }
 
   public void setResult(Object result) {
+    resultObject = result;
+  }
+
+  public void unwrapResult() {
     // Unwrap wrapped objects
-    while (result instanceof Wrapper) {
-      result = ((Wrapper) result).unwrap();
+    while (resultObject instanceof Wrapper) {
+      resultObject = ((Wrapper) resultObject).unwrap();
     }
 
-    resultObject = result;
+    // Convert to "primitive" types
+    if (resultObject instanceof org.mozilla.javascript.xml.XMLObject) {
+      resultObject = ESXX.e4xToDOM((Scriptable) resultObject);
+    }
   }
 
   public Map<String, String> headers() {
@@ -123,11 +130,8 @@ public class Response  {
 				 String mime_type, HashMap<String,String> mime_params,
 				 ESXX esxx, Context cx, OutputStream out)
     throws IOException {
-    // Convert to "primitive" types
-    if (object instanceof org.mozilla.javascript.xml.XMLObject) {
-      object = esxx.serializeNode(ESXX.e4xToDOM((Scriptable) object));
-    }
-    else if (object instanceof Node) {
+
+    if (object instanceof Node) {
       object = esxx.serializeNode((Node) object);
     }
     else if (object instanceof Scriptable) {

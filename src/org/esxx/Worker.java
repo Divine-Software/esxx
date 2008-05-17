@@ -143,6 +143,8 @@ class Worker {
 	.getResponse();
     }
 
+    response.unwrapResult();
+
     if (response.getResult() instanceof Node) {
       handleTransformation(request, response, js_esxx, app, cx, scope);
     }
