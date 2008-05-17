@@ -22,7 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
+import java.util.*;
 import org.apache.http.*;
 import org.apache.http.auth.*;
 import org.apache.http.client.*;
@@ -30,9 +30,11 @@ import org.apache.http.client.methods.*;
 import org.apache.http.conn.*;
 import org.apache.http.conn.params.*;
 import org.apache.http.conn.ssl.*;
+import org.apache.http.cookie.*;
 import org.apache.http.entity.*;
 import org.apache.http.impl.client.*;
 import org.apache.http.impl.conn.tsccm.*;
+import org.apache.http.impl.cookie.*;
 import org.apache.http.params.*;
 import org.apache.http.protocol.*;
 import org.esxx.ESXX;
@@ -48,7 +50,7 @@ public class HTTPHandler
   }
 
   @Override
-    public Object load(Context cx, Scriptable thisObj,
+  public Object load(Context cx, Scriptable thisObj,
 		       String type, HashMap<String,String> params)
     throws Exception {
     Result result = sendRequest(cx, thisObj, type, params, new HttpGet(uri));
@@ -61,7 +63,7 @@ public class HTTPHandler
   }
 
   @Override
-    public Object save(Context cx, Scriptable thisObj,
+  public Object save(Context cx, Scriptable thisObj,
 		       Object data, String type, HashMap<String,String> params)
     throws Exception {
     HttpPut put = new HttpPut(uri);
@@ -78,7 +80,7 @@ public class HTTPHandler
   }
 
   @Override
-    public Object append(Context cx, Scriptable thisObj,
+  public Object append(Context cx, Scriptable thisObj,
 			 Object data, String type, HashMap<String,String> params)
     throws Exception {
     HttpPost post = new HttpPost(uri);
@@ -96,7 +98,7 @@ public class HTTPHandler
 
 
   @Override
-    public Object query(Context cx, Scriptable thisObj, Object[] args)
+  public Object query(Context cx, Scriptable thisObj, Object[] args)
     throws Exception {
     if (args.length < 1) {
       throw Context.reportRuntimeError("Missing arguments to URI.query().");
@@ -133,7 +135,7 @@ public class HTTPHandler
 
     HttpPost req = new HttpPost() {
 	@Override
-	  public String getMethod() {
+	public String getMethod() {
 	  return method;
 	}
 
@@ -151,7 +153,7 @@ public class HTTPHandler
       }
     }
 
-    if (send_obj != null && send_obj != Context.getUndefinedValue()) {
+    if (send_obj != null && send_obj != Scriptable.NOT_FOUND) {
       attachObject(send_obj, send_ct, send_params, req, cx);
     }
 
@@ -163,6 +165,11 @@ public class HTTPHandler
       hdr.put(h.getName(), hdr, h.getValue());
     }
 
+
+//     return cx.newObject("Response", thisObj, new Object[] { 
+// 	result.status, result.contentType, result.object, hdr 
+//       });
+
     Scriptable rc = cx.newArray(thisObj, new Object[] { 
 	result.status, result.contentType, result.object, hdr 
       });
@@ -172,7 +179,7 @@ public class HTTPHandler
 
 
   @Override
-    public Object remove(Context cx, Scriptable thisObj,
+  public Object remove(Context cx, Scriptable thisObj,
 			 String type, HashMap<String,String> params)
     throws Exception {
     Result result = sendRequest(cx, thisObj, type, params, new HttpDelete(uri));
@@ -213,17 +220,17 @@ public class HTTPHandler
       httpClient = new DefaultHttpClient(getConnectionManager(), getHttpParams());
       
       httpClient.setCredentialsProvider(new CredentialsProvider() {
-	  public void clear() {
+	  @Override public void clear() {
 	    throw new UnsupportedOperationException("HttpURI.CredentialsProvider.clear()"
 						    + " not implemented.");
 	  }
 
-	  public void setCredentials(AuthScope authscope, Credentials credentials) {
+	  @Override public void setCredentials(AuthScope authscope, Credentials credentials) {
 	    throw new UnsupportedOperationException("HttpURI.CredentialsProvider.setCredentials()"
 						    + " not implemented.");
 	  }
 
-	  public Credentials getCredentials(AuthScope authscope) {
+	  @Override public Credentials getCredentials(AuthScope authscope) {
 	    try {
 	      Scriptable auth = jsuri.getAuth(Context.getCurrentContext(),
 					      new URI(authscope.getScheme(),
@@ -245,6 +252,8 @@ public class HTTPHandler
 	    }
 	  }
 	});
+
+      httpClient.setCookieStore(new CookieJar(jsuri, uri));
     }
 
     return httpClient;

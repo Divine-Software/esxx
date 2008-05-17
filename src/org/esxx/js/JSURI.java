@@ -112,9 +112,13 @@ public class JSURI
 				Scriptable prototype) {
     // Create and make these properties in the prototype visible
     Context cx = Context.getCurrentContext();
+
+    Scriptable jars = cx.newArray(prototype, 0);
+    jars.put(0, jars, cx.newArray(jars, 0));
+
     defineProperty(prototype, "params",  cx.newArray(prototype, 0), ScriptableObject.PERMANENT);
     defineProperty(prototype, "auth",    cx.newArray(prototype, 0), ScriptableObject.PERMANENT);
-    defineProperty(prototype, "jars",    cx.newArray(prototype, 0), ScriptableObject.PERMANENT);
+    defineProperty(prototype, "jars",    jars,                      ScriptableObject.PERMANENT);
     defineProperty(prototype, "headers", cx.newArray(prototype, 0), ScriptableObject.PERMANENT);
   }
 
