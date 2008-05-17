@@ -5,16 +5,18 @@ importPackage(Packages.java.awt.event);
 
 var out = java.lang.System.out;
 
-function main(args) {
-  var frame  = new JFrame();
-  var button = new JButton("Press me");
+function main(cmd, title) {
+  var frame  = new JFrame(title || "No title");
+  var button = new JButton("Press me within 10 seconds");
   var signal = {};
 
   button.addActionListener(function(ev) {
+      // This JS code is executed in the Swing thread
       out.println("Pressed " + ev + " in " + frame);
       esxx.notify(signal);
     });
 
+  frame.setLocationRelativeTo(null);
   frame.add(button);
   frame.pack();
   frame.show();
