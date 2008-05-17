@@ -10,13 +10,13 @@ function handleGet(req) {
 
   esxx.debug.println();
 
-  for each (var m in req.accept.media) {
-    if (m == "text/html") {
-      esxx.debug.println("Client accepts 'text/html', quality value is " + m.q + ".");
-    }
-  }
-
   if (req.accept.media) {
+    for each (var m in req.accept.media) {
+      if (m == "text/html") {
+        esxx.debug.println("Client accepts 'text/html', quality value is " + m.q + ".");
+      }
+    }
+
     esxx.debug.println("Client prefers '" + req.accept.media[0] + "'.");
   }
 

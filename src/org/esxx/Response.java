@@ -94,15 +94,7 @@ public class Response  {
   }
 
   public void unwrapResult() {
-    // Unwrap wrapped objects
-    while (resultObject instanceof Wrapper) {
-      resultObject = ((Wrapper) resultObject).unwrap();
-    }
-
-    // Convert to "primitive" types
-    if (resultObject instanceof org.mozilla.javascript.xml.XMLObject) {
-      resultObject = ESXX.e4xToDOM((Scriptable) resultObject);
-    }
+    resultObject = unwrap(resultObject);
   }
 
   public Map<String, String> headers() {
@@ -130,6 +122,8 @@ public class Response  {
 				 String mime_type, HashMap<String,String> mime_params,
 				 ESXX esxx, Context cx, OutputStream out)
     throws IOException {
+
+    object = unwrap(object);
 
     if (object instanceof Node) {
       object = esxx.serializeNode((Node) object);
@@ -202,6 +196,20 @@ public class Response  {
       throw new UnsupportedOperationException("Unsupported object class type: "
 					      + object.getClass());
     }
+  }
+
+  private static Object unwrap(Object object) {
+    // Unwrap wrapped objects
+    while (object instanceof Wrapper) {
+      object = ((Wrapper) object).unwrap();
+    }
+
+    // Convert to "primitive" types
+    if (object instanceof org.mozilla.javascript.xml.XMLObject) {
+      object = ESXX.e4xToDOM((Scriptable) object);
+    }
+    
+    return object;
   }
 
   private static Object jsToJSON(Object object, Context cx) {
