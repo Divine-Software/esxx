@@ -1,15 +1,16 @@
+#!/usr/bin/env esxx-js
 
 importPackage(Packages.javax.swing);
 importPackage(Packages.java.awt.event);
 
-out = java.lang.System.out;
+var out = java.lang.System.out;
 
 function main(args) {
   var lock = new java.util.concurrent.locks.ReentrantLock();
   var cond = lock.newCondition();
 
   var frame = new JFrame();
-  var button = new JButton("Banankontakt");
+  var button = new JButton("Press me");
 
   button.addActionListener(function(ev) {
       out.println("Pressed " + ev + " in " + frame);

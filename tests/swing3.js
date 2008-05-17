@@ -1,12 +1,13 @@
+#!/usr/bin/env esxx-js
 
 importPackage(Packages.javax.swing);
 importPackage(Packages.java.awt.event);
 
-out = java.lang.System.out;
+var out = java.lang.System.out;
 
 function main(args) {
-  var frame = new JFrame();
-  var button = new JButton("Banankontakt");
+  var frame  = new JFrame();
+  var button = new JButton("Press me");
   var signal = {};
 
   button.addActionListener(function(ev) {

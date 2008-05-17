@@ -1,8 +1,9 @@
+#!/usr/bin/env esxx-js
 
 importPackage(Packages.javax.swing);
 importPackage(Packages.java.awt.event);
 
-out = java.lang.System.out;
+var out = java.lang.System.out;
 
 var signal = {
   wait: esxx.sync(function() {
@@ -18,11 +19,9 @@ var signal = {
     })
 };
 
-a = esxx.sync(function() { out.println("sync'd"); });
-
 function main(args) {
   var frame = new JFrame();
-  var button = new JButton("Banankontakt");
+  var button = new JButton("Press me");
 
   button.addActionListener(function(ev) {
       out.println("Pressed " + ev + " in " + frame);
