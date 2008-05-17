@@ -57,10 +57,11 @@ public class JSGlobal
     scope = getTopLevelScope(scope);
     Object result = scope.get("esxx", scope);
 
-    if (result == Context.getUndefinedValue()) {
-      throw new ESXXException("'esxx' not found in top-level scope");
+    if (result instanceof JSESXX) {
+      return (JSESXX) result;
     }
-
-    return (JSESXX) result;
+    else {
+      return null;
+    }
   }
 }

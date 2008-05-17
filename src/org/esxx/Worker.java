@@ -65,10 +65,6 @@ class Worker {
     scope.setParentScope(null);
     scope.put("esxx", scope, js_esxx);
 
-    // The JSURI class' constructor requires access to the current
-    // JSESXX object, so define it again in the "thread global" scope
-    ScriptableObject.defineClass(scope, JSURI.class);
-
     Object    result = null;
     Exception error  = null;
 
