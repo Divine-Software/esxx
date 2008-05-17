@@ -160,6 +160,8 @@
     test, toJSON, toString
 */
 
+var JSON; // lcs fixed rhino warning
+
 if (!this.JSON) {
 
 // Create a JSON object only if one does not already exist. We create the
@@ -346,6 +348,8 @@ if (!this.JSON) {
                 gap = mind;
                 return v;
             }
+
+	    return 'null'; // lcs fixed rhino warning
         }
 
 
