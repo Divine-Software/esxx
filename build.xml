@@ -45,7 +45,7 @@
 
     <mkdir dir="${dist.dir}/examples"/>
     <copy todir="${dist.dir}/examples">
-      <fileset dir="" includes="test*"/>
+      <fileset dir="examples" excludes="*~"/>
     </copy>
 
     <exec-jar in="${build.dir}/esxx.jar" out="${dist.dir}/esxx.jar"/>
