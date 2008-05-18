@@ -20,6 +20,7 @@ package org.esxx.js;
 
 import org.esxx.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -341,10 +342,18 @@ public class JSRequest
 	  HashMap<String,String> params = new HashMap<String,String>();
 	  String                 ct     = ESXX.parseMIMEType(contentType, params);
 
-	  message = esxx.parseStream(ct, params, request.getInputStream(), request.getURL(),
-				     null,
-				     new java.io.PrintWriter(request.getDebugWriter()),
-				     cx, scope);
+	  if ("application/x-www-form-urlencoded".equals(ct)) {
+	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	    
+	    ESXX.copyStream(request.getInputStream(), bos);
+	    handleQueryHeader(bos.toString("UTF-8"));
+	  }
+	  else {
+	    message = esxx.parseStream(ct, params, request.getInputStream(), request.getURL(),
+				       null,
+				       new java.io.PrintWriter(request.getDebugWriter()),
+				       cx, scope);
+	  }
 	}
 	catch (Exception ex) {
 	  throw new ESXXException("Unable to parse request entity: " + ex.getMessage());
