@@ -142,6 +142,10 @@ public class WebRequest
   }
 
   protected static String encodeXMLContent(String str) {
+    if (str == null) {
+      return "";
+    }
+
     return str.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
   }
 
