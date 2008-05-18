@@ -137,7 +137,7 @@ public class JSResponse
     for (Object hdr : this.headers.getIds()) {
       if (hdr instanceof String) {
 	String name = (String) hdr;
-	headers.put(name, Context.toString(ScriptableObject.getProperty(this, name)));
+	headers.put(name, Context.toString(this.headers.get(name, this.headers)));
       }
     }
 
