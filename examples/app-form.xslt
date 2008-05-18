@@ -6,11 +6,6 @@
                 xmlns:app="javascript:app"
                 exclude-result-prefixes="app">
 
-<xsl:variable name="title">ESXX App</xsl:variable>
-<xsl:variable name="heading">Hello :: ESXX App</xsl:variable>
-<xsl:variable name="greeting">Greetings, it is now</xsl:variable>
-<xsl:variable name="priceincrease.heading">Price Increase :: ESXX App</xsl:variable>
-
   <xsl:output
     doctype-public="-//W3C//DTD XHTML 1.1//EN"
     doctype-system="http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"
@@ -28,7 +23,7 @@
   <xsl:template match="/">
     <html>
       <head>
-        <title><xsl:value-of select="$title"/></title>
+        <title>ESXX App</title>
       </head>
       <body>
         <xsl:apply-templates/>
@@ -38,9 +33,9 @@
 
   <!-- The front page -->
   <xsl:template match="/welcome">
-    <h1><xsl:value-of select="$heading"/></h1>
+    <h1>Hello :: ESXX App</h1>
 
-    <p xml:space="preserve"><xsl:value-of select="$greeting"/> <xsl:value-of select="now"/></p>
+    <p xml:space="preserve">Greetings, it is now <xsl:value-of select="now"/></p>
 
     <h2>Products</h2>
     <ol>
@@ -58,7 +53,7 @@
 
   <!-- The Price Increase form -->
   <xsl:template match="/increasePrices">
-    <h1><xsl:value-of select="$priceincrease.heading"/></h1>
+    <h1>Price Increase :: ESXX App</h1>
 
     <form method="post">
       <table width="95%" bgcolor="f8f8ff" border="0" cellspacing="0" cellpadding="5">
