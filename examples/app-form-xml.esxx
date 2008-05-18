@@ -36,18 +36,18 @@ var app = new App(new ProductManager(esxx.document.products));
   <esxx xmlns="http://esxx.org/1.0/">
     <handlers>
       <!-- The front page -->
-      <http method="GET" 
-            uri="/main" 
+      <http method="GET"
+            uri="/main"
             handler="app.getIndex" />
 
       <!-- Map GET requests to *Form methods on the "app" JS object -->
-      <http method="GET" 
-            uri="/(?{method}\p{javaLetter}+)$" 
+      <http method="GET"
+            uri="/(?{method}\p{javaLetter}+)$"
             handler="app.{method}Form" />
 
       <!-- Map POST requests to *Action methods on the "app" JS object -->
-      <http method="POST" 
-            uri="/(?{method}\p{javaLetter}+)$" 
+      <http method="POST"
+            uri="/(?{method}\p{javaLetter}+)$"
             handler="app.{method}Action" />
 
       <!-- Redirect any other URI to /main -->
@@ -55,7 +55,7 @@ var app = new App(new ProductManager(esxx.document.products));
 
       <!-- An XSLT stylesheet (a.k.a. a view) used to format the
            application's result to HTML  -->
-      <stylesheet media-type="application/xml" 
+      <stylesheet media-type="application/xml"
                   href="app-form.xslt" />
     </handlers>
   </esxx>
