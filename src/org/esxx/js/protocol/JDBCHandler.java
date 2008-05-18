@@ -39,21 +39,39 @@ public class JDBCHandler
   @Override
   public Object query(Context cx, Scriptable thisObj, Object[] args) {
     try {
-      ESXX       esxx       = ESXX.getInstance();
-      String     query      = Context.toString(args[0]);
-      Properties properties = getProperties(thisObj);
+      ESXX       esxx        = ESXX.getInstance();
+      String     query       = Context.toString(args[0]);
+      Properties properties  = getProperties(thisObj);
+      String     result_name = "result";
+      String     entry_name  = "entry";
+      Scriptable params      = null;
+
+      if (args.length >= 2 && args[1] instanceof Scriptable) {
+	Object o;
+
+	params = (Scriptable) args[1];
+	
+	if ((o = params.get("$result", params)) != Scriptable.NOT_FOUND) {
+	  result_name = Context.toString(o);
+	}
+
+	if ((o = params.get("$entry", params)) != Scriptable.NOT_FOUND) {
+	  entry_name = Context.toString(o);
+	}
+      }
 
       Connection db = DriverManager.getConnection(uri.toString(), properties);
 
       Query q = new Query(query, db);
 
       if (q.needParams()) {
-	if (args.length < 2 || args[1] == Context.getUndefinedValue()) {
+	if (params == null) {
 	  throw Context.reportRuntimeError("Missing query() argument.");
 	}
 
 	q.bindParams(cx, (Scriptable) args[1]);
       }
+
 
       Object rc = q.execute();
 
@@ -61,7 +79,7 @@ public class JDBCHandler
 	ResultSet          rs = (ResultSet) rc;
 	ResultSetMetaData rmd = rs.getMetaData();
 
-	Document   result = esxx.createDocument("result");
+	Document   result = esxx.createDocument(result_name);
 	Element    root   = result.getDocumentElement();
 
 	int      count = rmd.getColumnCount();
@@ -72,10 +90,10 @@ public class JDBCHandler
 	}
 
 	while (rs.next()) {
-	  Element row = result.createElement("entry");
+	  Element row = result.createElement(entry_name);
 
 	  for (int i = 0; i < count; ++i) {
-	    addChild(row, names[i], rs.getString(i + 1));
+	    addChild(row, names[i].toLowerCase(), rs.getString(i + 1));
 	  }
 
 	  root.appendChild(row);
