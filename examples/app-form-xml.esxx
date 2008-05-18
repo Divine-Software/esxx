@@ -29,7 +29,7 @@ var app = new App(new ProductManager(esxx.document.products));
       <description>Chair</description>
       <price>22.79</price>
     </product>
-  </products>);
+  </products>
 
 
   <!-- ESXX application configuration -->

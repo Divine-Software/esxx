@@ -32,7 +32,7 @@ var app = new App(new ProductManager(esxx.document.products));
       <description>Chair</description>
       <price>22.79</price>
     </product>
-  </products>);
+  </products>
 
   <!-- The URI that specifies our SQL database -->
   <db uri="jdbc:derby:DerbyDB.app-form-sql;create=true"/>
