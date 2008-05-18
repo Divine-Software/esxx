@@ -215,12 +215,12 @@ public class RequestMatcher {
 	private int numGroups;
 	private Pattern pattern;
 
-	/** A Pattern that matches '(' or '(?<' but not '\(' or '(?' */
+	/** A Pattern that matches '(' or '(?{' but not '\(' or '(?' */
 	private static Pattern groupPattern = Pattern.compile("(((^\\()|((?<!\\\\)\\())" +
-							      "(?=[^?]|\\?<))");
+							      "(?=[^?]|\\?\\{))");
 
-	/** A Pattern that matches '(?<...>', where ... is anything but a '>' */
-	private static Pattern namedGroupPattern = Pattern.compile("(\\(\\?<[^>]+>)");
+	/** A Pattern that matches '(?{...}', where ... is anything but a '}' */
+	private static Pattern namedGroupPattern = Pattern.compile("(\\(\\?\\{[^}]+})");
 
 	/** A Pattern that matches '{...}', where ... is anything but a '}' */
 	static Pattern namedReferencePattern = Pattern.compile("(\\{[^\\}]+\\})");
@@ -240,13 +240,13 @@ public class RequestMatcher {
 			   "articles/books",
 			   "2");
       rm.addRequestPattern("[^/]+",
-			   "articles/(?<article>[a-z]+)/(?<id>\\d+)",
+			   "articles/(?{article}[a-z]+)/(?{id}\\d+)",
 			   "3");
       rm.addRequestPattern("[^/]+",
-			   "article\\(s\\)/(\\d+)/(?<article>[a-z]+)/(?<id>\\d+)",
+			   "article\\(s\\)/(\\d+)/(?{article}[a-z]+)/(?{id}\\d+)",
 			   "3");
-      rm.addRequestPattern("(?<method>[^/]+)",
-			   "(?<cat>\\p{javaLetter}+)/(?<item>\\p{javaLetter}+)/(?<id>\\d+)",
+      rm.addRequestPattern("(?{method}[^/]+)",
+			   "(?{cat}\\p{javaLetter}+)/(?{item}\\p{javaLetter}+)/(?{id}\\d+)",
 			   "{method}_{cat}_{item}_{id}");
 
       rm.compile();
