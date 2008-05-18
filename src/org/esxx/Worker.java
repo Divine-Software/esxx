@@ -83,6 +83,10 @@ class Worker {
 	String request_method = request.getProperties().getProperty("REQUEST_METHOD");
 	String path_info = request.getProperties().getProperty("PATH_INFO");
 
+	if (path_info == null || path_info.isEmpty()) {
+	  path_info = "/";
+	}
+
 	result = handleHTTPMethod(request_method, path_info, jsreq, app, cx, scope);
       }
       else if (js_esxx.jsGet_document() != null) {
