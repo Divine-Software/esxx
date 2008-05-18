@@ -20,7 +20,7 @@ function index(req) {
 ?>
 
 <settings>
-  <uri>jdbc:derby:esxxDerbyDB;create=true</uri>
+  <uri>jdbc:derby:DerbyDB.esxx;create=true</uri>
 
   <items>
     <item>
