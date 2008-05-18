@@ -123,6 +123,10 @@ public class Response  {
 				 ESXX esxx, Context cx, OutputStream out)
     throws IOException {
 
+    if (object == null) {
+      return;
+    }
+
     object = unwrap(object);
 
     if (object instanceof Node) {
