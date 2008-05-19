@@ -44,6 +44,8 @@ public class JSESXX
 
       this.debug    = new PrintWriter(request.getDebugWriter());
       this.error    = new PrintWriter(request.getErrorWriter());
+      this.logger   = (JSLogger) cx.newObject(scope, "Logger", 
+					      new Object[] { app, app.getAppName() });
       this.wd       = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getWD() });
       this.location = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getURL() });
       this.app      = app;
@@ -294,6 +296,10 @@ public class JSESXX
       return debug;
     }
 
+    public synchronized JSLogger jsGet_log() {
+      return logger;
+    }
+
     public Scriptable jsGet_document() {
       return app.getMainDocument();
     }
@@ -329,6 +335,7 @@ public class JSESXX
     private Application app;
     private PrintWriter error;
     private PrintWriter debug;
+    private JSLogger logger;
     private JSURI wd;
     private JSURI location;
     private JSRequest request;

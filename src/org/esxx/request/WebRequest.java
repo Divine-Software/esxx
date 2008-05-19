@@ -29,7 +29,7 @@ public class WebRequest
   implements ESXX.ResponseHandler {
 
   public WebRequest(URL url, String[] command_line, Properties properties,
-		    InputStream in, Writer error, OutputStream out)
+		    InputStream in, OutputStream error, OutputStream out)
     throws IOException {
     super(url, command_line, properties, in, error);
     outStream = out;

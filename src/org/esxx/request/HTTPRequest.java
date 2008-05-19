@@ -37,7 +37,7 @@ public class HTTPRequest
     throws IOException {
     super(url, null, createProperties(root, script_filename, path_translated, he),
 	  he.getRequestBody(),
-	  new OutputStreamWriter(System.err),
+	  System.err,
 	  null);
     httpExchange = he;
   }

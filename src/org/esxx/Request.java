@@ -30,16 +30,18 @@ import java.io.Writer;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.logging.*;
 
 public abstract class Request {
     public Request(URL url, String[] command_line, Properties properties,
-		   InputStream in, Writer error)
+		   InputStream in, OutputStream error)
       throws IOException {
       streamURL       = url;
       this.args       = command_line != null ? command_line : new String[] {};
       this.in         = in;
       this.debug      = new StringWriter();
       this.error      = error;
+      this.errorWriter = new OutputStreamWriter(error);
       this.properties = properties;
 
       try {
@@ -72,12 +74,26 @@ public abstract class Request {
     }
 
     public Writer getErrorWriter() {
-      return error;
+      return errorWriter;
     }
 
     public Properties getProperties() {
       return properties;
     }
+
+    public synchronized Logger getLogger() {
+      if (logger == null) {
+	logger = Logger.getAnonymousLogger();
+	logger.setUseParentHandlers(false);
+	logger.addHandler(new StreamHandler(error, SIMPLE_FORMATTER));
+      }
+
+      return logger;
+    }
+
+    private Logger logger;
+    private static final Formatter SIMPLE_FORMATTER = new SimpleFormatter();
+
 
     public static Reader createReader(InputStream is, String content_type)
       throws java.io.UnsupportedEncodingException {
@@ -110,6 +126,7 @@ public abstract class Request {
     private String[] args;
     private InputStream in;
     private StringWriter debug;
-    private Writer error;
+    private OutputStream error;
+    private Writer errorWriter;
     private Properties properties;
 };

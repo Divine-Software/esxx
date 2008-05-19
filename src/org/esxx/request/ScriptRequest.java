@@ -30,7 +30,7 @@ public class ScriptRequest
     throws IOException {
     super(url, cmdline, new java.util.Properties(),
 	  System.in,
-	  new java.io.OutputStreamWriter(System.err));
+	  System.err);
   }
 
   public Integer handleResponse(ESXX esxx, Context cx, Response response)

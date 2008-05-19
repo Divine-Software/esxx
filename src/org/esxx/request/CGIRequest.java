@@ -25,7 +25,7 @@ public class CGIRequest
     throws java.io.IOException {
     super(createURL(cgi), null, cgi,
 	  System.in,
-	  new java.io.OutputStreamWriter(System.err),
+	  System.err,
 	  System.out);
   }
 }

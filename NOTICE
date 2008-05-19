@@ -21,4 +21,7 @@ This product includes JFast 1.0, a FastCGI client implementation
 licensed under the BSD license.
 
 This product includes software developed at JSON.org: JSON in Java,
-licensed under a BSD-like License.
+licensed under a BSD-like license.
+
+This product includes software developed by Tim Endres and Jef
+Poskanzer, Syslog, licensed under the BSD license.

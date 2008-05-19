@@ -32,6 +32,7 @@ public class JSGlobal
     super(cx, false);
 
     ScriptableObject.defineClass(this, JSESXX.class);
+    ScriptableObject.defineClass(this, JSLogger.class);
     ScriptableObject.defineClass(this, JSRequest.class);
     ScriptableObject.defineClass(this, JSResponse.class);
     ScriptableObject.defineClass(this, JSURI.class);

@@ -30,7 +30,7 @@ public class FCGIRequest
     throws IOException {
     super(createURL(jfast.properties), null, jfast.properties,
 	  new ByteArrayInputStream(jfast.data),
-	  new OutputStreamWriter(System.err),
+	  System.err,
 	  jfast.out);
     jFast = jfast;
   }

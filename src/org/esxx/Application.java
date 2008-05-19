@@ -23,12 +23,14 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
+import java.util.logging.Logger;
 import javax.xml.stream.*;
 //import javax.xml.xpath.*;
 import org.esxx.js.JSGlobal;
 import org.esxx.js.JSESXX;
 import org.esxx.js.JSURI;
 import org.esxx.util.RequestMatcher;
+import org.esxx.util.SyslogHandler;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
@@ -70,6 +72,8 @@ public class Application {
 
       this.esxx = esxx;
       baseURL = url;
+      ident = baseURL.getPath().replaceAll("^.*/", "");
+
       xmlInputFactory = XMLInputFactory.newInstance();
 
       InputStream is = esxx.openCachedURL(url);
@@ -184,6 +188,31 @@ public class Application {
 
     public Collection<URL> getExternalURLs() {
       return externalURLs;
+    }
+
+    public synchronized Logger getLogger() {
+      if (logger == null) {
+	String name  = Application.class.getName() + "." + ident.replaceAll("\\.[^.]*", "");
+
+	logger = Logger.getLogger(name);
+
+	if (logger.getHandlers().length == 0) {
+	  try {
+	    // No specific log handler configured in
+	    // jre/lib/logging.properties -- log to syslog
+	    logger.addHandler(new SyslogHandler("ESXX"));
+	  }
+	  catch (UnsupportedOperationException ex) {
+	    // Never mind
+	  }
+	}
+      }
+
+      return logger;
+    }
+
+    public String getAppName() {
+      return ident;
     }
 
     public Scriptable getMainDocument() {
@@ -475,6 +504,9 @@ public class Application {
     private ESXX esxx;
     private URL baseURL;
     private HashSet<URL> externalURLs = new HashSet<URL>();
+
+    private String ident;
+    private Logger logger;
 
     private JSGlobal applicationScope = null;
     private Scriptable mainDocument;
