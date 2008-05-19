@@ -153,7 +153,7 @@ public class HTTPHandler
       }
     }
 
-    if (send_obj != null && send_obj != Scriptable.NOT_FOUND) {
+    if (send_obj != null && send_obj != Context.getUndefinedValue()) {
       attachObject(send_obj, send_ct, send_params, req, cx);
     }
 

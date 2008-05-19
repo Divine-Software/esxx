@@ -695,7 +695,7 @@ public class ESXX {
 	o = cx.evaluateString(scope, object, identifier + " object " + object, 1, null);
 	function = object + "." + method;
 
-	if (o == null || o == Scriptable.NOT_FOUND) {
+	if (o == null || o == Context.getUndefinedValue()) {
 	  throw new ESXXException(identifier + " '" + object + "' not found.");
 	}
 
