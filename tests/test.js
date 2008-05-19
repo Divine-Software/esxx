@@ -36,8 +36,9 @@ MyApp.prototype.handleGet = function(req) {
 
   esxx.debug.println("**** END GET HANDLER ****");
 
-  return new Response("text/html", 
-		      <html><body><p>Hello, world och Örjan!</p><div/></body></html>);
+  return new Response(200, null,
+		      <html><body><p>Hello, world och Örjan!</p><div/></body></html>,
+		      "text/html");
 };
 
 MyApp.prototype.xsltCallback = function() {

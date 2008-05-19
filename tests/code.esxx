@@ -4,7 +4,7 @@
 ]>
 
 <!-- Load a few external files -->
-<?esxx-import href="test.js" ?>
+<?esxx-include href="test.js" ?>
 
 <?esxx 
 

@@ -13,7 +13,7 @@ function App.prototype.redirectToMain(req) {
    * invalid) redirect response, making the client fetch the front
    * page. */
 
-  return [303, null, null, {Location: req.env.SCRIPT_NAME + "/main"}];
+  return [303, {Location: req.env.SCRIPT_NAME + "/main"}];
 }
 
 function App.prototype.getIndex(req) {

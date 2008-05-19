@@ -132,20 +132,26 @@ class Worker {
       throw new ESXXException("No result from '" + request.getURL() + "'");
     }
 
-    Response response;
+    JSResponse js_response;
 
     if (result instanceof JSResponse) {
-      response = ((JSResponse) result).getResponse();
+      js_response = (JSResponse) result;
     }
     else if (result instanceof NativeArray) {
       // Automatically convert an JS Array into a Response
-      response = ((JSResponse) cx.newObject(scope, "Response",
-					    cx.getElements((NativeArray) result))).getResponse();
+      js_response = (JSResponse) cx.newObject(scope, "Response",
+					      cx.getElements((NativeArray) result));
+    }
+    else if (result instanceof Number) {
+      js_response = (JSResponse) cx.newObject(scope, "Response",  
+					      new Object[] { result, null, null, null });
     }
     else {
-      response = ((JSResponse) cx.newObject(scope, "Response",  new Object[] { result }))
-	.getResponse();
+      js_response = (JSResponse) cx.newObject(scope, "Response",  
+					      new Object[] { 200, null, result, null });
     }
+
+    Response response = js_response.getResponse();
 
     response.unwrapResult();
 

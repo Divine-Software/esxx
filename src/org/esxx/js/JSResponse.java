@@ -29,8 +29,8 @@ public class JSResponse
     super();
   }
 
-  public JSResponse(int status, String content_type, Object result, Scriptable headers) {
-    this();
+  public JSResponse(int status, Scriptable headers, Object result, String content_type) {
+    super();
 
     this.response = new Response(status, content_type, result, new HashMap<String, String>());
     this.headers  = headers;
@@ -41,55 +41,38 @@ public class JSResponse
 				     java.lang.Object[] args,
 				     Function ctorObj,
 				     boolean inNewExpr) {
-    int status;
-    String content_type;
-    Object result;
-    Scriptable headers;
+    int status           = 0;
+    Scriptable headers   = null;
+    Object result        = null;
+    String content_type  = null;
 
-    switch (args.length) {
-    case 1:
-      if (args[0] instanceof Number) {
-	status       = ((Number) args[0]).intValue();
-	content_type = null;
-	result       = "";
-      }
-      else {
-	status       = 200;
-	content_type = null;
-	result       = args[0];
-      }
-      break;
-
-    case 2:
-      status       = 200;
-      content_type = Context.toString(args[0]);
-      result       = args[1];
-      break;
-
-    case 3:
-    case 4:
-      status       = (int) Context.toNumber(args[0]);
-      content_type = Context.toString(args[1]);
-      result       = args[2];
-      break;
-
-    default:
+    if (args.length < 1) {
       throw Context.reportRuntimeError("Response() constructor requires 1-4 arguments.");
     }
 
-    if (args.length == 4) {
-      if (args[3] instanceof Scriptable) {
-	headers = (Scriptable) args[3];
+    status = (int) Context.toNumber(args[0]);
+
+    if (args.length >= 2 && args[1] != null && args[1] != Context.getUndefinedValue()) {
+      if (args[1] instanceof Scriptable) {
+	headers = (Scriptable) args[1];
       }
       else {
-	throw Context.reportRuntimeError("Fourth Response() arguments must be an JS Object.");
+	throw Context.reportRuntimeError("Second Response() arguments must be an JS Object.");
       }
     }
     else {
       headers = cx.newObject(ctorObj);
     }
 
-    return new JSResponse(status, content_type, result, headers);
+    if (args.length >= 3) {
+      result = args[2];
+    }
+
+    if (args.length >= 4) {
+      content_type = Context.toString(args[3]);
+    }
+
+    return new JSResponse(status, headers, result, content_type);
   }
 
   @Override
@@ -134,10 +117,12 @@ public class JSResponse
 
     headers.clear();
 
-    for (Object hdr : this.headers.getIds()) {
-      if (hdr instanceof String) {
-	String name = (String) hdr;
-	headers.put(name, Context.toString(this.headers.get(name, this.headers)));
+    if (this.headers != null) {
+      for (Object hdr : this.headers.getIds()) {
+	if (hdr instanceof String) {
+	  String name = (String) hdr;
+	  headers.put(name, Context.toString(this.headers.get(name, this.headers)));
+	}
       }
     }
 
