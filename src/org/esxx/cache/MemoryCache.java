@@ -49,17 +49,17 @@ public class MemoryCache
       }
     }
 
-    public Application getCachedApplication(URL url)
+    public Application getCachedApplication(Request request)
       throws IOException {
-      String url_string = url.toString();
+      String url_string = request.getURL().toString();
       Application app;
 
       synchronized (cachedApplications) {
 	app = cachedApplications.get(url_string);
       }
 
-      if (app == null || checkApplicationURLs(url, app)) {
-	app = new Application(esxx, url);
+      if (app == null || checkApplicationURLs(request.getURL(), app)) {
+	app = new Application(esxx, request);
 
 	synchronized (cachedApplications) {
 	  cachedApplications.put(url_string, app);

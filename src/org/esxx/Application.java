@@ -46,37 +46,25 @@ import net.sf.saxon.dom.*;
   */
 
 public class Application {
-    public static class Code {
-	public Code(URL u, int l, String s) {
-	  url = u;
-	  line = l;
-	  source = s;
-	  code = null;
-	  hasExecuted = false;
-	}
-
-	@Override
-	public String toString() {
-	  return url.toString() + "::" + line + ": " + code;
-	}
-
-	public URL url;
-	public int line;
-	public String source;
-	public Script code;
-        public boolean hasExecuted;
-    };
-
-    public Application(ESXX esxx, URL url)
+    public Application(ESXX esxx, Request request)
       throws IOException {
 
       this.esxx = esxx;
-      baseURL = url;
+      baseURL = request.getURL();
+      workingDirectory = request.getWD();
       ident = baseURL.getPath().replaceAll("^.*/", "");
+
+      try {
+	workingDirectory = new File("").toURI().toURL();
+      }
+      catch (java.net.MalformedURLException ex) {
+	throw new IOException("Unable to get current working directory as an URI: "
+			      + ex.getMessage(), ex);
+      }
 
       xmlInputFactory = XMLInputFactory.newInstance();
 
-      InputStream is = esxx.openCachedURL(url);
+      InputStream is = esxx.openCachedURL(baseURL);
 
       // Check if it's an XML document or a JS file
 
@@ -90,7 +78,7 @@ public class Application {
 	  is.read() == '!') {
 	// Skip shebang
 	while (is.read() != '\n') {}
-	importCode(url, is);
+	importCode(baseURL, is);
 	return;
       }
       else {
@@ -106,7 +94,7 @@ public class Application {
 	  else if (!Character.isWhitespace(c)) {
 	    // Any other character except blanks triggers direct JS-mode
 	    is.reset();
-	    importCode(url, is);
+	    importCode(baseURL, is);
 	    return;
 	  }
 	}
@@ -117,7 +105,7 @@ public class Application {
       // Load and parse the XML document
 
       try {
-	xml = esxx.parseXML(is, url, externalURLs, null);
+	xml = esxx.parseXML(is, baseURL, externalURLs, null);
 
 	// Extract ESXX information, if any
 
@@ -146,7 +134,7 @@ public class Application {
 		n.getParentNode().removeChild(n);
 	      }
 	      else if (name.equals("esxx")) {
-		addCode(url, 0, n.getNodeValue());
+		addCode(baseURL, 0, n.getNodeValue());
 		n.getParentNode().removeChild(n);
 	      }
 	    }
@@ -221,6 +209,10 @@ public class Application {
 
     public JSURI getMainURI() {
       return mainURI;
+    }
+
+    public URL getWD() {
+      return workingDirectory;
     }
 
     public Scriptable getIncludePath() {
@@ -319,6 +311,28 @@ public class Application {
 	js_esxx.setLocation(old_uri);
       }
     }
+
+
+    public static class Code {
+	public Code(URL u, int l, String s) {
+	  url = u;
+	  line = l;
+	  source = s;
+	  code = null;
+	  hasExecuted = false;
+	}
+
+	@Override
+	public String toString() {
+	  return url.toString() + "::" + line + ": " + code;
+	}
+
+	public URL url;
+	public int line;
+	public String source;
+	public Script code;
+        public boolean hasExecuted;
+    };
 
 
     private Code importCode(URL url)
@@ -504,6 +518,7 @@ public class Application {
     private ESXX esxx;
     private URL baseURL;
     private HashSet<URL> externalURLs = new HashSet<URL>();
+    private URL workingDirectory;
 
     private String ident;
     private Logger logger;

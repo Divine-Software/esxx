@@ -516,9 +516,9 @@ public class ESXX {
       return parsers.parse(mime_type, mime_params, is, is_url, external_urls, err, cx, scope);
     }
 
-    public Application getCachedApplication(URL url)
+    public Application getCachedApplication(Request request)
       throws IOException {
-      return memoryCache.getCachedApplication(url);
+      return memoryCache.getCachedApplication(request);
     }
 
     public XsltExecutable getCachedStylesheet(URL url, PrintWriter err)

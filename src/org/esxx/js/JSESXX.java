@@ -46,8 +46,8 @@ public class JSESXX
       this.error    = new PrintWriter(request.getErrorWriter());
       this.logger   = (JSLogger) cx.newObject(scope, "Logger", 
 					      new Object[] { app, app.getAppName() });
-      this.wd       = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getWD() });
-      this.location = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getURL() });
+      this.wd       = (JSURI) cx.newObject(scope, "URI", new Object[] { app.getWD() });
+      this.location = null;
       this.app      = app;
     }
 
@@ -128,10 +128,16 @@ public class JSESXX
 	String file = Context.toString(args[0]);
 
 	try {
-	  uri = js_esxx.location.uri.resolve(file);
-	  is  = esxx.openCachedURL(uri.toURL());
+	  if (js_esxx.location != null) {
+	    uri = js_esxx.location.uri.resolve(file);
+	    is  = esxx.openCachedURL(uri.toURL());
+	  }
 	}
 	catch (IOException ex) {
+	  
+	}
+
+	if (is == null) {
 	  // Failed to resolve URL relative the current file's
 	  // location -- try the include path
 

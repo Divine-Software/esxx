@@ -39,7 +39,7 @@ class Worker {
 
   public Response handleRequest(Context cx, Request request)
     throws Exception {
-    Application app = esxx.getCachedApplication(request.getURL());
+    Application app = esxx.getCachedApplication(request);
     JSGlobal global;
     Scriptable scope;
     JSESXX js_esxx;
