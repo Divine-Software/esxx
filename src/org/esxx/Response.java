@@ -194,7 +194,7 @@ public class Response  {
   }
 
   private void guessContentType() {
-    if (resultObject != null && contentType == null) {
+    if (contentType == null) {
       // Set default content-type, if missing
       if (resultObject instanceof InputStream ||
 	  resultObject instanceof ByteArrayOutputStream ||
