@@ -32,6 +32,8 @@ public class JSLogger
   public JSLogger(Application app, Request request, Logger logger, String ident) {
     super();
 
+    newLevel    = Level.ALL;
+
     this.app    = app;
     this.req    = request;
 
@@ -79,6 +81,23 @@ public class JSLogger
     return "Logger";
   }
 
+  public void jsFunction_setLevel(String level) {
+    if ("debug".equals(level)) {
+      newLevel = Level.FINE;
+    }
+    else if ("info".equals(level)) {
+      newLevel = Level.INFO;
+    }
+    else if ("warn".equals(level)) {
+      newLevel = Level.WARNING;
+    }
+    else if ("error".equals(level)) {
+      newLevel = Level.SEVERE;
+    }
+    else {
+      throw Context.reportRuntimeError("Invalid level");
+    }
+  }
 
   public void jsFunction_debug(String msg) {
     log(Level.FINE, msg);
@@ -97,10 +116,6 @@ public class JSLogger
   }
 
   private synchronized void log(Level level, String msg) {
-    LogRecord lr = new LogRecord(level, msg);
-    lr.setSourceClassName(ident);
-    lr.setSourceMethodName(null);
-
     if (logger == null) {
       if (app != null) {
 	logger = app.getLogger();
@@ -113,9 +128,19 @@ public class JSLogger
       }
     }
 
+    if (newLevel != null) {
+      logger.setLevel(newLevel);
+      newLevel = null;
+    }
+
+    LogRecord lr = new LogRecord(level, msg);
+    lr.setSourceClassName(ident);
+    lr.setSourceMethodName(null);
+
     logger.log(lr);
   }
 
+  private Level newLevel;
   private Application app;
   private Request req;
   private Logger logger;
