@@ -8,7 +8,7 @@
 <?esxx-stylesheet href="test.xsl" type="text/xsl" ?>
 
 <!-- Optinal JavaScript modules referred to in the stylesheet -->
-<?esxx-import href="test.js" ?>
+<?esxx-include href="test.js" ?>
 
 <?esxx 
 

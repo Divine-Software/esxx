@@ -13,7 +13,7 @@ MyApp.prototype.handleError = function(ex) {
 }
 
 MyApp.prototype.handleGet = function(req) {
-  esxx.log.debug("**** START GET HANDLER ****")
+  req.log.debug("**** START GET HANDLER ****")
 
   //    var ldap = new URI("ldap://ldap.blom.org/ou=People,dc=blom,dc=org??sub?(sn=Blom)");
   //   var ldap = new URI("ldap://ldap.blom.org/ou=Groups,dc=blom,dc=org??sub");
@@ -21,7 +21,7 @@ MyApp.prototype.handleGet = function(req) {
   //   ldap["java.naming.security.authentication"] = "simple";
   //   ldap["java.naming.security.principal"] = "uid=martin,ou=People,dc=blom,dc=org";
   //   ldap["java.naming.security.credentials"] = "********";
-  //   esxx.log.info(ldap.load());
+  //   req.log.info(ldap.load());
 
   //     var db = new URI("jdbc:postgresql:esxx?user=esxx&password=secret");
     
@@ -34,7 +34,7 @@ MyApp.prototype.handleGet = function(req) {
   //     var mailto = new URI("mailto:martin@blom.org?subject=XML%20Message");
   //     mailto.save(<xml>This is <empasis>XML</empasis>.</xml>, "text/xml");
 
-  esxx.log.debug("**** END GET HANDLER ****");
+  req.log.debug("**** END GET HANDLER ****");
 
   return new Response(200, null,
 		      <html><body><p>Hello, world och Örjan!</p><div/></body></html>,

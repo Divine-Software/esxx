@@ -5,19 +5,17 @@ esxx.include("json2.js");
 function handleGet(req) {
   // Dump all parsed accept headers
   for (var s in req.accept) {
-    esxx.log.info(s + ": " + JSON.stringify(req.accept[s]));
+    req.log.info(s + ": " + JSON.stringify(req.accept[s]));
   }
-
-  esxx.log.info();
 
   if (req.accept.media) {
     for each (var m in req.accept.media) {
       if (m == "text/html") {
-        esxx.log.info("Client accepts 'text/html', quality value is " + m.q + ".");
+        req.log.info("Client accepts 'text/html', quality value is " + m.q + ".");
       }
     }
 
-    esxx.log.info("Client prefers '" + req.accept.media[0] + "'.");
+    req.log.info("Client prefers '" + req.accept.media[0] + "'.");
   }
 
   return <xml/>;
