@@ -39,7 +39,7 @@ public class JSGlobal
   }
 
   public JSESXX createJSESXX(Context cx, Request request, Application app) {
-    JSESXX js_esxx = (JSESXX) cx.newObject(this, "ESXX", new Object[] { request, app });
+    JSESXX js_esxx = (JSESXX) cx.newObject(this, "ESXX", new Object[] { app });
 
     put("esxx", this, js_esxx);
 

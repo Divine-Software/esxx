@@ -20,10 +20,8 @@ package org.esxx.js;
 
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
-import org.esxx.Request;
 import org.esxx.Application;
 
-import java.io.PrintWriter;
 import java.io.InputStream;
 import java.io.IOException;
 import java.net.URL;
@@ -38,17 +36,14 @@ public class JSESXX
       super();
     }
 
-    public JSESXX(Context cx, Scriptable scope,
-		  Request request, Application app) {
+    public JSESXX(Context cx, Scriptable scope, Application app) {
       this();
 
-      this.debug    = new PrintWriter(request.getDebugWriter());
-      this.error    = new PrintWriter(request.getErrorWriter());
+      this.app      = app;
       this.logger   = (JSLogger) cx.newObject(scope, "Logger", 
 					      new Object[] { app, app.getAppName() });
       this.wd       = (JSURI) cx.newObject(scope, "URI", new Object[] { app.getWD() });
       this.location = null;
-      this.app      = app;
     }
 
     public JSURI setLocation(Context cx, Scriptable scope, URL url) {
@@ -63,9 +58,6 @@ public class JSESXX
       return old_location;
     }
 
-    public void setRequest(JSRequest req) {
-      request = req;
-    }
 
     @Override
     public String getClassName() {
@@ -76,7 +68,7 @@ public class JSESXX
 				       java.lang.Object[] args,
 				       Function ctorObj,
 				       boolean inNewExpr) {
-      return new JSESXX(cx, ctorObj, (Request) args[0], (Application) args[1]);
+      return new JSESXX(cx, ctorObj, (Application) args[0]);
     }
 
     public Synchronizer jsFunction_sync(Function f) {
@@ -294,14 +286,6 @@ public class JSESXX
       return result;
     }
 
-    public PrintWriter jsGet_error() {
-      return error;
-    }
-
-    public PrintWriter jsGet_debug() {
-      return debug;
-    }
-
     public synchronized JSLogger jsGet_log() {
       return logger;
     }
@@ -334,16 +318,8 @@ public class JSESXX
       return location;
     }
 
-    public JSRequest jsGet_request() {
-      return request;
-    }
-
     private Application app;
-    private PrintWriter error;
-    private PrintWriter debug;
     private JSLogger logger;
     private JSURI wd;
     private JSURI location;
-    private JSRequest request;
-
 }
