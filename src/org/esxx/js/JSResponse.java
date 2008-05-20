@@ -64,11 +64,11 @@ public class JSResponse
       headers = cx.newObject(ctorObj);
     }
 
-    if (args.length >= 3) {
+    if (args.length >= 3 && args[2] != null && args[2] != Context.getUndefinedValue()) {
       result = args[2];
     }
 
-    if (args.length >= 4) {
+    if (args.length >= 4 && args[3] != null && args[3] != Context.getUndefinedValue()) {
       content_type = Context.toString(args[3]);
     }
 
