@@ -275,7 +275,7 @@ class Worker {
       stylesheet = app.getStylesheet("");
     }
 
-    XsltExecutable  xe = esxx.getCachedStylesheet(stylesheet, js_esxx.jsGet_error());
+    XsltExecutable  xe = esxx.getCachedStylesheet(stylesheet, app);
     XsltTransformer tr = xe.load();
     ByteArrayOutputStream os = new ByteArrayOutputStream();
     Serializer s = new Serializer();
@@ -293,8 +293,7 @@ class Worker {
 
     // Append the debug output while we're at it, and let the
     // stylesheet decide if it should be output or not.
-    js_esxx.jsGet_debug().flush();
-    String ds = request.getDebugWriter().toString();
+    String ds = request.getLogAsString();
     doc.appendChild(doc.createComment("Start ESXX Debug Log\n" +
 				      ds.replaceAll("--", "\u2012\u2012") +
 				      "End ESXX Debug Log"));

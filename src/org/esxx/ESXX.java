@@ -28,6 +28,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.xml.transform.*;
 import javax.xml.transform.stream.*;
 import org.mozilla.javascript.Context;
@@ -447,7 +449,7 @@ public class ESXX {
      *  @throws IOException On I/O errors.
      */
 
-    public Document parseXML(InputStream is, final URL is_url,
+    public Document parseXML(InputStream is, URL is_url,
 			     final Collection<URL> external_urls,
 			     final PrintWriter err)
       throws ESXXException {
@@ -521,9 +523,9 @@ public class ESXX {
       return memoryCache.getCachedApplication(request);
     }
 
-    public XsltExecutable getCachedStylesheet(URL url, PrintWriter err)
+    public XsltExecutable getCachedStylesheet(URL url, Application app)
       throws IOException {
-      return memoryCache.getCachedStylesheet(url, err);
+      return memoryCache.getCachedStylesheet(url, app);
     }
 
 
@@ -580,9 +582,9 @@ public class ESXX {
 //       "</xsl:template>" +
 //       "</xsl:transform>";
 
-    public XsltExecutable compileStylesheet(InputStream is, URL is_url,
+    public XsltExecutable compileStylesheet(InputStream is, final URL is_url,
 					    Collection<URL> external_urls,
-					    final PrintWriter err)
+					    final Application app)
       throws SaxonApiException {
       XsltCompiler compiler = getSaxonProcessor().newXsltCompiler();
 
@@ -594,18 +596,21 @@ public class ESXX {
       compiler.setErrorListener(new ErrorListener() {
 	  public void error(TransformerException ex)
 	    throws TransformerException {
-	    err.println(ex.getLocationAsString()  + ": " + ex.getMessage());
+	    app.getLogger().logp(Level.SEVERE, is_url.toString(), null,
+				 ex.getMessageAndLocation(), ex);
 	    throw ex;
 	  }
 
 	  public void fatalError(TransformerException ex)
 	    throws TransformerException {
-	    err.println(ex.getLocationAsString()  + ": " + ex.getMessage());
+	    app.getLogger().logp(Level.SEVERE, is_url.toString(), null,
+				  ex.getMessageAndLocation(), ex);
 	    throw ex;
 	  }
 
 	  public void warning(TransformerException ex) {
-	    err.println(ex.getLocationAsString()  + ": " + ex.getMessage());
+	    app.getLogger().logp(Level.WARNING, is_url.toString(), null,
+				 ex.getMessageAndLocation());
 	  }
 	});
 

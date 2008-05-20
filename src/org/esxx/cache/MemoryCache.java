@@ -69,7 +69,7 @@ public class MemoryCache
       return app;
     }
 
-    public XsltExecutable getCachedStylesheet(URL url, PrintWriter err)
+    public XsltExecutable getCachedStylesheet(URL url, Application app)
       throws IOException {
       try {
 	if (url == null) {
@@ -86,7 +86,7 @@ public class MemoryCache
 	if (xslt == null || checkStylesheetURLs(url, xslt)) {
 	  xslt = new Stylesheet();
 	  xslt.xsltExecutable = esxx.compileStylesheet(esxx.openCachedURL(url), url,
-						       xslt.externalURLs, err);
+						       xslt.externalURLs, app);
 	}
 
 	if (xslt == null) {
