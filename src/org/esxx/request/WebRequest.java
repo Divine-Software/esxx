@@ -55,7 +55,7 @@ public class WebRequest
     final PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
 
     out.println("Status: " + response.getStatus());
-    out.println("Content-Type: " + response.getContentType());
+    out.println("Content-Type: " + response.getContentType(true));
 
     response.enumerateHeaders(new Response.HeaderEnumerator() {
 	public void header(String name, String value) {
@@ -164,7 +164,7 @@ public class WebRequest
     "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/plain.css' title='Plain'/>" +
     "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/system.css' title='System default'/>" +
     "<link rel='stylesheet' type='text/css' href='http://esxx.org/css/amiga.css' title='Workbench 1.x' />" +
-    "<script type='text/javascript' src='http://esxx.org/js/styleswitch.js'></script>" +
+    "<script type='text/javascript' src='http://esxx.org/js/styleswitch.js' defer='true' async='true'></script>" +
     "</head><body>" +
     "<h1>ESXX - The friendly ECMAscript/XML Application Server</h1>";
 

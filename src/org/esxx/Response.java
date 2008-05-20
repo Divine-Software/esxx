@@ -52,13 +52,17 @@ public class Response  {
     httpStatus = status;
   }
 
-  public String getContentType() {
-    return contentType;
+  public String getContentType(boolean guess) {
+    if (guess) {
+      return guessContentType();
+    }
+    else {
+      return contentType;
+    }
   }
 
   public void setContentType(String content_type) {
     contentType = content_type;
-    guessContentType();
   }
 
   public Object getResult() {
@@ -67,7 +71,6 @@ public class Response  {
 
   public void setResult(Object result) {
     resultObject = result;
-    guessContentType();
   }
 
   public void unwrapResult() {
@@ -90,7 +93,7 @@ public class Response  {
   public void writeResult(ESXX esxx, Context cx, OutputStream out)
     throws IOException {
     HashMap<String,String> mime_params = new HashMap<String,String>();
-    String mime_type = ESXX.parseMIMEType(contentType, mime_params);
+    String mime_type = ESXX.parseMIMEType(guessContentType(), mime_params);
 
     writeObject(resultObject, mime_type, mime_params, esxx, cx, out);
   }
@@ -193,33 +196,35 @@ public class Response  {
     return object;
   }
 
-  private void guessContentType() {
+  public String guessContentType() {
     if (contentType == null) {
       // Set default content-type, if missing
       if (resultObject instanceof InputStream ||
 	  resultObject instanceof ByteArrayOutputStream ||
 	  resultObject instanceof ByteBuffer ||
 	  resultObject instanceof byte[]) {
-	contentType = "application/octet-stream";
+	return "application/octet-stream";
       }
       else if (resultObject instanceof Reader ||
 	       resultObject instanceof String) {
-	contentType = "text/plain; charset=UTF-8";
+	return "text/plain; charset=UTF-8";
       }
       else if (resultObject instanceof RenderedImage) {
-	contentType = "image/png";
+	return "image/png";
       }
       else if (resultObject instanceof Node ||
 	       resultObject instanceof org.mozilla.javascript.xml.XMLObject) {
-	contentType = "application/xml";
+	return "application/xml";
       }
       else if (resultObject instanceof Scriptable) {
-	contentType = "application/json";
+	return "application/json";
       }
       else {
-	contentType = "application/octet-stream";
+	return "application/octet-stream";
       }
     }
+
+    return contentType;
   }
 
   private static Object jsToJSON(Object object, Context cx) {

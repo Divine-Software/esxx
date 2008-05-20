@@ -48,7 +48,7 @@ public class HTTPRequest
       // Do not call super method, since it has a null OutputStream.
 
       final Headers headers = httpExchange.getResponseHeaders();
-      headers.set("Content-Type", response.getContentType());
+      headers.set("Content-Type", response.getContentType(true));
       response.enumerateHeaders(new Response.HeaderEnumerator() {
 	  public void header(String name, String value) {
 	    headers.set(name, value);

@@ -89,7 +89,7 @@ public class JSResponse
   }
 
   public String jsGet_contentType() {
-    return response.getContentType();
+    return response.getContentType(false);
   }
 
   public void jsSet_contentType(String content_type) {

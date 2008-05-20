@@ -264,7 +264,7 @@ class Worker {
     throws IOException, SaxonApiException {
     ESXX   esxx         = ESXX.getInstance();
     Node   node         = (Node) response.getResult();
-    String content_type = response.getContentType();
+    String content_type = response.getContentType(true);
 
     HashMap<String,String> params = new HashMap<String,String>();
     String                 ct     = ESXX.parseMIMEType(content_type, params);

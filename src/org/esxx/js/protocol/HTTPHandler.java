@@ -323,7 +323,7 @@ public class HTTPHandler
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     //    Response.writeObject(data, type, params, esxx, cx, bos);
     response.writeResult(esxx, cx, bos);
-    entity.setHeader("Content-Type", response.getContentType());
+    entity.setHeader("Content-Type", response.getContentType(true));
     entity.setEntity(new ByteArrayEntity(bos.toByteArray()));
   }
 
