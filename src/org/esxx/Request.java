@@ -18,15 +18,7 @@
 
 package org.esxx;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Properties;
@@ -89,14 +81,27 @@ public abstract class Request {
 	}
 
 	logger = Logger.getAnonymousLogger();
+	localLog = new ByteArrayOutputStream();
+
 	logger.setUseParentHandlers(false);
 	logger.addHandler(new ErrorHandler(error, formatter));
+	logger.addHandler(new ErrorHandler(localLog, formatter));
       }
 
       return logger;
     }
 
+    public String getLogAsString() {
+      if (localLog != null) {
+	return localLog.toString();
+      }
+      else {
+	return "";
+      }
+    }
+
     private Logger logger;
+    private ByteArrayOutputStream localLog;
     private static Formatter formatter;
 
     private class ErrorHandler 
