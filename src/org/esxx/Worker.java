@@ -294,9 +294,9 @@ class Worker {
     // Append the debug output while we're at it, and let the
     // stylesheet decide if it should be output or not.
     String ds = request.getLogAsString();
-    doc.appendChild(doc.createComment("Start ESXX Debug Log\n" +
+    doc.appendChild(doc.createComment("Start ESXX Request Log\n" +
 				      ds.replaceAll("--", "\u2012\u2012") +
-				      "End ESXX Debug Log"));
+				      "End ESXX Request Log"));
 
     tr.setSource(new DOMSource(doc));
     tr.setDestination(s);
