@@ -7,10 +7,10 @@ var obj = { array:  [false, "1", 2], object: { string: "A string" } };
 var arr = [ obj, 1, 2.2, true ];
 
 tmp.save(JSON.stringify(obj), "text/plain");
-esxx.debug.println("'obj' serialized and parsed: " + JSON.stringify(tmp.load("application/json")));
+esxx.log.info("'obj' serialized and parsed: " + JSON.stringify(tmp.load("application/json")));
 java.lang.Thread.sleep(1000); // Argh!
 tmp.save(JSON.stringify(arr), "text/plain");
-esxx.debug.println("'arr' serialized and parsed: " + JSON.stringify(tmp.load("application/json")));
+esxx.log.info("'arr' serialized and parsed: " + JSON.stringify(tmp.load("application/json")));
 tmp.remove();
 ?>
 

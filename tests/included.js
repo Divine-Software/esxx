@@ -1,3 +1,3 @@
 
 esxx.include("sub1/included1.js");
-esxx.debug.println("In included.js: " + esxx.location);
+esxx.log.info("In included.js: " + esxx.location);

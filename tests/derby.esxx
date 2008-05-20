@@ -3,7 +3,7 @@
 var db = new URI(esxx.document.uri);
 
 // Create and populate the database
-try { db.query("DROP TABLE shop"); } catch (e) { esxx.debug.println("No previous table."); }
+try { db.query("DROP TABLE shop"); } catch (e) { esxx.log.info("No previous table."); }
 db.query("CREATE TABLE shop(id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY, " +
 	  "item VARCHAR(32), " +
 	  "price FLOAT)");

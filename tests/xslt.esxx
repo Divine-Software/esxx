@@ -35,7 +35,7 @@ function xmlTest() {
 var currentDate = new Date();
 
 // Create the ESXX debug log comment
-esxx.debug.println(esxx.location + " loaded")
+esxx.log.info(esxx.location + " loaded")
 
 ?>
 

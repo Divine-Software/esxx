@@ -107,7 +107,7 @@ public class ESXX {
       contextFactory = new ContextFactory() {
 	  @Override
 	  public boolean hasFeature(Context cx, int feature) {
-	    if (feature == Context.FEATURE_DYNAMIC_SCOPE ||
+	    if (//feature == Context.FEATURE_DYNAMIC_SCOPE ||
 		feature == Context.FEATURE_LOCATION_INFORMATION_IN_ERROR ||
 		feature == Context.FEATURE_MEMBER_EXPR_AS_FUNCTION_NAME ||
 		//feature == Context.FEATURE_WARNING_AS_ERROR ||

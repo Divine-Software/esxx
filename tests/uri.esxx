@@ -16,7 +16,7 @@ if (content != "Yoman") {
 
 var uri = new URI("http://martin.blom.org/");
 
-esxx.debug.println("" + uri.load());
+esxx.log.info("" + uri.load());
 
 ?>
 

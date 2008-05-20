@@ -41,7 +41,6 @@ class Worker {
     throws Exception {
     Application app = esxx.getCachedApplication(request);
     JSGlobal global;
-    Scriptable scope;
     JSESXX js_esxx;
 
     synchronized (app) {
@@ -49,35 +48,27 @@ class Worker {
       // compile() returns the application's global scope
       global = app.compile(cx);
 
-      // Make the JSESXX object temporary available as "esxx" in the
-      // global scope, so the set-up code has access to it.
+      // Make the JSESXX object available as "esxx" in the global
+      // scope, so the set-up code has access to it.
       js_esxx = global.createJSESXX(cx, request, app);
 
       // Execute all <?esxx and <?esxx-import PIs, if not already done
       app.execute(cx, global, js_esxx);
-
-      global.deleteJSESXX();
     }
-
-    // Create a new per-request "global" scope and store the JSESXX object in it
-    scope = cx.newObject(global);
-    scope.setPrototype(global);
-    scope.setParentScope(null);
-    scope.put("esxx", scope, js_esxx);
 
     Object    result = null;
     Exception error  = null;
 
     try {
       // Create a Request object
-      JSRequest jsreq = (JSRequest) cx.newObject(scope, "Request",
+      JSRequest jsreq = (JSRequest) cx.newObject(global, "Request",
 						 new Object[] { request });
 
       // Execute the SOAP or HTTP handler (if available)
       String object = getSOAPAction(jsreq, app);
 
       if (object != null) {
-	result = handleSOAPAction(object, jsreq, cx, scope);
+	result = handleSOAPAction(object, jsreq, cx, global);
       }
       else if (app.hasHandlers()) {
 	String request_method = request.getProperties().getProperty("REQUEST_METHOD");
@@ -87,7 +78,7 @@ class Worker {
 	  path_info = "/";
 	}
 
-	result = handleHTTPMethod(request_method, path_info, jsreq, app, cx, scope);
+	result = handleHTTPMethod(request_method, path_info, jsreq, app, cx, global);
       }
       else if (js_esxx.jsGet_document() != null) {
 	// No handlers; the document is the result
@@ -96,7 +87,7 @@ class Worker {
       }
       else {
 	// No handlers, no document -- call main()
-	result = handleMain(request.getCommandLine(), jsreq, app, cx, scope);
+	result = handleMain(request.getCommandLine(), jsreq, app, cx, global);
       }
     }
     catch (ESXXException.TimeOut ex) {
@@ -124,7 +115,7 @@ class Worker {
 
     if (error != null) {
       // handleError throws (unwrapped) error if no handler is installed
-      result = handleError(error, app, cx, scope);
+      result = handleError(error, app, cx, global);
     }
 
     // No error or error handled: Did we get a valid result?
@@ -139,15 +130,15 @@ class Worker {
     }
     else if (result instanceof NativeArray) {
       // Automatically convert an JS Array into a Response
-      js_response = (JSResponse) cx.newObject(scope, "Response",
+      js_response = (JSResponse) cx.newObject(global, "Response",
 					      cx.getElements((NativeArray) result));
     }
     else if (result instanceof Number) {
-      js_response = (JSResponse) cx.newObject(scope, "Response",  
+      js_response = (JSResponse) cx.newObject(global, "Response",  
 					      new Object[] { result, null, null, null });
     }
     else {
-      js_response = (JSResponse) cx.newObject(scope, "Response",  
+      js_response = (JSResponse) cx.newObject(global, "Response",  
 					      new Object[] { 200, null, result, null });
     }
 
@@ -156,7 +147,7 @@ class Worker {
     response.unwrapResult();
 
     if (response.getResult() instanceof Node) {
-      handleTransformation(request, response, js_esxx, app, cx, scope);
+      handleTransformation(request, response, js_esxx, app, cx, global);
     }
 
     // Return response

@@ -1,17 +1,23 @@
 
 var started = new Date();
+var message = "Initialization code is executed only once.\n" +
+              "Edit or 'touch' any included file to force reinitialization.\n\n";
 
-esxx.debug.println("Initialization code is executed only once.");
-esxx.debug.println("Edit or 'touch' any included file to force reinitialization.");
-esxx.debug.println();
-
-function handleGet() {
+function handleGet(req) {
   var now = new Date();
 
-  esxx.debug.println("Request handler code is executed on every request.");
-  esxx.debug.println();
-  esxx.debug.println("The application was started on " + started);
-  esxx.debug.println("This request was processed on " + now);
+  if (message) {
+    // (Real code would protect this block with esxx.sync(), since
+    // several requests may be executing at once)
+
+    req.log.info(message);
+    message = null;
+  }
+
+  req.log.info("Request handler code is executed on every request.");
+  req.log.info("");
+  req.log.info("The application was started on " + started);
+  req.log.info("This request was processed on " + now);
 
   // Return a dummy XML document
   return <see-the-esxx-debug-log/>;

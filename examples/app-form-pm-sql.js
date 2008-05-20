@@ -20,7 +20,7 @@ function ProductManager.prototype.setProducts(products) {
     this.db.query("DROP TABLE products");
   }
   catch (e) {
-    esxx.debug.println("No previous 'products' table.");
+    esxx.log.info("No previous 'products' table.");
   }
 
   this.db.query("CREATE TABLE products (id INTEGER NOT NULL PRIMARY KEY, \

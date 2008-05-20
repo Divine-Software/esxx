@@ -8,10 +8,10 @@ function main() {
 }
 
 function handler(req) {
-  esxx.log.info("in handler()");
-  req.log.info("in handler #2");
+  esxx.log.debug("in handler()");
+  req.log.debug("in handler #2");
 
-  return "HEJ";
+  return <xml/>;
 }
 
 ?>
