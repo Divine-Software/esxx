@@ -23,6 +23,10 @@ import java.util.logging.*;
 
 public class SyslogHandler
   extends Handler {
+  public SyslogHandler() {
+    this(Thread.currentThread().getName());
+  }
+
   public SyslogHandler(String ident) {
     try {
       syslog = new Syslog(ident, 0, Syslog.LOG_DAEMON);
@@ -37,8 +41,25 @@ public class SyslogHandler
       return;
     }
 
-    String message = SYSLOG_FORMATTER.format(record);
-    int priority   = record.getLevel().intValue();
+    Formatter formatter = getFormatter();
+
+    if (formatter == null) {
+      formatter = new TrivialFormatter();
+      setFormatter(formatter);
+    }
+
+    String message;
+
+    try {
+      message = formatter.format(record);
+    }
+    catch (Exception ex) {
+      reportError(null, ex, ErrorManager.FORMAT_FAILURE);
+      return;
+    }
+
+    // Convert Java priority level to Syslog level
+    int priority = record.getLevel().intValue();
 
     if (priority >= Level.SEVERE.intValue()) {
       priority = Syslog.LOG_ERR;
@@ -68,7 +89,7 @@ public class SyslogHandler
     if (syslog == null) {
       return false;
     }
-    
+
     return super.isLoggable(record);
   }
 
@@ -80,45 +101,5 @@ public class SyslogHandler
     syslog = null;
   }
 
-  private static class SyslogFormatter 
-    extends Formatter {
-    public synchronized String format(LogRecord record) {
-      StringBuffer sb = new StringBuffer();
-
-      if (record.getSourceClassName() != null) {      
-	sb.append(record.getSourceClassName());
-      } 
-      else {
-	sb.append(record.getLoggerName());
-      }
-
-      if (record.getSourceMethodName() != null) {     
-	sb.append(": ");
-	sb.append(record.getSourceMethodName());
-      }
-
-      sb.append(": ");
-      sb.append(formatMessage(record));
-
-      if (record.getThrown() != null) {
-	try {
-	  StringWriter sw = new StringWriter();
-	  PrintWriter pw = new PrintWriter(sw);
-	  record.getThrown().printStackTrace(pw);
-	  pw.close();
-	  sb.append(": ");
-	  sb.append(sw.toString());
-	} 
-	catch (Exception ex) {
-	  // Never mind
-	}
-      }
-
-      return sb.toString();
-    }
-  }
-
-  private static final Formatter SYSLOG_FORMATTER = new SyslogFormatter();
   private Syslog syslog;
-  private boolean killSource;
 }

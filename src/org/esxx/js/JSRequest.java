@@ -53,6 +53,7 @@ public class JSRequest
       accept  = cx.newObject(scope);
       query   = cx.newObject(scope);
       args    = null;
+
       mimeHeaders = new MimeHeaders();
       acceptValueOf = new FunctionObject("valueOf", acceptValueOfMethod, accept);
 
@@ -88,6 +89,9 @@ public class JSRequest
 	  handleQueryHeader(value);
 	}
       }
+
+      logger  = (JSLogger) cx.newObject(scope, "Logger", new Object[] { 
+	  request.getLogger(), request.getProperties().getProperty("SCRIPT_NAME") });
 
       // Now parse the POST/PUT/etc. message
       parseMessage(request, cx, scope);
@@ -136,6 +140,11 @@ public class JSRequest
     }
 
 
+    public Scriptable jsGet_log() {
+      return logger;
+    }
+
+
     public Object jsGet_message() {
       return message;
     }
@@ -153,6 +162,8 @@ public class JSRequest
     private Scriptable accept;
     private Scriptable query;
     private Scriptable args;
+
+    private Scriptable logger;
 
     private Object message;
 

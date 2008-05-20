@@ -1,0 +1,23 @@
+<?esxx
+
+esxx.log.info("syslog.js started");
+
+function main() {
+  esxx.log.info("in main()");
+  return 0;
+}
+
+function handler(req) {
+  esxx.log.info("in handler()");
+  req.log.info("in handler #2");
+
+  return "HEJ";
+}
+
+?>
+
+<esxx xmlns="http://esxx.org/1.0/">
+  <handlers>
+    <http method="GET" handler="handler" />
+  </handlers>
+</esxx>

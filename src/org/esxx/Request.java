@@ -31,6 +31,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.logging.*;
+import org.esxx.util.TrivialFormatter;
 
 public abstract class Request {
     public Request(URL url, String[] command_line, Properties properties,
@@ -83,17 +84,32 @@ public abstract class Request {
 
     public synchronized Logger getLogger() {
       if (logger == null) {
+	if (formatter == null) {
+	  formatter = new TrivialFormatter();
+	}
+
 	logger = Logger.getAnonymousLogger();
 	logger.setUseParentHandlers(false);
-	logger.addHandler(new StreamHandler(error, SIMPLE_FORMATTER));
+	logger.addHandler(new ErrorHandler(error, formatter));
       }
 
       return logger;
     }
 
     private Logger logger;
-    private static final Formatter SIMPLE_FORMATTER = new SimpleFormatter();
+    private static Formatter formatter;
 
+    private class ErrorHandler 
+      extends StreamHandler {
+      ErrorHandler(OutputStream os, Formatter formatter) {
+	super(os, formatter);
+      }
+
+      @Override public void publish(LogRecord record) {
+	super.publish(record);
+	flush();
+      }
+    }
 
     public static Reader createReader(InputStream is, String content_type)
       throws java.io.UnsupportedEncodingException {
