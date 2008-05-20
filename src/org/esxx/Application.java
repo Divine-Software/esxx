@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 import javax.xml.stream.*;
 //import javax.xml.xpath.*;
 import org.esxx.js.JSGlobal;
@@ -187,7 +188,8 @@ public class Application {
 	if (logger.getHandlers().length == 0) {
 	  try {
 	    // No specific log handler configured in
-	    // jre/lib/logging.properties -- log to syslog
+	    // jre/lib/logging.properties -- log everything to syslog
+	    logger.setLevel(Level.ALL);
 	    logger.addHandler(new SyslogHandler("ESXX"));
 	  }
 	  catch (UnsupportedOperationException ex) {

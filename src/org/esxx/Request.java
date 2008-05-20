@@ -108,6 +108,7 @@ public abstract class Request {
       extends StreamHandler {
       ErrorHandler(OutputStream os, Formatter formatter) {
 	super(os, formatter);
+	setLevel(Level.ALL);
       }
 
       @Override public void publish(LogRecord record) {
