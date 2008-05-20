@@ -19,6 +19,7 @@
 package org.esxx.js;
 
 import org.esxx.Application;
+import org.esxx.Request;
 import java.util.logging.*;
 import org.mozilla.javascript.*;
 
@@ -28,10 +29,12 @@ public class JSLogger
     super();
   }
 
-  public JSLogger(Application app, Logger logger, String ident) {
+  public JSLogger(Application app, Request request, Logger logger, String ident) {
     super();
 
     this.app    = app;
+    this.req    = request;
+
     this.logger = logger;
     this.ident  = ident;
   }
@@ -41,29 +44,33 @@ public class JSLogger
 				     Function ctorObj,
 				     boolean inNewExpr) {
     Application app = null;
+    Request     req = null;
     Logger   logger = null;
     String    ident = null;
 
-    if (args.length >= 1 && args[0] instanceof Application) {
-      app = (Application) args[0];
-    }
-    else if (args.length >= 1 && args[0] instanceof Logger) {
-      logger = (Logger) args[0];
-    }
-    else if (args.length >= 1 && args[0] instanceof JSLogger) {
-      app    = ((JSLogger) args[0]).app;
-      logger = ((JSLogger) args[0]).logger;
-      ident  = ((JSLogger) args[0]).ident;
+    if (args.length >= 1) {
+      if (args[0] instanceof Application) {
+	app = (Application) args[0];
+      }
+      else if (args[0] instanceof Request) {
+	req = (Request) args[0];
+      }
+      else if (args[0] instanceof Logger) {
+	logger = (Logger) args[0];
+      }
+      else {
+	throw Context.reportRuntimeError("Invalid first argument");
+      }
     }
     else {
-      logger = Logger.getLogger(JSLogger.class.getName());
+      throw Context.reportRuntimeError("Missing argument");
     }
 
     if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
       ident = Context.toString(args[1]);
     }
 
-    return new JSLogger(app, logger, ident);
+    return new JSLogger(app, req, logger, ident);
   }
 
 
@@ -95,13 +102,22 @@ public class JSLogger
     lr.setSourceMethodName(null);
 
     if (logger == null) {
-      logger = app.getLogger();
+      if (app != null) {
+	logger = app.getLogger();
+      }
+      else if (req != null) {
+	logger = req.getLogger();
+      }
+      else {
+	throw new IllegalStateException("Expected non-null Application or Request object");
+      }
     }
 
     logger.log(lr);
   }
 
   private Application app;
+  private Request req;
   private Logger logger;
   private String ident;
 }
