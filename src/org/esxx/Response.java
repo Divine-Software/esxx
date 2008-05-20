@@ -39,33 +39,8 @@ public class Response  {
 
   public Response(int status, String content_type, Object result, Map<String, String> headers) {
     setStatus(status);
-    setResult(result);
-
-    if (resultObject != null && content_type == null) {
-      // Set default content-type, if missing
-      if (resultObject instanceof InputStream ||
-	  resultObject instanceof ByteArrayOutputStream ||
-	  resultObject instanceof ByteBuffer ||
-	  resultObject instanceof byte[]) {
-	content_type = "application/octet-stream";
-      }
-      else if (resultObject instanceof Reader ||
-	       resultObject instanceof String) {
-	content_type = "text/plain; charset=UTF-8";
-      }
-      else if (resultObject instanceof RenderedImage) {
-	content_type = "image/png";
-      }
-      else if (resultObject instanceof Node ||
-	       resultObject instanceof org.mozilla.javascript.xml.XMLObject) {
-	content_type = "application/xml";
-      }
-      else if (resultObject instanceof Scriptable) {
-	content_type = "application/json";
-      }
-    }
-
     setContentType(content_type);
+    setResult(result);
     httpHeaders = headers;
   }
 
@@ -83,6 +58,7 @@ public class Response  {
 
   public void setContentType(String content_type) {
     contentType = content_type;
+    guessContentType();
   }
 
   public Object getResult() {
@@ -91,6 +67,7 @@ public class Response  {
 
   public void setResult(Object result) {
     resultObject = result;
+    guessContentType();
   }
 
   public void unwrapResult() {
@@ -214,6 +191,35 @@ public class Response  {
     }
     
     return object;
+  }
+
+  private void guessContentType() {
+    if (resultObject != null && contentType == null) {
+      // Set default content-type, if missing
+      if (resultObject instanceof InputStream ||
+	  resultObject instanceof ByteArrayOutputStream ||
+	  resultObject instanceof ByteBuffer ||
+	  resultObject instanceof byte[]) {
+	contentType = "application/octet-stream";
+      }
+      else if (resultObject instanceof Reader ||
+	       resultObject instanceof String) {
+	contentType = "text/plain; charset=UTF-8";
+      }
+      else if (resultObject instanceof RenderedImage) {
+	contentType = "image/png";
+      }
+      else if (resultObject instanceof Node ||
+	       resultObject instanceof org.mozilla.javascript.xml.XMLObject) {
+	contentType = "application/xml";
+      }
+      else if (resultObject instanceof Scriptable) {
+	contentType = "application/json";
+      }
+      else {
+	contentType = "application/octet-stream";
+      }
+    }
   }
 
   private static Object jsToJSON(Object object, Context cx) {
