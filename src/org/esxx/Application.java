@@ -52,7 +52,7 @@ public class Application {
       this.esxx = esxx;
       baseURL = request.getURL();
       workingDirectory = request.getWD();
-      ident = baseURL.getPath().replaceAll("^.*/", "");
+      ident = baseURL.getPath().replaceAll("^.*/", "").replaceAll("\\.[^.]*", "");
 
       try {
 	workingDirectory = new File("").toURI().toURL();
@@ -180,7 +180,7 @@ public class Application {
 
     public synchronized Logger getLogger() {
       if (logger == null) {
-	String name  = Application.class.getName() + "." + ident.replaceAll("\\.[^.]*", "");
+	String name  = Application.class.getName() + "." + ident;
 
 	logger = Logger.getLogger(name);
 
