@@ -58,7 +58,9 @@ public class HTTPRequest
       httpExchange.sendResponseHeaders(response.getStatus(), 0);
 
       // Output body
-      response.writeResult(esxx, cx, httpExchange.getResponseBody());
+      OutputStream os = httpExchange.getResponseBody();
+      response.writeResult(esxx, cx, os);
+      os.close();
       httpExchange.close();
       return 0;
     }
