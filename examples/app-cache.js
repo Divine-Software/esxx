@@ -1,17 +1,18 @@
 
-var started = new Date();
-var message = "Initialization code is executed only once.\n" +
-              "Edit or 'touch' any included file to force reinitialization.\n\n";
+var started  = new Date();
+var firstrun = true;
 
 function handleGet(req) {
   var now = new Date();
 
-  if (message) {
-    // (Real code would protect this block with esxx.sync(), since
+  if (firstrun) {
+    // (Real code would protect this code with esxx.sync(), since
     // several requests may be executing at once)
+    firstrun = false;
 
-    req.log.info(message);
-    message = null;
+    req.log.info("Initialization code is executed only once.");
+    req.log.info("Edit or 'touch' any included file to force reinitialization.");
+    req.log.info("");
   }
 
   req.log.info("Request handler code is executed on every request.");
