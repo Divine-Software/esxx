@@ -95,7 +95,7 @@ public class JSLogger
       newLevel = Level.SEVERE;
     }
     else {
-      throw Context.reportRuntimeError("Invalid level");
+      throw Context.reportRuntimeError("Level should be 'debug', 'info', 'warn' or 'error'.");
     }
   }
 
