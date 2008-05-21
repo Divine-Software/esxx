@@ -39,15 +39,41 @@ public class JSGlobal
   }
 
   public JSESXX createJSESXX(Context cx, Request request, Application app) {
-    JSESXX js_esxx = (JSESXX) cx.newObject(this, "ESXX", new Object[] { app });
+    Object js_esxx = get("esxx", this);
 
-    put("esxx", this, js_esxx);
+    if (js_esxx == Scriptable.NOT_FOUND) {
+      js_esxx = cx.newObject(this, "ESXX", new Object[] { app });
 
-    return js_esxx;
+      put("esxx", this, js_esxx);
+    }
+
+    return (JSESXX) js_esxx;
   }
 
-  public void deleteJSESXX() {
-    delete("esxx");
+  public void disallowNewGlobals() {
+    globalsDisallowed = true;
+  }
+
+  public void put(String name, Scriptable start, Object value) {
+    if (globalsDisallowed) {
+      if (!has(name, start)) {
+	throw Context.reportRuntimeError("New global variables may only be created " +
+					 "during application start-up.");
+      }
+    }
+    
+    super.put(name, start, value);
+  }
+
+  public void put(int idx, Scriptable start, Object value) {
+    if (globalsDisallowed) {
+      if (!has(idx, start)) {
+	throw Context.reportRuntimeError("New global variables may only be created " +
+					 "during application start-up.");
+      }
+    }
+    
+    super.put(idx, start, value);
   }
 
   public static JSESXX getJSESXX(Context cx, Scriptable scope) {
@@ -65,4 +91,6 @@ public class JSGlobal
       return null;
     }
   }
+
+  boolean globalsDisallowed;
 }

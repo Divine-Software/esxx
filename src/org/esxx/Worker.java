@@ -49,11 +49,15 @@ class Worker {
       global = app.compile(cx);
 
       // Make the JSESXX object available as "esxx" in the global
-      // scope, so the set-up code has access to it.
+      // scope, so the set-up code has access to it. This call returns
+      // the old esxx variable, if already present.
       js_esxx = global.createJSESXX(cx, request, app);
 
       // Execute all <?esxx and <?esxx-import PIs, if not already done
       app.execute(cx, global, js_esxx);
+
+      // Prevent handler from adding global variables
+      global.disallowNewGlobals();
     }
 
     Object    result = null;
