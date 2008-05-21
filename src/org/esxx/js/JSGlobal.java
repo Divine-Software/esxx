@@ -41,7 +41,7 @@ public class JSGlobal
   public JSESXX createJSESXX(Context cx, Request request, Application app) {
     Object js_esxx = get("esxx", this);
 
-    if (js_esxx == Scriptable.NOT_FOUND) {
+    if (js_esxx instanceof JSESXX) {
       js_esxx = cx.newObject(this, "ESXX", new Object[] { app });
 
       put("esxx", this, js_esxx);
