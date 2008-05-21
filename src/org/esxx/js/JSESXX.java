@@ -194,17 +194,17 @@ public class JSESXX
 
       // The second (optional) argument is the function arguments
       if (args.length > 1 && args[1] != Context.getUndefinedValue()) {
-	cx.getElements((Scriptable) args[1]);
+	fargs = cx.getElements((Scriptable) args[1]);
       }
 
       // The third (optional) argument is the timeout in ms
       if (args.length > 2 && args[2] != Context.getUndefinedValue()) {
-	timeout = ((Number) args[2]).intValue();
+	timeout = (int) Context.toNumber(args[2]);
       }
 
       // The fourth (optional) argument is the parallel limit
       if (args.length > 3 && args[3] != Context.getUndefinedValue()) {
-	max_tasks = ((Number) args[3]).intValue();
+	max_tasks = (int) Context.toNumber(args[3]);
       }
 
       if (max_tasks <= 0) {
