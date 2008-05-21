@@ -7,7 +7,7 @@ incrCounter = esxx.sync(function() {
 });
 
 function handler(req) {
-  var cnt = incrCounter();
+  var cnt = this.incrCounter();
 
   req.log.info("New counter value: " + cnt);
 
