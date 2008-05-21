@@ -29,6 +29,8 @@ import org.apache.http.client.*;
 import org.apache.http.client.methods.*;
 import org.apache.http.conn.*;
 import org.apache.http.conn.params.*;
+import org.apache.http.conn.routing.*;
+import org.apache.http.conn.scheme.*;
 import org.apache.http.conn.ssl.*;
 import org.apache.http.cookie.*;
 import org.apache.http.entity.*;
@@ -190,7 +192,14 @@ public class HTTPHandler
       httpParams = new BasicHttpParams();
 
       HttpProtocolParams.setVersion(httpParams, HttpVersion.HTTP_1_1);
+
+      // No limits
       HttpConnectionManagerParams.setMaxTotalConnections(httpParams, Integer.MAX_VALUE);
+      HttpConnectionManagerParams.setMaxConnectionsPerRoute(httpParams, new ConnPerRoute() {
+	  public int getMaxForRoute(HttpRoute route) {
+	    return Integer.MAX_VALUE;
+	  }
+	});
     }
 
     return httpParams;
