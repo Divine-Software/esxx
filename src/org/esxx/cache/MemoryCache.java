@@ -56,12 +56,10 @@ public class MemoryCache
 
       synchronized (cachedApplications) {
 	app = cachedApplications.get(url_string);
-      }
 
-      if (app == null || checkApplicationURLs(request.getURL(), app)) {
-	app = new Application(esxx, request);
-
-	synchronized (cachedApplications) {
+	if (app == null || checkApplicationURLs(request.getURL(), app)) {
+	  cachedApplications.remove(url_string);
+	  app = new Application(esxx, request);
 	  cachedApplications.put(url_string, app);
 	}
       }
@@ -81,16 +79,12 @@ public class MemoryCache
 
 	synchronized (cachedStylesheets) {
 	  xslt = cachedStylesheets.get(url_string);
-	}
 
-	if (xslt == null || checkStylesheetURLs(url, xslt)) {
-	  xslt = new Stylesheet();
-	  xslt.xsltExecutable = esxx.compileStylesheet(esxx.openCachedURL(url), url,
-						       xslt.externalURLs, app);
-	}
-
-	if (xslt == null) {
-	  synchronized (cachedStylesheets) {
+	  if (xslt == null || checkStylesheetURLs(url, xslt)) {
+	    cachedStylesheets.remove(url_string);
+	    xslt = new Stylesheet();
+	    xslt.xsltExecutable = esxx.compileStylesheet(esxx.openCachedURL(url), url,
+							 xslt.externalURLs, app);
 	    cachedStylesheets.put(url_string, xslt);
 	  }
 	}
@@ -156,7 +150,7 @@ public class MemoryCache
       CacheBase.CachedURL cached = getCachedURL(url);
 
       synchronized (cached) {
-//	System.err.println("Checking URL " + url);
+// 	System.err.println("Checking URL " + url);
 	return updateCachedURL(cached);
       }
     }
