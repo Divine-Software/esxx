@@ -2,7 +2,7 @@
 
 
 <!-- The XML ProductManager implementation -->
-<?esxx-include href="app-form-pm-xml.js" ?>
+<?esxx-include href="app-form-xml-pm.js" ?>
 
 <!-- The web application -->
 <?esxx-include href="app-form.js" ?>
