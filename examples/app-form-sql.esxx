@@ -11,7 +11,10 @@
 var app = new App(new ProductManager(esxx.document.products));
 ?>
 
-<app>
+<app xmlns:xi="http://www.w3.org/2001/XInclude">
+  <!-- The URI that specifies our SQL database -->
+  <db uri="jdbc:derby:DerbyDB.app-form-sql;create=true"/>
+
   <increase min="0" def="10" max="100"/>
 
   <products>
@@ -34,9 +37,6 @@ var app = new App(new ProductManager(esxx.document.products));
     </product>
   </products>
 
-  <!-- The URI that specifies our SQL database -->
-  <db uri="jdbc:derby:DerbyDB.app-form-sql;create=true"/>
-
   <!-- ESXX application configuration -->
   <esxx xmlns="http://esxx.org/1.0/">
     <handlers>
@@ -47,12 +47,12 @@ var app = new App(new ProductManager(esxx.document.products));
 
       <!-- Map GET requests to *Form methods on the "app" JS object -->
       <http method="GET"
-            uri="/(?{method}\p{javaLetter}+)$"
+            uri="/(?{method}\p{javaLetter}+)"
             handler="app.{method}Form" />
 
       <!-- Map POST requests to *Action methods on the "app" JS object -->
       <http method="POST"
-            uri="/(?{method}\p{javaLetter}+)$"
+            uri="/(?{method}\p{javaLetter}+)"
             handler="app.{method}Action" />
 
       <!-- Redirect any other URI to /main -->
