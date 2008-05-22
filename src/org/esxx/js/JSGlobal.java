@@ -54,27 +54,28 @@ public class JSGlobal
     globalsDisallowed = true;
   }
 
-  public void put(String name, Scriptable start, Object value) {
-    if (globalsDisallowed) {
-      if (!has(name, start)) {
-	throw Context.reportRuntimeError("New global variables may only be created " +
-					 "during application start-up.");
-      }
-    }
+//   public void put(String name, Scriptable start, Object value) {
+//     if (globalsDisallowed) {
+//     System.err.println("Trying to put " + name);
+//       if (!super.has(name, start)) {
+// 	throw Context.reportRuntimeError("New global variables may only be created " +
+// 					 "during application start-up.");
+//       }
+//     }
     
-    super.put(name, start, value);
-  }
+//     super.put(name, start, value);
+//   }
 
-  public void put(int idx, Scriptable start, Object value) {
-    if (globalsDisallowed) {
-      if (!has(idx, start)) {
-	throw Context.reportRuntimeError("New global variables may only be created " +
-					 "during application start-up.");
-      }
-    }
+//   public void put(int idx, Scriptable start, Object value) {
+//     if (globalsDisallowed) {
+//       if (!super.has(idx, start)) {
+// 	throw Context.reportRuntimeError("New global variables may only be created " +
+// 					 "during application start-up.");
+//       }
+//     }
     
-    super.put(idx, start, value);
-  }
+//     super.put(idx, start, value);
+//   }
 
   public static JSESXX getJSESXX(Context cx, Scriptable scope) {
     // When an application is initialized, scope will be the JSGlobal
