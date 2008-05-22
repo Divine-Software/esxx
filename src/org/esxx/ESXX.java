@@ -495,6 +495,7 @@ public class ESXX {
       dc.setParameter("validate-if-schema", true);
       dc.setParameter("error-handler", eh);
       dc.setParameter("resource-resolver", new URIResolver(external_urls));
+      dc.setParameter("http://apache.org/xml/features/xinclude", true);
 
       return p.parse(in);
     }
