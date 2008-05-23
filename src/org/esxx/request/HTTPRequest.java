@@ -21,6 +21,7 @@ package org.esxx.request;
 import com.sun.net.httpserver.*;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.Executors;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
@@ -278,6 +279,16 @@ public class HTTPRequest
 	  }
 	}
       });
+
+    int http_threads = Integer.parseInt(esxx.settings().getProperty("esxx.http_threads", "0"));
+
+    if (http_threads == 0) {
+      // Use an unbounded thread pool
+      hs.setExecutor(Executors.newCachedThreadPool());
+    }
+    else {
+      hs.setExecutor(Executors.newFixedThreadPool(http_threads));
+    }
 
     hs.start();
 
