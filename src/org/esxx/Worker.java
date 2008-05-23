@@ -278,13 +278,14 @@ class Worker {
 
     // This is sad, but Saxon can only transform the DOM Document Element node.
     org.w3c.dom.DOMImplementation di = node.getOwnerDocument().getImplementation();
-    Document doc = di.createDocument(null, null, null);
+    Document doc = di.createDocument(null, "dummy", null);
     Node adopted = doc.adoptNode(node);
     if (adopted == null) {
       // Ugh ...
       adopted = doc.importNode(node, true);
     }
-    doc.appendChild(adopted);
+    //    doc.appendChild(adopted);
+    doc.replaceChild(adopted, doc.getDocumentElement());
 
     // Append the debug output while we're at it, and let the
     // stylesheet decide if it should be output or not.
