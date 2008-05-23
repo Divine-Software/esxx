@@ -144,7 +144,7 @@ public class ESXX {
 		    public Object run(Context cx) {
 		      // Enable all optimizations, but do count instructions
  		      cx.setOptimizationLevel(9);
-		      cx.setOptimizationLevel(-1);
+// 		      cx.setOptimizationLevel(-1);
 		      cx.setInstructionObserverThreshold((int) 100e6);
 
 		      // Provide a better mapping for primitive types on this context
