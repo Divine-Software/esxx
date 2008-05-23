@@ -220,6 +220,16 @@ public class ESXX {
     }
 
 
+    /** Returns the settings Properties object
+     *
+     *  @returns A Properties object.
+     */
+
+    public Properties settings() {
+      return settings;
+    }
+
+
     /** Adds a Request to the work queue.
      *
      *  Once the request has been executed, Request.finished will be
