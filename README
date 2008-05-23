@@ -85,9 +85,8 @@ These required components are distributed with ESXX:
 * XMLBeans ("xbean.jar" from the Apache project)
 
 You will probably want a database to, like PostgreSQL, MySQL or the
-included Derby ("derby.jar" from the Apache project; note that you
-can't use Derby in embedded mode when running multiple ESXX
-front-ends).
+included H2 ("h2.jar"; note that you can't use H2 in embedded mode
+when running multiple ESXX front-ends).
 
 
 How it works
