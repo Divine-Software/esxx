@@ -135,6 +135,14 @@ public class ESXX {
 	  }
 	};
 
+//       org.mozilla.javascript.tools.debugger.Main main = 
+// 	new org.mozilla.javascript.tools.debugger.Main("ESXX Debugger");
+//       main.doBreak();
+//       main.attachTo(contextFactory);
+//       main.pack();
+//       main.setSize(800, 600);
+//       main.setVisible(true);
+
       ThreadFactory tf = new ThreadFactory() {
 	  public Thread newThread(final Runnable r) {
 	    return new Thread() {
@@ -144,7 +152,7 @@ public class ESXX {
 		    public Object run(Context cx) {
 		      // Enable all optimizations, but do count instructions
  		      cx.setOptimizationLevel(9);
-// 		      cx.setOptimizationLevel(-1);
+//  		      cx.setOptimizationLevel(-1);
 		      cx.setInstructionObserverThreshold((int) 100e6);
 
 		      // Provide a better mapping for primitive types on this context
@@ -628,6 +636,9 @@ public class ESXX {
       return compiler.compile(new StreamSource(is, is_url.toString()));
     }
 
+    public ContextFactory getContextFactory() {
+      return contextFactory;
+    } 
 
 
     public static void copyReader(Reader r, Writer w)

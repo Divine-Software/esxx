@@ -54,10 +54,12 @@ public class Main {
     mode_opt.addOption(new Option("s", "script", false, "Force script mode."));
 
     opt.addOptionGroup(mode_opt);
-    opt.addOption("m", "method",    true,  "Override CGI request method");
-    opt.addOption("f", "file",      true,  "Override CGI request file");
-    opt.addOption("r", "http-root", true,  "Set HTTP root directory or file");
-    opt.addOption("?", "help",      false, "Show help");
+    opt.addOption("m", "method",          true,  "Override CGI request method");
+    opt.addOption("f", "file",            true,  "Override CGI request file");
+    opt.addOption("r", "http-root",       true,  "Set HTTP root directory or file");
+//     opt.addOption("d", "enable-debugger", false, "Enable esxx.debug()");
+//     opt.addOption("D", "start-debugger",  false, "Start debugger");
+    opt.addOption("?", "help",            false, "Show help");
 
     try {
       CommandLineParser parser = new GnuParser();
@@ -148,6 +150,8 @@ public class Main {
 	URL  url  = new URL("file", "", file.getAbsolutePath());
 
 	ScriptRequest sr = new ScriptRequest(url, script);
+	sr.enableDebugger(cmd.hasOption('d'));
+	sr.activateDebugger(cmd.hasOption('D'));
 	ESXX.Workload wl = esxx.addRequest(sr, sr, -1 /* no timeout for scripts */);
 
 	Integer rc = (Integer) wl.future.get();

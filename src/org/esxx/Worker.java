@@ -32,6 +32,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import net.sf.saxon.s9api.*;
 
+import org.mozilla.javascript.tools.debugger.*;
+
 class Worker {
   public Worker(ESXX esxx) {
     this.esxx = esxx;
@@ -59,6 +61,12 @@ class Worker {
       // Prevent handler from adding global variables
       global.disallowNewGlobals();
     }
+
+//     if (app.isDebuggerActivated()) {
+//       org.mozilla.javascript.tools.debugger.Main.mainEmbedded(esxx.getContextFactory(),
+// 							      global,
+// 							      app.getAppName());
+//     }
 
     Object    result = null;
     Exception error  = null;

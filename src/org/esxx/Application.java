@@ -54,6 +54,8 @@ public class Application {
       baseURL = request.getURL();
       workingDirectory = request.getWD();
       ident = baseURL.getPath().replaceAll("^.*/", "").replaceAll("\\.[^.]*", "");
+      debuggerEnabled   = request.isDebuggerEnabled();
+      debuggerActivated = request.isDebuggerActivated();
 
       try {
 	workingDirectory = new File("").toURI().toURL();
@@ -199,6 +201,14 @@ public class Application {
       }
 
       return logger;
+    }
+
+    public boolean isDebuggerEnabled() {
+      return debuggerEnabled;
+    }
+
+    public boolean isDebuggerActivated() {
+      return debuggerActivated;
     }
 
     public String getAppName() {
@@ -524,6 +534,9 @@ public class Application {
 
     private String ident;
     private Logger logger;
+
+    private boolean debuggerEnabled;
+    private boolean debuggerActivated;
 
     private JSGlobal applicationScope = null;
     private Scriptable mainDocument;
