@@ -86,7 +86,7 @@ public class WebRequest
     StringWriter sw = new StringWriter();
     PrintWriter out = new PrintWriter(sw);
 
-    out.println(htmlHeader);
+    out.println(esxx.getHTMLHeader());
     out.println("<h2>" + title + "</h2>");
     out.println("<h3>Unhandled exception: " + ex.getClass().getSimpleName() + "</h3>");
     if (ex instanceof ESXXException ||
@@ -105,7 +105,7 @@ public class WebRequest
       ex.printStackTrace(out);
       out.println("</pre>");
     }
-    out.println(htmlFooter);
+    out.println(esxx.getHTMLFooter());
     out.close();
 
     try {
@@ -152,35 +152,6 @@ public class WebRequest
   protected static String encodeXMLAttribute(String str) {
     return encodeXMLContent(str).replaceAll("'", "&apos;").replaceAll("\"", "&quot;");
   }
-
-  protected static final String htmlHeader =
-    "<?xml version='1.0' encoding='UTF-8'?>" +
-    "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' " +
-    "'http://www.w3.org/TR/2002/REC-xhtml1-20020801/DTD/xhtml1-strict.dtd'>" +
-    "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'><head>" +
-    "<title>ESXX - The friendly ECMAscript/XML Application Server</title>" +
-    "<link rel='alternale stylesheet' type='text/css' href='http://esxx.org/css/blackwhite.css' title='Black &amp; white'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/pastel.css' title='Pastel'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/plain.css' title='Plain'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/system.css' title='System default'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/amiga.css' title='Workbench 1.x' class='default'/>" +
-    "<script type='text/javascript' src='http://esxx.org/js/styleswitch.js' defer='true'></script>" +
-    "</head><body>" +
-    "<h1>ESXX - The friendly ECMAscript/XML Application Server</h1>";
-
-  protected static final String htmlFooter =
-    "<br /><br /><br />" +
-    "<table class='switcher'>" +
-    "<tr>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Black &amp; white\"); return false;'>Black &amp; white</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Pastel\"); return false;'>Pastel</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Plain\"); return false;'>Plain</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"System default\"); return false;'>System default</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Workbench 1.x\"); return false;'>Workbench 1.x</a></td>" +
-    "<td class='logo'><img src='http://esxx.org/gfx/logo.gif' alt='Leviticus, Divine Software' /></td>" +
-    "</tr>" +
-    "</table>" +
-    "</body></html>";
 
   private OutputStream outStream;
 }

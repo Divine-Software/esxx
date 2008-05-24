@@ -1,0 +1,2 @@
+#JVMARGS=-Desxx.resource-uri=http://example.com/esxx/
+ESXX_PATH="@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@:@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@/site"
