@@ -159,12 +159,12 @@ public class WebRequest
     "'http://www.w3.org/TR/2002/REC-xhtml1-20020801/DTD/xhtml1-strict.dtd'>" +
     "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'><head>" +
     "<title>ESXX - The friendly ECMAscript/XML Application Server</title>" +
-    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/blackwhite.css' title='Black &amp; white'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/caribbean.css' title='Caribbean'/>" +
+    "<link rel='alternale stylesheet' type='text/css' href='http://esxx.org/css/blackwhite.css' title='Black &amp; white'/>" +
+    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/pastel.css' title='Pastel'/>" +
     "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/plain.css' title='Plain'/>" +
     "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/system.css' title='System default'/>" +
-    "<link rel='stylesheet' type='text/css' href='http://esxx.org/css/amiga.css' title='Workbench 1.x' />" +
-    "<script type='text/javascript' src='http://esxx.org/js/styleswitch.js' defer='true' async='true'></script>" +
+    "<link rel='alternate stylesheet' type='text/css' href='http://esxx.org/css/amiga.css' title='Workbench 1.x' class='default'/>" +
+    "<script type='text/javascript' src='http://esxx.org/js/styleswitch.js' defer='true'></script>" +
     "</head><body>" +
     "<h1>ESXX - The friendly ECMAscript/XML Application Server</h1>";
 
@@ -173,7 +173,7 @@ public class WebRequest
     "<table class='switcher'>" +
     "<tr>" +
     "<td><a href='#' onclick='setActiveStyleSheet(\"Black &amp; white\"); return false;'>Black &amp; white</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Caribbean\"); return false;'>Caribbean</a></td>" +
+    "<td><a href='#' onclick='setActiveStyleSheet(\"Pastel\"); return false;'>Pastel</a></td>" +
     "<td><a href='#' onclick='setActiveStyleSheet(\"Plain\"); return false;'>Plain</a></td>" +
     "<td><a href='#' onclick='setActiveStyleSheet(\"System default\"); return false;'>System default</a></td>" +
     "<td><a href='#' onclick='setActiveStyleSheet(\"Workbench 1.x\"); return false;'>Workbench 1.x</a></td>" +
