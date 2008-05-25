@@ -38,6 +38,7 @@ import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.WrapFactory;
 import org.w3c.dom.*;
 import org.w3c.dom.bootstrap.*;
 import org.w3c.dom.ls.*;
@@ -156,7 +157,19 @@ public class ESXX {
 		      cx.setInstructionObserverThreshold((int) 100e6);
 
 		      // Provide a better mapping for primitive types on this context
-		      cx.getWrapFactory().setJavaPrimitiveWrap(false);
+		      WrapFactory wf = new WrapFactory() {
+			  public Object wrap(Context cx, Scriptable scope, 
+					     Object obj, Class static_type) {
+			    if (obj instanceof char[]) {
+			      return new String((char[]) obj);
+			    }
+			    else {
+			      return super.wrap(cx, scope, obj, static_type);
+			    }
+			  }
+			};
+		      wf.setJavaPrimitiveWrap(false);
+		      cx.setWrapFactory(wf);
 
 		      // Now call the Runnable
 		      r.run();
@@ -909,12 +922,12 @@ public class ESXX {
       "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/plain.css' title='Plain'/>" +
       "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/system.css' title='System default'/>" +
       "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/amiga.css' title='Workbench 1.x' class='default'/>" +
-      "<script type='text/javascript' src='@RESOURCE_URI@js/styleswitch.js' defer='true'></script>" +
+      "<script type='text/javascript' src='@RESOURCE_URI@js/styleswitch.js' defer='defer'></script>" +
       "</head><body>" +
       "<h1>ESXX - The friendly ECMAscript/XML Application Server</h1>";
 
     private static final String htmlFooter =
-      "<br /><br /><br />" +
+      "<p><br /><br /><br /></p>" +
       "<table class='switcher'>" +
       "<tr>" +
       "<td><a href='#' onclick='setActiveStyleSheet(\"Black &amp; white\"); return false;'>Black &amp; white</a></td>" +
