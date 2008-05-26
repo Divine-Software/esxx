@@ -8,11 +8,11 @@ yet powerful, XML Application Server written in Java (6) and utilizing
 FastCGI for web server communication.
 
 It's built around an E4X-enabled JavaScript run-time (Mozilla's
-Rhino), Java 6's JDBC API for SQL queries and JAXP API, providing the
-bytecode-translating XSLT stylesheet processor.
+Rhino), Java 6's JDBC API for SQL queries and the Saxon 9 XSLT 2.0
+processor.
 
 The JavaScript code has full access to all Java APIs, which means that
-anything that can be done using Java, can be done with ESXX too.
+anything that can be done using Java, can be done with ESXX.
 
 You can use it in anyway you want, but there are three main use-cases,
 presented here in order of increasing level of usefulness:
@@ -27,21 +27,18 @@ PI, you can instruct the run-time to apply an XSLT transformation to a
 document before it's sent to the client. JavaScript (and Java) can be
 used to enhance the capabilities of the XSLT processor.
 
-3) As a web service or web application server. ESXX can manage
-sessions using cookies and keep the sessions in a separate back-end
-service, allowing the ESXX run-time itself to be fully stateless and
-thus scalable.
+3) As a web service or web application server. 
 
 The intended work-flow goes like this:
 
 1a) An HTTP method handler in the ESXX run-time invokes a method in a
 JavaScript object, which performs all logic operations. This could,
-for example, include authentication, disk access, database queries or
-remote server communication using HTTP/Ice/SOAP etc. If the logic is
-complicated, you'll probably want to implement it in Java, instead of
-JavaScript, or as a remote service. The handler returns an XML
-document (in some unspecified format), that contains all data that is
-to be returned or presented to the client.
+for example, disk access, database queries or remote server
+communication using HTTP/Ice/SOAP etc. If the logic is complicated,
+you'll probably want to implement it in Java, instead of JavaScript,
+or as a remote service. The handler returns an XML document (in some
+unspecified format), that contains all data that is to be returned or
+presented to the client.
 
 1b) Alternatively, ESXX is simply invoked on a plain static file,
 containing an XML document (and one or more ESXX PIs). For example,
@@ -77,16 +74,24 @@ Requirements
 ************
 
 * Java 6
-* A web server supporting FastCGI, such as Apache or Lighttpd
+* A web server supporting FastCGI, such as Apache or Lighttpd (not
+  strictly required, but strongly recommended for production)
 
-These required components are distributed with ESXX:
+These required components are distributed with ESXX, packaged using
+One-JAR:
 
-* Rhino ("js.jar" from the Mozilla project)
-* XMLBeans ("xbean.jar" from the Apache project)
+* Commons CLI
+* H2
+* HtmlCleaner
+* HttpClient plus dependencies
+* JFast
+* JavaMail
+* Rhino
+* Saxon
 
-You will probably want a database to, like PostgreSQL, MySQL or the
-included H2 ("h2.jar"; note that you can't use H2 in embedded mode
-when running multiple ESXX front-ends).
+You will probably want a external database to, like PostgreSQL or
+MySQL, since you can't use H2 in embedded mode when running multiple
+ESXX front-ends).
 
 
 How it works
@@ -100,23 +105,17 @@ document loaded is added to it.
 
 3) All <?esxx-* ?> PIs are evaluated. [Compiled]
 
-4) If the element {http://esxx.org/1.0/}:esxx was found,
-the appropriate handler is invoked (arguments?).
+4) If the element {http://esxx.org/1.0/}:esxx was found, the
+appropriate handler is invoked.
 
 5) If there is an server-side XSL stylesheet installed:
 
  5a) The stylesheet is loaded and parsed as XML, validated if a DTD is
  present. [Cached, compiled]
 
- 5b) All new <?esxx-* ?> PIs from the stylesheet are
- evaluated. [Compiled]
-
- 5c) The result document from step 2 or 4 is transformed using the
- stylesheet. Extension elements in the form of "javascript:" URI's are
- evaluated as a post-processing step. The JavaScript function is
- called with an E4X XML node as argument, containing the extension
- elements attributes and contents, plus a boolean flag indicating if
- this is the start-tag or the end-tag.
+ 5b) The result document from step 1 or 4 is transformed using the
+ stylesheet. Extension functions in the form of "javascript:" URI's are
+ evaluated.
 
 6) That's it.
 
