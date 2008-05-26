@@ -1,0 +1,22 @@
+<?esxx 
+
+importPackage(java.awt);
+importPackage(java.awt.image);
+
+function get(req) {
+  var img = new BufferedImage(100, 32, BufferedImage.TYPE_4BYTE_ABGR);
+  var g2d = img.createGraphics();
+  
+  g2d.setColor(Color.RED);
+  g2d.drawString("Hello, World!", 0, 16);
+
+  return img;
+}
+
+?>
+
+<esxx xmlns="http://esxx.org/1.0/">
+    <handlers>
+      <http method="GET" handler="get" />
+    </handlers>
+</esxx>
