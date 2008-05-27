@@ -47,7 +47,7 @@ public class FILEHandler
       File dir = new File(uri);
 
       if (dir.exists() && dir.isDirectory()) {
-	Document result = createDirectoryListing(dir.listFiles());
+	Document result = createDirectoryListing(dir);
 
 	return ESXX.domToE4X(result, cx, thisObj);
       }
@@ -64,7 +64,7 @@ public class FILEHandler
     File file = new File(uri);
 
     Response.writeObject(data, type, params, esxx, cx, new FileOutputStream(file));
-    return createDirectoryListing(new File[] { file });
+    return ESXX.domToE4X(createDirectoryEntry(file), cx, thisObj);
   }
 
   @Override
@@ -93,14 +93,14 @@ public class FILEHandler
       Response.writeObject(data, type, params, esxx, cx, new FileOutputStream(file, true));
     }
 
-    return createDirectoryListing(new File[] { file });
+    return ESXX.domToE4X(createDirectoryEntry(file), cx, thisObj);
   }
 
-  @Override
-  public Object query(Context cx, Scriptable thisObj, Object[] args)
-    throws Exception {
-    return createDirectoryListing(new File[] { new File(uri) });
-  }
+//   @Override
+//   public Object query(Context cx, Scriptable thisObj, Object[] args)
+//     throws Exception {
+//     return createDirectoryListing(new File(uri));
+//   }
 
   @Override
   public Object remove(Context cx, Scriptable thisObj,
@@ -112,31 +112,48 @@ public class FILEHandler
   }
 
 
-  protected Document createDirectoryListing(File[] list) {
-    ESXX     esxx   = ESXX.getInstance();
-    Document result = esxx.createDocument("result");
-    Element  root   = result.getDocumentElement();
+  protected Document createDirectoryListing(File dir) {
+    ESXX     esxx     = ESXX.getInstance();
+    Document document = esxx.createDocument("directory");
+    Element  root     = document.getDocumentElement();
 
-    for (File f : list) {
-      Element element = null;
+    root.setAttributeNS(null, "uri", dir.toURI().toString());
 
-      if (f.isDirectory()) {
-	element = result.createElementNS(null, "directory");
-      }
-      else if (f.isFile()) {
-	element = result.createElementNS(null, "file");
-	addChild(element, "length", Long.toString(f.length()));
-      }
-
-      addChild(element, "name", f.getName());
-      addChild(element, "path", f.getPath());
-      addChild(element, "uri", f.toURI().toString());
-      addChild(element, "hidden", f.isHidden() ? "true" : "false");
-      addChild(element, "lastModified", Long.toString(f.lastModified()));
-      addChild(element, "id", Integer.toHexString(f.hashCode()));
-      root.appendChild(element);
+    for (File f : dir.listFiles()) {
+      root.appendChild(createDirectoryEntry(document, f));
     }
 
-    return result;
+    return document;
+  }
+
+  protected Document createDirectoryEntry(File f) {
+    ESXX     esxx     = ESXX.getInstance();
+    Document document = esxx.createDocument("tmp");
+    
+    document.replaceChild(createDirectoryEntry(document, f), 
+			  document.getDocumentElement());
+    return document;
+  }
+
+  protected Element createDirectoryEntry(Document document, File f) {
+    Element element = null;
+
+    if (f.isDirectory()) {
+      element = document.createElementNS(null, "directory");
+    }
+    else if (f.isFile()) {
+      element = document.createElementNS(null, "file");
+      addChild(element, "length", Long.toString(f.length()));
+    }
+
+    element.setAttributeNS(null, "uri", f.toURI().toString());
+
+    addChild(element, "name", f.getName());
+    //       addChild(element, "path", f.getPath());
+    addChild(element, "hidden", f.isHidden() ? "true" : "false");
+    addChild(element, "lastModified", Long.toString(f.lastModified()));
+    addChild(element, "id", Integer.toHexString(f.hashCode()));
+
+    return element;
   }
 }
