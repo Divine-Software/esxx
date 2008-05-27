@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+
+<?esxx
+var db = new URI("jdbc:h2:mem:wall");
+
+if (db.query("SELECT count(*) AS cnt " + 
+	     "FROM information_schema.tables " +
+	     "WHERE table_name = 'GUESTBOOK'").entry.cnt == 0) {
+  db.query("CREATE TABLE GUESTBOOK (name VARCHAR(32), message CLOB, date DATETIME);");
+  esxx.log.info("Created table GUESTBOOK");
+}
+
+function showMessages(req) {
+  return <wall>
+    {db.query("SELECT name, message, date FROM GUESTBOOK LIMIT 10", { $result: "entries" })}
+    <form/>
+  </wall>;
+}
+
+function addMessage(req) {
+  if (!req.query.name || !req.query.message) {
+    return <wall>
+      <error>Name and message must be non-empty.</error>
+      <form>
+        <name>{req.query.name}</name>
+        <message>{req.query.message}</message>
+      </form>
+    </wall>;
+  }
+
+  db.query("INSERT INTO GUESTBOOK(name, message, date) VALUES({name}, {message}, NOW());",
+	   req.query);
+  esxx.log.info(req.query.name + " wrote: " + req.query.message);
+
+  return [303, {Location: req.env.SCRIPT_NAME}];
+}
+?>
+
+<esxx xmlns="http://esxx.org/1.0/">
+  <handlers>
+    <http method="GET"  uri="/" handler="showMessages" />
+    <http method="POST" uri="/" handler="addMessage" />
+    <stylesheet href="wall.xslt" />
+  </handlers>
+</esxx>

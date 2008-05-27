@@ -1,0 +1,30 @@
+
+body {
+    color: black;
+    background: #e9e9e9;
+}
+
+table.msg {
+    border-collapse: collapse;
+    border: black 1px;
+
+    color: black;
+    background: #add8e6;
+    border: 1px solid black;
+}
+
+table.msg th {
+    color: white;
+    background: #507080;
+    text-align: left;
+}
+
+table.msg td {
+    border: solid black 1px;
+}
+
+.error {
+    color: red;
+    background: #cccccc;
+    border: solid black 2px;
+}
