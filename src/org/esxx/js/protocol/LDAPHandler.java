@@ -66,9 +66,9 @@ public class LDAPHandler
 
       Element entry = result.createElementNS(null, "entry");
 
-      entry.setAttribute("name", name);
-      entry.setAttribute("path", path);
-      entry.setAttribute("uri", euri.toString());
+//       entry.setAttributeNS(null, "name", name);
+//       entry.setAttributeNS(null, "path", path);
+      entry.setAttributeNS(null, "uri", euri.toString());
 
       for (NamingEnumeration<?> ae = sr.getAttributes().getAll(); ae.hasMore();) {
 	Attribute attr = (Attribute)ae.next();
