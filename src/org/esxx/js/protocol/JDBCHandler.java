@@ -90,7 +90,7 @@ public class JDBCHandler
 	}
 
 	while (rs.next()) {
-	  Element row = result.createElement(entry_name);
+	  Element row = result.createElementNS(null, entry_name);
 
 	  for (int i = 0; i < count; ++i) {
 	    addChild(row, names[i].toLowerCase(), rs.getString(i + 1));

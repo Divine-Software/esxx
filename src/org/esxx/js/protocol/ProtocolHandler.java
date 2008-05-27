@@ -71,7 +71,7 @@ public class ProtocolHandler {
     protected static void addChild(Element element, String name, String value) {
       Document document = element.getOwnerDocument();
 
-      Element e = document.createElement(name);
+      Element e = document.createElementNS(null, name);
       e.appendChild(document.createTextNode(value));
       element.appendChild(e);
     }

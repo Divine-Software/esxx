@@ -64,7 +64,7 @@ public class LDAPHandler
       URI    euri = new URI(uri.getScheme(), uri.getAuthority(),
 			    "/" + path, "?base", uri.getFragment());
 
-      Element entry = result.createElement("entry");
+      Element entry = result.createElementNS(null, "entry");
 
       entry.setAttribute("name", name);
       entry.setAttribute("path", path);

@@ -121,10 +121,10 @@ public class FILEHandler
       Element element = null;
 
       if (f.isDirectory()) {
-	element = result.createElement("directory");
+	element = result.createElementNS(null, "directory");
       }
       else if (f.isFile()) {
-	element = result.createElement("file");
+	element = result.createElementNS(null, "file");
 	addChild(element, "length", Long.toString(f.length()));
       }
 
