@@ -1,5 +1,13 @@
 <?xml version="1.0" ?>
 
+<esxx xmlns="http://esxx.org/1.0/">
+  <handlers>
+    <http method="GET"  uri="/" handler="showMessages" />
+    <http method="POST" uri="/" handler="addMessage" />
+    <stylesheet href="wall.xslt" />
+  </handlers>
+</esxx>
+
 <?esxx
 var db = new URI("jdbc:h2:mem:wall");
 
@@ -35,11 +43,3 @@ function addMessage(req) {
   return [303, {Location: req.env.SCRIPT_NAME}];
 }
 ?>
-
-<esxx xmlns="http://esxx.org/1.0/">
-  <handlers>
-    <http method="GET"  uri="/" handler="showMessages" />
-    <http method="POST" uri="/" handler="addMessage" />
-    <stylesheet href="wall.xslt" />
-  </handlers>
-</esxx>
