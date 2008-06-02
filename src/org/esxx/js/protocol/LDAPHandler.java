@@ -20,6 +20,7 @@ package org.esxx.js.protocol;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.Properties;
 import javax.naming.NamingEnumeration;
 import javax.naming.directory.*;
 import org.esxx.*;
@@ -50,11 +51,29 @@ public class LDAPHandler
 				       "' can only load 'text/xml'.");
     }
 
-    DirContext        ctx    = new InitialDirContext(getProperties(thisObj));
+    Properties p = jsuri.getParams(cx, uri);
+    Scriptable a = jsuri.getAuth(cx, uri, null);
+
+    if (a != null) {
+      p.setProperty(javax.naming.Context.SECURITY_PRINCIPAL, 
+		    Context.toString(a.get("username", a)));
+      p.setProperty(javax.naming.Context.SECURITY_CREDENTIALS, 
+		    Context.toString(a.get("password", a)));
+
+      if (a.has("mechanism", a)) {
+	p.setProperty(javax.naming.Context.SECURITY_AUTHENTICATION, 
+		      Context.toString(a.get("mechanism", a)));
+      }
+      else {
+	p.setProperty(javax.naming.Context.SECURITY_AUTHENTICATION, "simple");
+      }
+    }
+
+    DirContext ctx = new InitialDirContext(p);
     NamingEnumeration<?> answer = ctx.search(uri.toString(), "", null);
 
-    Document          result = esxx.createDocument("result");
-    Element           root   = result.getDocumentElement();
+    Document result = esxx.createDocument("result");
+    Element  root   = result.getDocumentElement();
 
     while (answer.hasMore()) {
       SearchResult sr = (SearchResult) answer.next();

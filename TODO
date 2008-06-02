@@ -3,3 +3,6 @@ MemCache:
  * client, esxx.cache
  * client, URI?
  * internal server?
+
+URI:
+ * {...} syntax to create new URIs.

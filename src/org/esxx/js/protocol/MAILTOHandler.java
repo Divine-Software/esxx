@@ -43,7 +43,7 @@ public class MAILTOHandler
 		     Object data, String type, HashMap<String,String> params)
     throws Exception {
     ESXX        esxx = ESXX.getInstance();
-    Properties props = getProperties(thisObj);
+    Properties props = jsuri.getParams(cx, uri);
     Session  session = Session.getInstance(props);
 
     String   specific = uri.getRawSchemeSpecificPart();

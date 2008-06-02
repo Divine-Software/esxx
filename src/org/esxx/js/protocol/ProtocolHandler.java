@@ -90,20 +90,20 @@ public class ProtocolHandler {
       return rc;
     }
 
-    protected static Properties getProperties(Scriptable obj) {
-      Properties properties = new Properties();
+//     protected static Properties getProperties(Scriptable obj) {
+//       Properties properties = new Properties();
 
-      for (Object id : ScriptableObject.getPropertyIds(obj)) {
-	if (id instanceof String) {
-	  String key   = (String) id;
-	  String value = Context.toString(ScriptableObject.getProperty(obj, key));
+//       for (Object id : ScriptableObject.getPropertyIds(obj)) {
+// 	if (id instanceof String) {
+// 	  String key   = (String) id;
+// 	  String value = Context.toString(ScriptableObject.getProperty(obj, key));
 
-	  properties.setProperty(key, value);
-	}
-      }
+// 	  properties.setProperty(key, value);
+// 	}
+//       }
 
-      return properties;
-    }
+//       return properties;
+//     }
 
     // This method is taken from org.mozilla.javascript.NativeGlobal
 

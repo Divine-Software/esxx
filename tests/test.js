@@ -15,13 +15,14 @@ MyApp.prototype.handleError = function(ex) {
 MyApp.prototype.handleGet = function(req) {
   req.log.debug("**** START GET HANDLER ****")
 
-  //    var ldap = new URI("ldap://ldap.blom.org/ou=People,dc=blom,dc=org??sub?(sn=Blom)");
-  //   var ldap = new URI("ldap://ldap.blom.org/ou=Groups,dc=blom,dc=org??sub");
+//   var ldap = new URI("ldap://ldap.blom.org/ou=People,dc=blom,dc=org??sub?(sn=Blom)");
+  // var ldap = new URI("ldap://ldap.blom.org/ou=Groups,dc=blom,dc=org??sub");
 
-  //   ldap["java.naming.security.authentication"] = "simple";
-  //   ldap["java.naming.security.principal"] = "uid=martin,ou=People,dc=blom,dc=org";
-  //   ldap["java.naming.security.credentials"] = "********";
-  //   req.log.info(ldap.load());
+//   URI.prototype.auth.push({
+//         username: "uid=martin,ou=People,dc=blom,dc=org",
+// 	password: "****", 
+// 	mechanism: "simple" });
+//   req.log.info(ldap.load());
 
   //     var db = new URI("jdbc:postgresql:esxx?user=esxx&password=secret");
     

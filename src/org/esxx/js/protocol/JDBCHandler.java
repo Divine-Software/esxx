@@ -41,7 +41,6 @@ public class JDBCHandler
     try {
       ESXX       esxx        = ESXX.getInstance();
       String     query       = Context.toString(args[0]);
-      Properties properties  = getProperties(thisObj);
       String     result_name = "result";
       String     entry_name  = "entry";
       Scriptable params      = null;
@@ -58,6 +57,14 @@ public class JDBCHandler
 	if ((o = params.get("$entry", params)) != Scriptable.NOT_FOUND) {
 	  entry_name = Context.toString(o);
 	}
+      }
+
+      Properties p = jsuri.getParams(cx, uri);
+      Scriptable a = jsuri.getAuth(cx, uri, null);
+
+      if (a != null) {
+	p.setProperty("username", Context.toString(a.get("username", a)));
+	p.setProperty("password", Context.toString(a.get("password", a)));
       }
 
       Connection db = DriverManager.getConnection(uri.toString(), properties);
