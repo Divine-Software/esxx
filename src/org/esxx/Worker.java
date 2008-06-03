@@ -45,7 +45,7 @@ class Worker {
     JSGlobal global;
     JSESXX js_esxx;
 
-    synchronized (app) {
+    synchronized (Worker.class) {
       // Compile all <?esxx and <?esxx-import PIs, if not already done.
       // compile() returns the application's global scope
       global = app.compile(cx);
