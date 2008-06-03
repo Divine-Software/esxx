@@ -67,7 +67,7 @@ public class JDBCHandler
 	p.setProperty("password", Context.toString(a.get("password", a)));
       }
 
-      Connection db = DriverManager.getConnection(uri.toString(), properties);
+      Connection db = DriverManager.getConnection(uri.toString(), p);
 
       Query q = new Query(query, db);
 
