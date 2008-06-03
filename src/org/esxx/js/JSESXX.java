@@ -174,23 +174,20 @@ public class JSESXX
       }
     }
 
-    public static Object[] jsFunction_parallel(Context cx, Scriptable thisObj,
-					       Object[] args, Function funcObj) {
-      ESXX esxx = ESXX.getInstance();
-      final Scriptable scope = funcObj.getParentScope();
+    public static Scriptable jsFunction_parallel(final Context cx, Scriptable thisObj,
+						 Object[] args, Function funcObj) {
+      Scriptable scope = funcObj.getParentScope();
 
-      Object[] tasks = null;
       Object[] fargs = Context.emptyArgs;
       int    timeout = Integer.MAX_VALUE;
       int  max_tasks = Integer.MAX_VALUE;
 
-      // The first argument in the workload array
+      // The first argument is the workload array
       if (args.length < 1 || !(args[0] instanceof NativeArray)) {
 	throw Context.reportRuntimeError("First argument must be an Array");
       }
-      else {
-	tasks = cx.getElements((NativeArray) args[0]);
-      }
+
+      final Object tasks[] = cx.getElements((NativeArray) args[0]);
 
       // The second (optional) argument is the function arguments
       if (args.length > 1 && args[1] != Context.getUndefinedValue()) {
@@ -211,79 +208,74 @@ public class JSESXX
 	throw Context.reportRuntimeError("Workload limit must be greater than 0.");
       }
 
-      ESXX.Workload[] workloads = new ESXX.Workload[tasks.length];
+      ESXX.Workload[] workloads   = new ESXX.Workload[tasks.length];
+      final Object[]  final_fargs = fargs;
 
-      // Submit workloads, limit if asked to
-      final Semaphore limit = new Semaphore(max_tasks, false);
-      final AtomicBoolean abort = new AtomicBoolean(false);
-
-      for (int i = 0; i < tasks.length && !abort.get(); ++i) {
-	if (tasks[i] instanceof Function) {
-	  try {
-	    limit.acquire();
+      fork(cx, workloads, new ForkedFunction() {
+	  public Object call(int idx) {
+	    if (tasks[idx] instanceof Function) {
+	      Function   func = (Function) tasks[idx];
+	      Scriptable thiz = func.getParentScope();
+	      return func.call(cx, thiz, thiz, final_fargs);
+	    }
+	    else {
+	      return Context.getUndefinedValue();
+	    }
 	  }
-	  catch (InterruptedException ex) {
-	    checkTimeout(cx);
-	    break;
-	  }
+      }, timeout, max_tasks);
 
-	  final Function func = (Function) tasks[i];
-	  final Object[] jarg = fargs;
+      return join(cx, scope, workloads);
+    }
 
-	  workloads[i] = esxx.addContextAction(cx, new ContextAction() {
-	      public Object run(Context cx) {
-		boolean fine = false;
 
-		try {
-		  Object res = func.call(cx, scope, scope, jarg);
-		  fine = true;
-		  return res;
-		}
-		finally {
-		  if (!fine) {
-		    abort.set(true);
-		  }
-
-		  limit.release();
-		}
-	      }
-	    }, timeout);
-	}
+    public static Scriptable jsFunction_map(final Context cx, Scriptable thisObj,
+					    final Object[] args, Function funcObj) {
+      // The first argument is the data array
+      if (args.length < 1 || !(args[0] instanceof NativeArray)) {
+	throw Context.reportRuntimeError("First argument must be an Array");
       }
 
-      Object[] result = new Object[tasks.length];
-      Object[] errors = new Object[tasks.length];
-      boolean  failed = false;
-
-      for (int i = 0; i < tasks.length; ++i) {
-	if (workloads[i] != null) {
-	  try {
-	    result[i] = workloads[i].future.get();
-	  }
-	  catch (ExecutionException ex) {
-	    result[i] = Context.getUndefinedValue();
-	    errors[i] = new WrappedException(ex);
-	    failed   = true;
-	  }
-	  catch (CancellationException ex) {
-	    result[i] = Context.getUndefinedValue();
-	    errors[i] = new WrappedException(new ESXXException.TimeOut());
-	    failed   = true;
-	  }
-	  catch (InterruptedException ex) {
-	    checkTimeout(cx);
-	  }
-	}
-	else {
-	  result[i] = tasks[i];
-	}
+      // The second argument is the function
+      if (args.length < 2 || !(args[1] instanceof Function)) {
+	throw Context.reportRuntimeError("Second argument must be a Function");
       }
 
-      if (failed) {
-	throw new JavaScriptException(cx.newArray(scope, errors), null, 0);
+      final Object   data[] = cx.getElements((NativeArray) args[0]);
+      final Function   func = (Function) args[1];
+      final Scriptable thiz = func.getParentScope();
+      int           timeout = Integer.MAX_VALUE;
+      int         max_tasks = Integer.MAX_VALUE;
+
+      // The third (optional) argument is the timeout in ms
+      if (args.length > 2 && args[2] != Context.getUndefinedValue()) {
+	timeout = (int) Context.toNumber(args[2]);
       }
 
-      return result;
+      // The fourth (optional) argument is the parallel limit
+      if (args.length > 3 && args[3] != Context.getUndefinedValue()) {
+	max_tasks = (int) Context.toNumber(args[3]);
+      }
+
+      if (max_tasks <= 0) {
+	throw Context.reportRuntimeError("Workload limit must be greater than 0.");
+      }
+
+      ESXX.Workload[] workloads = new ESXX.Workload[data.length];
+      final Object undefined    = Context.getUndefinedValue();
+
+      fork(cx, workloads, new ForkedFunction() {
+	  public Object call(int idx) {
+	    if (data[idx] != undefined) {
+	      Object fargs[] = { data[idx], idx, args[0] };
+	      return func.call(cx, thiz, thiz, fargs);
+	    }
+	    else {
+	      return undefined;
+	    }
+	  }
+      }, timeout, max_tasks);
+
+      return join(cx, thisObj, workloads);
     }
 
     public synchronized JSLogger jsGet_log() {
@@ -316,6 +308,93 @@ public class JSESXX
 
     public JSURI jsGet_location() {
       return location;
+    }
+
+
+    private interface ForkedFunction {
+      public Object call(int idx);
+    }
+
+
+    private static void fork(Context cx,
+			     ESXX.Workload[] workloads,
+			     final ForkedFunction ff,
+			     int timeout, int max_tasks) {
+      ESXX esxx = ESXX.getInstance();
+
+      // Submit workloads, limit if asked to
+      final Semaphore limit = new Semaphore(max_tasks, false);
+      final AtomicBoolean abort = new AtomicBoolean(false);
+
+      for (int i = 0; i < workloads.length && !abort.get(); ++i) {
+	try {
+	  limit.acquire();
+	}
+	catch (InterruptedException ex) {
+	  checkTimeout(cx);
+	  break;
+	}
+
+	final int idx = i;
+
+	workloads[i] = esxx.addContextAction(cx, new ContextAction() {
+	    public Object run(Context cx) {
+	      boolean fine = false;
+
+	      try {
+		Object res = ff.call(idx);
+		fine = true;
+		return res;
+	      }
+	      finally {
+		if (!fine) {
+		  abort.set(true);
+		}
+
+		limit.release();
+	      }
+	    }
+	  }, timeout);
+      }
+    }
+
+
+    private static Scriptable join(Context cx, Scriptable scope, 
+				   ESXX.Workload[] workloads) {
+      Object undefined = Context.getUndefinedValue();
+      Object[] result  = new Object[workloads.length];
+      Object[] errors  = new Object[workloads.length];
+      boolean  failed  = false;
+
+      for (int i = 0; i < workloads.length; ++i) {
+	if (workloads[i] != null) {
+	  try {
+	    result[i] = workloads[i].future.get();
+	  }
+	  catch (ExecutionException ex) {
+	    result[i] = undefined;
+	    errors[i] = new WrappedException(ex);
+	    failed   = true;
+	  }
+	  catch (CancellationException ex) {
+	    result[i] = undefined;
+	    errors[i] = new WrappedException(new ESXXException.TimeOut());
+	    failed   = true;
+	  }
+	  catch (InterruptedException ex) {
+	    checkTimeout(cx);
+	  }
+	}
+	else {
+	  result[i] = undefined;
+	}
+      }
+
+      if (failed) {
+	throw new JavaScriptException(cx.newArray(scope, errors), null, 0);
+      }
+
+      return cx.newArray(scope, result);
     }
 
     private Application app;
