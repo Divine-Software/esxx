@@ -18,7 +18,7 @@ function load() {
 
 function sleep(a, b, c) {
   esxx.log.info("sleep args: " + a + ", " + b + ", " + c);
-  java.lang.Thread.sleep(5000);
+  java.lang.Thread.sleep(1000);
   return true;
 }
 
