@@ -65,6 +65,7 @@ MACRO(ADD_RPM RPM_NAME)
         COMMAND ${CMAKE_COMMAND} -E echo "Group: ${PACKAGE_GROUP}" >> ${SPEC_FILE}
         COMMAND ${CMAKE_COMMAND} -E echo "Source: ${PROJECT_NAME}" >> ${SPEC_FILE}
         COMMAND ${CMAKE_COMMAND} -E echo "Packager: ${PACKAGE_MAINTAINER_NAME}" " <${PACKAGE_MAINTAINER_EMAIL}>" >> ${SPEC_FILE}
+        COMMAND ${CMAKE_COMMAND} -E echo "BuildArch: ${RPM_ARCHITECTURE}" >> ${SPEC_FILE}
         COMMAND ${CMAKE_COMMAND} -E echo "" >> ${SPEC_FILE}
         COMMAND ${CMAKE_COMMAND} -E echo "%description" >> ${SPEC_FILE}
         COMMAND ${CMAKE_COMMAND} -E echo "${PACKAGE_DESCRIPTION}" >> ${SPEC_FILE}
