@@ -38,6 +38,7 @@
   </target>
 
   <target name="dist" depends="jar" description="generate the distribution" >
+    <delete dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}"/>
     <copy todir="${dist.dir}">
       <fileset dir="" includes="LICENSE*,README"/>
