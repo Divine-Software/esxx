@@ -212,7 +212,7 @@ public class JSESXX
       final Object[]  final_fargs = fargs;
 
       fork(cx, workloads, new ForkedFunction() {
-	  public Object call(int idx) {
+	  public Object call(Context cx, int idx) {
 	    if (tasks[idx] instanceof Function) {
 	      Function   func = (Function) tasks[idx];
 	      Scriptable thiz = func.getParentScope();
@@ -264,7 +264,7 @@ public class JSESXX
       final Object undefined    = Context.getUndefinedValue();
 
       fork(cx, workloads, new ForkedFunction() {
-	  public Object call(int idx) {
+	  public Object call(Context cx, int idx) {
 	    if (data[idx] != undefined) {
 	      Object fargs[] = { data[idx], idx, args[0] };
 	      return func.call(cx, thiz, thiz, fargs);
@@ -312,7 +312,7 @@ public class JSESXX
 
 
     private interface ForkedFunction {
-      public Object call(int idx);
+      public Object call(Context cx, int idx);
     }
 
 
@@ -342,7 +342,7 @@ public class JSESXX
 	      boolean fine = false;
 
 	      try {
-		Object res = ff.call(idx);
+		Object res = ff.call(cx, idx);
 		fine = true;
 		return res;
 	      }
@@ -373,8 +373,12 @@ public class JSESXX
 	  }
 	  catch (ExecutionException ex) {
 	    result[i] = undefined;
-	    errors[i] = new WrappedException(ex);
+	    errors[i] = ex.getCause();
 	    failed   = true;
+
+	    if (!(errors[i] instanceof RhinoException)) {
+	      ex.printStackTrace();
+	    }
 	  }
 	  catch (CancellationException ex) {
 	    result[i] = undefined;
