@@ -71,11 +71,11 @@
   </target>
 
   <target name="http" depends="compile">
-    <echo message="Starting HTTP servier on port 8080 ..." level="info"/>
+    <echo message="Starting HTTP servier on port 7777 ..." level="info"/>
     <java classname="org.esxx.Main" classpathref="classpath" fork="true">
       <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
       <arg value="--http" />
-      <arg value="8080" />
+      <arg value="7777" />
     </java>
   </target>
 
