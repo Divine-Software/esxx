@@ -168,7 +168,7 @@ public class HTTPHandler
     }
 
     return cx.newObject(thisObj, "Response", new Object[] { 
-	result.status, result.contentType, result.object, hdr 
+	result.status, hdr, result.object, result.contentType
       });
   }
 
@@ -194,8 +194,8 @@ public class HTTPHandler
       HttpProtocolParams.setVersion(httpParams, HttpVersion.HTTP_1_1);
 
       // No limits
-      HttpConnectionManagerParams.setMaxTotalConnections(httpParams, Integer.MAX_VALUE);
-      HttpConnectionManagerParams.setMaxConnectionsPerRoute(httpParams, new ConnPerRoute() {
+      ConnManagerParams.setMaxTotalConnections(httpParams, Integer.MAX_VALUE);
+      ConnManagerParams.setMaxConnectionsPerRoute(httpParams, new ConnPerRoute() {
 	  public int getMaxForRoute(HttpRoute route) {
 	    return Integer.MAX_VALUE;
 	  }
