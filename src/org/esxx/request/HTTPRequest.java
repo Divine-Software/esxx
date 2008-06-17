@@ -33,10 +33,10 @@ import org.mozilla.javascript.*;
 public class HTTPRequest
   extends WebRequest {
 
-  public HTTPRequest(String root, String script_filename, String path_translated,
+  public HTTPRequest(URI root_uri, URI script_filename, URI path_translated,
 		     URL url, HttpExchange he)
     throws IOException {
-    super(url, null, createProperties(root, script_filename, path_translated, he),
+    super(url, null, createProperties(root_uri, script_filename, path_translated, he),
 	  he.getRequestBody(),
 	  System.err,
 	  null);
@@ -71,9 +71,9 @@ public class HTTPRequest
     }
   }
 
-  private static Properties createProperties(String root,
-					     String script_filename,
-					     String path_translated,
+  private static Properties createProperties(URI root_uri,
+					     URI script_filename,
+					     URI path_translated,
 					     HttpExchange he) {
     Properties p = new Properties();
     InetSocketAddress local  = he.getLocalAddress();
@@ -84,6 +84,11 @@ public class HTTPRequest
       query_string = "";
     }
 
+    String root        = root_uri.toString();
+    String script_name = script_filename.toString();
+    String path_info   = path_translated.toString().substring(script_name.length());
+    script_name = script_name.substring(root.length() - 1);
+
     p.setProperty("GATEWAY_INTERFACE", "CGI/1.1");
     p.setProperty("SERVER_SOFTWARE",   "ESXX/1.0");
     p.setProperty("REQUEST_METHOD",    he.getRequestMethod());
@@ -93,10 +98,10 @@ public class HTTPRequest
     p.setProperty("REMOTE_PORT",       "" + remote.getPort());
     p.setProperty("SERVER_ADDR",       local.getAddress().toString().replaceFirst("[^/]*/", ""));
     p.setProperty("SERVER_PORT",       "" + local.getPort());
-    p.setProperty("PATH_TRANSLATED",   path_translated);
-    p.setProperty("SCRIPT_FILENAME",   script_filename);
-    p.setProperty("PATH_INFO",         path_translated.substring(script_filename.length()));
-    p.setProperty("SCRIPT_NAME",       script_filename.substring(root.length()));
+    p.setProperty("PATH_TRANSLATED",   new File(path_translated).toString());
+    p.setProperty("SCRIPT_FILENAME",   new File(script_filename).toString());
+    p.setProperty("PATH_INFO",         path_info);
+    p.setProperty("SCRIPT_NAME",       script_name);
     p.setProperty("QUERY_STRING",      query_string);
 
     for (Map.Entry<String, List<String>> e : he.getRequestHeaders().entrySet()) {
@@ -243,9 +248,9 @@ public class HTTPRequest
 	      }
 
 	      if (code_url != null) {
-		HTTPRequest hr = new HTTPRequest(root,
-						 real.getAbsolutePath(),
-						 file.getAbsolutePath(),
+		HTTPRequest hr = new HTTPRequest(root_uri,
+						 real.toURI(),
+						 file.toURI(),
 						 code_url,
 						 he);
 		esxx.addRequest(hr, hr, 0);
