@@ -14,29 +14,14 @@ processor.
 The JavaScript code has full access to all Java APIs, which means that
 anything that can be done using Java, can be done with ESXX.
 
-You can use it in anyway you want, but there are three main use-cases,
-presented here in order of increasing level of usefulness:
-
-1) As a document validator. All documents loaded by the ESXX run-time
-are loaded as XML using full DTD validation and are then cached in
-memory. You might use it to ensure that your static web pages or
-published XML are fully valid.
-
-2) As a server-side XSLT processor. By using the <?esxx-stylesheet?>
-PI, you can instruct the run-time to apply an XSLT transformation to a
-document before it's sent to the client. JavaScript (and Java) can be
-used to enhance the capabilities of the XSLT processor.
-
-3) As a web service or web application server. 
-
 The intended work-flow goes like this:
 
 1a) An HTTP method handler in the ESXX run-time invokes a method in a
 JavaScript object, which performs all logic operations. This could,
 for example, disk access, database queries or remote server
-communication using HTTP/Ice/SOAP etc. If the logic is complicated,
-you'll probably want to implement it in Java, instead of JavaScript,
-or as a remote service. The handler returns an XML document (in some
+communication using HTTP/SOAP etc. If the logic is complicated, you'll
+probably want to implement it in Java, instead of JavaScript, or as a
+remote service. The handler returns an XML document (in some
 unspecified format), that contains all data that is to be returned or
 presented to the client.
 
@@ -65,9 +50,19 @@ you to design your web applications in this manner.
 License
 *******
 
-ESXX is available under the GPL version 3 license. It uses code
-licensed under the Apache License 2.0, the Mozilla Public License (1.0
-and 1.1), various BSD-like licenses and Sun's JavaMail.
+ESXX is available under the GNU GPL license, version 3 or later.
+
+However, as a special exception, this program is allowed to use
+APL2-licensed code from the Apache project, JavaMail from Sun, Rhino
+from the Mozilla project and Saxon by Michael Kay.
+
+Martin Blom reserves the right to extend the above list of exceptions.
+
+If you'd like to contribute code to this project, complete rights must
+be granted Martin Blom, since this project is also available under an
+non-GPL license, for a fee. (Note that this does not in any way
+restrict your rights when it comes to what you are allowed to do with
+the projects code.)
 
 
 Requirements
