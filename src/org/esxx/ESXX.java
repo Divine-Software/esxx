@@ -917,6 +917,7 @@ public class ESXX {
       "'http://www.w3.org/TR/2002/REC-xhtml1-20020801/DTD/xhtml1-strict.dtd'>" +
       "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'><head>" +
       "<title>ESXX - The friendly ECMAscript/XML Application Server</title>" +
+      "<link href='@RESOURCE_URI@favicon.ico' rel='shortcut icon' type='image/vnd.microsoft.icon'/>" +
       "<link rel='alternale stylesheet' type='text/css' href='@RESOURCE_URI@css/blackwhite.css' title='Black &amp; white'/>" +
       "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/pastel.css' title='Pastel'/>" +
       "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/plain.css' title='Plain'/>" +
@@ -928,7 +929,7 @@ public class ESXX {
 
     private static final String htmlFooter =
       "<p><br /><br /><br /></p>" +
-      "<table class='switcher'>" +
+      "<table id='switcher'>" +
       "<tr>" +
       "<td><a href='#' onclick='setActiveStyleSheet(\"Black &amp; white\"); return false;'>Black &amp; white</a></td>" +
       "<td><a href='#' onclick='setActiveStyleSheet(\"Pastel\"); return false;'>Pastel</a></td>" +
