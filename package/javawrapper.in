@@ -12,12 +12,8 @@ if [ ! -z "${JAVA_HOME}" ]; then
     JAVA=${JAVA_HOME}/bin/java
 fi
 
-if [ -f /etc/sysconfig/@PROJECT_NAME@ ]; then
-    . /etc/sysconfig/@PROJECT_NAME@
-fi
-
-if [ -f /etc/default/@PROJECT_NAME@ ]; then
-    . /etc/default/@PROJECT_NAME@
+if [ -f @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@ ]; then
+    . @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@
 fi
 
 
