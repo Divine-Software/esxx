@@ -39,7 +39,8 @@ ELSEIF (DPKG)
   SET (CPACK_DEBIAN_PACKAGE_SECTION web)
 ELSEIF (APPLE)
   SET (CONFDIR default)
-  SET (CPACK_GENERATOR  PackageMaker)
+#  SET (CPACK_GENERATOR  PackageMaker)
+  SET (CPACK_GENERATOR TGZ)
 ELSEIF (WIN32)
   # Plain ZIP package and Windows installer
   SET (CPACK_GENERATOR ZIP NSIS)
@@ -66,11 +67,16 @@ INCLUDE (Prefix)
 INCLUDE (CPack)
 
 # Build using ANT
-ADD_CUSTOM_TARGET(dist ALL COMMAND 
-		      ${ANT} -buildfile ${CMAKE_CURRENT_SOURCE_DIR}/build.xml 
-		             -Dbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build
-		             -Ddist.dir=${CMAKE_CURRENT_BINARY_DIR}/dist
-			     dist)
+ADD_CUSTOM_TARGET (dist ALL COMMAND 
+		   ${ANT} -buildfile ${CMAKE_CURRENT_SOURCE_DIR}/build.xml 
+		          -Dbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build
+		          -Ddist.dir=${CMAKE_CURRENT_BINARY_DIR}/dist
+			  dist)
+ADD_CUSTOM_TARGET (antclean COMMAND
+		   ${ANT} -buildfile ${CMAKE_CURRENT_SOURCE_DIR}/build.xml
+		          -Dbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build
+		          -Ddist.dir=${CMAKE_CURRENT_BINARY_DIR}/dist
+		    	   clean)
 
 IF (UNIX AND NOT WIN32)
   # Create init scripts and shell wrappers
