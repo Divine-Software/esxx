@@ -38,7 +38,7 @@ ELSEIF (DPKG)
   SET (CPACK_DEBIAN_PACKAGE_ARCHITECTURE all)
   SET (CPACK_DEBIAN_PACKAGE_SECTION web)
 ELSEIF (APPLE)
-  SET (CONFDIR default)
+  SET (CONFDIR defaults)
 #  SET (CPACK_GENERATOR  PackageMaker)
   SET (CPACK_GENERATOR TGZ)
 ELSEIF (WIN32)
@@ -80,16 +80,20 @@ ADD_CUSTOM_TARGET (antclean COMMAND
 
 IF (UNIX AND NOT WIN32)
   # Create init scripts and shell wrappers
-  IF (NOT APPLE)
+  IF (APPLE)
+    CONFIGURE_FILE(package/org.esxx.ESXX.plist.in 
+                   ${CMAKE_CURRENT_BINARY_DIR}/package/org.esxx.ESXX.plist @ONLY)
+    CONFIGURE_FILE(package/config.osx.in ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
+  ELSE (APPLE)
     CONFIGURE_FILE(package/initscript-esxx.in 
                    ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@ @ONLY)
     CONFIGURE_FILE(package/initscript-binfmt.in 
                    ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@-binfmt @ONLY)
-  ENDIF (NOT APPLE)
+    CONFIGURE_FILE(package/config.in ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
+  ENDIF (APPLE)
 
   CONFIGURE_FILE(package/javawrapper.in ${CMAKE_CURRENT_BINARY_DIR}/@PROJECT_NAME@ @ONLY)
   CONFIGURE_FILE(package/jswrapper.in ${CMAKE_CURRENT_BINARY_DIR}/@PROJECT_NAME@-js @ONLY)
-  CONFIGURE_FILE(package/config.in ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
 
   # Install binaries
   INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-js
@@ -99,12 +103,15 @@ IF (UNIX AND NOT WIN32)
 	  	    ${CMAKE_CURRENT_BINARY_DIR}/dist/esxx.jar 
            DESTINATION ${SBIN_INSTALL_DIR})
 
-  IF (NOT APPLE)
-    # Install init scripts
+  # Install init scripts
+  IF (APPLE)
+    INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/org.esxx.ESXX.plist
+             DESTINATION ${CMAKE_INSTALL_DIR}/Library/LaunchDaemons)
+  ELSE (APPLE)
     INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@
 		      ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@-binfmt
              DESTINATION ${SYSCONF_INSTALL_DIR}/init.d)
-  ENDIF (NOT APPLE)
+  ENDIF (APPLE)
 
   INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf
 	   DESTINATION ${SYSCONF_INSTALL_DIR}/${CONFDIR}

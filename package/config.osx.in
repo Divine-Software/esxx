@@ -1,0 +1,3 @@
+#JVMARGS=-Desxx.resource-uri=http://example.com/esxx/
+ESXX_PATH="@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@:@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@/site"
+JAVA=/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Home/bin/java
