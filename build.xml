@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <project name="esxx" default="compile">
-  <import file="exec-jar.xml"/>
+  <import file="lib/exec-jar.xml"/>
   <description>esxx build file</description>
 
   <property name="src.dir"     location="src"/>
