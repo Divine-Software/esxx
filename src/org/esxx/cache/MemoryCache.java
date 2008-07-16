@@ -19,6 +19,7 @@
 package org.esxx.cache;
 
 import org.esxx.*;
+import org.esxx.util.IO;
 
 import java.io.*;
 import java.net.URL;
@@ -106,7 +107,7 @@ public class MemoryCache
 
 //	System.err.println("Reloading modified URL " + cached);
 
-	ESXX.copyStream(is, os);
+	IO.copyStream(is, os);
 	cached.content = os.toByteArray();
 	return true;
       }

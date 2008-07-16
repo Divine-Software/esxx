@@ -22,6 +22,7 @@ import java.io.*;
 import java.net.*;
 import java.util.Properties;
 import org.esxx.*;
+import org.esxx.util.IO;
 import org.mozilla.javascript.*;
 
 public class WebRequest
@@ -52,7 +53,7 @@ public class WebRequest
   public Integer handleResponse(ESXX esxx, Context cx, Response response)
     throws Exception {
     // Output HTTP headers
-    final PrintWriter out = new PrintWriter(createWriter(outStream, "US-ASCII"));
+    final PrintWriter out = new PrintWriter(IO.createWriter(outStream, "US-ASCII"));
 
     out.println("Status: " + response.getStatus());
     out.println("Content-Type: " + response.getContentType(true));

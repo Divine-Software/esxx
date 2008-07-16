@@ -28,6 +28,7 @@ import java.net.URL;
 import javax.activation.FileTypeMap;
 import javax.activation.MimetypesFileTypeMap;
 import org.esxx.*;
+import org.esxx.util.IO;
 import org.mozilla.javascript.*;
 
 public class HTTPRequest
@@ -226,7 +227,7 @@ public class HTTPRequest
 		  else {
 		    he.getResponseHeaders().set("Content-Type", fileTypeMap.getContentType(file));
 		    he.sendResponseHeaders(200, file.length());
-		    ESXX.copyStream(new FileInputStream(file), he.getResponseBody());
+		    IO.copyStream(new FileInputStream(file), he.getResponseBody());
 		  }
 		}
 	      }

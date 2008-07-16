@@ -18,6 +18,8 @@
 
 package org.esxx;
 
+import org.esxx.util.IO;
+
 import java.awt.image.RenderedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -138,7 +140,7 @@ public class Response  {
       wbc.close();
     }
     else if (object instanceof InputStream) {
-      ESXX.copyStream((InputStream) object, out);
+      IO.copyStream((InputStream) object, out);
     }
     else if (object instanceof Reader) {
       // Write stream as-is, using the specified charset (if present)
@@ -150,7 +152,7 @@ public class Response  {
 
       Writer ow = new OutputStreamWriter(out, cs);
 
-      ESXX.copyReader((Reader) object, ow);
+      IO.copyReader((Reader) object, ow);
     }
     else if (object instanceof String) {
       // Write string as-is, using the specified charset (if present)

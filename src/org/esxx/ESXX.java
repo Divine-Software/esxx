@@ -665,31 +665,6 @@ public class ESXX {
     } 
 
 
-    public static void copyReader(Reader r, Writer w)
-      throws IOException {
-      char buffer[] = new char[8192];
-
-      int charsRead;
-
-      while ((charsRead = r.read(buffer)) != -1) {
-	w.write(buffer, 0, charsRead);
-      }
-
-      w.flush();
-    }
-
-    public static void copyStream(InputStream is, OutputStream os)
-      throws IOException {
-      byte buffer[] = new byte[8192];
-
-      int bytesRead;
-
-      while ((bytesRead = is.read(buffer)) != -1) {
-	os.write(buffer, 0, bytesRead);
-      }
-
-      os.flush();
-    }
 
     public static String parseMIMEType(String ct, HashMap<String,String> params) {
       String[] parts = ct.split(";");

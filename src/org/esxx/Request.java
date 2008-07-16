@@ -133,32 +133,6 @@ public abstract class Request {
       }
     }
 
-    public static Reader createReader(InputStream is, String content_type)
-      throws java.io.UnsupportedEncodingException {
-      HashMap<String, String> params = new HashMap<String, String>();
-      ESXX.parseMIMEType(content_type, params);
-      String cs = params.get("charset");
-
-      if (cs == null) {
-	cs = java.nio.charset.Charset.defaultCharset().name();
-      }
-
-      return new InputStreamReader(is, cs);
-    }
-
-    public static Writer createWriter(OutputStream os, String content_type)
-      throws java.io.UnsupportedEncodingException {
-      HashMap<String, String> params = new HashMap<String, String>();
-      ESXX.parseMIMEType(content_type, params);
-      String cs = params.get("charset");
-
-      if (cs == null) {
-	cs = java.nio.charset.Charset.defaultCharset().name();
-      }
-
-      return new OutputStreamWriter(os, cs);
-    }
-
     private URL streamURL;
     private URL workingDirectory;
     private String[] args;

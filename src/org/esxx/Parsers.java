@@ -18,6 +18,7 @@
 
 package org.esxx;
 
+import org.esxx.util.IO;
 import org.esxx.xmtp.MIMEParser;
 
 import java.io.ByteArrayOutputStream;
@@ -48,7 +49,7 @@ class Parsers {
 	      throws IOException, org.xml.sax.SAXException {
 	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-	      ESXX.copyStream(is, bos);
+	      IO.copyStream(is, bos);
 
 	      return java.nio.ByteBuffer.wrap(bos.toByteArray());
 	    }
@@ -68,7 +69,7 @@ class Parsers {
 	    }
 
 	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	    ESXX.copyStream(is, bos);
+	    IO.copyStream(is, bos);
 
 	    try {
 	      JSONTokener tok = new JSONTokener(bos.toString(cs));
@@ -253,7 +254,7 @@ class Parsers {
 	      }
 
 	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	      ESXX.copyStream(is, bos);
+	      IO.copyStream(is, bos);
 	      return bos.toString(cs);
 	    }
 	});

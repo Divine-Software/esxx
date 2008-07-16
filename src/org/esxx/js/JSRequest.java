@@ -19,6 +19,7 @@
 package org.esxx.js;
 
 import org.esxx.*;
+import org.esxx.util.IO;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
@@ -356,7 +357,7 @@ public class JSRequest
 	  if ("application/x-www-form-urlencoded".equals(ct)) {
 	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
 	    
-	    ESXX.copyStream(request.getInputStream(), bos);
+	    IO.copyStream(request.getInputStream(), bos);
 	    handleQueryHeader(bos.toString("UTF-8"));
 	  }
 	  else {

@@ -30,6 +30,7 @@ import javax.xml.stream.*;
 import org.esxx.js.JSGlobal;
 import org.esxx.js.JSESXX;
 import org.esxx.js.JSURI;
+import org.esxx.util.IO;
 import org.esxx.util.RequestMatcher;
 import org.esxx.util.SyslogHandler;
 import org.mozilla.javascript.Context;
@@ -361,7 +362,7 @@ public class Application {
 	if (c == null) {
 	  ByteArrayOutputStream os = new ByteArrayOutputStream();
 
-	  ESXX.copyStream(is, os);
+	  IO.copyStream(is, os);
 	  c = addCode(url, 1, os.toString());
 	}
 
