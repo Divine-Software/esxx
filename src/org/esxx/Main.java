@@ -125,10 +125,9 @@ public class Main {
 	}
 
 	if (cmd.hasOption('f')) {
-	  String file = cmd.getOptionValue('f');
+	  File file = new File(cmd.getOptionValue('f'));
 
-	  cgi.setProperty("PATH_TRANSLATED", new File(file).getAbsolutePath());
-	  cgi.setProperty("PATH_INFO", file);
+	  cgi.setProperty("PATH_TRANSLATED", file.getAbsolutePath());
 	}
 
 	if (cgi.getProperty("REQUEST_METHOD") == null) {
