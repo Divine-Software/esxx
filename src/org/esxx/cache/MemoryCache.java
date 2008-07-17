@@ -52,13 +52,13 @@ public class MemoryCache
 
     public Application getCachedApplication(Request request)
       throws IOException {
-      String url_string = request.getAppFile().toString();
+      String url_string = request.getScriptFilename().toString();
       Application app;
 
       synchronized (cachedApplications) {
 	app = cachedApplications.get(url_string);
 
-	if (app == null || checkApplicationURLs(request.getAppFile().toURL(), app)) {
+	if (app == null || checkApplicationURLs(request.getScriptFilename().toURL(), app)) {
 	  cachedApplications.remove(url_string);
 	  app = new Application(esxx, request);
 	  cachedApplications.put(url_string, app);

@@ -362,7 +362,7 @@ public class JSRequest
 	  }
 	  else {
 	    message = esxx.parseStream(ct, params, request.getInputStream(), 
-	                               request.getAppFile().toURL(),
+	                               request.getScriptFilename().toURL(),
 				       null,
 				       new java.io.PrintWriter(request.getDebugWriter()),
 				       cx, scope);

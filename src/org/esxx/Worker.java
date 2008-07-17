@@ -84,7 +84,7 @@ class Worker {
       }
       else if (app.hasHandlers()) {
 	String request_method = request.getProperties().getProperty("REQUEST_METHOD");
-	String path_info = "/" + request.getPathURI().toString();
+	String path_info = "/" + request.getPathInfo().toString();
 
 	if (path_info == null || path_info.isEmpty()) {
 	  path_info = "/";
@@ -132,7 +132,7 @@ class Worker {
 
     // No error or error handled: Did we get a valid result?
     if (result == null || result == Context.getUndefinedValue()) {
-      throw new ESXXException("No result from '" + request.getAppFile() + "'");
+      throw new ESXXException("No result from '" + request.getScriptFilename() + "'");
     }
 
     JSResponse js_response;

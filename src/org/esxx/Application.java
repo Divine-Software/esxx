@@ -52,7 +52,7 @@ public class Application {
       throws IOException {
 
       this.esxx = esxx;
-      baseURL = request.getAppFile().toURL();
+      baseURL = request.getScriptFilename().toURL();
       workingDirectory = request.getWD().toURL();
       ident = baseURL.getPath().replaceAll("^.*/", "").replaceAll("\\.[^.]*", "");
       debuggerEnabled   = request.isDebuggerEnabled();

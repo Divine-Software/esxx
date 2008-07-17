@@ -26,10 +26,10 @@ import java.util.logging.*;
 import org.esxx.util.TrivialFormatter;
 
 public abstract class Request {
-    public Request(URI app_file, String[] command_line, Properties properties,
+    public Request(URI script_filename, String[] command_line, Properties properties,
 		   InputStream in, OutputStream error)
       throws IOException {
-      this.appFile    = app_file;
+      scriptFilename  = script_filename;
       this.args       = command_line != null ? command_line : new String[] {};
       this.in         = in;
       this.debug      = new StringWriter();
@@ -40,7 +40,25 @@ public abstract class Request {
       workingDirectory = new File("").toURI();
 
       URI path_translated = new File(properties.getProperty("PATH_TRANSLATED")).toURI();
-      this.pathURI = appFile.relativize(path_translated);
+      pathInfo = scriptFilename.relativize(path_translated);
+
+
+      String req_uri = properties.getProperty("REQUEST_URI");
+
+      if (req_uri == null) {
+	// Fall back to PATH_INFO (it might work too)
+	req_uri = properties.getProperty("PATH_INFO");
+      }
+      
+      scriptName = null;
+
+      if (req_uri != null && req_uri.endsWith(pathInfo.toString())) {
+	try {
+	  scriptName = new URI(req_uri.substring(0, (req_uri.length() - 
+						     pathInfo.toString().length())));
+	}
+	catch (java.net.URISyntaxException ex) {}
+      }
     }
 
     public void enableDebugger(boolean enabled) {
@@ -59,12 +77,16 @@ public abstract class Request {
       return debuggerActivated;
     }
 
-    public URI getAppFile() {
-      return appFile;
+    public URI getScriptFilename() {
+      return scriptFilename;
     }
 
-    public URI getPathURI() {
-      return pathURI;
+    public URI getScriptName() {
+      return scriptName;
+    }
+
+    public URI getPathInfo() {
+      return pathInfo;
     }
 
     public URI getWD() {
@@ -134,8 +156,9 @@ public abstract class Request {
       }
     }
 
-    private URI appFile;
-    private URI pathURI;
+    private URI scriptFilename;
+    private URI scriptName;
+    private URI pathInfo;
     private URI workingDirectory;
     private String[] args;
     private InputStream in;

@@ -38,7 +38,7 @@ public class WebRequest
 
   @Override
   public URI getWD() {
-    URI main = super.getAppFile();
+    URI main = super.getScriptFilename();
 
     return new File(main).getParentFile().toURI();
   }
