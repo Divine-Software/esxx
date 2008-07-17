@@ -19,7 +19,7 @@
 package org.esxx;
 
 import java.io.*;
-import java.net.URL;
+import java.net.URI;
 import java.util.Properties;
 import org.apache.commons.cli.*;
 import org.esxx.request.*;
@@ -146,9 +146,8 @@ public class Main {
       }
       else if (script != null && script.length != 0) {
 	File file = new File(script[0]);
-	URL  url  = new URL("file", "", file.getAbsolutePath());
 
-	ScriptRequest sr = new ScriptRequest(url, script);
+	ScriptRequest sr = new ScriptRequest(file.toURI(), script);
 	sr.enableDebugger(cmd.hasOption('d'));
 	sr.activateDebugger(cmd.hasOption('D'));
 	ESXX.Workload wl = esxx.addRequest(sr, sr, -1 /* no timeout for scripts */);

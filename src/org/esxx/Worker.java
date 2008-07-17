@@ -132,7 +132,7 @@ class Worker {
 
     // No error or error handled: Did we get a valid result?
     if (result == null || result == Context.getUndefinedValue()) {
-      throw new ESXXException("No result from '" + request.getURL() + "'");
+      throw new ESXXException("No result from '" + request.getAppFile() + "'");
     }
 
     JSResponse js_response;

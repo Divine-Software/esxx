@@ -19,17 +19,17 @@
 package org.esxx;
 
 import java.io.*;
-import java.net.URL;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.logging.*;
 import org.esxx.util.TrivialFormatter;
 
 public abstract class Request {
-    public Request(URL url, String[] command_line, Properties properties,
+    public Request(URI app_file, String[] command_line, Properties properties,
 		   InputStream in, OutputStream error)
       throws IOException {
-      streamURL       = url;
+      this.appFile    = app_file;
       this.args       = command_line != null ? command_line : new String[] {};
       this.in         = in;
       this.debug      = new StringWriter();
@@ -37,13 +37,7 @@ public abstract class Request {
       this.errorWriter = new OutputStreamWriter(error);
       this.properties = properties;
 
-      try {
-	workingDirectory = new File("").toURI().toURL();
-      }
-      catch (java.net.MalformedURLException ex) {
-	throw new IOException("Unable to get current working directory as an URI: "
-			      + ex.getMessage(), ex);
-      }
+      workingDirectory = new File("").toURI();
     }
 
     public void enableDebugger(boolean enabled) {
@@ -62,11 +56,11 @@ public abstract class Request {
       return debuggerActivated;
     }
 
-    public URL getURL() {
-      return streamURL;
+    public URI getAppFile() {
+      return appFile;
     }
 
-    public URL getWD() {
+    public URI getWD() {
       return workingDirectory;
     }
 
@@ -133,8 +127,8 @@ public abstract class Request {
       }
     }
 
-    private URL streamURL;
-    private URL workingDirectory;
+    private URI appFile;
+    private URI workingDirectory;
     private String[] args;
     private InputStream in;
     private StringWriter debug;

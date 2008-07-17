@@ -26,9 +26,9 @@ public class ScriptRequest
   extends Request
   implements ESXX.ResponseHandler {
 
-  public ScriptRequest(java.net.URL url, String[] cmdline)
+  public ScriptRequest(java.net.URI app_file, String[] cmdline)
     throws IOException {
-    super(url, cmdline, new java.util.Properties(),
+    super(app_file, cmdline, new java.util.Properties(),
 	  System.in,
 	  System.err);
   }

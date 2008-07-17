@@ -361,7 +361,8 @@ public class JSRequest
 	    handleQueryHeader(bos.toString("UTF-8"));
 	  }
 	  else {
-	    message = esxx.parseStream(ct, params, request.getInputStream(), request.getURL(),
+	    message = esxx.parseStream(ct, params, request.getInputStream(), 
+	                               request.getAppFile().toURL(),
 				       null,
 				       new java.io.PrintWriter(request.getDebugWriter()),
 				       cx, scope);

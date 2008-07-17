@@ -52,19 +52,11 @@ public class Application {
       throws IOException {
 
       this.esxx = esxx;
-      baseURL = request.getURL();
-      workingDirectory = request.getWD();
+      baseURL = request.getAppFile().toURL();
+      workingDirectory = request.getWD().toURL();
       ident = baseURL.getPath().replaceAll("^.*/", "").replaceAll("\\.[^.]*", "");
       debuggerEnabled   = request.isDebuggerEnabled();
       debuggerActivated = request.isDebuggerActivated();
-
-      try {
-	workingDirectory = new File("").toURI().toURL();
-      }
-      catch (java.net.MalformedURLException ex) {
-	throw new IOException("Unable to get current working directory as an URI: "
-			      + ex.getMessage(), ex);
-      }
 
       xmlInputFactory = XMLInputFactory.newInstance();
 

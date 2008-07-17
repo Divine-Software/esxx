@@ -29,25 +29,18 @@ public class WebRequest
   extends Request
   implements ESXX.ResponseHandler {
 
-  public WebRequest(URL url, String[] command_line, Properties properties,
+  public WebRequest(URI app_file, String[] command_line, Properties properties,
 		    InputStream in, OutputStream error, OutputStream out)
     throws IOException {
-    super(url, command_line, properties, in, error);
+    super(app_file, command_line, properties, in, error);
     outStream = out;
   }
 
   @Override
-  public URL getWD() {
-    try {
-      URI main = super.getURL().toURI();
+  public URI getWD() {
+    URI main = super.getAppFile();
 
-      return new File(main).getParentFile().toURI().toURL();
-    }
-    catch (Exception ex) {
-      // Should not happen. Fall back to super method if it does.
-    }
-
-    return super.getWD();
+    return new File(main).getParentFile().toURI();
   }
 
   public Integer handleResponse(ESXX esxx, Context cx, Response response)
@@ -120,26 +113,20 @@ public class WebRequest
     }
   }
 
-  protected static URL createURL(Properties headers)
+  protected static URI createURL(Properties headers)
     throws IOException {
-    try {
-      File file = new File(headers.getProperty("PATH_TRANSLATED"));
+    File file = new File(headers.getProperty("PATH_TRANSLATED"));
 
-      while (file != null && !file.exists()) {
-	file = file.getParentFile();
-      }
-
-      if (file.isDirectory()) {
-	throw new IOException("Unable to find a file in path "
-			      + headers.getProperty("PATH_TRANSLATED"));
-      }
-
-      return new URL("file", "", file.getAbsolutePath());
+    while (file != null && !file.exists()) {
+      file = file.getParentFile();
     }
-    catch (MalformedURLException ex) {
-      ex.printStackTrace();
-      return null;
+
+    if (file.isDirectory()) {
+      throw new IOException("Unable to find a file in path "
+                            + headers.getProperty("PATH_TRANSLATED"));
     }
+
+    return file.toURI();
   }
 
   protected static String encodeXMLContent(String str) {

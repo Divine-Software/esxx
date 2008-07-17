@@ -24,7 +24,6 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URL;
 import javax.activation.FileTypeMap;
 import javax.activation.MimetypesFileTypeMap;
 import org.esxx.*;
@@ -35,9 +34,9 @@ public class HTTPRequest
   extends WebRequest {
 
   public HTTPRequest(URI root_uri, URI script_filename, URI path_translated,
-		     URL url, HttpExchange he)
+		     URI app_file, HttpExchange he)
     throws IOException {
-    super(url, null, createProperties(root_uri, script_filename, path_translated, he),
+    super(app_file, null, createProperties(root_uri, script_filename, path_translated, he),
 	  he.getRequestBody(),
 	  System.err,
 	  null);
@@ -157,7 +156,7 @@ public class HTTPRequest
 	      throw new FileNotFoundException("Not Found");
 	    }
 	    else {
-	      URL code_url = null;
+	      URI app_file = null;
 
 	      if (file.exists()) {
 		if (file.isDirectory()) {
@@ -222,7 +221,7 @@ public class HTTPRequest
 		}
 		else {
 		  if (fileTypeMap.getContentType(file).equals("application/x-esxx+xml")) {
-		    code_url = file.toURI().toURL();
+		    app_file = file.toURI();
 		  }
 		  else {
 		    he.getResponseHeaders().set("Content-Type", fileTypeMap.getContentType(file));
@@ -245,14 +244,14 @@ public class HTTPRequest
 		  throw new FileNotFoundException("Only ESXX files are directories");
 		}
 
-		code_url = real.toURI().toURL();
+		app_file = real.toURI();
 	      }
 
-	      if (code_url != null) {
+	      if (app_file != null) {
 		HTTPRequest hr = new HTTPRequest(root_uri,
 						 real.toURI(),
 						 file.toURI(),
-						 code_url,
+						 app_file,
 						 he);
 		esxx.addRequest(hr, hr, 0);
 		he = null;
