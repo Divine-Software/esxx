@@ -38,6 +38,9 @@ public abstract class Request {
       this.properties = properties;
 
       workingDirectory = new File("").toURI();
+
+      URI path_translated = new File(properties.getProperty("PATH_TRANSLATED")).toURI();
+      this.pathURI = appFile.relativize(path_translated);
     }
 
     public void enableDebugger(boolean enabled) {
@@ -58,6 +61,10 @@ public abstract class Request {
 
     public URI getAppFile() {
       return appFile;
+    }
+
+    public URI getPathURI() {
+      return pathURI;
     }
 
     public URI getWD() {
@@ -128,6 +135,7 @@ public abstract class Request {
     }
 
     private URI appFile;
+    private URI pathURI;
     private URI workingDirectory;
     private String[] args;
     private InputStream in;

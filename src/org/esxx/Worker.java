@@ -84,7 +84,7 @@ class Worker {
       }
       else if (app.hasHandlers()) {
 	String request_method = request.getProperties().getProperty("REQUEST_METHOD");
-	String path_info = request.getProperties().getProperty("PATH_INFO");
+	String path_info = "/" + request.getPathURI().toString();
 
 	if (path_info == null || path_info.isEmpty()) {
 	  path_info = "/";
