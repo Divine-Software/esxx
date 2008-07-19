@@ -311,8 +311,10 @@ class Parsers {
 	}
       }
 
-      return parser.parse(mime_type, mime_params, is, is_url,
-			  external_urls, err, cx, scope);
+      Object result =  parser.parse(mime_type, mime_params, is, is_url,
+				    external_urls, err, cx, scope);
+      is.close();
+      return result;
     }
 
     private interface Parser {

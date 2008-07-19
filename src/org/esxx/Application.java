@@ -102,6 +102,7 @@ public class Application {
 
       try {
 	xml = esxx.parseXML(is, baseURL, externalURLs, null);
+	is.close();
 
 	// Extract ESXX information, if any
 
