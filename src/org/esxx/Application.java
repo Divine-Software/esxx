@@ -288,16 +288,15 @@ public class Application {
 
     public void execute(Context cx, Scriptable scope, JSESXX js_esxx) {
       if (!hasExecuted) {
-	hasExecuted = true;
-
 	for (Code c : codeList.values()) {
 	  if (!c.hasExecuted) {
-	    c.hasExecuted = true;
 	    JSURI old_uri = js_esxx.setLocation(cx, scope, c.url);
 	    c.code.exec(cx, scope);
 	    js_esxx.setLocation(old_uri);
+	    c.hasExecuted = true;
 	  }
 	}
+	hasExecuted = true;
       }
     }
 
@@ -311,10 +310,10 @@ public class Application {
       }
 
       if (!c.hasExecuted) {
-	c.hasExecuted = true;
 	JSURI old_uri = js_esxx.setLocation(cx, scope, c.url);
 	c.code.exec(cx, scope);
 	js_esxx.setLocation(old_uri);
+	c.hasExecuted = true;
       }
     }
 
