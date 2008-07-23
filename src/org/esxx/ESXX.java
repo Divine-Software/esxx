@@ -534,7 +534,7 @@ public class ESXX {
       dc.setParameter("comments", false);
       dc.setParameter("cdata-sections", false);
       dc.setParameter("entities", false);
-      dc.setParameter("validate-if-schema", true);
+      //      dc.setParameter("validate-if-schema", true);
       dc.setParameter("error-handler", eh);
       dc.setParameter("resource-resolver", new URIResolver(external_urls));
       dc.setParameter("http://apache.org/xml/features/xinclude", true);
