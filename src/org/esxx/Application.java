@@ -154,6 +154,9 @@ public class Application {
 	      else if (name.equals("error")) {
 		handleErrorHandler(e);
 	      }
+	      else if (name.equals("exit")) {
+		handleExitHandler(e);
+	      }
 	    }
 	  }
 	}
@@ -252,6 +255,10 @@ public class Application {
 
     public String getErrorHandlerFunction() {
       return errorHandler;
+    }
+
+    public String getExitHandlerFunction() {
+      return exitHandler;
     }
 
     public JSGlobal compile(Context cx)
@@ -518,6 +525,17 @@ public class Application {
       errorHandler = handler;
     }
 
+    private void handleExitHandler(Element e) {
+      String handler = e.getAttributeNS(null, "handler").trim();
+
+      if (handler.endsWith(")")) {
+	throw new ESXXException("<exit> attribute 'handler' value " +
+				"should not include parentheses");
+      }
+
+      exitHandler = handler;
+    }
+
     private XMLInputFactory xmlInputFactory;
 
     private ESXX esxx;
@@ -546,4 +564,5 @@ public class Application {
     private Map<String,String> soapActions  = new HashMap<String,String>();
     private Map<String,URL>    stylesheets  = new HashMap<String,URL>();
     private String errorHandler;
+    private String exitHandler;
 };
