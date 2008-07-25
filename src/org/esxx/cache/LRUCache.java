@@ -24,11 +24,25 @@ import java.util.LinkedList;
 import java.util.Map;
 
 public class LRUCache<E> {
-  public LRUCache(int max_entries, long max_size, long max_age) {
+
+  public interface ValueFactory<E> {
+    public E create(String key, long age) 
+      throws Exception;
+  }
+
+  public interface EntryFilter<E> {
+    public boolean isStale(String key, E value);
+  }
+
+  public interface LRUListener<E> {
+    public void entryAdded(String key, E value);
+    public void entryRemoved(String key, E value);
+  }
+
+  public LRUCache(int max_entries, long max_age) {
     map = new LRUMap();
 
     maxEntries = max_entries;
-    maxSize    = max_size;
     maxAge     = max_age;
   }
 
@@ -51,10 +65,6 @@ public class LRUCache<E> {
     }
   }
 
-  public interface ValueFactory<E> {
-    public E create(String key, long age);
-  }
-
 
   /** Adds a value if and only if there was no previous value in the
    *  cache.
@@ -69,11 +79,16 @@ public class LRUCache<E> {
    */
 
   public E add(String key, final E value, long age) {
-    return add(key, new ValueFactory<E>() {
-	public E create(String key, long age) {
-	  return value;
-	}
-      }, age);
+    try {
+      return add(key, new ValueFactory<E>() {
+	  public E create(String key, long age) {
+	    return value;
+	  }
+	}, age);
+    }
+    catch (Exception ex) {
+      throw new IllegalStateException("add() should not have thrown!", ex);
+    }
   }
 
 
@@ -89,7 +104,8 @@ public class LRUCache<E> {
    *  @result The value in the cache after this call (existing or new).
    */
 
-  public E add(String key, ValueFactory<E> factory, long age) {
+  public E add(String key, ValueFactory<E> factory, long age) 
+    throws Exception {
     if (age == 0) {
       age = maxAge;
     }
@@ -102,6 +118,7 @@ public class LRUCache<E> {
 	  if (entry.value ==  null) {
 	    entry.expires = age == 0 ? Long.MAX_VALUE : System.currentTimeMillis() + age;
 	    entry.value   = factory.create(key, age);
+	    fireAddedEvent(key, entry.value);
 	  }
 	
 	  return entry.value;
@@ -140,11 +157,12 @@ public class LRUCache<E> {
 	  E old_value = entry.value;
 
 	  if (old_value != null) {
-	    entryRemoved(key, old_value);
+	    fireRemovedEvent(key, old_value);
 	  }
 
 	  entry.expires = age == 0 ? Long.MAX_VALUE : System.currentTimeMillis() + age;
 	  entry.value   = value;
+	  fireAddedEvent(key, entry.value);
 
 	  return old_value;
 	}
@@ -168,11 +186,16 @@ public class LRUCache<E> {
    */
 
   public E replace(String key, final E value, long age) {
-    return replace(key, new ValueFactory<E>() {
-	public E create(String key, long age) {
-	  return value;
-	}
-      }, age);
+    try {
+      return replace(key, new ValueFactory<E>() {
+	  public E create(String key, long age) {
+	    return value;
+	  }
+	}, age);
+    }
+    catch (Exception ex) {
+      throw new IllegalStateException("add() should not have thrown!", ex);
+    }
   }
 
 
@@ -188,7 +211,8 @@ public class LRUCache<E> {
    *  previous value in the cache.
    */
 
-  public E replace(String key, ValueFactory<E> factory, long age) {
+  public E replace(String key, ValueFactory<E> factory, long age)
+    throws Exception {
     if (age == 0) {
       age = maxAge;
     }
@@ -201,10 +225,11 @@ public class LRUCache<E> {
 	  E old_value = entry.value;
 
 	  if (old_value != null) {
-	    entryRemoved(key, old_value);
+	    fireRemovedEvent(key, old_value);
 
 	    entry.expires = age == 0 ? Long.MAX_VALUE : System.currentTimeMillis() + age;
 	    entry.value   = factory.create(key, age);
+	    fireAddedEvent(key, entry.value);
 	  }
 
 	  return old_value;
@@ -231,7 +256,7 @@ public class LRUCache<E> {
       old_value = entry.value;
 
       if (old_value != null) {
-	entryRemoved(key, old_value);
+	fireRemovedEvent(key, old_value);
 
 	// Mark entry as deleted
 	entry.expires = Long.MIN_VALUE; // A looong time ago
@@ -267,7 +292,7 @@ public class LRUCache<E> {
 	  // NOTE: Lock order: first map, then entry
 
 	  if (entry.value != null) {
-	    entryRemoved(e.getKey(), entry.value);
+	    fireRemovedEvent(e.getKey(), entry.value);
 	  }
 
 	  entry.expires = Long.MIN_VALUE; // A looong time ago
@@ -277,10 +302,6 @@ public class LRUCache<E> {
 
       map.clear();
     }
-  }
-
-  public interface EntryFilter<E> {
-    public boolean isStale(String key, E value);
   }
 
 
@@ -303,7 +324,7 @@ public class LRUCache<E> {
 
       synchronized (entry) {
 	if (entry.expires != Long.MIN_VALUE && entry.value != null) {
-	  entryRemoved(e.getKey(), entry.value);
+	  fireRemovedEvent(e.getKey(), entry.value);
 
 	  entry.expires = Long.MIN_VALUE; // A looong time ago
 	  entry.value   = null;
@@ -326,17 +347,32 @@ public class LRUCache<E> {
     }
   }
 
+  public void addListener(LRUListener<E> l) {
+    synchronized (entryListeners) {
+      entryListeners.add(l);
+    }
+  }
 
-  /** An overridable method that will be called whenever a value is
-   *  removed from the cache.
-   *
-   *  @param key    The key
-   *  @param value  The value
-   */
+  public void removeListener(LRUListener<E> l) {
+    synchronized (entryListeners) {
+      entryListeners.remove(l);
+    }
+  }
 
-  protected void entryRemoved(String key, E value) {
-    // Override in subclass if you need to be informed when an entry
-    // is flushed.
+  public void fireAddedEvent(String key, E value) {
+    synchronized (entryListeners) {
+      for (LRUListener<E> l : entryListeners) {
+	l.entryAdded(key, value);
+      }
+    }
+  }
+
+  public void fireRemovedEvent(String key, E value) {
+    synchronized (entryListeners) {
+      for (LRUListener<E> l : entryListeners) {
+	l.entryRemoved(key, value);
+      }
+    }
   }
 
 
@@ -369,9 +405,7 @@ public class LRUCache<E> {
     }
 
     private boolean isFull(LRUEntry eldest, long now) {
-      return (size() > maxEntries ||
-	      currentSize > maxSize ||
-	      eldest.expires < now);
+      return (size() > maxEntries || (eldest.expires != 0 && eldest.expires < now));
     }
 
     @Override public boolean removeEldestEntry(Map.Entry<String, LRUEntry> eldest) {
@@ -402,7 +436,9 @@ public class LRUCache<E> {
 	      break;
 	    }
 
-	    entryRemoved(e.getKey(), entry.value);
+	    if (entry.value != null) {
+	      fireRemovedEvent(e.getKey(), entry.value);
+	    }
 
 	    entry.expires = Long.MIN_VALUE; // Mark entry as removed
 	    entry.value   = null;
@@ -425,10 +461,9 @@ public class LRUCache<E> {
   private LRUMap map;
 
   private int maxEntries;
-  private long maxSize;
   private long maxAge;
 
-  private long currentSize;
+  private LinkedList<LRUListener<E>> entryListeners = new LinkedList<LRUListener<E>>();
 
   static final long serialVersionUID = 8565024717836226408L;
 }

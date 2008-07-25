@@ -97,6 +97,20 @@ public class ESXX {
 	Long.parseLong(settings.getProperty("esxx.cache.max_size", "16")) * 1024 * 1024,
 	Long.parseLong(settings.getProperty("esxx.cache.max_age", "3600")) * 1000);
 
+      applicationCache = new LRUCache<Application>(
+	Integer.parseInt(settings.getProperty("esxx.cache.apps.max_entries", "1024")),
+	Long.parseLong(settings.getProperty("esxx.cache.apps.max_age", "3600")) * 1000);
+
+      applicationCache.addListener(new LRUCache.LRUListener<Application>() {
+	  public void entryAdded(String key, Application app) {
+	    System.out.println("Application " + app + " loaded.");
+	  }
+
+	  public void entryRemoved(String key, Application app) {
+	    System.out.println("Application " + app + " unloaded.");
+	  }
+	});
+
       parsers = new Parsers(this);
 
       // Custom CGI-to-HTTP translations
@@ -561,9 +575,20 @@ public class ESXX {
       return parsers.parse(mime_type, mime_params, is, is_url, external_urls, err, cx, scope);
     }
 
-    public Application getCachedApplication(Request request)
-      throws IOException {
-      return memoryCache.getCachedApplication(request);
+    public Application getCachedApplication(final Request request)
+      throws Exception {
+      //      return memoryCache.getCachedApplication(request);
+      String url_string = request.getScriptFilename().toString();
+      Application app;
+
+      app = applicationCache.add(url_string, new LRUCache.ValueFactory<Application>() {
+	  public Application create(String key, long age) 
+	  throws IOException {
+	    return new Application(ESXX.this, request);
+	  }
+	}, 0);
+
+      return app;
     }
 
     public XsltExecutable getCachedStylesheet(URL url, Application app)
@@ -873,7 +898,10 @@ public class ESXX {
 
     private int defaultTimeout;
     private URL[] includePath;
+
     private MemoryCache memoryCache;
+    private LRUCache<Application> applicationCache;
+
     private Parsers parsers;
     private Properties settings;
     private HashMap<String,String> cgiToHTTPMap;
