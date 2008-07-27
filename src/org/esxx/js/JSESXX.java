@@ -153,8 +153,11 @@ public class JSESXX
 	}
       }
 
-      synchronized (app) { // In case this method is called from a handler or main()
+      try {
 	app.importAndExecute(cx, scope, js_esxx, uri.toURL(), is);
+      }
+      finally {
+	is.close();
       }
     }
 
