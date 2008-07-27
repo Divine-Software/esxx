@@ -23,6 +23,7 @@ import org.esxx.saxon.*;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -107,6 +108,10 @@ public class ESXX {
 	  }
 
 	  public void entryRemoved(String key, Application app) {
+	    System.out.println("Unloading " + app + ".");
+	    // In this function, we're single-threaded (per application URL)
+	    app.terminate(defaultTimeout);
+	    app.executeExitHandler(Context.getCurrentContext());
 	    System.out.println("Application " + app + " unloaded.");
 	  }
 	});
@@ -217,7 +222,7 @@ public class ESXX {
 	  }
 	});
 
-      // Start a thread that cancels exired Workloads
+      // Start a thread that cancels exired Workloads and expunges Applications
       executorService.submit(new Runnable() {
 	  public void run() {
 	    main: while (true) {
@@ -243,6 +248,36 @@ public class ESXX {
 		    break wl;
 		  }
 		}
+
+		applicationCache.filterEntries(new LRUCache.EntryFilter<Application>() {
+		    public boolean isStale(String key, Application app, long created) {
+		      try {
+			for (URL url : app.getExternalURLs()) {
+			  long last_modified = getLastModified(url);
+
+			  if (last_modified > created) {
+			    return true;
+			  }
+			}
+		      }
+		      catch (IOException ex) {
+			return true;
+		      }
+
+		      return false;
+		    }
+
+		    private long getLastModified(URL url)
+		      throws IOException {
+		      URLConnection uc = url.openConnection();
+		      uc.setUseCaches(true);
+		      uc.setConnectTimeout(3000);
+		      uc.setReadTimeout(3000);
+		      uc.connect();
+
+		      return uc.getLastModified();
+		    }
+		  });
 	      }
 	      catch (InterruptedException ex) {
 		// Preserve status and exit
@@ -575,20 +610,39 @@ public class ESXX {
       return parsers.parse(mime_type, mime_params, is, is_url, external_urls, err, cx, scope);
     }
 
-    public Application getCachedApplication(final Request request)
+    public Application getCachedApplication(final Context cx, final Request request)
       throws Exception {
-      //      return memoryCache.getCachedApplication(request);
       String url_string = request.getScriptFilename().toString();
       Application app;
 
-      app = applicationCache.add(url_string, new LRUCache.ValueFactory<Application>() {
-	  public Application create(String key, long age) 
-	  throws IOException {
-	    return new Application(ESXX.this, request);
-	  }
+      while (true) {
+	app = applicationCache.add(url_string, new LRUCache.ValueFactory<Application>() {
+	    public Application create(String key, long age) 
+	    throws IOException {
+	      // The application cache makes sure we are
+	      // single-threaded (per application URL) here, so only
+	      // one Application will ever be created, no matter how
+	      // many concurrent requests there are.
+	      return new Application(cx, request);
+	    }
 	}, 0);
 
+	if (app.enter()) {
+	  break;
+	}
+
+	// We could not "enter" the application, because it had been
+	// marked for termination but not yet removed from the
+	// cache. In this (rather unusual) situation, we let some
+	// other thread execute for a while and then retry again.
+	Thread.yield();
+      }
+
       return app;
+    }
+
+    public void releaseApplication(Application app) {
+      app.exit();
     }
 
     public XsltExecutable getCachedStylesheet(URL url, Application app)

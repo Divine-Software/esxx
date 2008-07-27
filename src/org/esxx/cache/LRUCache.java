@@ -31,7 +31,7 @@ public class LRUCache<E> {
   }
 
   public interface EntryFilter<E> {
-    public boolean isStale(String key, E value);
+    public boolean isStale(String key, E value, long created);
   }
 
   public interface LRUListener<E> {
@@ -114,9 +114,12 @@ public class LRUCache<E> {
       LRUEntry entry = getEntry(key);
 
       synchronized (entry) {
-	if (entry.expires != Long.MIN_VALUE) {
+	if (!entry.isDeleted()) {
 	  if (entry.value ==  null) {
-	    entry.expires = age == 0 ? Long.MAX_VALUE : System.currentTimeMillis() + age;
+	    long now = System.currentTimeMillis();
+
+	    entry.expires = age == 0 ? Long.MAX_VALUE : now + age;
+	    entry.created = now;
 	    entry.value   = factory.create(key, age);
 	    fireAddedEvent(key, entry.value);
 	  }
@@ -153,14 +156,17 @@ public class LRUCache<E> {
       LRUEntry entry = getEntry(key);
 
       synchronized (entry) {
-	if (entry.expires != Long.MIN_VALUE) {
+	if (!entry.isDeleted()) {
 	  E old_value = entry.value;
 
 	  if (old_value != null) {
 	    fireRemovedEvent(key, old_value);
 	  }
 
-	  entry.expires = age == 0 ? Long.MAX_VALUE : System.currentTimeMillis() + age;
+	  long now = System.currentTimeMillis();
+
+	  entry.expires = age == 0 ? Long.MAX_VALUE : now + age;
+	  entry.created = now;
 	  entry.value   = value;
 	  fireAddedEvent(key, entry.value);
 
@@ -221,13 +227,16 @@ public class LRUCache<E> {
       LRUEntry entry = getEntry(key);
 
       synchronized (entry) {
-	if (entry.expires != Long.MIN_VALUE) {
+	if (!entry.isDeleted()) {
 	  E old_value = entry.value;
 
 	  if (old_value != null) {
 	    fireRemovedEvent(key, old_value);
 
-	    entry.expires = age == 0 ? Long.MAX_VALUE : System.currentTimeMillis() + age;
+	    long now = System.currentTimeMillis();
+
+	    entry.expires = age == 0 ? Long.MAX_VALUE : now + age;
+	    entry.created = now;
 	    entry.value   = factory.create(key, age);
 	    fireAddedEvent(key, entry.value);
 	  }
@@ -259,15 +268,14 @@ public class LRUCache<E> {
 	fireRemovedEvent(key, old_value);
 
 	// Mark entry as deleted
-	entry.expires = Long.MIN_VALUE; // A looong time ago
-	entry.value   = null;
+	entry.markAsDeleted();
       }
     }
 
     synchronized (map) {
       synchronized (entry) {
 	// NOTE: Lock order: first map, then entry
-	if (entry.expires == Long.MIN_VALUE) {
+	if (entry.isDeleted()) {
 	  // Still marked for deletion
 	  map.remove(key);
 	}
@@ -295,8 +303,7 @@ public class LRUCache<E> {
 	    fireRemovedEvent(e.getKey(), entry.value);
 	  }
 
-	  entry.expires = Long.MIN_VALUE; // A looong time ago
-	  entry.value   = null;
+	  entry.markAsDeleted();
 	}
       }
 
@@ -323,12 +330,11 @@ public class LRUCache<E> {
       boolean remove = false;
 
       synchronized (entry) {
-	if (entry.expires != Long.MIN_VALUE && entry.value != null) {
+	if (!entry.isDeleted() && entry.value != null && 
+	    filter.isStale(e.getKey(), entry.value, entry.created)) {
 	  fireRemovedEvent(e.getKey(), entry.value);
 
-	  entry.expires = Long.MIN_VALUE; // A looong time ago
-	  entry.value   = null;
-
+	  entry.markAsDeleted();
 	  remove = true;
 	}
       }
@@ -337,7 +343,7 @@ public class LRUCache<E> {
 	synchronized (map) {
 	  synchronized (entry) {
 	    // NOTE: Lock order: first map, then entry
-	    if (entry.expires == Long.MIN_VALUE) {
+	    if (entry.isDeleted()) {
 	      // Still marked for deletion
 	      map.remove(e.getKey());
 	    }
@@ -440,9 +446,7 @@ public class LRUCache<E> {
 	      fireRemovedEvent(e.getKey(), entry.value);
 	    }
 
-	    entry.expires = Long.MIN_VALUE; // Mark entry as removed
-	    entry.value   = null;
-
+	    entry.markAsDeleted();
 	    i.remove();
 	  }
 	}
@@ -454,7 +458,18 @@ public class LRUCache<E> {
   }
 
   class LRUEntry {
+    public void markAsDeleted() {
+      expires = Long.MIN_VALUE;
+      created = Long.MIN_VALUE;
+      value   = null;
+    }
+
+    public boolean isDeleted() {
+      return expires == Long.MIN_VALUE;
+    }
+
     long expires;
+    long created;
     E value;
   }
 

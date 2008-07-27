@@ -2,6 +2,12 @@
 var started  = new Date();
 var firstrun = true;
 
+esxx.log.info("Loaded.");
+
+function handleExit() {
+  esxx.log.info("Unloaded.");
+}
+
 function handleGet(req) {
   var now = new Date();
 

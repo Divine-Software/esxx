@@ -5,7 +5,7 @@ function MyApp(e) {
   this.local = "an instance variable";
 }
 
-MyApp.prototype.handleError = function(ex) {
+MyApp.prototype.handleError = function(req, ex) {
   esxx.log.debug("**** START ERROR HANDLER ****");
   esxx.log.info(ex);
   esxx.log.debug("**** END ERROR HANDLER ****");

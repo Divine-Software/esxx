@@ -7,5 +7,6 @@
 <esxx xmlns="http://esxx.org/1.0/">
     <handlers>
       <http method="GET" handler="handleGet" />
+      <exit handler="handleExit" />
     </handlers>
 </esxx>
