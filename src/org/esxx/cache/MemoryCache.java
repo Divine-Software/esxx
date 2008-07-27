@@ -50,23 +50,6 @@ public class MemoryCache
       }
     }
 
-    public Application getCachedApplication(Request request)
-      throws IOException {
-      String url_string = request.getScriptFilename().toString();
-      Application app;
-
-      synchronized (cachedApplications) {
-	app = cachedApplications.get(url_string);
-
-	if (app == null || checkApplicationURLs(request.getScriptFilename().toURL(), app)) {
-	  cachedApplications.remove(url_string);
-	  app = new Application(esxx, request);
-	  cachedApplications.put(url_string, app);
-	}
-      }
-
-      return app;
-    }
 
     public XsltExecutable getCachedStylesheet(URL url, Application app)
       throws IOException {
@@ -116,21 +99,6 @@ public class MemoryCache
       }
     }
 
-    private boolean checkApplicationURLs(URL url, Application app)
-      throws IOException {
-      if (checkURL(url)) {
-	return true;
-      }
-
-      for (URL u : app.getExternalURLs()) {
-	if (checkURL(u)) {
-	  return true;
-	}
-      }
-
-      return false;
-    }
-
     private boolean checkStylesheetURLs(URL url, Stylesheet xslt)
       throws IOException {
       if (checkURL(url)) {
@@ -161,6 +129,5 @@ public class MemoryCache
       XsltExecutable xsltExecutable;
     }
 
-    private HashMap<String, Application> cachedApplications = new HashMap<String, Application>();
     private HashMap<String, Stylesheet> cachedStylesheets = new HashMap<String, Stylesheet>();
 }
