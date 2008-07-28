@@ -89,7 +89,7 @@ public class Application {
 	  // No specific log handler configured in
 	  // jre/lib/logging.properties -- log everything to syslog
 	  logger.setLevel(Level.ALL);
-	  logger.addHandler(new SyslogHandler("ESXX"));
+	  logger.addHandler(new SyslogHandler("esxx"));
 	}
 	catch (UnsupportedOperationException ex) {
 	  // Never mind

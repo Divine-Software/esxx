@@ -20,6 +20,7 @@ package org.esxx;
 
 import org.esxx.cache.*;
 import org.esxx.saxon.*;
+import org.esxx.util.SyslogHandler;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -104,17 +105,17 @@ public class ESXX {
 
       applicationCache.addListener(new LRUCache.LRUListener<Application>() {
 	  public void entryAdded(String key, Application app) {
-	    app.getLogger().config(app + " loaded.");
+	    getLogger().logp(Level.CONFIG, null, null, app + " loaded.");
 	  }
 
 	  public void entryRemoved(String key, Application app) {
-	    app.getLogger().config(app + " unloading ...");
+	    getLogger().logp(Level.CONFIG, null, null, app + " unloading ...");
 
 	    // In this function, we're single-threaded (per application URL)
 	    app.terminate(defaultTimeout);
 	    app.executeExitHandler(Context.getCurrentContext());
 
-	    app.getLogger().config(app + " unloaded.");
+	    getLogger().logp(Level.CONFIG, null, null, app + " unloaded.");
 	  }
 	});
 
@@ -299,6 +300,32 @@ public class ESXX {
 
     public Properties settings() {
       return settings;
+    }
+
+
+    /** Returns a global, non-application tied Logger.
+     *
+     *  @returns A Logger object (singleton).
+     */
+
+    public synchronized Logger getLogger() {
+      if (logger == null) {
+	logger = Logger.getLogger(ESXX.class.getName());
+
+	if (logger.getHandlers().length == 0) {
+	  try {
+	    // No specific log handler configured in
+	    // jre/lib/logging.properties -- log everything to syslog
+	    logger.setLevel(Level.ALL);
+	    logger.addHandler(new SyslogHandler("esxx"));
+	  }
+	  catch (UnsupportedOperationException ex) {
+	    // Never mind
+	  }
+	}
+      }
+
+      return logger;
     }
 
     public String getHTMLHeader() {
@@ -969,6 +996,7 @@ public class ESXX {
     private ContextFactory contextFactory;
     private ExecutorService executorService;
     private PriorityBlockingQueue<Workload> workloadSet;
+    private Logger logger;
 
     private static final String htmlHeader =
       "<?xml version='1.0' encoding='UTF-8'?>" +
