@@ -671,6 +671,10 @@ public class Application {
   private void handleErrorHandler(Element e) {
     String handler = e.getAttributeNS(null, "handler").trim();
 
+    if (errorHandler != null) {
+      throw new ESXXException("Error handler already defined as '" + errorHandler + "'");
+    }
+
     if (handler.endsWith(")")) {
       throw new ESXXException("<error> attribute 'handler' value " +
 			      "should not include parentheses");
@@ -681,6 +685,10 @@ public class Application {
 
   private void handleExitHandler(Element e) {
     String handler = e.getAttributeNS(null, "handler").trim();
+
+    if (exitHandler != null) {
+      throw new ESXXException("Exit handler already defined as '" + exitHandler + "'");
+    }
 
     if (handler.endsWith(")")) {
       throw new ESXXException("<exit> attribute 'handler' value " +
