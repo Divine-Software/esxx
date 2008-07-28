@@ -104,15 +104,17 @@ public class ESXX {
 
       applicationCache.addListener(new LRUCache.LRUListener<Application>() {
 	  public void entryAdded(String key, Application app) {
-	    System.out.println("Application " + app + " loaded.");
+	    app.getLogger().config(app + " loaded.");
 	  }
 
 	  public void entryRemoved(String key, Application app) {
-	    System.out.println("Unloading " + app + ".");
+	    app.getLogger().config(app + " unloading ...");
+
 	    // In this function, we're single-threaded (per application URL)
 	    app.terminate(defaultTimeout);
 	    app.executeExitHandler(Context.getCurrentContext());
-	    System.out.println("Application " + app + " unloaded.");
+
+	    app.getLogger().config(app + " unloaded.");
 	  }
 	});
 

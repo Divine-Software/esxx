@@ -62,6 +62,10 @@ public class Application {
     compileAndInitialize(cx);
   }
 
+  @Override public String toString() {
+    return "[" + this.getClass().getName() + ": " + baseURL + "]";
+  }
+
   public JSGlobal getJSGlobal() {
     return applicationScope;
   }
