@@ -39,9 +39,15 @@ public abstract class Request {
 
       workingDirectory = new File("").toURI();
 
-      URI path_translated = new File(properties.getProperty("PATH_TRANSLATED")).toURI();
-      pathInfo = scriptFilename.relativize(path_translated);
+      URI path_uri = scriptFilename;
 
+      String path_translated = properties.getProperty("PATH_TRANSLATED");
+
+      if (path_translated != null) {
+	path_uri = new File(path_translated).toURI();
+      }
+
+      pathInfo = scriptFilename.relativize(path_uri);
 
       String req_uri = properties.getProperty("REQUEST_URI");
 
