@@ -25,11 +25,13 @@ import org.esxx.saxon.ESXXExpression;
 import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Properties;
 import javax.xml.transform.dom.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import net.sf.saxon.s9api.*;
+import static net.sf.saxon.s9api.Serializer.Property.*;
 
 import org.mozilla.javascript.tools.debugger.*;
 
@@ -193,6 +195,26 @@ class Worker {
     Serializer s = new Serializer();
     s.setOutputStream(os);
 
+    // Remove this code when upgrading to Saxon 9.1 (?)
+    Properties op = xe.getUnderlyingCompiledStylesheet().getOutputProperties();
+    s.setOutputProperty(MEDIA_TYPE,             op.getProperty("media-type", content_type));
+    s.setOutputProperty(BYTE_ORDER_MARK,        op.getProperty("byte-order-mark"));
+    s.setOutputProperty(CDATA_SECTION_ELEMENTS, op.getProperty("cdata-section-elements"));
+    s.setOutputProperty(DOCTYPE_PUBLIC,         op.getProperty("doctype-public"));
+    s.setOutputProperty(DOCTYPE_SYSTEM,         op.getProperty("doctype-system"));
+    s.setOutputProperty(ENCODING,               op.getProperty("encoding"));
+    s.setOutputProperty(ESCAPE_URI_ATTRIBUTES,  op.getProperty("escape-uri-attributes"));
+    s.setOutputProperty(INCLUDE_CONTENT_TYPE,   op.getProperty("include-content-type"));
+    s.setOutputProperty(INDENT,                 op.getProperty("indent"));
+    s.setOutputProperty(MEDIA_TYPE,             op.getProperty("media-type"));
+    s.setOutputProperty(METHOD,                 op.getProperty("method"));
+    //    s.setOutputProperty(NORMALIZATION_FORM,     op.getProperty("normalization-form"));
+    s.setOutputProperty(OMIT_XML_DECLARATION,   op.getProperty("omit-xml-declaration"));
+    s.setOutputProperty(STANDALONE,             op.getProperty("standalone"));
+    s.setOutputProperty(UNDECLARE_PREFIXES,     op.getProperty("undeclare-prefixes"));
+    s.setOutputProperty(USE_CHARACTER_MAPS,     op.getProperty("use-character-maps"));
+    s.setOutputProperty(VERSION,                op.getProperty("version"));
+
     // This is sad, but Saxon can only transform the DOM Document Element node.
     org.w3c.dom.DOMImplementation di = node.getOwnerDocument().getImplementation();
     Document doc = di.createDocument(null, "dummy", null);
@@ -223,8 +245,7 @@ class Worker {
       cx.removeThreadLocal(ESXXExpression.class);
     }
 
-    response.setContentType(xe.getUnderlyingCompiledStylesheet().getOutputProperties().
-			    getProperty("media-type", content_type));
+    response.setContentType(s.getOutputProperty(MEDIA_TYPE));
     response.setResult(os);
   }
 
