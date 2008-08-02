@@ -7,7 +7,7 @@
   <!-- Identity transform -->
 
   <xsl:output 
-	version="1.1"
+	version="4.0"
 	standalone="yes"
 	cdata-section-elements="xhtml:p"
 	indent="yes"
