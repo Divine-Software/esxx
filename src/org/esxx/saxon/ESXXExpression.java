@@ -23,6 +23,7 @@ import net.sf.saxon.dom.DOMWriter;
 import net.sf.saxon.expr.*;
 import net.sf.saxon.om.*;
 import net.sf.saxon.trans.XPathException;
+import net.sf.saxon.type.ItemType;
 import net.sf.saxon.type.Type;
 import net.sf.saxon.value.*;
 import org.esxx.ESXX;
@@ -48,13 +49,11 @@ public class ESXXExpression
     setArguments(args);
   }
 
-  @Override
-public int getImplementationMethod() {
+  @Override public int getImplementationMethod() {
     return ITERATE_METHOD;
   }
 
-  @Override
-public SequenceIterator iterate(XPathContext context)
+  @Override public SequenceIterator iterate(XPathContext context)
     throws XPathException {
     Context    cx    = Context.getCurrentContext();
     Scriptable scope = (Scriptable) cx.getThreadLocal(ESXXExpression.class);
@@ -63,7 +62,7 @@ public SequenceIterator iterate(XPathContext context)
     for (int i = 0; i < arguments.length; ++i) {
       int mode = ExpressionTool.lazyEvaluationMode(arguments[i]);
       ValueRepresentation v = ExpressionTool.evaluate(arguments[i], mode, context, 1);
-      args[i] = contvertToJS(v, context, cx, scope);
+      args[i] = convertToJS(v, context, cx, scope);
     }
 
     Object result = ESXX.callJSMethod(object, method, args, "XSLT Stylesheet", cx, scope);
@@ -76,15 +75,31 @@ public SequenceIterator iterate(XPathContext context)
       result = ESXX.e4xToDOM((Scriptable) result);
     }
 
-    Value value = Value.convertJavaObjectToXPath(result, SequenceType.ANY_SEQUENCE, context);
-    return value.iterate();
+    if (result instanceof SequenceIterator) {
+      return (SequenceIterator) result;
+    }
+    else {
+      JPConverter converter = JPConverter.allocate(result.getClass(), context.getConfiguration());
+      ValueRepresentation value = converter.convert(result, context);
+      
+      return Value.asIterator(value);
+    }
+
+//     Value value = Value.convertJavaObjectToXPath(result, SequenceType.ANY_SEQUENCE, context);
+//     return value.iterate();
   }
 
-  private static Object contvertToJS(Object value, XPathContext context,
-				     Context cx, Scriptable scope)
+  private static Object convertToJS(Object value, XPathContext context,
+				    Context cx, Scriptable scope)
     throws XPathException {
     if (value instanceof Value) {
-      value = ((Value) value).convertToJava(Object.class, context);
+//       value = ((Value) value).convertToJava(Object.class, context);
+      SequenceType st = PJConverter.getEquivalentItemType(value.getClass());
+      PJConverter converter = PJConverter.allocate(context.getConfiguration(), 
+						   st.getPrimaryType(),
+						   StaticProperty.EXACTLY_ONE, 
+						   Object.class);
+      value = converter.convert((Value) value, Object.class, context);
     }
 
     if (value instanceof NodeInfo) {
@@ -106,7 +121,7 @@ public SequenceIterator iterate(XPathContext context)
       Object[] array = (Object[]) value;
 
       for (int i = 0; i < array.length; ++i) {
-	array[i] = contvertToJS(array[i], context, cx, scope);
+	array[i] = convertToJS(array[i], context, cx, scope);
       }
 
       value = cx.newArray(scope, array);
