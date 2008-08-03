@@ -143,11 +143,11 @@ public class HTTPRequest
     hs.createContext("/", new HttpHandler() {
 	public void handle(HttpExchange he)
 	  throws IOException {
-	  String ruri = he.getRequestURI().getPath();
-	  String euri = encodeXMLContent(ruri);
+	  String req_uri_raw = he.getRequestURI().getRawPath();
+	  String req_uri_xml = encodeXMLAttribute(he.getRequestURI().getPath());
 
 	  try {
-	    File file = new File(root_uri.resolve(ruri.substring(1))).getCanonicalFile();
+	    File file = new File(root_uri.resolve(req_uri_raw.substring(1))).getCanonicalFile();
 	    File real = file;
 	    URI  uri  = file.toURI();
 
@@ -165,16 +165,15 @@ public class HTTPRequest
 		  // client will fail to resolve our relative URIs in
 		  // the file listing.
 
-		  if (!ruri.endsWith("/")) {
+		  if (!req_uri_raw.endsWith("/")) {
 		    throw new FileNotFoundException("Directory URIs must end with '/'");
 		  }
 
 		  StringBuilder sb = new StringBuilder();
 
 		  sb.append(esxx.getHTMLHeader() +
-			    "<table summary='Directory Listing of " +
-			    encodeXMLAttribute(ruri) + "'>" +
-			    "<caption>Directory Listing of " + euri + "</caption>" +
+			    "<table summary='Directory Listing of " + req_uri_xml + "'>" +
+			    "<caption>Directory Listing of " + req_uri_xml + "</caption>" +
 			    "<thead><tr>" +
 			    "<td>Name</td>" +
 			    "<td>Last Modified</td>" +
@@ -183,7 +182,7 @@ public class HTTPRequest
 			    "</tr></thead>" +
 			    "<tbody>");
 
-		  if (!ruri.equals("/")) {
+		  if (!req_uri_raw.equals("/")) {
 		    sb.append("<tr>" +
 			      "<td><a href='..'>Parent Directory</a></td>" +
 			      "<td>&#160;</td>" +
@@ -273,7 +272,7 @@ public class HTTPRequest
 	    respond(he, code, "text/html",
 		    esxx.getHTMLHeader() +
 		    "<h2>" + title + "</h2>" +
-		    "<p>The requested resource " + euri + " failed: " +
+		    "<p>The requested resource " + req_uri_xml + " failed: " +
 		    encodeXMLContent(ex.getMessage()) +
 		    ".</p>" + esxx.getHTMLFooter());
 	  }
