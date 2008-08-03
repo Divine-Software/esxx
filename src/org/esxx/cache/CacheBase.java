@@ -63,6 +63,8 @@ public abstract class CacheBase {
 
       URLConnection uc = cached.url.openConnection();
 
+      uc.setDoInput(true);
+      uc.setDoOutput(false);
       uc.setIfModifiedSince(cached.lastModified);
 
       InputStream is;
@@ -81,6 +83,7 @@ public abstract class CacheBase {
 	huc.connect();
 
 	if (huc.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) {
+	  huc.getInputStream().close();
 	  return null;
 	}
 
@@ -104,6 +107,7 @@ public abstract class CacheBase {
 	uc.connect();
 
 	if (uc.getLastModified() <= cached.lastModified) {
+	  uc.getInputStream().close();
 	  return null;
 	}
 

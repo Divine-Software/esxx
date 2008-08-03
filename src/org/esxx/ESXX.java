@@ -27,6 +27,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.*;
@@ -273,12 +274,18 @@ public class ESXX {
 		    private long getLastModified(URL url)
 		      throws IOException {
 		      URLConnection uc = url.openConnection();
+		      uc.setDoInput(true);
+		      uc.setDoOutput(false);
 		      uc.setUseCaches(true);
 		      uc.setConnectTimeout(3000);
 		      uc.setReadTimeout(3000);
 		      uc.connect();
 
-		      return uc.getLastModified();
+		      long last_modified =  uc.getLastModified();
+
+		      uc.getInputStream().close();
+
+		      return last_modified;
 		    }
 		  });
 	      }
@@ -609,15 +616,22 @@ public class ESXX {
 
       DOMConfiguration dc = p.getDomConfig();
 
-      dc.setParameter("comments", false);
-      dc.setParameter("cdata-sections", false);
-      dc.setParameter("entities", false);
-      //      dc.setParameter("validate-if-schema", true);
-      dc.setParameter("error-handler", eh);
-      dc.setParameter("resource-resolver", new URIResolver(external_urls));
-      dc.setParameter("http://apache.org/xml/features/xinclude", true);
+      URIResolver ur = new URIResolver(external_urls);
 
-      return p.parse(in);
+      try {
+	dc.setParameter("comments", false);
+	dc.setParameter("cdata-sections", false);
+	dc.setParameter("entities", false);
+	//      dc.setParameter("validate-if-schema", true);
+	dc.setParameter("error-handler", eh);
+	dc.setParameter("resource-resolver", ur);
+	dc.setParameter("http://apache.org/xml/features/xinclude", true);
+
+	return p.parse(in);
+      }
+      finally {
+	ur.closeAllStreams();
+      }
     }
 
     public InputStream openCachedURL(URL url, String[] content_type)
@@ -743,29 +757,36 @@ public class ESXX {
 	return compiler.compile(new StreamSource(new StringReader(identityTransform)));
       }
 
-      compiler.setURIResolver(new URIResolver(external_urls));
-      compiler.setErrorListener(new ErrorListener() {
-	  public void error(TransformerException ex)
-	    throws TransformerException {
-	    app.getLogger().logp(Level.SEVERE, is_url.toString(), null,
-				 ex.getMessageAndLocation(), ex);
-	    throw ex;
-	  }
+      URIResolver ur = new URIResolver(external_urls);
 
-	  public void fatalError(TransformerException ex)
-	    throws TransformerException {
-	    app.getLogger().logp(Level.SEVERE, is_url.toString(), null,
-				  ex.getMessageAndLocation(), ex);
-	    throw ex;
-	  }
+      try {
+	compiler.setURIResolver(ur);
+	compiler.setErrorListener(new ErrorListener() {
+	    public void error(TransformerException ex)
+	      throws TransformerException {
+	      app.getLogger().logp(Level.SEVERE, is_url.toString(), null,
+				   ex.getMessageAndLocation(), ex);
+	      throw ex;
+	    }
 
-	  public void warning(TransformerException ex) {
-	    app.getLogger().logp(Level.WARNING, is_url.toString(), null,
-				 ex.getMessageAndLocation());
-	  }
-	});
+	    public void fatalError(TransformerException ex)
+	      throws TransformerException {
+	      app.getLogger().logp(Level.SEVERE, is_url.toString(), null,
+				   ex.getMessageAndLocation(), ex);
+	      throw ex;
+	    }
 
-      return compiler.compile(new StreamSource(is, is_url.toString()));
+	    public void warning(TransformerException ex) {
+	      app.getLogger().logp(Level.WARNING, is_url.toString(), null,
+				   ex.getMessageAndLocation());
+	    }
+	  });
+
+	return compiler.compile(new StreamSource(is, is_url.toString()));
+      }
+      finally {
+	ur.closeAllStreams();
+      }
     }
 
     public ContextFactory getContextFactory() {
@@ -898,6 +919,13 @@ public class ESXX {
       implements javax.xml.transform.URIResolver, LSResourceResolver {
 	public URIResolver(Collection<URL> log_visited) {
 	  logVisited = log_visited;
+	  openedStreams = new LinkedList<InputStream>();
+	}
+
+        public void closeAllStreams() {
+	  for (InputStream is : openedStreams) {
+	    try { is.close(); } catch (IOException ex) {}
+	  }
 	}
 
 	public Source resolve(String href,
@@ -944,6 +972,8 @@ public class ESXX {
 	      logVisited.add(url);
 	    }
 
+	    openedStreams.add(is);
+
 	    return is;
 	  }
 	  catch (IOException ex) {
@@ -952,6 +982,7 @@ public class ESXX {
 	}
 
 	private Collection<URL> logVisited;
+        private Collection<InputStream> openedStreams;
     }
 
 

@@ -92,6 +92,7 @@ public class MemoryCache
 
 	IO.copyStream(is, os);
 	cached.content = os.toByteArray();
+	is.close();
 	return true;
       }
       else {
