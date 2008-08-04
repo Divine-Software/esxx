@@ -20,6 +20,7 @@ package org.esxx.request;
 
 import java.io.IOException;
 import org.esxx.*;
+import org.esxx.util.JS;
 import org.mozilla.javascript.*;
 
 public class ScriptRequest
@@ -77,7 +78,7 @@ public class ScriptRequest
       RhinoException ex = (RhinoException) t;
 
       System.err.println(ex.getClass().getSimpleName() + ": " + ex.getMessage());
-      System.err.println(ex.getScriptStackTrace(new ESXX.JSFilenameFilter()));
+      System.err.println(ex.getScriptStackTrace(new JS.JSFilenameFilter()));
       return 10;
     }
     else {

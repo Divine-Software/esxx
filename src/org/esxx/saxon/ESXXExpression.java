@@ -27,6 +27,7 @@ import net.sf.saxon.type.Type;
 import net.sf.saxon.value.*;
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
+import org.esxx.util.JS;
 import org.mozilla.javascript.*;
 
 import org.w3c.dom.Document;
@@ -66,7 +67,7 @@ public SequenceIterator iterate(XPathContext context)
       args[i] = contvertToJS(v, context, cx, scope);
     }
 
-    Object result = ESXX.callJSMethod(object, method, args, "XSLT Stylesheet", cx, scope);
+    Object result = JS.callJSMethod(object, method, args, "XSLT Stylesheet", cx, scope);
 
     if (result instanceof NativeArray) {
       result = cx.getElements((NativeArray) result);

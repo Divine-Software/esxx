@@ -23,6 +23,7 @@ import java.net.*;
 import java.util.Properties;
 import org.esxx.*;
 import org.esxx.util.IO;
+import org.esxx.util.JS;
 import org.mozilla.javascript.*;
 
 public class WebRequest
@@ -91,7 +92,7 @@ public class WebRequest
     else if (ex instanceof RhinoException) {
       out.println("<pre>");
       out.println(ex.getClass().getSimpleName() + ": " + encodeXMLContent(ex.getMessage()));
-      out.println(((RhinoException) ex).getScriptStackTrace(new ESXX.JSFilenameFilter()));
+      out.println(((RhinoException) ex).getScriptStackTrace(new JS.JSFilenameFilter()));
       out.println("</pre>");
     }
     else {

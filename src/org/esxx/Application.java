@@ -27,9 +27,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.stream.*;
 import org.esxx.js.*;
-import org.esxx.util.IO;
-import org.esxx.util.RequestMatcher;
-import org.esxx.util.SyslogHandler;
+import org.esxx.util.*;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
@@ -144,7 +142,7 @@ public class Application {
 
       String method = soap_body.getDocumentElement().getLocalName();
 
-      result = ESXX.callJSMethod(object, method, args, "SOAP handler", cx, applicationScope);
+      result = JS.callJSMethod(object, method, args, "SOAP handler", cx, applicationScope);
     }
     else {
       // No RPC handler; the SOAP message itself is the result
@@ -170,8 +168,8 @@ public class Application {
 
     Object args[] = { req };
 
-    result = ESXX.callJSMethod(match.handler, args, "'" + request_method + "' handler", 
-			       cx, applicationScope);
+    result = JS.callJSMethod(match.handler, args, "'" + request_method + "' handler", 
+			     cx, applicationScope);
 
     return result;
   }
@@ -186,7 +184,7 @@ public class Application {
 
     req.setArgs(cx.newArray(applicationScope, js_cmdline));
 
-    return ESXX.callJSMethod("main", js_cmdline, "Program entry" , cx, applicationScope);
+    return JS.callJSMethod("main", js_cmdline, "Program entry" , cx, applicationScope);
   }
 
   public void executeExitHandler(Context cx) {
@@ -195,7 +193,7 @@ public class Application {
     if (handler != null) {
 	Object args[] = { };
 
-	ESXX.callJSMethod(handler, args, "Exit handler", cx, applicationScope);
+	JS.callJSMethod(handler, args, "Exit handler", cx, applicationScope);
       }
   }
 
@@ -221,7 +219,7 @@ public class Application {
     try {
       Object args[] = { req, Context.javaToJS(error, applicationScope) };
 
-      result = ESXX.callJSMethod(handler, args, "Error handler", cx, applicationScope);
+      result = JS.callJSMethod(handler, args, "Error handler", cx, applicationScope);
     }
     catch (Exception ex) {
       throw new ESXXException("Failed to handle error '" + error.toString() +
