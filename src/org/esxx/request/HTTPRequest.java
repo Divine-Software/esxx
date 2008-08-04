@@ -56,7 +56,9 @@ public class HTTPRequest
 	  }
 	});
 
-      httpExchange.sendResponseHeaders(response.getStatus(), 0);
+      httpExchange.sendResponseHeaders(response.getStatus(), 
+				       response.isBuffered() ? 
+				       response.getContentLength(esxx, cx) : 0);
 
       // Output body
       OutputStream os = httpExchange.getResponseBody();

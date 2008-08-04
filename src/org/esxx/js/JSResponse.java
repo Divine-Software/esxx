@@ -96,6 +96,14 @@ public class JSResponse
     response.setContentType(content_type);
   }
 
+  public boolean jsGet_buffered() {
+    return response.isBuffered();
+  }
+
+  public void jsSet_buffered(boolean buffered) {
+    response.setBuffered(buffered);
+  }
+
   public Object jsGet_data() {
     return response.getResult();
   }

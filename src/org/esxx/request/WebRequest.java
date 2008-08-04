@@ -52,6 +52,10 @@ public class WebRequest
     out.println("Status: " + response.getStatus());
     out.println("Content-Type: " + response.getContentType(true));
 
+    if (response.isBuffered()) {
+      out.println("Content-Length: " + response.getContentLength(esxx, cx));
+    }
+
     response.enumerateHeaders(new Response.HeaderEnumerator() {
 	public void header(String name, String value) {
 	  out.println(name + ": " + value);

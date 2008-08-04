@@ -37,9 +37,12 @@ MyApp.prototype.handleGet = function(req) {
 
   req.log.debug("**** END GET HANDLER ****");
 
-  return new Response(200, null,
-		      <html><body><p>Hello, world och Örjan!</p><div/></body></html>,
-		      "text/html");
+  var rc = new Response(200, null,
+			<html><body><p>Hello, world och Örjan!</p><div/></body></html>,
+			"text/html");
+  rc.buffered = true;
+
+  return rc;
 };
 
 MyApp.prototype.xsltCallback = function() {

@@ -44,6 +44,7 @@ public class Response  {
     setContentType(content_type);
     setResult(result);
     httpHeaders = headers;
+    contentLength = -1;
   }
 
   public int getStatus() {
@@ -73,6 +74,31 @@ public class Response  {
 
   public void setResult(Object result) {
     resultObject = result;
+  }
+
+  public void setBuffered(boolean bool) {
+    buffered = bool;
+  }
+
+  public boolean isBuffered() {
+    return buffered;
+  }
+
+  public long getContentLength(ESXX esxx, Context cx) 
+    throws IOException {
+    if (!buffered) {
+      throw new IllegalStateException("getContentLength() only works on buffered responses");
+    }
+
+    if (contentLength == -1) {
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      
+      writeResult(esxx, cx, bos);
+      setResult(bos.toByteArray());
+      contentLength = bos.size();
+    }
+
+    return contentLength;
   }
 
   public void unwrapResult() {
@@ -268,5 +294,7 @@ public class Response  {
   private int httpStatus;
   private String contentType;
   private Object resultObject;
+  private long contentLength;
+  private boolean buffered;
   private Map<String, String> httpHeaders;
 }
