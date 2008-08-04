@@ -197,7 +197,6 @@ class Worker {
 
     // Remove this code when upgrading to Saxon 9.1 (?)
     Properties op = xe.getUnderlyingCompiledStylesheet().getOutputProperties();
-    s.setOutputProperty(MEDIA_TYPE,             op.getProperty("media-type", content_type));
     s.setOutputProperty(BYTE_ORDER_MARK,        op.getProperty("byte-order-mark"));
     s.setOutputProperty(CDATA_SECTION_ELEMENTS, op.getProperty("cdata-section-elements"));
     s.setOutputProperty(DOCTYPE_PUBLIC,         op.getProperty("doctype-public"));
@@ -206,7 +205,7 @@ class Worker {
     s.setOutputProperty(ESCAPE_URI_ATTRIBUTES,  op.getProperty("escape-uri-attributes"));
     s.setOutputProperty(INCLUDE_CONTENT_TYPE,   op.getProperty("include-content-type"));
     s.setOutputProperty(INDENT,                 op.getProperty("indent"));
-    s.setOutputProperty(MEDIA_TYPE,             op.getProperty("media-type"));
+    s.setOutputProperty(MEDIA_TYPE,             op.getProperty("media-type", content_type));
     s.setOutputProperty(METHOD,                 op.getProperty("method"));
     //    s.setOutputProperty(NORMALIZATION_FORM,     op.getProperty("normalization-form"));
     s.setOutputProperty(OMIT_XML_DECLARATION,   op.getProperty("omit-xml-declaration"));
