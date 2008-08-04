@@ -20,6 +20,7 @@ package org.esxx.util;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.regex.Pattern;
 import org.esxx.ESXXException;
 import org.mozilla.javascript.*;
 
@@ -44,41 +45,49 @@ public abstract class JS {
     return callJSMethod(object, method, args, identifier, cx, scope);
   }
 
-
-  public static Object callJSMethod(String object, String method,
+  private static Pattern dotPattern = Pattern.compile("\\.");
+  
+  public static Object callJSMethod(String object_expr, String method,
 				    Object[] args, String identifier,
 				    Context cx, Scriptable scope) {
-    Object o;
-    String function;
+    Scriptable object = scope;
+    String     function_name;
 
-    if (object == null) {
-      o = scope;
-      function = method;
+    if (object_expr == null) {
+      function_name = method;
     }
     else {
-      o = cx.evaluateString(scope, object, identifier + " object " + object, 1, null);
-      function = object + "." + method;
+      function_name = object_expr + "." + method;
 
-      if (o == null || o == Context.getUndefinedValue()) {
-	throw new ESXXException(identifier + " '" + object + "' not found.");
-      }
+      String path[] = dotPattern.split(object_expr, 0);
 
-      if (!(o instanceof Scriptable)) {
-	throw new ESXXException(identifier + " '" + object +  "' is not an object.");
+      for (String p : path) {
+	Object o = ScriptableObject.getProperty(object, p);
+
+	if (o == Scriptable.NOT_FOUND) {
+	  throw new ESXXException(identifier + " component " + p + " not found in " + object_expr);
+	}
+
+	if (!(o instanceof Scriptable)) {
+	  throw new ESXXException(identifier + " component " + p + " in " + object_expr 
+				  + " is not of required type");
+	}
+
+	object = (Scriptable) o;
       }
     }
 
-    Object m = ScriptableObject.getProperty((Scriptable) o, method);
+    Object m = ScriptableObject.getProperty(object, method);
 
-    if (m == null || m == Scriptable.NOT_FOUND) {
-      throw new ESXXException(identifier + " '" + function + "()' not found.");
+    if (m == Scriptable.NOT_FOUND) {
+      throw new ESXXException(identifier + " method " + function_name + " not found");
     }
 
     if (!(m instanceof Function)) {
-      throw new ESXXException(identifier + " '" + function + "' is not a function.");
+      throw new ESXXException(identifier + " " + function_name + " is not a function.");
     }
 
-    return ((Function) m).call(cx, scope, (Scriptable) o, args);
+    return ((Function) m).call(cx, scope, object, args);
   }
 
 
