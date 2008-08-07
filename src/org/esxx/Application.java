@@ -21,6 +21,7 @@ package org.esxx;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import java.util.logging.Level;
@@ -43,13 +44,20 @@ import net.sf.saxon.dom.*;
   * will be interpreted.
   */
 
-public class Application {
+public class Application 
+  extends javax.management.StandardEmitterMBean
+  implements org.esxx.jmx.ApplicationMXBean {
   public Application(Context cx, Request request)
     throws IOException {
 
+    super(org.esxx.jmx.ApplicationMXBean.class, true, 
+	  new javax.management.NotificationBroadcasterSupport());
+
+
     esxx = ESXX.getInstance();
 
-    baseURL           = request.getScriptFilename().toURL();
+    baseURI           = request.getScriptFilename();
+    baseURL           = baseURI.toURL();
     workingDirectory  = request.getWD().toURL();
     ident             = baseURL.getPath().replaceAll("^.*/", "").replaceAll("\\.[^.]*", "");
     debuggerEnabled   = request.isDebuggerEnabled();
@@ -283,6 +291,10 @@ public class Application {
     return ident;
   }
 
+  public String getAppFilename() {
+    return baseURI.toString();
+  }
+
   public Scriptable getMainDocument() {
     return mainDocument;
   }
@@ -323,6 +335,9 @@ public class Application {
     return exitHandler;
   }
 
+  public void unloadApplication() {
+    esxx.removeCachedApplication(this);
+  }
 
   private void loadMainFile()
     throws IOException {
@@ -749,6 +764,7 @@ public class Application {
   private XMLInputFactory xmlInputFactory;
 
   private ESXX esxx;
+  private URI baseURI;
   private URL baseURL;
   private HashSet<URL> externalURLs = new HashSet<URL>();
   private URL workingDirectory;

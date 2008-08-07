@@ -109,14 +109,35 @@ public class ESXX {
 	    getLogger().logp(Level.CONFIG, null, null, app + " loaded.");
 	  }
 
-	  public void entryRemoved(String key, Application app) {
+	  public void entryRemoved(String key, final Application app) {
 	    getLogger().logp(Level.CONFIG, null, null, app + " unloading ...");
 
 	    // In this function, we're single-threaded (per application URL)
 	    app.terminate(defaultTimeout);
-	    app.executeExitHandler(Context.getCurrentContext());
 
-	    getLogger().logp(Level.CONFIG, null, null, app + " unloaded.");
+	    // Execute the exit handler in one of the worker threads
+	    Workload workload = addContextAction(null, new ContextAction() {
+		public Object run(Context cx) {
+		  app.executeExitHandler(cx);
+		  return null;
+		}
+	      }, -1 /* no timeout */);
+
+	    try {
+	      workload.future.get();
+	    }
+	    catch (InterruptedException ex) {
+	      Thread.currentThread().interrupt();
+	      ex.printStackTrace();
+	    }
+	    catch (Exception ex) {
+	      ex.printStackTrace();
+	    }
+	    finally {
+	      mxUnregister("Application", app.getAppFilename());
+
+	      getLogger().logp(Level.CONFIG, null, null, app + " unloaded.");
+	    }
 	  }
 	});
 
@@ -666,7 +687,11 @@ public class ESXX {
 	      // single-threaded (per application URL) here, so only
 	      // one Application will ever be created, no matter how
 	      // many concurrent requests there are.
-	      return new Application(cx, request);
+	      Application app = new Application(cx, request);
+	      
+	      mxRegister("Application", app.getAppFilename(), app);
+
+	      return app;
 	    }
 	}, 0);
 
@@ -686,6 +711,10 @@ public class ESXX {
 
     public void releaseApplication(Application app) {
       app.exit();
+    }
+
+    public void removeCachedApplication(Application app) {
+      applicationCache.remove(app.getAppFilename());
     }
 
     public XsltExecutable getCachedStylesheet(URL url, Application app)
@@ -728,6 +757,47 @@ public class ESXX {
 
       return saxonProcessor;
     }
+
+  private void mxRegister(String type, String name, Object object) {
+    try {
+      javax.management.MBeanServer mbs = 
+	java.lang.management.ManagementFactory.getPlatformMBeanServer();
+
+      mbs.registerMBean(object, mxObjectName(type, name));
+    }
+    catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  private void mxUnregister(String type, String name) {
+    try {
+      javax.management.MBeanServer mbs = 
+	java.lang.management.ManagementFactory.getPlatformMBeanServer();
+    
+      mbs.unregisterMBean(mxObjectName(type, name));
+    }
+    catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  /** A pattern that matches the characters '"', '\', '?' and '*'. */
+  private static java.util.regex.Pattern mxObjectNamePattern = 
+    java.util.regex.Pattern.compile("(\"\\\\\\?\\*)");
+
+  private javax.management.ObjectName mxObjectName(String type, String name) 
+    throws javax.management.MalformedObjectNameException {
+    String object_name = ESXX.class.getName() + ":type=" + type;
+
+    if (name != null) {
+      // Quote illegal characters
+      name = mxObjectNamePattern.matcher(name).replaceAll("\\\\$1");
+      object_name += ",name=\"" + name + "\""; 
+    }
+
+    return new javax.management.ObjectName(object_name);
+  }
 
   private static String identityTransform =
       "<xsl:transform xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='2.0'>" +
