@@ -21,11 +21,13 @@ package org.esxx.jmx;
 import java.util.Date;
 
 public class ApplicationStats {
-  @java.beans.ConstructorProperties({"invocations", "executionTime", "lastAccessed"})  
-  public ApplicationStats(long invocations, long executionTime, Date lastAccessed) {
+  @java.beans.ConstructorProperties({"invocations", "executionTime", "started", "lastAccessed"})  
+  public ApplicationStats(long invocations, long executionTime, 
+			  Date started, Date lastAccessed) {
     this.invocations   = invocations;
     this.executionTime = executionTime;
-    this.lastAccessed = lastAccessed;
+    this.started       = started;
+    this.lastAccessed  = lastAccessed;
   }
 
   @Units("requests")
@@ -37,11 +39,16 @@ public class ApplicationStats {
     return executionTime;
   }
 
+  public Date getStarted() {
+    return started;
+  }
+
   public Date getLastAccessed() {
     return lastAccessed;
   }
 
   private long invocations;
   private long executionTime;
+  private Date started;
   private Date lastAccessed;
 }

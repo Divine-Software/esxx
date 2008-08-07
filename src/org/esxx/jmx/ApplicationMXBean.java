@@ -25,7 +25,6 @@ public interface ApplicationMXBean {
   public String getAppName();
   public String getAppFilename();
 
-  public java.util.Date getStartTime();
   public ApplicationStats getStatistics();
   public void unloadApplication();
 };

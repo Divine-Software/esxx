@@ -62,7 +62,7 @@ public class Application
     ident             = baseURL.getPath().replaceAll("^.*/", "").replaceAll("\\.[^.]*", "");
     debuggerEnabled   = request.isDebuggerEnabled();
     debuggerActivated = request.isDebuggerActivated();
-    startTime         = new Date();
+    started           = new Date();
     xmlInputFactory   = XMLInputFactory.newInstance();
 
     loadMainFile();
@@ -303,12 +303,9 @@ public class Application
     return baseURI.toString();
   }
 
-  public Date getStartTime() {
-    return startTime;
-  }
-
   public synchronized org.esxx.jmx.ApplicationStats getStatistics() {
-    return new org.esxx.jmx.ApplicationStats(invocations, executionTime, new Date(lastAccessed));
+    return new org.esxx.jmx.ApplicationStats(invocations, executionTime, 
+					     started, new Date(lastAccessed));
   }
 
   public Scriptable getMainDocument() {
@@ -786,7 +783,6 @@ public class Application
   private URL workingDirectory;
 
   private String ident;
-  private Date startTime;
   private Logger logger;
 
   private boolean debuggerEnabled;
@@ -797,8 +793,10 @@ public class Application
 
   private int enterCount = 0;
   private boolean terminated = false;
+
   private long invocations;
   private long executionTime;
+  private Date started;
   private long lastAccessed;
 
   private Scriptable mainDocument;
