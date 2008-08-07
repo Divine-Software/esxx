@@ -709,8 +709,8 @@ public class ESXX {
       return app;
     }
 
-    public void releaseApplication(Application app) {
-      app.exit();
+    public void releaseApplication(Application app, long start_time) {
+      app.exit(start_time);
     }
 
     public void removeCachedApplication(Application app) {

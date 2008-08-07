@@ -18,14 +18,13 @@
 
 package org.esxx.jmx;
 
-public interface ApplicationMXBean {
-  public boolean isDebuggerEnabled();
-  public boolean isDebuggerActivated();
+import java.lang.annotation.*;
+import javax.management.DescriptorKey;
 
-  public String getAppName();
-  public String getAppFilename();
-
-  public java.util.Date getStartTime();
-  public ApplicationStats getStatistics();
-  public void unloadApplication();
-};
+@Documented
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Units {
+  @DescriptorKey("units") 
+  String value();
+}

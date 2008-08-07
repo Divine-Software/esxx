@@ -18,14 +18,30 @@
 
 package org.esxx.jmx;
 
-public interface ApplicationMXBean {
-  public boolean isDebuggerEnabled();
-  public boolean isDebuggerActivated();
+import java.util.Date;
 
-  public String getAppName();
-  public String getAppFilename();
+public class ApplicationStats {
+  @java.beans.ConstructorProperties({"invocations", "executionTime", "lastAccessed"})  
+  public ApplicationStats(long invocations, long executionTime, Date lastAccessed) {
+    this.invocations   = invocations;
+    this.executionTime = executionTime;
+    this.lastAccessed = lastAccessed;
+  }
 
-  public java.util.Date getStartTime();
-  public ApplicationStats getStatistics();
-  public void unloadApplication();
-};
+  @Units("requests")
+  public long getInvocations() {
+    return invocations;
+  }
+
+  @Units("wall clock milliseconds") public long getExecutionTime() {
+    return executionTime;
+  }
+
+  public Date getLastAccessed() {
+    return lastAccessed;
+  }
+
+  private long invocations;
+  private long executionTime;
+  private Date lastAccessed;
+}

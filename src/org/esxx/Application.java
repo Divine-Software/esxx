@@ -62,6 +62,7 @@ public class Application
     ident             = baseURL.getPath().replaceAll("^.*/", "").replaceAll("\\.[^.]*", "");
     debuggerEnabled   = request.isDebuggerEnabled();
     debuggerActivated = request.isDebuggerActivated();
+    startTime         = new Date();
     xmlInputFactory   = XMLInputFactory.newInstance();
 
     loadMainFile();
@@ -270,9 +271,16 @@ public class Application
     }
   }
 
-  public synchronized void exit() {
+  public synchronized void exit(long start_time) {
     if (enterCount == 0) {
       throw new IllegalStateException("enterCount becomes negative!");
+    }
+
+    ++invocations;
+    lastAccessed  = System.currentTimeMillis();
+
+    if (start_time != 0) {
+      executionTime += (lastAccessed - start_time);
     }
 
     --enterCount;
@@ -293,6 +301,14 @@ public class Application
 
   public String getAppFilename() {
     return baseURI.toString();
+  }
+
+  public Date getStartTime() {
+    return startTime;
+  }
+
+  public synchronized org.esxx.jmx.ApplicationStats getStatistics() {
+    return new org.esxx.jmx.ApplicationStats(invocations, executionTime, new Date(lastAccessed));
   }
 
   public Scriptable getMainDocument() {
@@ -770,6 +786,7 @@ public class Application
   private URL workingDirectory;
 
   private String ident;
+  private Date startTime;
   private Logger logger;
 
   private boolean debuggerEnabled;
@@ -780,6 +797,9 @@ public class Application
 
   private int enterCount = 0;
   private boolean terminated = false;
+  private long invocations;
+  private long executionTime;
+  private long lastAccessed;
 
   private Scriptable mainDocument;
   private JSURI mainURI;

@@ -42,6 +42,7 @@ class Worker {
 
   public Response handleRequest(Context cx, Request request)
     throws Exception {
+    long start_time = System.currentTimeMillis();
     Application app = esxx.getCachedApplication(cx, request);
     JSGlobal global = app.getJSGlobal();
     JSESXX js_esxx  = app.getJSESXX();
@@ -151,7 +152,7 @@ class Worker {
       return response;
     }
     finally {
-      esxx.releaseApplication(app);
+      esxx.releaseApplication(app, start_time);
     }
   }
 
