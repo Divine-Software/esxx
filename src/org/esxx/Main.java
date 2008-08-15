@@ -111,6 +111,11 @@ public class Main {
 
       ESXX esxx = ESXX.initInstance(System.getProperties());
 
+      // Install our ResponseCache implementation
+      java.net.ResponseCache.setDefault(new org.esxx.cache.DBResponseCache("/tmp/ESXX.WebCache", 
+									   Integer.MAX_VALUE,
+									   Long.MAX_VALUE, 
+									   Long.MAX_VALUE));
       if (fastcgi_port != -1) {
 	FCGIRequest.runServer(fastcgi_port);
       }
