@@ -35,6 +35,8 @@ OPTIONS="--bind 7654"
 if [ -f /etc/init.d/functions ]; then
   # RedHat-style startup
   lockfile=@LOCALSTATE_INSTALL_PREFIX@/lock/subsys/$prog
+  grep --quiet -- --pidfile /etc/init.d/functions && long_pidfile="--pidfile $pidfile"
+  grep --quiet -- --pidfile /etc/init.d/functions && short_pidfile="-p $pidfile"
   OPTIONS="$OPTIONS --user apache"
 
   if [ -f /etc/sysconfig/@PROJECT_NAME@ ]; then
@@ -49,7 +51,7 @@ if [ -f /etc/init.d/functions ]; then
       RETVAL=1
       failure
     else
-      daemon --pidfile $pidfile $absprog --pidfile $pidfile $OPTIONS
+      daemon $long_pidfile $absprog --pidfile $pidfile $OPTIONS
       RETVAL=$?
       [ $RETVAL -eq 0 ] && touch $lockfile
     fi
@@ -63,7 +65,7 @@ if [ -f /etc/init.d/functions ]; then
       RETVAL=1
       failure
     else
-      killproc -p $pidfile -d $timeout $prog
+      killproc $short_pidfile -d $timeout $prog
       RETVAL=$?
       [ $RETVAL -eq 0 ] && rm -f $lockfile
     fi
@@ -131,7 +133,7 @@ case "$1" in
     stop
     ;;
   status)
-    status -p $pidfile $prog
+    status $short_pidfile $prog
     ;;
   restart|force-reload)
     stop
