@@ -1,0 +1,24 @@
+0.9.20080819
+	* Loads of bug fixes.
+
+	* Added getScriptFilename(), getPathInfo(), getScriptName() to
+	Request object.
+
+	* Disabled validate-if-schema feature on XML parser.
+
+	* Added exit handler support, to execute JS code when an app
+	is being unloaded.
+
+	* The error handler now receives (req, ex) arguments.
+
+	* Added 'buffered' property to the Response object, which
+	makes ESXX buffer the response in RAM, in order to be able to provide
+	the Content-Length HTTP header.
+
+	* Added JMX support. Apps can be inspected and unloaded via
+	JConsole.
+
+	* Init script now work on RHEL/CentOS 4.x.
+
+0.9.20080619
+	* Initial binary release.

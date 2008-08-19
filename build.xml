@@ -41,7 +41,7 @@
     <delete dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}"/>
     <copy todir="${dist.dir}">
-      <fileset dir="" includes="LICENSE*,README"/>
+      <fileset dir="" includes="LICENSE*,README,CHANGES.txt"/>
     </copy>
 
     <mkdir dir="${dist.dir}/examples"/>
