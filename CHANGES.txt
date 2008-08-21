@@ -1,4 +1,4 @@
-0.9.20080819
+0.9.20080821
 	* Loads of bug fixes.
 
 	* Added getScriptFilename(), getPathInfo(), getScriptName() to
