@@ -33,7 +33,7 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.FileCacheImageInputStream;
 import org.htmlcleaner.CleanerProperties;
-import org.htmlcleaner.DomSerializer;
+import org.htmlcleaner.NSDomSerializer;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 import org.json.*;
@@ -240,7 +240,7 @@ class Parsers {
 		tn = hc.clean(is);
 	      }
 
-	      return ESXX.domToE4X(new DomSerializer(hp, true).createDOM(tn), cx, scope);
+	      return ESXX.domToE4X(new NSDomSerializer(hp, true).createDOM(tn), cx, scope);
 	    }
 	});
 
