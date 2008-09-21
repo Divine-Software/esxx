@@ -1,3 +1,6 @@
+0.9.2008xxxx
+	* Upgraded to HtmlCleaner 2.1.
+
 0.9.20080821
 	* Loads of bug fixes.
 

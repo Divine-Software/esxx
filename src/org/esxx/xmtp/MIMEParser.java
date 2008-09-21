@@ -22,7 +22,10 @@ import java.io.*;
 import java.util.*;
 import javax.mail.*;
 import javax.mail.internet.*;
+import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.HtmlCleaner;
+import org.htmlcleaner.SimpleXmlSerializer;
+import org.htmlcleaner.TagNode;
 import org.w3c.dom.*;
 import org.w3c.dom.ls.*;
 import org.w3c.dom.bootstrap.*;
@@ -210,23 +213,26 @@ public class MIMEParser {
 	case HTML_PART: {
 	  // We can only arrive here if we're processing HTML parts
 
-	  HtmlCleaner hc;
+	  HtmlCleaner       hc = new HtmlCleaner();
+	  CleanerProperties hp = hc.getProperties();
+	  TagNode           tn;
+
+	  hp.setHyphenReplacementInComment("\u2012\u2012");
+	  //	  hp.setOmitDoctypeDeclaration(false);
+	  hp.setOmitDoctypeDeclaration(true); // Or we get an XML parser error :-(
 
 	  if (content_stream != null) {
-	    hc = new HtmlCleaner(content_stream, content_type.getParameter("charset"));
+	    tn = hc.clean(content_stream, content_type.getParameter("charset"));
 	  }
 	  else {
-	    hc = new HtmlCleaner((String) content);
+	    tn = hc.clean((String) content);
 	  }
 
-	  hc.setHyphenReplacementInComment("\u2012\u2012");
-	  hc.setOmitDoctypeDeclaration(false);
-	  hc.clean();
-
-	  // HtmlCleaner.createDOM() doesn't expand HTML entity
-	  // references, so we reparse the document from a string
-	  // instead.
-	  content = hc.getXmlAsString();
+// 	  // HtmlCleaner.createDOM() doesn't expand HTML entity
+// 	  // references, so we reparse the document from a string
+// 	  // instead.
+// 	  content = hc.getXmlAsString();
+	  content = new SimpleXmlSerializer(hp).getXmlAsString(tn);
 
 	  // Update content type
 	  Element ct = (Element) element.getElementsByTagNameNS("*", "Content-Type").item(0);

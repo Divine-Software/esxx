@@ -25,14 +25,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.net.URL;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.FileCacheImageInputStream;
-import java.net.URL;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.HashMap;
+import org.htmlcleaner.CleanerProperties;
+import org.htmlcleaner.DomSerializer;
 import org.htmlcleaner.HtmlCleaner;
+import org.htmlcleaner.TagNode;
 import org.json.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
@@ -222,21 +225,22 @@ class Parsers {
 				PrintWriter err,
 				Context cx, Scriptable scope)
 	      throws IOException, javax.xml.parsers.ParserConfigurationException  {
-	      String      cs = mime_params.get("charset");
-	      HtmlCleaner hc;
+	      String            cs = mime_params.get("charset");
+	      HtmlCleaner       hc = new HtmlCleaner();
+	      CleanerProperties hp = hc.getProperties();
+	      TagNode           tn;
+	      
+	      hp.setHyphenReplacementInComment("\u2012\u2012");
+	      hp.setUseCdataForScriptAndStyle(false);
 
 	      if (cs != null) {
-		hc = new HtmlCleaner(is, cs);
+		tn = hc.clean(is, cs);
 	      }
 	      else {
-		hc = new HtmlCleaner(is);
+		tn = hc.clean(is);
 	      }
 
-	      hc.setHyphenReplacementInComment("\u2012\u2012");
-	      hc.setUseCdataForScriptAndStyle(false);
-	      hc.clean();
-
-	      return ESXX.domToE4X(hc.createDOM(), cx, scope);
+	      return ESXX.domToE4X(new DomSerializer(hp, true).createDOM(tn), cx, scope);
 	    }
 	});
 
