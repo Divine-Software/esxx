@@ -66,6 +66,7 @@ public class JSURI
 				     Function ctorObj,
 				     boolean inNewExpr)
     throws java.net.URISyntaxException {
+    JSURI prop_src_uri = null;
     URI uri = null;
 
     if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
@@ -73,7 +74,8 @@ public class JSURI
     }
     else if (args.length < 2 || args[1] == Context.getUndefinedValue()) {
       if (args[0] instanceof JSURI) {
-	uri = ((JSURI) args[0]).uri;
+	prop_src_uri = (JSURI) args[0];
+	uri = prop_src_uri.uri;
       }
       else if (args[0] instanceof URL) {
 	uri = ((URL) args[0]).toURI();
@@ -96,14 +98,33 @@ public class JSURI
     }
     else if (args.length >= 2) {
       try {
-	uri = ((JSURI) args[0]).uri.resolve(Context.toString(args[1]));
+	prop_src_uri = (JSURI) args[0];
+	uri = prop_src_uri.uri.resolve(Context.toString(args[1]));
       }
       catch (ClassCastException ex) {
 	throw Context.reportRuntimeError("Double argument must be URI and String");
       }
     }
 
-    return new JSURI(uri);
+    JSURI rc = new JSURI(uri);
+
+    if (prop_src_uri != null) {
+      // Copy local properties from previous JSURI object
+      for (Object o : prop_src_uri.getIds()) {
+	if (o instanceof String) {
+	  String key = (String) o;
+
+	  rc.put(key, rc, prop_src_uri.get(key, prop_src_uri));
+	}
+	else {
+	  int key = (Integer) o;
+
+	  rc.put(key, rc, prop_src_uri.get(key, prop_src_uri));
+	}
+      }
+    }
+
+    return rc;
     //      return createJSURI(uri);
   }
 
