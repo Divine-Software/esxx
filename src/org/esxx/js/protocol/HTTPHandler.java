@@ -293,7 +293,7 @@ public class HTTPHandler
       result.status  = response.getStatusLine().getStatusCode();
       result.headers = response.getAllHeaders();
 
-      if (entity.getContentLength() != 0) {
+      if (entity != null && entity.getContentLength() != 0) {
 	if (type == null) {
 	  Header hdr = entity.getContentType();
 	  type = hdr == null ? "application/octet-stream" : hdr.getValue();
