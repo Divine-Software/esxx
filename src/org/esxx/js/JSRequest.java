@@ -334,43 +334,48 @@ public class JSRequest
     private void parseMessage(Request request, Context cx, Scriptable scope) {
       ESXX esxx = ESXX.getInstance();
 
-      // Consume SOAP message, if any
-      // TODO: Add a SOAP handler in Parser.java
-      if (soapAction != null) {
-	try {
-	  message = MessageFactory.newInstance(
-	    SOAPConstants.DYNAMIC_SOAP_PROTOCOL).createMessage(mimeHeaders,
-							       request.getInputStream());
+      try {
+	// Consume SOAP message, if any
+	// TODO: Add a SOAP handler in Parser.java
+	if (soapAction != null) {
+	  try {
+	    message = MessageFactory.newInstance(
+	      SOAPConstants.DYNAMIC_SOAP_PROTOCOL).createMessage(mimeHeaders,
+								 request.getInputStream());
+	  }
+	  catch (IOException ex) {
+	    throw new ESXXException("Unable to read SOAP message stream: " + ex.getMessage());
+	  }
+	  catch (SOAPException ex) {
+	    throw new ESXXException("Invalid SOAP message: " + ex.getMessage());
+	  }
 	}
-	catch (IOException ex) {
-	  throw new ESXXException("Unable to read SOAP message stream: " + ex.getMessage());
-	}
-	catch (SOAPException ex) {
-	  throw new ESXXException("Invalid SOAP message: " + ex.getMessage());
+	else if (contentType != null && contentLength > 0) {
+	  try {
+	    HashMap<String,String> params = new HashMap<String,String>();
+	    String                 ct     = ESXX.parseMIMEType(contentType, params);
+
+	    if ("application/x-www-form-urlencoded".equals(ct)) {
+	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	    
+	      IO.copyStream(request.getInputStream(), bos);
+	      handleQueryHeader(bos.toString("UTF-8"));
+	    }
+	    else {
+	      message = esxx.parseStream(ct, params, request.getInputStream(), 
+					 request.getScriptFilename().toURL(),
+					 null,
+					 new java.io.PrintWriter(request.getDebugWriter()),
+					 cx, scope);
+	    }
+	  }
+	  catch (Exception ex) {
+	    throw new ESXXException("Unable to parse request entity: " + ex.getMessage());
+	  }
 	}
       }
-      else if (contentType != null && contentLength > 0) {
-	try {
-	  HashMap<String,String> params = new HashMap<String,String>();
-	  String                 ct     = ESXX.parseMIMEType(contentType, params);
-
-	  if ("application/x-www-form-urlencoded".equals(ct)) {
-	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	    
-	    IO.copyStream(request.getInputStream(), bos);
-	    handleQueryHeader(bos.toString("UTF-8"));
-	  }
-	  else {
-	    message = esxx.parseStream(ct, params, request.getInputStream(), 
-	                               request.getScriptFilename().toURL(),
-				       null,
-				       new java.io.PrintWriter(request.getDebugWriter()),
-				       cx, scope);
-	  }
-	}
-	catch (Exception ex) {
-	  throw new ESXXException("Unable to parse request entity: " + ex.getMessage());
-	}
+      finally {
+	try { request.getInputStream().close(); } catch (Exception ex) {}
       }
     }
 

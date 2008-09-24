@@ -62,9 +62,13 @@ public class HTTPRequest
 
       // Output body
       OutputStream os = httpExchange.getResponseBody();
-      response.writeResult(esxx, cx, os);
-      os.close();
-      httpExchange.close();
+      try {
+	response.writeResult(esxx, cx, os);
+      }
+      finally {
+	try { os.close(); } catch (Exception ex) {}
+	httpExchange.close();
+      }
       return 0;
     }
     catch (Exception ex) {
