@@ -148,6 +148,7 @@ public class ESXX {
       cgiToHTTPMap.put("HTTP_SOAPACTION", "SOAPAction");
       cgiToHTTPMap.put("CONTENT_TYPE", "Content-Type");
       cgiToHTTPMap.put("CONTENT_LENGTH", "Content-Length");
+      cgiToHTTPMap.put("Authorization", "Authorization"); // For mod_fastcgi
 
       contextFactory = new ContextFactory() {
 	  @Override
