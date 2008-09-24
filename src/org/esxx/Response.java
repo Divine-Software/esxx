@@ -22,6 +22,7 @@ import org.esxx.util.IO;
 
 import java.awt.image.RenderedImage;
 import java.io.*;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.HashMap;
@@ -141,7 +142,42 @@ public class Response  {
       object = esxx.serializeNode((Node) object);
     }
     else if (object instanceof Scriptable) {
-      object = jsToJSON(object, cx).toString();
+      if ("application/x-www-form-urlencoded".equals(mime_type)) {
+	Scriptable    s  = (Scriptable) object;
+	StringBuilder sb = new StringBuilder();
+	String        cs = mime_params.get("charset");
+
+	if (cs == null) {
+	  cs = "UTF-8";
+	}
+
+	for (Object o : s.getIds()) {
+	  if (sb.length() != 0) {
+	    sb.append("&");
+	  }
+
+	  if (o instanceof String) {
+	    String key   = (String) o;
+	    String value = cx.toString(s.get(key, s));
+
+	    sb.append(URLEncoder.encode(key, cs));
+	    sb.append("=");
+	    sb.append(URLEncoder.encode(value, cs));
+	  }
+	  else {
+	    int key      = (Integer) o;
+	    String value = cx.toString(s.get(key, s));
+
+	    sb.append(key + "=");
+	    sb.append(URLEncoder.encode(value, cs));
+	  }
+	}
+
+	object = sb.toString();
+      }
+      else {
+	object = jsToJSON(object, cx).toString();
+      }
     }
     else if (object instanceof byte[]) {
       object = new ByteArrayInputStream((byte[]) object);
