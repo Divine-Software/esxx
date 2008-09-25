@@ -1,3 +1,7 @@
+0.9.20080925
+	* Fixed a bug that closed System.in in script mode, causing
+	System.console() to return null.
+
 0.9.20080924
 	* Upgraded to HtmlCleaner 2.1.
 
