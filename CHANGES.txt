@@ -1,6 +1,10 @@
-0.9.20080925
+0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
 	System.console() to return null.
+
+	* When using the built-in HTTP server, a body will never be
+	sent when the status code is 1xx, 204 or 304, as per HTTP
+	spec.
 
 0.9.20080924
 	* Upgraded to HtmlCleaner 2.1.

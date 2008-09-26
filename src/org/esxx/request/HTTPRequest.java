@@ -56,19 +56,35 @@ public class HTTPRequest
 	  }
 	});
 
-      httpExchange.sendResponseHeaders(response.getStatus(), 
-				       response.isBuffered() ? 
-				       response.getContentLength(esxx, cx) : 0);
+      int  status = response.getStatus();
+      long content_length;
+
+      if ((status >= 100 && status <= 199) ||
+	  status == 204 ||
+	  status == 304) {
+	content_length = -1;
+      }
+      else if (response.isBuffered()) {
+	content_length = response.getContentLength(esxx, cx);
+      }
+      else {
+	content_length = 0;
+      }
+
+      httpExchange.sendResponseHeaders(status, content_length);
 
       // Output body
-      OutputStream os = httpExchange.getResponseBody();
       try {
-	response.writeResult(esxx, cx, os);
+	if (content_length != -1) {
+	  OutputStream os = httpExchange.getResponseBody();
+	  response.writeResult(esxx, cx, os);
+	  try { os.close(); } catch (Exception ex) {}
+	}
       }
       finally {
-	try { os.close(); } catch (Exception ex) {}
 	httpExchange.close();
       }
+
       return 0;
     }
     catch (Exception ex) {
