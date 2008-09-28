@@ -151,7 +151,6 @@ public class LRUCache<K, V> {
       age = maxAge;
     }
 
-
     while (true) { // Repeat until successful
       LRUEntry entry = getEntry(key);
 
@@ -313,7 +312,7 @@ public class LRUCache<K, V> {
 
 
   /** Iterates all entries and removes all for which
-   *  EntryFilter.isStale() returns true. 
+   *  EntryFilter.isStale() returns true, or has already expired.
    *
    *  @param filter  An EntryFilter.
    */
@@ -325,13 +324,15 @@ public class LRUCache<K, V> {
       entries = new LinkedList<Map.Entry<K, LRUEntry>>(map.entrySet());
     }
 
+    long now = System.currentTimeMillis();
+
     for (Map.Entry<K, LRUEntry> e : entries) {
       LRUEntry entry = e.getValue();
       boolean remove = false;
 
       synchronized (entry) {
 	if (!entry.isDeleted() && entry.value != null && 
-	    filter.isStale(e.getKey(), entry.value, entry.created)) {
+	    (entry.expires < now || filter.isStale(e.getKey(), entry.value, entry.created))) {
 	  fireRemovedEvent(e.getKey(), entry.value);
 
 	  entry.markAsDeleted();
