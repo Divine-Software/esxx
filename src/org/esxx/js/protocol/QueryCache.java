@@ -38,7 +38,7 @@ import org.w3c.dom.Element;
 public class QueryCache {
 
   public interface Callback {
-    void execute(Query q) 
+    Object execute(Query q) 
       throws SQLException;
   }
 
@@ -52,7 +52,16 @@ public class QueryCache {
     connectionPools = new HashMap<ConnectionKey, ConnectionPool>();
   }
   
-  void executeQuery(URI uri, Properties props, String query, Callback cb)
+  public void purgeConnections() {
+    synchronized (connectionPools) {
+      for (ConnectionPool cp : connectionPools.values()) {
+	cp.purgeConnections();
+      }
+    }
+  }
+  
+
+  Object executeQuery(URI uri, Properties props, String query, Callback cb)
     throws SQLException {
     ConnectionKey key = new ConnectionKey(uri, props);
     ConnectionPool cp;
@@ -69,7 +78,7 @@ public class QueryCache {
     PooledConnection pc = cp.getConnection();
 
     try {
-      cb.execute(pc.getQuery(query));
+      return cb.execute(pc.getQuery(query));
     }
     finally {
       cp.releaseConnection(pc);
@@ -88,7 +97,7 @@ public class QueryCache {
       this.props = props;
     }
 
-    public boolean equals(Object o) {
+    @Override public boolean equals(Object o) {
       try {
 	ConnectionKey ck = (ConnectionKey) o;
 
@@ -97,6 +106,10 @@ public class QueryCache {
       catch (ClassCastException ex) {
 	return false;
       }
+    }
+
+    @Override public int hashCode() {
+      return uri.hashCode() + props.hashCode();
     }
 
     private URI uri;
@@ -161,14 +174,14 @@ public class QueryCache {
       synchronized (connections) {
 	PooledConnection pc;
 
-	while ((pc = connections.peekLast()) != null) {
-	  if (pc.getExpires() < now) {
-	    pc.close();
-	    connections.removeLast();
-	    --numConnections;
-	  }
+	// Purge exipres connections
+	while ((pc = connections.peekLast()) != null && pc.getExpires() < now) {
+	  pc.close();
+	  --numConnections;
+	  connections.removeLast();
 	}
-	
+
+	// Purge expired queries from all remaining connections
 	for (PooledConnection pc2 : connections) {
 	  pc2.purgeQueries();
 	}
@@ -181,10 +194,10 @@ public class QueryCache {
     private int numConnections;
   }
 
+
   private class PooledConnection {
     public PooledConnection(URI uri, Properties props) 
       throws SQLException {
-      expires = System.currentTimeMillis() + connectionTimeout;
       connection = DriverManager.getConnection(uri.toString(), props);
       queryCache = new LRUCache<String, Query>(maxQueries, queryTimeout);
 
@@ -198,6 +211,9 @@ public class QueryCache {
 	    q.close();
 	  }
 	});
+
+      // "Touch" connection
+      expires = System.currentTimeMillis() + connectionTimeout;
     }
 
     public long getExpires() {
@@ -215,7 +231,7 @@ public class QueryCache {
 	      throws SQLException {
 	      return new Query(query, connection);
 	    }
-	  }, queryTimeout);
+	  }, 0);
       }
       catch (SQLException ex) {
 	throw ex;
@@ -250,10 +266,11 @@ public class QueryCache {
       }
     }
 
-    long expires;
-    Connection connection;
-    LRUCache<String, Query> queryCache;
+    private long expires;
+    private Connection connection;
+    private LRUCache<String, Query> queryCache;
   }
+
 
   public static class Query {
     public Query(String unparsed_query, Connection db)

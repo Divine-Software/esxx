@@ -34,12 +34,26 @@ public class JDBCHandler
   extends ProtocolHandler {
   public JDBCHandler(URI uri, JSURI jsuri) {
     super(uri, jsuri);
+
+    synchronized (JDBCHandler.class) {
+      if (queryCache == null) {
+	queryCache = new QueryCache(10, 2 * 60000, 1000, 1 * 60000);
+
+	new Thread(new Runnable() {
+	    public void run() {
+	      while (true) {
+		try { Thread.sleep(1000); } catch (Exception ex) {}
+		queryCache.purgeConnections();
+	      }
+	    }
+	  }).start();
+      }
+    }
   }
 
   @Override
-  public Object query(Context cx, Scriptable thisObj, Object[] args) {
+    public Object query(final Context cx, final Scriptable thisObj, Object[] args) {
     try {
-      ESXX       esxx        = ESXX.getInstance();
       String     query       = Context.toString(args[0]);
       String     result_name = "result";
       String     entry_name  = "entry";
@@ -67,50 +81,57 @@ public class JDBCHandler
 	p.setProperty("password", Context.toString(a.get("password", a)));
       }
 
-      Connection db = DriverManager.getConnection(uri.toString(), p);
+      final Scriptable final_params  = params;
+      final String final_result_name = result_name;
+      final String final_entry_name  = entry_name;
 
-      Query q = new Query(query, db);
+      Object rc = queryCache.executeQuery(uri, p, query, new QueryCache.Callback() {
+	  public Object execute(QueryCache.Query q)
+	    throws SQLException {
+	    if (q.needParams()) {
+	      if (final_params == null) {
+		throw Context.reportRuntimeError("Missing query() argument.");
+	      }
 
-      if (q.needParams()) {
-	if (params == null) {
-	  throw Context.reportRuntimeError("Missing query() argument.");
-	}
+	      q.bindParams(cx, final_params);
+	    }
 
-	q.bindParams(cx, (Scriptable) args[1]);
-      }
+	    Object rc = q.execute();
 
+	    if (rc instanceof ResultSet) {
+	      ResultSet          rs = (ResultSet) rc;
+	      ResultSetMetaData rmd = rs.getMetaData();
 
-      Object rc = q.execute();
+	      ESXX       esxx   = ESXX.getInstance();
+	      Document   result = esxx.createDocument(final_result_name);
+	      Element    root   = result.getDocumentElement();
 
-      if (rc instanceof ResultSet) {
-	ResultSet          rs = (ResultSet) rc;
-	ResultSetMetaData rmd = rs.getMetaData();
+	      int      count = rmd.getColumnCount();
+	      String[] names = new String[count];
 
-	Document   result = esxx.createDocument(result_name);
-	Element    root   = result.getDocumentElement();
+	      for (int i = 0; i < count; ++i) {
+		names[i] = rmd.getColumnName(i + 1);
+	      }
 
-	int      count = rmd.getColumnCount();
-	String[] names = new String[count];
+	      while (rs.next()) {
+		Element row = result.createElementNS(null, final_entry_name);
 
-	for (int i = 0; i < count; ++i) {
-	  names[i] = rmd.getColumnName(i + 1);
-	}
+		for (int i = 0; i < count; ++i) {
+		  addChild(row, names[i].toLowerCase(), rs.getString(i + 1));
+		}
 
-	while (rs.next()) {
-	  Element row = result.createElementNS(null, entry_name);
+		root.appendChild(row);
+	      }
 
-	  for (int i = 0; i < count; ++i) {
-	    addChild(row, names[i].toLowerCase(), rs.getString(i + 1));
+	      return ESXX.domToE4X(result, cx, thisObj);
+	    }
+	    else {
+	      return rc;
+	    }
 	  }
+	});
 
-	  root.appendChild(row);
-	}
-
-	return ESXX.domToE4X(result, cx, thisObj);
-      }
-      else {
-	return rc;
-      }
+      return rc;
     }
     catch (SQLException ex) {
       throw Context.reportRuntimeError("SQL query failed: " + ex.getMessage());
@@ -118,97 +139,5 @@ public class JDBCHandler
   }
 
 
-  private static class Query {
-    public Query(String unparsed_query, Connection db)
-      throws SQLException {
-      parseQuery(unparsed_query);
-
-      try {
-	sql = db.prepareCall(query);
-	pmd = sql.getParameterMetaData();
-      }
-      catch (SQLException ex) {
-	throw Context.reportRuntimeError("JDBC failed to prepare parsed SQL statement: " +
-					 query + ": " + ex.getMessage());
-      }
-
-      if (pmd.getParameterCount() != params.size()) {
-	throw Context.reportRuntimeError("JDBC and ESXX report different " +
-					 "number of arguments in SQL query");
-      }
-    }
-
-    public boolean needParams()
-      throws SQLException {
-      return pmd.getParameterCount() != 0;
-    }
-
-    public void bindParams(Context cx, Scriptable object)
-      throws SQLException {
-
-      int p = 1;
-      for (String name : params) {
-	String value = Context.toString(ProtocolHandler.evalProperty(cx, object, name));
-
-	switch (pmd.getParameterType(p)) {
-	default:
-	  sql.setObject(p, value);
-	  break;
-	}
-
-	++p;
-      }
-    }
-
-    public Object execute()
-      throws SQLException {
-      if (sql.execute()) {
-	sql.clearParameters();
-	return sql.getResultSet();
-      }
-      else {
-	sql.clearParameters();
-	return new Integer(sql.getUpdateCount());
-      }
-    }
-
-    private void parseQuery(String unparsed_query) {
-      StringBuffer s = new StringBuffer();
-      Matcher      m = paramPattern.matcher(unparsed_query);
-
-      params = new LinkedList<String>();
-
-      while (m.find()) {
-	String g = m.group();
-
-	if (m.start(1) != -1) {
-	  // Match on group 1, which is our parameter pattern; append a single '?'
-	  m.appendReplacement(s, "?");
-	  params.add(g.substring(1, g.length() - 1));
-	}
-	else {
-	  // Match on quoted strings, which we just copy as-is
-	  m.appendReplacement(s, g);
-	}
-      }
-
-      m.appendTail(s);
-
-      query = s.toString();
-    }
-
-    private String query;
-    private LinkedList<String> params;
-
-    private CallableStatement sql;
-    private ParameterMetaData pmd;
-
-    private static final String quotePattern1 = "('((\\\\')|[^'])+')";
-    private static final String quotePattern2 = "(`((\\\\`)|[^`])+`)";
-    private static final String quotePattern3 = "(\"((\\\\\")|[^\"])+\")";
-
-    private static final Pattern paramPattern = Pattern.compile(
-	"(\\{[^\\}]+\\})" +    // Group 1: Matches {identifier}
-	"|" + quotePattern1 + "|" + quotePattern2 + "|" + quotePattern3);
-  }
+  private static QueryCache queryCache;
 }
