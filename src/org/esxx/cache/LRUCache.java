@@ -23,20 +23,20 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-public class LRUCache<E> {
+public class LRUCache<K, V> {
 
-  public interface ValueFactory<E> {
-    public E create(String key, long age) 
+  public interface ValueFactory<K, V> {
+    public V create(K key, long age) 
       throws Exception;
   }
 
-  public interface EntryFilter<E> {
-    public boolean isStale(String key, E value, long created);
+  public interface EntryFilter<K, V> {
+    public boolean isStale(K key, V value, long created);
   }
 
-  public interface LRUListener<E> {
-    public void entryAdded(String key, E value);
-    public void entryRemoved(String key, E value);
+  public interface LRUListener<K, V> {
+    public void entryAdded(K key, V value);
+    public void entryRemoved(K key, V value);
   }
 
   public LRUCache(int max_entries, long max_age) {
@@ -47,7 +47,7 @@ public class LRUCache<E> {
   }
 
 
-  public E get(String key) {
+  public V get(K key) {
     LRUEntry entry;
 
     synchronized (map) {
@@ -78,10 +78,10 @@ public class LRUCache<E> {
    *  @result The value in the cache after this call (existing or new).
    */
 
-  public E add(String key, final E value, long age) {
+  public V add(K key, final V value, long age) {
     try {
-      return add(key, new ValueFactory<E>() {
-	  public E create(String key, long age) {
+      return add(key, new ValueFactory<K, V>() {
+	  public V create(K key, long age) {
 	    return value;
 	  }
 	}, age);
@@ -104,7 +104,7 @@ public class LRUCache<E> {
    *  @result The value in the cache after this call (existing or new).
    */
 
-  public E add(String key, ValueFactory<E> factory, long age) 
+  public V add(K key, ValueFactory<K, V> factory, long age) 
     throws Exception {
     if (age == 0) {
       age = maxAge;
@@ -146,7 +146,7 @@ public class LRUCache<E> {
    *  previous value in the cache.
    */
 
-  public E set(String key, E value, long age) {
+  public V set(K key, V value, long age) {
     if (age == 0) {
       age = maxAge;
     }
@@ -157,7 +157,7 @@ public class LRUCache<E> {
 
       synchronized (entry) {
 	if (!entry.isDeleted()) {
-	  E old_value = entry.value;
+	  V old_value = entry.value;
 
 	  if (old_value != null) {
 	    fireRemovedEvent(key, old_value);
@@ -191,10 +191,10 @@ public class LRUCache<E> {
    *  previous value in the cache.
    */
 
-  public E replace(String key, final E value, long age) {
+  public V replace(K key, final V value, long age) {
     try {
-      return replace(key, new ValueFactory<E>() {
-	  public E create(String key, long age) {
+      return replace(key, new ValueFactory<K, V>() {
+	  public V create(K key, long age) {
 	    return value;
 	  }
 	}, age);
@@ -217,7 +217,7 @@ public class LRUCache<E> {
    *  previous value in the cache.
    */
 
-  public E replace(String key, ValueFactory<E> factory, long age)
+  public V replace(K key, ValueFactory<K, V> factory, long age)
     throws Exception {
     if (age == 0) {
       age = maxAge;
@@ -228,7 +228,7 @@ public class LRUCache<E> {
 
       synchronized (entry) {
 	if (!entry.isDeleted()) {
-	  E old_value = entry.value;
+	  V old_value = entry.value;
 
 	  if (old_value != null) {
 	    fireRemovedEvent(key, old_value);
@@ -257,9 +257,9 @@ public class LRUCache<E> {
    *  @result The old value, or null.
    */
 
-  public E remove(String key) {
+  public V remove(K key) {
     LRUEntry entry = getEntry(key);
-    E old_value;
+    V old_value;
 
     synchronized (entry) {
       old_value = entry.value;
@@ -293,7 +293,7 @@ public class LRUCache<E> {
 
   public void clear() {
     synchronized (map) {
-      for (Map.Entry<String, LRUEntry> e : map.entrySet()) {
+      for (Map.Entry<K, LRUEntry> e : map.entrySet()) {
 	LRUEntry entry = e.getValue();
 
 	synchronized (entry) {
@@ -318,14 +318,14 @@ public class LRUCache<E> {
    *  @param filter  An EntryFilter.
    */
 
-  public void filterEntries(EntryFilter filter) {
-    LinkedList<Map.Entry<String, LRUEntry>> entries;
+  public void filterEntries(EntryFilter<K, V> filter) {
+    LinkedList<Map.Entry<K, LRUEntry>> entries;
 
     synchronized (map) {
-      entries = new LinkedList<Map.Entry<String, LRUEntry>>(map.entrySet());
+      entries = new LinkedList<Map.Entry<K, LRUEntry>>(map.entrySet());
     }
 
-    for (Map.Entry<String, LRUEntry> e : entries) {
+    for (Map.Entry<K, LRUEntry> e : entries) {
       LRUEntry entry = e.getValue();
       boolean remove = false;
 
@@ -353,29 +353,29 @@ public class LRUCache<E> {
     }
   }
 
-  public void addListener(LRUListener<E> l) {
+  public void addListener(LRUListener<K, V> l) {
     synchronized (entryListeners) {
       entryListeners.add(l);
     }
   }
 
-  public void removeListener(LRUListener<E> l) {
+  public void removeListener(LRUListener<K, V> l) {
     synchronized (entryListeners) {
       entryListeners.remove(l);
     }
   }
 
-  public void fireAddedEvent(String key, E value) {
+  public void fireAddedEvent(K key, V value) {
     synchronized (entryListeners) {
-      for (LRUListener<E> l : entryListeners) {
+      for (LRUListener<K, V> l : entryListeners) {
 	l.entryAdded(key, value);
       }
     }
   }
 
-  public void fireRemovedEvent(String key, E value) {
+  public void fireRemovedEvent(K key, V value) {
     synchronized (entryListeners) {
-      for (LRUListener<E> l : entryListeners) {
+      for (LRUListener<K, V> l : entryListeners) {
 	l.entryRemoved(key, value);
       }
     }
@@ -389,7 +389,7 @@ public class LRUCache<E> {
    *  @return An LRUEntry
    */
 
-  private LRUEntry getEntry(String key) {
+  private LRUEntry getEntry(K key) {
     synchronized (map) {
       LRUEntry entry = map.get(key);
 
@@ -404,7 +404,7 @@ public class LRUCache<E> {
 
 
   private class LRUMap
-    extends LinkedHashMap<String, LRUEntry> {
+    extends LinkedHashMap<K, LRUEntry> {
 
     public LRUMap() {
       super (128, 0.75f, true);
@@ -414,7 +414,7 @@ public class LRUCache<E> {
       return (size() > maxEntries || (eldest.expires != 0 && eldest.expires < now));
     }
 
-    @Override public boolean removeEldestEntry(Map.Entry<String, LRUEntry> eldest) {
+    @Override public boolean removeEldestEntry(Map.Entry<K, LRUEntry> eldest) {
       long now = System.currentTimeMillis();
 
       LRUEntry entry = eldest.getValue();
@@ -428,10 +428,10 @@ public class LRUCache<E> {
       }
       
       if (entry != null) {
-	Iterator<Map.Entry<String, LRUEntry>> i = entrySet().iterator();
+	Iterator<Map.Entry<K, LRUEntry>> i = entrySet().iterator();
 
 	while (i.hasNext()) {
-	  Map.Entry<String, LRUEntry> e = i.next();
+	  Map.Entry<K, LRUEntry> e = i.next();
 
 	  entry = e.getValue();
 
@@ -470,7 +470,7 @@ public class LRUCache<E> {
 
     long expires;
     long created;
-    E value;
+    V value;
   }
 
   private LRUMap map;
@@ -478,7 +478,7 @@ public class LRUCache<E> {
   private int maxEntries;
   private long maxAge;
 
-  private LinkedList<LRUListener<E>> entryListeners = new LinkedList<LRUListener<E>>();
+  private LinkedList<LRUListener<K, V>> entryListeners = new LinkedList<LRUListener<K, V>>();
 
   static final long serialVersionUID = 8565024717836226408L;
 }

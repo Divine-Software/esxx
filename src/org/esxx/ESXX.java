@@ -100,11 +100,11 @@ public class ESXX {
 	Long.parseLong(settings.getProperty("esxx.cache.max_size", "16")) * 1024 * 1024,
 	Long.parseLong(settings.getProperty("esxx.cache.max_age", "3600")) * 1000);
 
-      applicationCache = new LRUCache<Application>(
+      applicationCache = new LRUCache<String, Application>(
 	Integer.parseInt(settings.getProperty("esxx.cache.apps.max_entries", "1024")),
 	Long.parseLong(settings.getProperty("esxx.cache.apps.max_age", "3600")) * 1000);
 
-      applicationCache.addListener(new LRUCache.LRUListener<Application>() {
+      applicationCache.addListener(new LRUCache.LRUListener<String, Application>() {
 	  public void entryAdded(String key, Application app) {
 	    getLogger().logp(Level.CONFIG, null, null, app + " loaded.");
 	  }
@@ -275,7 +275,7 @@ public class ESXX {
 		  }
 		}
 
-		applicationCache.filterEntries(new LRUCache.EntryFilter<Application>() {
+		applicationCache.filterEntries(new LRUCache.EntryFilter<String, Application>() {
 		    public boolean isStale(String key, Application app, long created) {
 		      try {
 			for (URL url : app.getExternalURLs()) {
@@ -681,7 +681,7 @@ public class ESXX {
       Application app;
 
       while (true) {
-	app = applicationCache.add(url_string, new LRUCache.ValueFactory<Application>() {
+	app = applicationCache.add(url_string, new LRUCache.ValueFactory<String, Application>() {
 	    public Application create(String key, long age) 
 	    throws IOException {
 	      // The application cache makes sure we are
@@ -977,7 +977,7 @@ public class ESXX {
     private URL[] includePath;
 
     private MemoryCache memoryCache;
-    private LRUCache<Application> applicationCache;
+    private LRUCache<String, Application> applicationCache;
 
     private Parsers parsers;
     private Properties settings;
