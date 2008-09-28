@@ -314,7 +314,7 @@ public class LRUCache<K, V> {
   /** Iterates all entries and removes all for which
    *  EntryFilter.isStale() returns true, or has already expired.
    *
-   *  @param filter  An EntryFilter.
+   *  @param filter  An EntryFilter. May be null.
    */
 
   public void filterEntries(EntryFilter<K, V> filter) {
@@ -332,7 +332,8 @@ public class LRUCache<K, V> {
 
       synchronized (entry) {
 	if (!entry.isDeleted() && entry.value != null && 
-	    (entry.expires < now || filter.isStale(e.getKey(), entry.value, entry.created))) {
+	    (entry.expires < now || 
+	     filter != null && filter.isStale(e.getKey(), entry.value, entry.created))) {
 	  fireRemovedEvent(e.getKey(), entry.value);
 
 	  entry.markAsDeleted();
