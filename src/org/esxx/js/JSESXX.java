@@ -87,15 +87,16 @@ public class JSESXX
       }
     }
 
-    public void jsFunction_wait(Object o)
-      throws InterruptedException {
-      synchronized (o) {
-	o.wait();
-      }
-    }
+//     public void jsFunction_wait(Object o)
+//       throws InterruptedException {
+//       synchronized (o) {
+// 	o.wait();
+//       }
+//     }
 
     public void jsFunction_wait(Object o, int timeout_ms)
       throws InterruptedException {
+      // If not specified in JS, timeout_ms == 0 which is the same as o.wait().
       synchronized (o) {
 	o.wait(timeout_ms);
       }
