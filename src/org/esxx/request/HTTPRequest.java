@@ -61,6 +61,7 @@ public class HTTPRequest
 
       if ((status >= 100 && status <= 199) ||
 	  status == 204 ||
+	  status == 205 ||
 	  status == 304) {
 	content_length = -1;
       }
