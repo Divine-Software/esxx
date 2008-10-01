@@ -47,7 +47,7 @@ public class JSURI
 
   @Override
   public String toString() {
-    return uri.toString();
+    return jsFunction_toString();
   }
 
   @Override
@@ -141,6 +141,14 @@ public class JSURI
     defineProperty(prototype, "auth",    cx.newArray(prototype, 0), ScriptableObject.PERMANENT);
     defineProperty(prototype, "jars",    jars,                      ScriptableObject.PERMANENT);
     defineProperty(prototype, "headers", cx.newArray(prototype, 0), ScriptableObject.PERMANENT);
+  }
+
+  public String jsFunction_valueOf() {
+    return uri.toString();
+  }
+
+  public String jsFunction_toString() {
+    return (String) getDefaultValue(String.class);
   }
 
   public static Object jsFunction_load(Context cx, Scriptable thisObj,
