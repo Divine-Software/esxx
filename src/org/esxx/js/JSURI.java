@@ -46,6 +46,11 @@ public class JSURI
   }
 
   @Override
+  public String toString() {
+    return jsFunction_toString();
+  }
+
+  @Override
     public String getClassName() {
     return "URI";
   }
