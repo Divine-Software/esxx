@@ -151,6 +151,10 @@ public class JSURI
     return (String) getDefaultValue(String.class);
   }
 
+  public String jsFunction_toSource() {
+    return "(new URI(\"" + jsFunction_valueOf() + "\"))";
+  }
+
   public static Object jsFunction_load(Context cx, Scriptable thisObj,
 				       Object[] args, Function funObj)
     throws Exception {
