@@ -23,6 +23,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.cert.X509Certificate;
 import org.apache.http.*;
 import org.apache.http.auth.*;
 import org.apache.http.client.*;
@@ -209,7 +213,25 @@ public class HTTPHandler
     if (connectionManager == null) {
       SchemeRegistry sr = new SchemeRegistry();
       sr.register(new Scheme("http",  PlainSocketFactory.getSocketFactory(), 80));
-      sr.register(new Scheme("https", SSLSocketFactory.getSocketFactory(), 443));
+      //      sr.register(new Scheme("https", SSLSocketFactory.getSocketFactory(), 443));
+
+      try {
+	SSLContext sslcontext = SSLContext.getInstance(SSLSocketFactory.TLS);
+	sslcontext.init(null, new TrustManager[] { new X509TrustManager() {
+	    @Override public void checkServerTrusted(X509Certificate[] chain, String auth) {}
+	    
+	    @Override public X509Certificate[] getAcceptedIssuers() {
+	      return new X509Certificate[0];
+	    }
+	    
+	    @Override public void checkClientTrusted(X509Certificate[] certs, String auth) {}
+	  } }, new java.security.SecureRandom());
+
+	sr.register(new Scheme("https", new SSLSocketFactory(sslcontext, null), 443));
+      }
+      catch (Exception ex) {
+	ex.printStackTrace();
+      }
 
       connectionManager = new ThreadSafeClientConnManager(getHttpParams(), sr);
     }
