@@ -312,6 +312,10 @@ public class Application
     return mainDocument;
   }
 
+  public void setMainDocument(Scriptable doc) {
+    mainDocument = doc;
+  }
+
   public JSURI getMainURI() {
     return mainURI;
   }

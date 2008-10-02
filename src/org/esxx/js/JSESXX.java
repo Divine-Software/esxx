@@ -290,6 +290,10 @@ public class JSESXX
       return app.getMainDocument();
     }
 
+    public void jsSet_document(Scriptable doc) {
+      app.setMainDocument(doc);
+    }
+
     public JSURI jsGet_uri() {
       return app.getMainURI();
     }
