@@ -536,7 +536,7 @@ public class Application
 
   private void execute(Context cx) {
     if (!hasExecuted) {
-      for (Code c : codeList.values()) {
+      for (Code c : codeList.values().toArray(new Code[0])) {
 	if (!c.hasExecuted) {
 	  JSURI old_uri = jsESXX.setLocation(cx, applicationScope, c.url);
 	  c.code.exec(cx, applicationScope);
