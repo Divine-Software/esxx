@@ -3,6 +3,9 @@
 	can extend abstract Java classes, which didn't work in 1.7r1.
 
 	* Enabled a proper https URI implementation.
+	
+	* New method: esxx.condWait(mutex, timeout, function), which
+	waits on mutex until function returns true.
 
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing

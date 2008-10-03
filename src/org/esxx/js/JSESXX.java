@@ -102,6 +102,34 @@ public class JSESXX
       }
     }
 
+    public static boolean jsFunction_condWait(Context cx, Scriptable thisObj,
+					      Object[] args, Function funcObj)
+      throws InterruptedException {
+      if (args.length < 3 || !(args[2] instanceof Function)) {
+	throw Context.reportRuntimeError("Third argument must be a Function.");
+      }
+
+      Function  func = (Function) args[2];
+      int    timeout = (int) Context.toNumber(args[1]);
+
+      long       now = System.currentTimeMillis();
+      long   expires = timeout != 0 ? now + timeout : Long.MAX_VALUE;
+      Object[] fargs = new Object[] { args[0] };
+      boolean lastrc = false;
+
+      synchronized (args[0]) {
+	Scriptable thiz = func.getParentScope();
+
+	while (now < expires && 
+	       (lastrc = cx.toBoolean(func.call(cx, thiz, thiz, fargs))) == false) {
+	  args[0].wait(expires - now);
+	  now = System.currentTimeMillis();
+	}
+      }
+
+      return lastrc;
+    }
+
     public static void jsFunction_include(Context cx, Scriptable thisObj,
 					  Object[] args, Function funcObj)
       throws java.net.MalformedURLException, IOException {
