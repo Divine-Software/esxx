@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.lang.reflect.Constructor;
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
+import org.esxx.util.StringUtil;
 import org.esxx.js.protocol.ProtocolHandler;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.regexp.NativeRegExp;
@@ -45,19 +46,15 @@ public class JSURI
     protocolHandler = getProtocolHandler();
   }
 
-  @Override
-  public String toString() {
+  @Override public String toString() {
     return jsFunction_toString();
   }
 
-  @Override
-    public String getClassName() {
+  @Override public String getClassName() {
     return "URI";
   }
 
-  @Override
-  @SuppressWarnings("unchecked")
-  public Object getDefaultValue(Class typeHint) {
+  @Override public Object getDefaultValue(Class<?> typeHint) {
     return "[object URI: " + uri.toString() + "]";
   }
 
@@ -68,11 +65,16 @@ public class JSURI
     throws java.net.URISyntaxException {
     JSURI prop_src_uri = null;
     URI uri = null;
+    String uri_string = null;
+    String uri_relative = null;
+    Scriptable params = null;
 
     if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
       throw Context.reportRuntimeError("Missing argument");
     }
-    else if (args.length < 2 || args[1] == Context.getUndefinedValue()) {
+    
+    // First argument is always the URI
+    if (args.length >= 1 && args[0] != Context.getUndefinedValue()) {
       if (args[0] instanceof JSURI) {
 	prop_src_uri = (JSURI) args[0];
 	uri = prop_src_uri.uri;
@@ -80,30 +82,75 @@ public class JSURI
       else if (args[0] instanceof URL) {
 	uri = ((URL) args[0]).toURI();
       }
+      else if (args[0] instanceof URI) {
+	uri = (URI) args[0];
+      }
       else {
-	JSESXX js_esxx = JSGlobal.getJSESXX(cx, ctorObj);
-
-	if (js_esxx != null) {
-	  JSURI location = js_esxx.jsGet_wd();
-
-	  if (location != null) {
-	    uri = location.uri.resolve(Context.toString(args[0]));
-	  }
-	}
-
-	if (uri == null) {
-	  uri = new URI(Context.toString(args[0]));
-	}
+	uri_string = Context.toString(args[0]);
       }
     }
-    else if (args.length >= 2) {
-      try {
-	prop_src_uri = (JSURI) args[0];
-	uri = prop_src_uri.uri.resolve(Context.toString(args[1]));
+
+    // Third argument can only by params
+    if (args.length >= 3 && args[2] != Context.getUndefinedValue()) {
+      params = (Scriptable) args[2];
+    }
+
+    // Second argument can be relative URI or params
+    if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
+      if (args[1] instanceof Scriptable) {
+	if (params != null) {
+	  throw Context.reportRuntimeError("Expected a String as second argument.");
+	}
+
+	params = (Scriptable) args[1];
       }
-      catch (ClassCastException ex) {
-	throw Context.reportRuntimeError("Double argument must be URI and String");
+      else {
+	// args[1] should be resolved against args[0]
+	uri_relative = Context.toString(args[1]);
       }
+    }
+
+    if (params != null) {
+      // Replace {...} patterns in string arguments if params was supplied
+      final Scriptable final_params = params;
+
+      StringUtil.ParamResolver resolver = new StringUtil.ParamResolver() {
+	  public String resolveParam(String param) {
+	    try {
+	      String value = Context.toString(final_params.get(param, final_params));
+	      return StringUtil.encodeURI(value, false /* == encodeURIComponent() */);
+	    }
+	    catch (URISyntaxException ex) {
+	      throw new WrappedException(ex);
+	    }
+	  }
+	};
+
+      uri_string = StringUtil.format(uri_string, resolver);
+      uri_relative = StringUtil.format(uri_relative, resolver);
+    }
+
+    if (uri_string != null) {
+	// Resolve URI against current location, if possible
+      JSESXX js_esxx = JSGlobal.getJSESXX(cx, ctorObj);
+
+      if (js_esxx != null) {
+	prop_src_uri = js_esxx.jsGet_wd();
+
+	if (prop_src_uri != null) {
+	  uri = prop_src_uri.uri.resolve(uri_string);
+	}
+      }
+
+      if (uri == null) {
+	// Fall back to non-relative
+	uri = new URI(uri_string);
+      }
+    }
+
+    if (uri_relative != null) {
+      // Resolve relative part against first URI argument
+      uri = uri.resolve(uri_relative);
     }
 
     JSURI rc = new JSURI(uri);
@@ -125,7 +172,6 @@ public class JSURI
     }
 
     return rc;
-    //      return createJSURI(uri);
   }
 
   public static void finishInit(Scriptable scope, 
@@ -144,6 +190,7 @@ public class JSURI
   }
 
   public String jsFunction_valueOf() {
+    //    return uri.toASCIIString();
     return uri.toString();
   }
 
