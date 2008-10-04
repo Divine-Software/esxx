@@ -30,6 +30,7 @@ import javax.mail.internet.*;
 import org.esxx.*;
 import org.esxx.js.*;
 import org.esxx.xmtp.XMTPParser;
+import org.esxx.util.StringUtil;
 import org.mozilla.javascript.*;
 
 public class MAILTOHandler
@@ -48,7 +49,7 @@ public class MAILTOHandler
 
     String   specific = uri.getRawSchemeSpecificPart();
     String[] to_query = specific.split("\\?", 2);
-    String   to       = ProtocolHandler.decodeURI(to_query[0], false);
+    String   to       = StringUtil.decodeURI(to_query[0], false);
 
     if (type == null) {
       type = "text/plain";
@@ -84,8 +85,8 @@ public class MAILTOHandler
 	  String[] name_value = header.split("=", 2);
 
 	  if (name_value.length == 2) {
-	    String name  = ProtocolHandler.decodeURI(name_value[0], false);
-	    String value = ProtocolHandler.decodeURI(name_value[1], false);
+	    String name  = StringUtil.decodeURI(name_value[0], false);
+	    String value = StringUtil.decodeURI(name_value[1], false);
 
 	    if (name.equalsIgnoreCase("To")) {
 	      recipients.addAll(Arrays.asList(InternetAddress.parse(value)));
@@ -118,8 +119,8 @@ public class MAILTOHandler
 	  String[] name_value = header.split("=", 2);
 
 	  if (name_value.length == 2) {
-	    String name  = ProtocolHandler.decodeURI(name_value[0], false);
-	    String value = ProtocolHandler.decodeURI(name_value[1], false);
+	    String name  = StringUtil.decodeURI(name_value[0], false);
+	    String value = StringUtil.decodeURI(name_value[1], false);
 
 	    if (name.equalsIgnoreCase("From")) {
 	      msg.addFrom(InternetAddress.parse(value));
