@@ -21,7 +21,9 @@ package org.esxx.js.protocol;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.regex.Pattern;
 import org.esxx.*;
 import org.esxx.js.*;
 import org.mozilla.javascript.*;
@@ -38,6 +40,9 @@ public class FILEHandler
   public Object load(Context cx, Scriptable thisObj,
 		     String type, HashMap<String,String> params)
     throws Exception {
+    // Make sure URI is valid
+    assertValidPath();
+
     // Default file: load() media type is XML
     if (type == null) {
       type = "text/xml";
@@ -60,6 +65,9 @@ public class FILEHandler
   public Object save(Context cx, Scriptable thisObj,
 		     Object data, String type, HashMap<String,String> params)
     throws Exception {
+    // Make sure URI is valid
+    assertValidPath();
+
     ESXX esxx = ESXX.getInstance();
     File file = new File(uri);
 
@@ -71,6 +79,9 @@ public class FILEHandler
   public Object append(Context cx, Scriptable thisObj,
 		       Object data, String type, HashMap<String,String> params)
     throws Exception {
+    // Make sure URI is valid
+    assertValidPath();
+
     ESXX esxx = ESXX.getInstance();
     File file = new File(uri);
 
@@ -106,11 +117,25 @@ public class FILEHandler
   public Object remove(Context cx, Scriptable thisObj,
 		       String type, HashMap<String,String> params)
     throws Exception {
+    // Make sure URI is valid
+    assertValidPath();
+
     File file = new File(uri);
 
     return new Boolean(file.delete());
   }
 
+
+  private static final Pattern uriSlashPattern = Pattern.compile(".*%2[fF].*");
+
+  protected void assertValidPath() 
+    throws URISyntaxException {
+    // Make sure we're not accessing compromized paths
+    if (uriSlashPattern.matcher(uri.toString()).matches()) {
+      throw new URISyntaxException(uri.toString(),
+				   "Encoded path separators are not allowed in ESXX file URIs");
+    }
+  }
 
   protected Document createDirectoryListing(File dir) {
     ESXX     esxx     = ESXX.getInstance();
