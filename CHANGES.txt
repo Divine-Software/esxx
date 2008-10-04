@@ -1,11 +1,19 @@
 0.9.2008xxxx
+	* Bug fixes as usual.
+
 	* Upgraded to Rhino 1.7 release 2 PRERELEASE 2008 09 30, so we
 	can extend abstract Java classes, which didn't work in 1.7r1.
+
+	* esxx.document can now be modified.
 
 	* Enabled a proper https URI implementation.
 	
 	* New method: esxx.condWait(mutex, timeout, function), which
 	waits on mutex until function returns true.
+
+	* The URI constructor now allows {...} syntax and a parameter
+	object to automatically build proper URIs. The file URI class
+	will also refuse URIs with encoded path separators in then.
 
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
