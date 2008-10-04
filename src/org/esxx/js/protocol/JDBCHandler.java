@@ -20,12 +20,12 @@ package org.esxx.js.protocol;
 
 import java.net.URI;
 import java.sql.*;
-import java.util.LinkedList;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.esxx.*;
-import org.esxx.js.*;
+import org.esxx.js.JSURI;
+import org.esxx.util.QueryCache;
+import org.esxx.util.QueryHandler;
+import org.esxx.util.StringUtil;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -52,12 +52,24 @@ public class JDBCHandler
   }
 
   @Override
-    public Object query(final Context cx, final Scriptable thisObj, Object[] args) {
+  public Object query(final Context cx, final Scriptable thisObj, Object[] args) {
     try {
-      String     query       = Context.toString(args[0]);
+      String     query       = null;
+      Function   function    = null;
+      Scriptable params      = null;
       String     result_name = "result";
       String     entry_name  = "entry";
-      Scriptable params      = null;
+
+      if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
+	throw Context.reportRuntimeError("Missing query argument");
+      }
+
+      if (args[0] instanceof Function) {
+	function = (Function) args[0];
+      }
+      else {
+	query = Context.toString(args[0]);
+      }
 
       if (args.length >= 2 && args[1] instanceof Scriptable) {
 	Object o;
@@ -81,61 +93,78 @@ public class JDBCHandler
 	p.setProperty("password", Context.toString(a.get("password", a)));
       }
 
+      final Function final_function = function;
       final Scriptable final_params  = params;
-      final String final_result_name = result_name;
       final String final_entry_name  = entry_name;
+      final Object[]   final_result = new Object[1];
 
-      Object rc = queryCache.executeQuery(uri, p, query, new QueryCache.Callback() {
-	  public Object execute(QueryCache.Query q)
+      if (function == null) {
+	ESXX esxx = ESXX.getInstance();
+	final_result[0] =  esxx.createDocument(result_name);
+      }
+
+      QueryHandler qh = new QueryHandler() {
+	  public void handleTransaction()
 	    throws SQLException {
-	    if (q.needParams()) {
-	      if (final_params == null) {
-		throw Context.reportRuntimeError("Missing query() argument.");
-	      }
+	    Scriptable thiz = final_function.getParentScope();
+	    final_result[0] = final_function.call(cx, thiz, thiz, Context.emptyArgs);
+	  }
 
-	      q.bindParams(cx, final_params);
+	  public Object resolveParam(String param) 
+	    throws SQLException {
+	    return ProtocolHandler.evalProperty(cx, final_params, param);
+	  }
+
+	  public void handleResult(int uc, ResultSet rs) 
+	    throws SQLException {
+	    ResultSetMetaData rmd = rs.getMetaData();
+	    int             count = rmd.getColumnCount();
+	    String[]        names = new String[count];
+	    
+	    for (int i = 0; i < count; ++i) {
+	      names[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i + 1).toLowerCase());
 	    }
 
-	    Object rc = q.execute();
+	    Document doc = (Document) final_result[0];
+	    Element root = doc.getDocumentElement();
 
-	    if (rc instanceof ResultSet) {
-	      ResultSet          rs = (ResultSet) rc;
-	      ResultSetMetaData rmd = rs.getMetaData();
+	    int set = 0;
+	    while (rs.next()) {
+	      Element row = doc.createElementNS(null, final_entry_name);
 
-	      ESXX       esxx   = ESXX.getInstance();
-	      Document   result = esxx.createDocument(final_result_name);
-	      Element    root   = result.getDocumentElement();
+	      row.setAttributeNS(null, "set", Integer.toString(set));
 
-	      int      count = rmd.getColumnCount();
-	      String[] names = new String[count];
+	      if (uc != -1) {
+		row.setAttributeNS(null, "updateCount", Integer.toString(uc));
+	      }
 
 	      for (int i = 0; i < count; ++i) {
-		names[i] = rmd.getColumnName(i + 1);
+		addChild(row, names[i], rs.getString(i + 1));
 	      }
 
-	      while (rs.next()) {
-		Element row = result.createElementNS(null, final_entry_name);
+	      root.appendChild(row);
 
-		for (int i = 0; i < count; ++i) {
-		  addChild(row, names[i].toLowerCase(), rs.getString(i + 1));
-		}
-
-		root.appendChild(row);
-	      }
-
-	      return ESXX.domToE4X(result, cx, thisObj);
-	    }
-	    else {
-	      return rc;
+	      ++set;
 	    }
 	  }
-	});
+	};
 
-      return rc;
+      if (function == null) {
+	queryCache.executeQuery(uri, p, query, qh);
+	return ESXX.domToE4X((Document) final_result[0], cx, thisObj);
+      }
+      else {
+	queryCache.executeTransaction(uri, p, qh);
+	return final_result[0];
+      }
     }
     catch (SQLException ex) {
       throw Context.reportRuntimeError("SQL query failed: " + ex.getMessage());
     }
+    catch (Exception ex) {
+      ex.printStackTrace();
+    }
+    return null;
   }
 
 

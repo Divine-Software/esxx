@@ -16,33 +16,22 @@
      along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package org.esxx.js.protocol;
+package org.esxx.util;
 
 import java.net.URI;
 import java.sql.*;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.TreeMap;
-import java.util.List;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import org.esxx.*;
-import org.esxx.js.*;
+import org.esxx.ESXX;
+import org.esxx.ESXXException;
 import org.esxx.cache.LRUCache;
 import org.esxx.util.StringUtil;
-import org.mozilla.javascript.*;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+
+/** An easy-to-use SQL query cache and connection pool. */
 
 public class QueryCache {
-
-  public interface Callback {
-    Object execute(Query q) 
-      throws SQLException;
-  }
-
   public QueryCache(int max_connections, long connection_timeout,
 		    int max_queries, long query_timeout) {
     maxConnections = max_connections;
@@ -60,14 +49,62 @@ public class QueryCache {
       }
     }
   }
-  
 
-  Object executeQuery(URI uri, Properties props, String query, Callback cb)
+  public void executeQuery(URI uri, Properties props, final String query, final QueryHandler qh)
     throws SQLException {
-    ConnectionKey key = new ConnectionKey(uri, props);
+    withConnection(uri, props, new ConnectionCallback() {
+	public void execute(PooledConnection pc) 
+	  throws SQLException {
+	  
+	  Query q = pc.getQuery(query);
+	  q.bindParams(qh);
+	  q.execute(qh);
+	}
+      });
+  }
+
+  public void executeTransaction(URI uri, Properties props, final QueryHandler qh) 
+    throws SQLException {
+    withConnection(uri, props, new ConnectionCallback() {
+	public void execute(PooledConnection pc) 
+	  throws SQLException {
+
+	  boolean committed = false;
+	  Connection c = pc.getConnection();
+	  c.setAutoCommit(false);
+
+	  try {
+	    try {
+	      qh.handleTransaction();
+	      committed = true;
+	      c.commit();
+	    }
+	    finally {
+	      if (!committed) {
+		c.rollback();
+	      }
+	    }
+	  }
+	  finally {
+	    c.setAutoCommit(true);
+	  }
+	}
+      });
+  }
+
+
+  private interface ConnectionCallback {
+    public void execute(PooledConnection pc)
+      throws SQLException;
+  }
+
+  private void withConnection(URI uri, Properties props, ConnectionCallback cb) 
+    throws SQLException {
     ConnectionPool cp;
 
     synchronized (connectionPools) {
+      ConnectionKey key = new ConnectionKey(uri, props);
+
       cp = connectionPools.get(key);
 
       if (cp == null) {
@@ -76,21 +113,47 @@ public class QueryCache {
       }
     }
 
-    PooledConnection pc = cp.getConnection();
+    // If this thread is already inside withConnection(), re-use the
+    // same PooledConnection as the outermost withConnection() call
+    // returned.
+    PerThreadConnection ptc = perThreadConnection.get();
+
+    if (ptc.refCounter == 0) {
+      ++ptc.refCounter;
+      ptc.pooledConnection = cp.getConnection();
+    }
 
     try {
-      return cb.execute(pc.getQuery(query));
+      cb.execute(ptc.pooledConnection);
     }
     finally {
-      cp.releaseConnection(pc);
+      --ptc.refCounter;
+
+      if (ptc.refCounter == 0) {
+	cp.releaseConnection(ptc.pooledConnection);
+	ptc.pooledConnection = null;
+      }
     }
   }
+  
+  private static class PerThreadConnection {
+    long refCounter;
+    PooledConnection pooledConnection;
+  }
+
+  private static final ThreadLocal<PerThreadConnection> perThreadConnection = 
+    new ThreadLocal<PerThreadConnection>() {
+    @Override protected PerThreadConnection initialValue() {
+      return new PerThreadConnection();
+    }
+  };
 
   private int maxConnections;
   private long connectionTimeout;
   private int maxQueries;
   private long queryTimeout;
   private HashMap<ConnectionKey, ConnectionPool> connectionPools;
+
 
   private class ConnectionKey {
     public ConnectionKey(URI uri, Properties props) {
@@ -221,6 +284,10 @@ public class QueryCache {
       return expires;
     }
 
+    public Connection getConnection() {
+      return connection;
+    }
+
     public Query getQuery(final String query) 
       throws SQLException {
       // "Touch" connection
@@ -273,7 +340,7 @@ public class QueryCache {
   }
 
 
-  public static class Query {
+  private static class Query {
     public Query(String unparsed_query, Connection db)
       throws SQLException {
 
@@ -290,47 +357,56 @@ public class QueryCache {
 	pmd = sql.getParameterMetaData();
       }
       catch (SQLException ex) {
-	throw Context.reportRuntimeError("JDBC failed to prepare parsed SQL statement: " +
-					 query + ": " + ex.getMessage());
+	throw new SQLException("JDBC failed to prepare ESXX-parsed SQL statement: " +
+			       query + ": " + ex.getMessage());
       }
 
       if (pmd.getParameterCount() != params.size()) {
-	throw Context.reportRuntimeError("JDBC and ESXX report different " +
-					 "number of arguments in SQL query");
+	throw new SQLException("JDBC and ESXX report different " +
+			       "number of arguments in SQL query");
       }
     }
 
-    public boolean needParams()
+    public void bindParams(QueryHandler qh) 
       throws SQLException {
-      return pmd.getParameterCount() != 0;
-    }
-
-    public void bindParams(Context cx, Scriptable object)
-      throws SQLException {
-
       int p = 1;
-      for (String name : params) {
-	String value = Context.toString(ProtocolHandler.evalProperty(cx, object, name));
 
-	switch (pmd.getParameterType(p)) {
-	default:
-	  sql.setObject(p, value);
-	  break;
-	}
-
+      for (String param : params) {
+	sql.setObject(p, qh.resolveParam(param));
 	++p;
       }
     }
 
-    public Object execute()
+    public void execute(QueryHandler qh)
       throws SQLException {
-      if (sql.execute()) {
-	sql.clearParameters();
-	return sql.getResultSet();
+      try {
+	boolean has_result = sql.execute();
+	int update_count;
+      
+	while (true) {
+	  ResultSet result;
+
+	  if (has_result) {
+	    update_count = -1;
+	    result = sql.getResultSet();
+	  }
+	  else {
+	    update_count = sql.getUpdateCount();
+
+	    if (update_count == -1) {
+	      break;
+	    }
+
+	    result = sql.getGeneratedKeys();
+	  }
+
+	  qh.handleResult(update_count, result);
+
+	  has_result = sql.getMoreResults();
+	}
       }
-      else {
+      finally {
 	sql.clearParameters();
-	return new Integer(sql.getUpdateCount());
       }
     }
 
