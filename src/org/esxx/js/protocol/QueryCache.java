@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 import org.esxx.*;
 import org.esxx.js.*;
 import org.esxx.cache.LRUCache;
+import org.esxx.util.StringUtil;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -277,7 +278,12 @@ public class QueryCache {
       throws SQLException {
 
       params = new ArrayList<String>();
-      String query = parseQuery(unparsed_query, params);
+      String query = StringUtil.format(unparsed_query, new StringUtil.ParamResolver() {
+	  public String resolveParam(String param) {
+	    params.add(param);
+	    return "?";
+	  }
+	});
 
       try {
 	sql = db.prepareCall(query);
@@ -340,40 +346,8 @@ public class QueryCache {
       }
     }
 
-    private static String parseQuery(String unparsed_query, List<String> parsed_params) {
-      StringBuffer s = new StringBuffer();
-      Matcher      m = paramPattern.matcher(unparsed_query);
-
-      while (m.find()) {
-	String g = m.group();
-
-	if (m.start(1) != -1) {
-	  // Match on group 1, which is our parameter pattern; append a single '?'
-	  m.appendReplacement(s, "?");
-	  parsed_params.add(g.substring(1, g.length() - 1));
-	}
-	else {
-	  // Match on quoted strings, which we just copy as-is
-	  m.appendReplacement(s, g);
-	}
-      }
-
-      m.appendTail(s);
-
-      return s.toString();
-    }
-
     private ArrayList<String> params;
-
     private CallableStatement sql;
     private ParameterMetaData pmd;
-
-    private static final String quotePattern1 = "('((\\\\')|[^'])+')";
-    private static final String quotePattern2 = "(`((\\\\`)|[^`])+`)";
-    private static final String quotePattern3 = "(\"((\\\\\")|[^\"])+\")";
-
-    private static final Pattern paramPattern = Pattern.compile(
-	"(\\{[^\\}]+\\})" +    // Group 1: Matches {identifier}
-	"|" + quotePattern1 + "|" + quotePattern2 + "|" + quotePattern3);
   }
 }
