@@ -80,7 +80,7 @@ public class ProtocolHandler {
       Object rc;
 
       if (obj instanceof org.mozilla.javascript.xml.XMLObject) {
-	rc = ((org.mozilla.javascript.xml.XMLObject) obj).ecmaGet(cx, key);
+	rc = Context.toString(((org.mozilla.javascript.xml.XMLObject) obj).ecmaGet(cx, key));
       }
       else {
 	rc = ScriptableObject.getProperty(obj, key);
