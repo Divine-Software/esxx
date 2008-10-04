@@ -29,6 +29,10 @@ public abstract class StringUtil {
   }
 
   public static String format(String format, ParamResolver resolver) {
+    if (format == null) {
+      return null;
+    }
+
     StringBuffer s = new StringBuffer();
     Matcher      m = paramPattern.matcher(format);
 
