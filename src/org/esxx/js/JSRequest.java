@@ -20,6 +20,7 @@ package org.esxx.js;
 
 import org.esxx.*;
 import org.esxx.util.IO;
+import org.esxx.util.StringUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
@@ -301,11 +302,11 @@ public class JSRequest
 	    String n = URLDecoder.decode(nv[0], "UTF-8").trim();
 
 	    if (nv.length == 1) {
-	      ScriptableObject.putProperty(query, makeXMLName(n), "");
+	      ScriptableObject.putProperty(query, StringUtil.makeXMLName(n), "");
 	    }
 	    else if (nv.length == 2) {
 	      String v = URLDecoder.decode(nv[1], "UTF-8");
-	      ScriptableObject.putProperty(query, makeXMLName(n), v);
+	      ScriptableObject.putProperty(query, StringUtil.makeXMLName(n), v);
 	    }
 	  }
 	  catch (UnsupportedEncodingException ex) {
@@ -378,30 +379,5 @@ public class JSRequest
 	  try { request.getInputStream().close(); } catch (Exception ex) {}
 	}
       }
-    }
-
-
-    private String makeXMLName(String s) {
-      char[] chars = s.toCharArray();
-
-      if(!isNameStartChar(chars[0])) {
-	chars[0] = '_';
-      }
-
-      for (int i = 1; i < chars.length; ++i) {
-	if (!isNameChar(chars[i])) {
-	  chars[i] = '_';
-	}
-      }
-
-      return new String(chars);
-    }
-
-    private static boolean isNameStartChar(char ch) {
-      return (Character.isLetter(ch) || ch == '_');
-    }
-
-    private static boolean isNameChar(char ch) {
-      return (isNameStartChar(ch) || Character.isDigit(ch) || ch == '.' || ch == '-');
     }
 }

@@ -64,6 +64,32 @@ public abstract class StringUtil {
 		    "|" + quotePattern1 + "|" + quotePattern2 + "|" + quotePattern3);
 
 
+
+
+  public static String makeXMLName(String s) {
+    char[] chars = s.toCharArray();
+
+    if(!isNameStartChar(chars[0])) {
+      chars[0] = '_';
+    }
+
+    for (int i = 1; i < chars.length; ++i) {
+      if (!isNameChar(chars[i])) {
+	chars[i] = '_';
+      }
+    }
+
+    return new String(chars);
+  }
+
+  private static boolean isNameStartChar(char ch) {
+    return (Character.isLetter(ch) || ch == '_');
+  }
+
+  private static boolean isNameChar(char ch) {
+    return (isNameStartChar(ch) || Character.isDigit(ch) || ch == '.' || ch == '-');
+  }
+
   /*
    *   ECMA 3, 15.1.3 URI Handling Function Properties
    *
