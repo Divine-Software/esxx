@@ -1,0 +1,28 @@
+<?esxx
+
+var params = { dirname: "Ö?gat&sån't",
+	       name: "rel:\\~$apa'.'?./..", 
+	       ext:  "tmp"
+};
+
+var rel    = new URI("uri_rel.tmp");
+var rel2   = new URI("dir/", "uri_rel.tmp");
+var relp   = new URI("uri_{name}.{ext}", params);
+var rel2p  = new URI("{dirname}/", "uri_{name}.{ext}", params);
+var abs    = new URI("http://esxx.org/test/");
+var abs2   = new URI("http://esxx.org/test/", "kalle");
+var absp   = new URI("http://esxx.org/{dirname}/", params);
+var abs2p  = new URI(abs, "{dirname}/uri_{name}.{ext}", params);
+
+esxx.log.info(rel);
+esxx.log.info(rel2);
+esxx.log.info(relp);
+esxx.log.info(rel2p);
+esxx.log.info(abs);
+esxx.log.info(abs2);
+esxx.log.info(absp);
+esxx.log.info(abs2p);
+
+?>
+
+<dummy/>
