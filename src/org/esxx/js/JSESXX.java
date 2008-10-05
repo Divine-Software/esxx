@@ -32,6 +32,8 @@ import org.mozilla.javascript.*;
 
 public class JSESXX
   extends ScriptableObject {
+    private static final long serialVersionUID = -7401965682230734380L;
+
     public JSESXX() {
       super();
     }
@@ -121,7 +123,7 @@ public class JSESXX
 	Scriptable thiz = func.getParentScope();
 
 	while (now < expires && 
-	       (lastrc = cx.toBoolean(func.call(cx, thiz, thiz, fargs))) == false) {
+	       (lastrc = Context.toBoolean(func.call(cx, thiz, thiz, fargs))) == false) {
 	  args[0].wait(expires - now);
 	  now = System.currentTimeMillis();
 	}

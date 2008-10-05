@@ -18,28 +18,12 @@
 
 package org.esxx.js.protocol;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.*;
-import org.apache.http.*;
-import org.apache.http.auth.*;
 import org.apache.http.client.*;
-import org.apache.http.client.methods.*;
-import org.apache.http.conn.*;
-import org.apache.http.conn.params.*;
-import org.apache.http.conn.ssl.*;
 import org.apache.http.cookie.*;
-import org.apache.http.entity.*;
-import org.apache.http.impl.client.*;
-import org.apache.http.impl.conn.tsccm.*;
 import org.apache.http.impl.cookie.*;
-import org.apache.http.params.*;
-import org.apache.http.protocol.*;
-import org.esxx.ESXX;
 import org.esxx.ESXXException;
-import org.esxx.Response;
 import org.esxx.js.*;
 import org.mozilla.javascript.*;
 

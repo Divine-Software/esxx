@@ -25,6 +25,8 @@ import java.util.HashMap;
 
 public class JSResponse
   extends ScriptableObject {
+  private static final long serialVersionUID = 4124297564183973874L;
+
   public JSResponse() {
     super();
   }

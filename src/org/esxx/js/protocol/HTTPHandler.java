@@ -36,13 +36,10 @@ import org.apache.http.conn.params.*;
 import org.apache.http.conn.routing.*;
 import org.apache.http.conn.scheme.*;
 import org.apache.http.conn.ssl.*;
-import org.apache.http.cookie.*;
 import org.apache.http.entity.*;
 import org.apache.http.impl.client.*;
 import org.apache.http.impl.conn.tsccm.*;
-import org.apache.http.impl.cookie.*;
 import org.apache.http.params.*;
-import org.apache.http.protocol.*;
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
 import org.esxx.Response;
@@ -303,7 +300,6 @@ public class HTTPHandler
       }, uri);
 
     HttpResponse response = getHttpClient().execute(msg);
-    StatusLine   status   = response.getStatusLine();
     HttpEntity   entity   = response.getEntity();
 
     if (params == null) {

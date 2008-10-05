@@ -40,6 +40,8 @@ import org.mozilla.javascript.*;
 
 public class JSRequest
   extends ScriptableObject {
+    private static final long serialVersionUID = -777379647478473562L;
+
     public JSRequest() {
       super();
     }

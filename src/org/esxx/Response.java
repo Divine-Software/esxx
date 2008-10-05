@@ -158,7 +158,7 @@ public class Response  {
 
 	  if (o instanceof String) {
 	    String key   = (String) o;
-	    String value = cx.toString(s.get(key, s));
+	    String value = Context.toString(s.get(key, s));
 
 	    sb.append(URLEncoder.encode(key, cs));
 	    sb.append("=");
@@ -166,7 +166,7 @@ public class Response  {
 	  }
 	  else {
 	    int key      = (Integer) o;
-	    String value = cx.toString(s.get(key, s));
+	    String value = Context.toString(s.get(key, s));
 
 	    sb.append(key + "=");
 	    sb.append(URLEncoder.encode(value, cs));

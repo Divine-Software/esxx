@@ -20,7 +20,6 @@ package org.esxx;
 
 import java.io.*;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.Properties;
 import java.util.logging.*;
 import org.esxx.util.TrivialFormatter;

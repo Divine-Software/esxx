@@ -40,7 +40,6 @@ import org.mozilla.javascript.ContextAction;
 import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.WrapFactory;
 import org.w3c.dom.*;
 import org.w3c.dom.bootstrap.*;
@@ -203,8 +202,8 @@ public class ESXX {
 
 		      // Provide a better mapping for primitive types on this context
 		      WrapFactory wf = new WrapFactory() {
-			  public Object wrap(Context cx, Scriptable scope, 
-					     Object obj, Class static_type) {
+			  @Override public Object wrap(Context cx, Scriptable scope, 
+					     Object obj, Class<?> static_type) {
 			    if (obj instanceof char[]) {
 			      return new String((char[]) obj);
 			    }
@@ -984,7 +983,6 @@ public class ESXX {
     private HashMap<String,String> cgiToHTTPMap;
 
     private DOMImplementation domImplementation;
-    private LSSerializer lsSerializer;
     private Processor saxonProcessor;
 
     private ContextFactory contextFactory;

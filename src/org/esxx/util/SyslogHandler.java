@@ -18,7 +18,6 @@
 
 package org.esxx.util;
 
-import java.io.*;
 import java.util.logging.*;
 
 public class SyslogHandler

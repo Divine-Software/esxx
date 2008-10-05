@@ -19,7 +19,6 @@
 package org.esxx;
 
 import org.esxx.js.*;
-import org.esxx.util.*;
 import org.esxx.saxon.ESXXExpression;
 
 import java.io.*;
@@ -32,8 +31,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import net.sf.saxon.s9api.*;
 import static net.sf.saxon.s9api.Serializer.Property.*;
-
-import org.mozilla.javascript.tools.debugger.*;
 
 class Worker {
   public Worker(ESXX esxx) {

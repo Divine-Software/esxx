@@ -25,6 +25,7 @@ import org.mozilla.javascript.*;
 
 public class JSLogger
   extends ScriptableObject {
+  private static final long serialVersionUID = -6547957908255929015L;
   public JSLogger() {
     super();
   }

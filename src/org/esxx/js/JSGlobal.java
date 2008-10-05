@@ -19,12 +19,11 @@
 package org.esxx.js;
 
 import org.esxx.Application;
-import org.esxx.ESXXException;
-import org.esxx.Request;
 import org.mozilla.javascript.*;
 
 public class JSGlobal
   extends ImporterTopLevel {
+  private static final long serialVersionUID = -2329421357143281940L;
 
   public JSGlobal(Context cx)
     throws IllegalAccessException, InstantiationException,

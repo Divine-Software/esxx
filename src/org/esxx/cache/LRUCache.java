@@ -407,6 +407,7 @@ public class LRUCache<K, V> {
 
   private class LRUMap
     extends LinkedHashMap<K, LRUEntry> {
+    private static final long serialVersionUID = 8027701661709058455L;
 
     public LRUMap() {
       super (128, 0.75f, true);

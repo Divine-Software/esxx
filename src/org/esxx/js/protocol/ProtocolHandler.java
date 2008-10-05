@@ -20,7 +20,6 @@ package org.esxx.js.protocol;
 
 import java.net.URI;
 import java.util.HashMap;
-import java.util.Properties;
 import org.esxx.js.JSURI;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;

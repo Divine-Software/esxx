@@ -78,7 +78,7 @@ public class LDAPHandler
     while (answer.hasMore()) {
       SearchResult sr = (SearchResult) answer.next();
 
-      String name = sr.getName();
+//      String name = sr.getName();
       String path = sr.getNameInNamespace();
       URI    euri = new URI(uri.getScheme(), uri.getAuthority(),
 			    "/" + path, "?base", uri.getFragment());

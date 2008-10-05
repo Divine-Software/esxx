@@ -25,13 +25,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.lang.reflect.Constructor;
 import org.esxx.ESXX;
-import org.esxx.ESXXException;
 import org.esxx.util.StringUtil;
 import org.esxx.js.protocol.ProtocolHandler;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.regexp.NativeRegExp;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 public class JSURI
   extends ScriptableObject {
@@ -384,7 +381,7 @@ public class JSURI
 
     if (res == null) {
       try {
-	java.net.URL url = uri.toURL(); // Throws if the is no protocol handler for this URL
+	@SuppressWarnings("unused") java.net.URL url = uri.toURL(); // Throws if the is no protocol handler for this URL
 	res = getProtocolHandler(key, "org.esxx.js.protocol.URLHandler");
       }
       catch (java.net.MalformedURLException ex) {}
