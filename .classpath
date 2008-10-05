@@ -9,9 +9,8 @@
 	<classpathentry kind="lib" path="lib/htmlcleaner.jar"/>
 	<classpathentry kind="lib" path="lib/httpclient.jar"/>
 	<classpathentry kind="lib" path="lib/httpcore.jar"/>
-	<classpathentry kind="lib" path="lib/jfast-1.0.jar"/>
+	<classpathentry kind="lib" path="lib/jfast.jar"/>
 	<classpathentry kind="lib" path="lib/js.jar"/>
-	<classpathentry kind="lib" path="lib/js-debugger.jar"/>
 	<classpathentry kind="lib" path="lib/mail.jar"/>
 	<classpathentry kind="lib" path="lib/one-jar-ant-task-0.96.jar"/>
 	<classpathentry kind="lib" path="lib/saxon9.jar"/>
