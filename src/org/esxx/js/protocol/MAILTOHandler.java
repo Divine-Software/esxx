@@ -21,6 +21,7 @@ package org.esxx.js.protocol;
 import java.io.ByteArrayInputStream;
 import java.io.StringReader;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -35,7 +36,8 @@ import org.mozilla.javascript.*;
 
 public class MAILTOHandler
   extends ProtocolHandler {
-  public MAILTOHandler(URI uri, JSURI jsuri) {
+  public MAILTOHandler(URI uri, JSURI jsuri)
+    throws URISyntaxException {
     super(uri, jsuri);
   }
 

@@ -26,23 +26,27 @@ import java.util.HashMap;
 import java.util.regex.Pattern;
 import org.esxx.*;
 import org.esxx.js.*;
+import org.esxx.util.StringUtil;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 public class FILEHandler
   extends URLHandler {
-  public FILEHandler(URI uri, JSURI jsuri) {
+  public FILEHandler(URI uri, JSURI jsuri) 
+    throws URISyntaxException {
     super(uri, jsuri);
+    // Make sure we're not accessing compromised paths
+    if (uriSlashPattern.matcher(uri.toString()).matches()) {
+      throw new URISyntaxException(uri.toString(),
+				   "Encoded path separators are not allowed in ESXX file URIs");
+    }
   }
 
   @Override
   public Object load(Context cx, Scriptable thisObj,
 		     String type, HashMap<String,String> params)
     throws Exception {
-    // Make sure URI is valid
-    assertValidPath();
-
     // Default file: load() media type is XML
     if (type == null) {
       type = "text/xml";
@@ -65,9 +69,6 @@ public class FILEHandler
   public Object save(Context cx, Scriptable thisObj,
 		     Object data, String type, HashMap<String,String> params)
     throws Exception {
-    // Make sure URI is valid
-    assertValidPath();
-
     ESXX esxx = ESXX.getInstance();
     File file = new File(uri);
 
@@ -79,9 +80,6 @@ public class FILEHandler
   public Object append(Context cx, Scriptable thisObj,
 		       Object data, String type, HashMap<String,String> params)
     throws Exception {
-    // Make sure URI is valid
-    assertValidPath();
-
     ESXX esxx = ESXX.getInstance();
     File file = new File(uri);
 
@@ -117,24 +115,9 @@ public class FILEHandler
   public Object remove(Context cx, Scriptable thisObj,
 		       String type, HashMap<String,String> params)
     throws Exception {
-    // Make sure URI is valid
-    assertValidPath();
-
     File file = new File(uri);
 
     return new Boolean(file.delete());
-  }
-
-
-  private static final Pattern uriSlashPattern = Pattern.compile(".*%2[fF].*");
-
-  protected void assertValidPath() 
-    throws URISyntaxException {
-    // Make sure we're not accessing compromized paths
-    if (uriSlashPattern.matcher(uri.toString()).matches()) {
-      throw new URISyntaxException(uri.toString(),
-				   "Encoded path separators are not allowed in ESXX file URIs");
-    }
   }
 
   protected Document createDirectoryListing(File dir) {
@@ -181,4 +164,36 @@ public class FILEHandler
 
     return element;
   }
+
+  /** Return a Pattern that can be used to find illegal URI encoding
+   *  sequences in file URIs.
+   * 
+   *  @return A Pattern matching illegal URIs.
+   */
+  
+  private static Pattern getURISlashPattern() {
+    String fileSeparators = System.getProperty("file.separator");
+
+    // Normal forward slashes are always disallowed.
+    String slashPattern = "(%2[fF])";
+
+    // Disallow all characters in "file.separator"
+    for (int i = 0; i < fileSeparators.length(); ++i) {
+      try {
+	String c = fileSeparators.substring(i, i + 1);
+	String enc = StringUtil.encodeURI(c, false);
+	slashPattern = slashPattern 
+      		       + "|(" + enc.toLowerCase() + ")" +
+      		       "|(" + enc.toUpperCase() + ")";
+      }
+      catch (URISyntaxException ex) {
+	// Should never happen
+	ex.printStackTrace();
+      }
+    }
+
+    return Pattern.compile(".*(" + slashPattern + ").*");
+  }
+
+  private static final Pattern uriSlashPattern = getURISlashPattern();
 }

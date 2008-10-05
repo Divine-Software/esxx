@@ -19,6 +19,7 @@
 package org.esxx.js.protocol;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.*;
 import java.util.Properties;
 import org.esxx.*;
@@ -32,7 +33,8 @@ import org.w3c.dom.Element;
 
 public class JDBCHandler
   extends ProtocolHandler {
-  public JDBCHandler(URI uri, JSURI jsuri) {
+  public JDBCHandler(URI uri, JSURI jsuri)
+    throws URISyntaxException {
     super(uri, jsuri);
 
     synchronized (JDBCHandler.class) {

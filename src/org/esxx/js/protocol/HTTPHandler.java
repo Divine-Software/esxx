@@ -48,7 +48,8 @@ import org.mozilla.javascript.*;
 
 public class HTTPHandler
   extends URLHandler {
-  public HTTPHandler(URI uri, JSURI jsuri) {
+  public HTTPHandler(URI uri, JSURI jsuri)
+    throws URISyntaxException {
     super(uri, jsuri);
   }
 

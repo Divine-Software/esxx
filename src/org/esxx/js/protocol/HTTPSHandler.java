@@ -19,11 +19,14 @@
 package org.esxx.js.protocol;
 
 import java.net.URI;
+import java.net.URISyntaxException;
+
 import org.esxx.js.JSURI;
 
 public class HTTPSHandler
   extends HTTPHandler {
-  public HTTPSHandler(URI uri, JSURI jsuri) {
+  public HTTPSHandler(URI uri, JSURI jsuri)
+    throws URISyntaxException {
     super(uri, jsuri);
   }
 }

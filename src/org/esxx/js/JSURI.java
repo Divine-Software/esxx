@@ -24,6 +24,8 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+
 import org.esxx.ESXX;
 import org.esxx.util.StringUtil;
 import org.esxx.js.protocol.ProtocolHandler;
@@ -36,10 +38,10 @@ public class JSURI
     super();
   }
 
-  public JSURI(URI uri) {
+  public JSURI(URI uri)
+    throws URISyntaxException {
     super();
     this.uri = uri;
-
     protocolHandler = getProtocolHandler();
   }
 
@@ -59,7 +61,7 @@ public class JSURI
 				     java.lang.Object[] args,
 				     Function ctorObj,
 				     boolean inNewExpr)
-    throws java.net.URISyntaxException {
+    throws URISyntaxException {
     JSURI prop_src_uri = null;
     URI uri = null;
     String uri_string = null;
@@ -86,7 +88,7 @@ public class JSURI
 	uri_string = Context.toString(args[0]);
       }
     }
-
+    
     // Third argument can only by params
     if (args.length >= 3 && args[2] != Context.getUndefinedValue()) {
       params = (Scriptable) args[2];
@@ -373,7 +375,8 @@ public class JSURI
     }
   }
 
-  private ProtocolHandler getProtocolHandler() {
+  private ProtocolHandler getProtocolHandler()
+    throws URISyntaxException {
     String key     = uri.getScheme();
     String handler = "org.esxx.js.protocol." + uri.getScheme().toUpperCase() + "Handler";
 
@@ -392,13 +395,15 @@ public class JSURI
     }
 
     if (res == null) {
+      // This should never happen
       throw new IllegalStateException("Unable to create a ProtocolHandler for URI " + uri);
     }
     
     return res;
   }
 
-  private ProtocolHandler getProtocolHandler(String key, String handler) {
+  private ProtocolHandler getProtocolHandler(String key, String handler)
+    throws URISyntaxException {
     try {
       Constructor<? extends ProtocolHandler> constr = schemeConstructors.get(key);
 
@@ -411,7 +416,14 @@ public class JSURI
 
       return constr.newInstance(uri, this);
     }
-    catch (Exception ex) {
+    catch (InvocationTargetException ex) {
+      if (ex.getCause() instanceof URISyntaxException) {
+	throw (URISyntaxException) ex.getCause();
+      }
+
+      return null;
+    } 
+    catch (Exception  ex) {
       return null;
     }
   }

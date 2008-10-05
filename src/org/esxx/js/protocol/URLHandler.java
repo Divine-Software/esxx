@@ -20,6 +20,7 @@ package org.esxx.js.protocol;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import org.esxx.*;
@@ -28,7 +29,8 @@ import org.mozilla.javascript.*;
 
 public class URLHandler
   extends ProtocolHandler {
-  public URLHandler(URI uri, JSURI jsuri) {
+  public URLHandler(URI uri, JSURI jsuri)
+    throws URISyntaxException {
     super(uri, jsuri);
   }
 

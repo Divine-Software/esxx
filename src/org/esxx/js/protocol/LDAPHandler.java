@@ -19,6 +19,7 @@
 package org.esxx.js.protocol;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Properties;
 import javax.naming.NamingEnumeration;
@@ -31,7 +32,8 @@ import org.w3c.dom.Element;
 
 public class LDAPHandler
   extends ProtocolHandler {
-  public LDAPHandler(URI uri, JSURI jsuri) {
+  public LDAPHandler(URI uri, JSURI jsuri)
+    throws URISyntaxException {
     super(uri, jsuri);
   }
 
