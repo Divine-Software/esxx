@@ -199,6 +199,7 @@ public class ESXX {
  		      cx.setOptimizationLevel(9);
 //  		      cx.setOptimizationLevel(-1);
 		      cx.setInstructionObserverThreshold((int) 100e6);
+		      cx.setLanguageVersion(Context.VERSION_1_7);
 
 		      // Provide a better mapping for primitive types on this context
 		      WrapFactory wf = new WrapFactory() {
