@@ -165,6 +165,9 @@ public class MIMEParser {
 	  if ("".equals(ct)) {
 	    ct = "application/octet-stream"; // Give up
 	  }
+	  else if (ct.matches("(text|plain)")) {
+	    ct = "text/plain";
+	  }
 
 	  content_type = new ContentType(ct);
 	}
