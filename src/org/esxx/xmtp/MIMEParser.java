@@ -24,7 +24,7 @@ import javax.mail.*;
 import javax.mail.internet.*;
 import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.HtmlCleaner;
-import org.htmlcleaner.SimpleXmlSerializer;
+import org.htmlcleaner.NSDomSerializer;
 import org.htmlcleaner.TagNode;
 import org.w3c.dom.*;
 import org.w3c.dom.ls.*;
@@ -138,10 +138,10 @@ public class MIMEParser {
 	}
       }
 
+      ContentType content_type = new ContentType(part.getContentType());
       int    part_type = 0;
       Object content   = part.getContent();
 
-      ContentType content_type = new ContentType(part.getContentType());
       String base_type = content_type.getBaseType().toLowerCase();
       InputStream content_stream = null;
 
@@ -240,31 +240,20 @@ public class MIMEParser {
 	    tn = hc.clean((String) content);
 	  }
 
-// 	  // HtmlCleaner.createDOM() doesn't expand HTML entity
-// 	  // references, so we reparse the document from a string
-// 	  // instead.
-// 	  content = hc.getXmlAsString();
-	  content = new SimpleXmlSerializer(hp).getXmlAsString(tn);
-
 	  // Update content type
-	  Element ct = (Element) element.getElementsByTagNameNS("*", "Content-Type").item(0);
-
-	  if (ct != null) {
-	    ct.setTextContent("text/x-html+xml");
-
-	    NamedNodeMap nodes = ct.getAttributes();
-
-	    while (nodes.getLength() > 0) {
-	      nodes.removeNamedItem(nodes.item(0).getNodeName());
-	    }
+	  replaceContentTypeElement(element, "text/x-html+xml");
+	  
+	  try {
+	    convertDOMPart(body, new NSDomSerializer(hp, true).createDOM(tn));
 	  }
-
-	  // !!! FALL THROUGH TO XML_PART !!!
+	  catch (javax.xml.parsers.ParserConfigurationException ex) {
+	    ex.printStackTrace();
+	    throw new IOException("Failed to serialize HTML to XML: " + ex.getMessage(), ex);
+	  }
+	  break;
 	}
 
 	case XML_PART: {
-	  // !!! MAY CONTINUE FROM HTML_PART !!!
-
 	  try {
 	    LSInput  input  = domImplementationLS.createLSInput();
 	    LSParser parser = domImplementationLS.createLSParser(
@@ -293,8 +282,8 @@ public class MIMEParser {
 	    convertDOMPart(body, doc);
 	  }
 	  catch (Exception ex) {
-	    // FIXME: What to do?
 	    ex.printStackTrace();
+	    throw new IOException("Failed to parse XML: " + ex.getMessage(), ex);
 	  }
 	  break;
 	}
@@ -572,6 +561,19 @@ public class MIMEParser {
 	String name = (String) e.nextElement();
 	
 	params.set(name, decodeMIMEValue(params.get(name)));
+      }
+    }
+
+    private void replaceContentTypeElement(Element parent, String content_type) {
+      Element ct = (Element) parent.getElementsByTagNameNS("*", "Content-Type").item(0);
+      if (ct != null) {
+	ct.setTextContent(content_type);
+
+	NamedNodeMap nodes = ct.getAttributes();
+
+	while (nodes.getLength() > 0) {
+	  nodes.removeNamedItem(nodes.item(0).getNodeName());
+	}
       }
     }
 
