@@ -138,18 +138,31 @@ public class MIMEParser {
 	}
       }
 
-      ContentType content_type;
+      ContentType content_type = null;
 
       try {
 	content_type = new ContentType(part.getContentType());
       }
       catch (ParseException ex) {
-	// Sigh, Content-Type is fucked up -- try with just the first
-	// word or without params
-	String ct = part.getContentType().replaceAll("[\\s;].*", "");
+	// Sigh, Content-Type is fucked up
+	String ct = part.getContentType();
 
-	if ("".equals(ct)) {
-	  ct = "application/octet-stream"; // Give up
+	// Php/libMail?
+	// Content-Type: text/plain; charset=ISO-8859-15"
+	if (ct.endsWith("\"")) {
+	  try {
+	    content_type = new ContentType(ct.substring(0, ct.length() - 1));
+	  }
+	  catch (ParseException ex2) {}
+	}
+
+	if (content_type == null) {
+	  // Try with just the first word or without params
+	  ct = ct.replaceAll("[\\s;].*", "");
+
+	  if ("".equals(ct)) {
+	    ct = "application/octet-stream"; // Give up
+	  }
 	}
 
 	part.setHeader("Content-Type", ct);
