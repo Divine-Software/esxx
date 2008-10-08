@@ -3,7 +3,7 @@
 JAVA=java
 JVMARGS=
 ESXX_PATH=
-ARGS=($@)
+ARGS=("$@")
 
 
 if [ ! -z "${JAVA_HOME}" ]; then
