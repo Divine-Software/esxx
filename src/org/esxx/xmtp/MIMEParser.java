@@ -151,7 +151,9 @@ public class MIMEParser {
 	// Content-Type: text/plain; charset=ISO-8859-15"
 	if (ct.endsWith("\"")) {
 	  try {
-	    content_type = new ContentType(ct.substring(0, ct.length() - 1));
+	    String unquoted = ct.substring(0, ct.length() - 1);
+	    content_type = new ContentType(unquoted);
+	    ct = unquoted;
 	  }
 	  catch (ParseException ex2) {}
 	}
@@ -163,10 +165,11 @@ public class MIMEParser {
 	  if ("".equals(ct)) {
 	    ct = "application/octet-stream"; // Give up
 	  }
+
+	  content_type = new ContentType(ct);
 	}
 
 	part.setHeader("Content-Type", ct);
-	content_type = new ContentType(ct);
       }
 
       int    part_type = 0;
