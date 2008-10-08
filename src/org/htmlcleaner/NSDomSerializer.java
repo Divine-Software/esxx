@@ -63,17 +63,20 @@ public class NSDomSerializer {
                     element.appendChild( specialCase ? document.createCDATASection(content) : document.createTextNode(content) );
                 } else if (item instanceof TagNode) {
                     TagNode subTagNode = (TagNode) item;
-                    Element subelement = document.createElementNS(null, subTagNode.getName() );
+		    String elemName = subTagNode.getName();
+		    String elemNS = getNS(element, elemName);
+                    Element subelement = document.createElementNS(elemNS, elemName );
                     Map attributes =  subTagNode.getAttributes();
                     Iterator entryIterator = attributes.entrySet().iterator();
                     while (entryIterator.hasNext()) {
                         Map.Entry entry = (Map.Entry) entryIterator.next();
                         String attrName = (String) entry.getKey();
+			String attrNS = getNS(subelement, attrName);
                         String attrValue = (String) entry.getValue();
                         if (escapeXml) {
                             attrValue = Utils.escapeXml(attrValue, props, true);
                         }
-                        subelement.setAttributeNS(null, attrName, attrValue);
+                        subelement.setAttributeNS(attrNS, attrName, attrValue);
                     }
 
                     // recursively create subnodes
@@ -88,4 +91,18 @@ public class NSDomSerializer {
         }
     }
 
+    private String getNS(Element element, String nodeName) {
+        String elemNS = null;
+
+	if (nodeName.indexOf(":") != -1) {
+            String prefix = nodeName.substring(0, nodeName.indexOf(":"));
+	    elemNS = element.lookupNamespaceURI(prefix);
+      
+	    if (elemNS == null) {
+	        elemNS = prefix; // Ugh. Use prefix as URI.
+	    }
+	}
+
+	return elemNS;
+    }
 }
