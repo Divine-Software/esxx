@@ -138,7 +138,24 @@ public class MIMEParser {
 	}
       }
 
-      ContentType content_type = new ContentType(part.getContentType());
+      ContentType content_type;
+
+      try {
+	content_type = new ContentType(part.getContentType());
+      }
+      catch (ParseException ex) {
+	// Sigh, Content-Type is fucked up -- try with just the first
+	// word or without params
+	String ct = part.getContentType().replaceAll("[\\s;].*", "");
+
+	if ("".equals(ct)) {
+	  ct = "application/octet-stream"; // Give up
+	}
+
+	part.setHeader("Content-Type", ct);
+	content_type = new ContentType(ct);
+      }
+
       int    part_type = 0;
       Object content   = part.getContent();
 
