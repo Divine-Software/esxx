@@ -36,7 +36,15 @@ public class MIMEParser {
       throws MessagingException, IOException,
       ClassNotFoundException, InstantiationException, IllegalAccessException {
 
-      this.session = Session.getDefaultInstance(System.getProperties());
+      // Make "mail.mime.decodeparameters" true if unspecified. Note
+      // that this property is a System property and not a
+      // Session.getInstance() parameter.
+ 
+      Properties p = System.getProperties();
+      p.setProperty("mail.mime.decodeparameters",
+		    p.getProperty("mail.mime.decodeparameters", "true"));
+ 
+      this.session = Session.getInstance(p);
 
       this.xmtpMode    = xmtp;
       this.procHTML    = process_html;
@@ -178,9 +186,13 @@ public class MIMEParser {
       element.appendChild(body);
 
       switch (part_type) {
-	case STRING_PART:
-	  convertTextPart(body, (String) content);
+        case STRING_PART: {
+	  // Nuke all obviously illegal characters
+	  String value = controlChars.matcher((String) content).replaceAll("");
+
+	  convertTextPart(body, value);
 	  break;
+	}
 
 	case MULTI_PART: {
 	  Multipart mp = (Multipart) content;
@@ -257,6 +269,18 @@ public class MIMEParser {
 	    LSInput  input  = domImplementationLS.createLSInput();
 	    LSParser parser = domImplementationLS.createLSParser(
 	      DOMImplementationLS.MODE_SYNCHRONOUS, null);
+	    parser.getDomConfig().setParameter("resource-resolver", new LSResourceResolver() {
+		    public LSInput resolveResource(String type, String ns_uri, 
+						   String public_id, String system_id, 
+						   String base_uri) {
+			// Never resolve anything external
+			LSInput res = domImplementationLS.createLSInput();
+			res.setStringData(" "); // Xerces checks for
+						// NULL or empty
+						// string ... duh.
+			return res;
+		    }
+		});
 
 	    if (content_stream != null) {
 	      input.setByteStream(content_stream);
@@ -312,6 +336,7 @@ public class MIMEParser {
 	      ct.getParameterList().remove("boundary");
 	    }
 
+ 	    decodeMIMEParams(ct.getParameterList());
 	    convertResourceHeader(element, "Content-Type",
 				  ct.getBaseType(),  ct.getParameterList());
 	    continue;
@@ -320,6 +345,7 @@ public class MIMEParser {
 	    // Parse Content-Disposition
 	    ContentDisposition cd = new ContentDisposition(hdr.getValue());
 
+ 	    decodeMIMEParams(cd.getParameterList());
 	    convertResourceHeader(element, "Content-Disposition",
 				  cd.getDisposition(),  cd.getParameterList());
 	    continue;
@@ -361,7 +387,16 @@ public class MIMEParser {
 	    continue;
 	  }
 	  else if (name.equalsIgnoreCase("Date")) {
-	    convertPlainHeader(element, "Date", RFC2822_DATEFORMAT.format(message.getSentDate()));
+	    Date date = message.getSentDate();
+
+	    if (date != null) {
+	      if (xmtpMode) {
+		convertPlainHeader(element, "Date", RFC2822_DATEFORMAT.format(date));
+	      }
+	      else {
+		convertPlainHeader(element, "Date", ATOM_DATEFORMAT.format(date));
+	      }
+	    }
 	    continue;
 	  }
 	}
@@ -369,15 +404,7 @@ public class MIMEParser {
 	  // Treat header as plain header then
 	}
 
-	String value;
-
-	try {
-	  value = MimeUtility.decodeText(hdr.getValue());
-	}
-	catch (UnsupportedEncodingException ueex) {
-	  // Never mind
-	  value = hdr.getValue();
-	}
+	String value = decodeMIMEValue(hdr.getValue());
 
 	if (forced_encoding != null && name.equalsIgnoreCase("Content-Transfer-Encoding")) {
 	  value = forced_encoding;
@@ -438,8 +465,20 @@ public class MIMEParser {
     protected void convertAddressHeader(Element element, String name, Address[] addresses)
       throws MessagingException {
       Element e = document.createElementNS(documentNS, documentPrefix + makeXMLName(name));
-      e.setTextContent(InternetAddress.toString(addresses));
 
+      StringBuilder sb = new StringBuilder();
+      for (Address a : addresses) {
+	if (sb.length() != 0) sb.append(",\r\n    ");
+
+	if (a instanceof InternetAddress) {
+	  sb.append(((InternetAddress) a).toUnicodeString());
+	}
+	else {
+	  sb.append(a.toString());
+	}
+      }
+
+      e.setTextContent(sb.toString());
       element.appendChild(e);
     }
 
@@ -507,6 +546,35 @@ public class MIMEParser {
       return new String(chars);
     }
 
+    private java.util.regex.Pattern controlChars = 
+	java.util.regex.Pattern.compile("\\p{Cntrl}");
+
+    private String decodeMIMEValue(String value) {
+      if (value != null) {
+	try {
+	  value = MimeUtility.decodeText(value);
+	}
+	catch (Exception ex) {
+	  // Use raw value
+	}
+      }
+
+      // Nuke all obviously illegal characters
+      value = controlChars.matcher(value).replaceAll("");
+
+      return value;
+    }
+
+    private void decodeMIMEParams(ParameterList params) {
+      // Strictly speaking, params may not be encoded, but the real
+      // world is not strict ...
+      for (Enumeration e = params.getNames(); e.hasMoreElements(); ) {
+	String name = (String) e.nextElement();
+	
+	params.set(name, decodeMIMEValue(params.get(name)));
+      }
+    }
+
     private static boolean isNameStartChar(char ch) {
       return (Character.isLetter(ch) || ch == '_');
     }
@@ -520,8 +588,11 @@ public class MIMEParser {
     static final String XMTP_NAMESPACE = "http://www.openhealth.org/xmtp#";
     static final String MIME_NAMESPACE = "urn:x-i-o-s:xmime";
 
-    private static java.text.SimpleDateFormat RFC2822_DATEFORMAT =
-      new java.text.SimpleDateFormat("EEE', 'dd' 'MMM' 'yyyy' 'HH:mm:ss' 'Z", Locale.US);
+    static javax.mail.internet.MailDateFormat RFC2822_DATEFORMAT =
+      new javax.mail.internet.MailDateFormat();
+
+    static java.text.SimpleDateFormat ATOM_DATEFORMAT =
+      new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US);
 
     private Session session;
     private MimeMessage message;

@@ -19,6 +19,7 @@
 package org.esxx.xmtp;
 
 import java.io.*;
+import java.util.Date;
 import java.util.regex.*;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -30,13 +31,21 @@ import javax.mail.internet.*;
 import javax.mail.util.ByteArrayDataSource;
 import javax.xml.stream.*;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.w3c.dom.bootstrap.DOMImplementationRegistry;
 
 import static javax.xml.stream.XMLStreamConstants.*;
 
 public class XMTPParser {
     public XMTPParser() {
-      this.session = Session.getDefaultInstance(System.getProperties());
+      // Make "mail.mime.encodeparameters" true if unspecified. Note
+      // that this property is a System property and not a
+      // Session.getInstance() parameter.
+
+      java.util.Properties p = System.getProperties();
+      p.setProperty("mail.mime.encodeparameters",
+		    p.getProperty("mail.mime.encodeparameters", "true"));
+      this.session = Session.getInstance(p);
     }
 
     public MimeMessage convertMessage(InputStream is)
@@ -205,12 +214,22 @@ public class XMTPParser {
 						 convertAddressHeader(xr));
 	    }
 	    else if (name.equals("Date")) {
+	      String value = convertPlainHeader(xr);
+	      Date   date = null;
+
 	      try {
-		((MimeMessage) part).setSentDate(mailDateFormat.parse(convertPlainHeader(xr)));
+		date = MIMEParser.ATOM_DATEFORMAT.parse(value);
 	      }
 	      catch (java.text.ParseException ex) {
-		throw new XMLStreamException("Invalid date format in Date element");
+		try {
+		  date = MIMEParser.RFC2822_DATEFORMAT.parse(value);
+		}
+		catch (java.text.ParseException ex2) {
+		  throw new XMLStreamException("Invalid date format in Date element");
+		}
 	      }
+		
+	      ((MimeMessage) part).setSentDate(date);
 	    }
 	    else {
 	      part.addHeader(name, convertPlainHeader(xr));
@@ -240,7 +259,7 @@ public class XMTPParser {
       throws XMLStreamException {
 
       for (int i = 0; i < xr.getAttributeCount(); ++i) {
-	params.set(xr.getAttributeLocalName(i), xr.getAttributeValue(i));
+	params.set(xr.getAttributeLocalName(i), xr.getAttributeValue(i), "UTF-8");
       }
 
       return convertPlainHeader(xr);
@@ -279,9 +298,6 @@ public class XMTPParser {
 	part.setContent(convertMessage(xr), part.getContentType());
       }
       else if (base_type.endsWith("/xml") || base_type.endsWith("+xml")) {
-//	xr.next(); // I didn't think I needed this, but apparently I
-		   // do ...
-
 	// By serializing to a byte array, we can control the XML
 	// charset, and we select ASCII, which is 7-bit
 	// clean. Otherwise, JavaMail might decide to base64-encode
@@ -290,6 +306,13 @@ public class XMTPParser {
 	DOMResult             dr = null;
 	XMLEventWriter        ew = null;
 	XMLEventReader        er = XMLInputFactory.newInstance().createXMLEventReader(xr);
+
+	javax.xml.stream.events.XMLEvent peek = er.peek();
+	if (peek.isStartElement() && 
+	    peek.asStartElement().getName().equals(
+              new javax.xml.namespace.QName(MIMEParser.MIME_NAMESPACE, "Body"))) {
+	  er.nextEvent();
+	}
 
 	if (base_type.equals("text/x-html+xml")) {
 	  try {
@@ -327,7 +350,9 @@ public class XMTPParser {
 	  }
 	}
 
+	er.close();
 	ew.flush();
+	er = null;
 
 	if (base_type.equals("text/x-html+xml")) {
 	  try {
@@ -341,7 +366,19 @@ public class XMTPParser {
 	    tr.setOutputProperty(OutputKeys.ENCODING, "us-ascii");
 	    tr.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
 	    tr.setOutputProperty(OutputKeys.MEDIA_TYPE, "text/html");
-	    tr.transform(new DOMSource(dr.getNode().getFirstChild()), new StreamResult(bo));
+
+	    Node node = dr.getNode().getFirstChild();
+	    
+	    while (node.getNodeType() != Node.ELEMENT_NODE) {
+		node = node.getNextSibling();
+
+		if (node == null) {
+		    throw new XMLStreamException("Unable to transfrom 'text/x-html+xml' into 'text/xml': "
+						 + "Missing HTML node.");
+		}
+	    }
+
+	    tr.transform(new DOMSource(node), new StreamResult(bo));
 	  }
 	  catch (TransformerException ex) {
 	    throw new XMLStreamException("Unable to transfrom 'text/x-html+xml' into 'text/xml': "
@@ -542,8 +579,6 @@ public class XMTPParser {
 
     private static Pattern validNS = Pattern.compile("(^" + MIMEParser.MIME_NAMESPACE + "$)|" +
 						     "(^" + MIMEParser.XMTP_NAMESPACE + "$)");
-
-    private static MailDateFormat mailDateFormat = new MailDateFormat();
 
     private Session session;
 
