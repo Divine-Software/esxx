@@ -224,7 +224,7 @@ public class MIMEParser {
       switch (part_type) {
         case STRING_PART: {
 	  // Nuke all obviously illegal characters
-	  String value = controlChars.matcher((String) content).replaceAll("");
+	  String value = nonPrintableChars.matcher((String) content).replaceAll("");
 
 	  convertTextPart(body, value);
 	  break;
@@ -573,6 +573,9 @@ public class MIMEParser {
 
     private java.util.regex.Pattern controlChars = 
 	java.util.regex.Pattern.compile("\\p{Cntrl}");
+
+    private java.util.regex.Pattern nonPrintableChars = // Cntrl - Space
+      java.util.regex.Pattern.compile("[\\x00-\\x1F\\x7F&&[^ \\t\\n\\x0B\\f\\r]]");
 
     private String decodeMIMEValue(String value) {
       if (value != null) {
