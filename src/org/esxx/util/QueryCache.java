@@ -380,6 +380,7 @@ public class QueryCache {
     public void execute(QueryHandler qh)
       throws SQLException {
       try {
+	int set = 1;
 	boolean has_result = sql.execute();
 	int update_count;
       
@@ -400,7 +401,8 @@ public class QueryCache {
 	    result = sql.getGeneratedKeys();
 	  }
 
-	  qh.handleResult(update_count, result);
+	  qh.handleResult(set, update_count, result);
+	  ++set;
 
 	  has_result = sql.getMoreResults();
 	}

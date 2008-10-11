@@ -117,7 +117,7 @@ public class JDBCHandler
 	    return ProtocolHandler.evalProperty(cx, final_params, param);
 	  }
 
-	  public void handleResult(int uc, ResultSet rs) 
+	  public void handleResult(int set, int uc, ResultSet rs) 
 	    throws SQLException {
 	    ResultSetMetaData rmd = rs.getMetaData();
 	    int             count = rmd.getColumnCount();
@@ -130,11 +130,10 @@ public class JDBCHandler
 	    Document doc = (Document) final_result[0];
 	    Element root = doc.getDocumentElement();
 
-	    int set = 0;
 	    while (rs.next()) {
 	      Element row = doc.createElementNS(null, final_entry_name);
 
-	      row.setAttributeNS(null, "set", Integer.toString(set));
+	      row.setAttributeNS(null, "resultSet", Integer.toString(set));
 
 	      if (uc != -1) {
 		row.setAttributeNS(null, "updateCount", Integer.toString(uc));
@@ -145,8 +144,6 @@ public class JDBCHandler
 	      }
 
 	      root.appendChild(row);
-
-	      ++set;
 	    }
 	  }
 	};

@@ -57,6 +57,7 @@ public interface QueryHandler {
    *  This method transforms the result of an SQL query. It will be
    *  called once for each result set.
    *
+   *  @param set           The result set number, starting at 1.
    *  @param update_count  The result of Statement.getUpdateCount();
    *  @para  result        The result of Statement.getResultSet() or getGeneratedKeys().
    *
@@ -64,6 +65,6 @@ public interface QueryHandler {
    *  from executeQuery().
    */
 
-  public void handleResult(int update_count, ResultSet result) 
+  public void handleResult(int set, int update_count, ResultSet result) 
     throws SQLException;
 }
