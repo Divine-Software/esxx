@@ -80,6 +80,10 @@ public class ProtocolHandler {
     protected static Object evalProperty(Context cx, Scriptable obj, String key) {
       Object rc;
 
+      if (obj == null || key == null) {
+	throw Context.reportRuntimeError("Can't find property " + key + " in " + obj);
+      }
+
       if (obj instanceof org.mozilla.javascript.xml.XMLObject) {
 	rc = Context.toString(((org.mozilla.javascript.xml.XMLObject) obj).ecmaGet(cx, key));
       }
