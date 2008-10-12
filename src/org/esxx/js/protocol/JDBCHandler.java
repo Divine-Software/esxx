@@ -124,7 +124,7 @@ public class JDBCHandler
 	    String[]        names = new String[count];
 	    
 	    for (int i = 0; i < count; ++i) {
-	      names[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i + 1).toLowerCase());
+	      names[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i + 1).toLowerCase(), "");
 	    }
 
 	    Document doc = (Document) final_result[0];

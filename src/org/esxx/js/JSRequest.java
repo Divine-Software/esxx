@@ -304,11 +304,11 @@ public class JSRequest
 	    String n = URLDecoder.decode(nv[0], "UTF-8").trim();
 
 	    if (nv.length == 1) {
-	      ScriptableObject.putProperty(query, StringUtil.makeXMLName(n), "");
+	      ScriptableObject.putProperty(query, StringUtil.makeXMLName(n, ""), "");
 	    }
 	    else if (nv.length == 2) {
 	      String v = URLDecoder.decode(nv[1], "UTF-8");
-	      ScriptableObject.putProperty(query, StringUtil.makeXMLName(n), v);
+	      ScriptableObject.putProperty(query, StringUtil.makeXMLName(n, ""), v);
 	    }
 	  }
 	  catch (UnsupportedEncodingException ex) {

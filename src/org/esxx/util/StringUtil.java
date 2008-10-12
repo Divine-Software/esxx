@@ -66,20 +66,24 @@ public abstract class StringUtil {
 
 
 
-  public static String makeXMLName(String s) {
-    char[] chars = s.toCharArray();
+  public static String makeXMLName(String s, String replacement) {
+    StringBuilder sb = new StringBuilder();
 
-    if(!isNameStartChar(chars[0])) {
-      chars[0] = '_';
+    // Add an underscore if first char is NameChar but not NameStartChar
+    if(s.length() == 0 || (!isNameStartChar(s.charAt(0)) && isNameChar(s.charAt(0)))) {
+      sb.append('_');
     }
 
-    for (int i = 1; i < chars.length; ++i) {
-      if (!isNameChar(chars[i])) {
-	chars[i] = '_';
+    for (int i = 0; i < s.length(); ++i) {
+      if (!isNameChar(s.charAt(i))) {
+	sb.append(replacement);
+      }
+      else {
+	sb.append(s.charAt(i));
       }
     }
 
-    return new String(chars);
+    return sb.toString();
   }
 
   private static boolean isNameStartChar(char ch) {
