@@ -91,6 +91,10 @@ public class ProtocolHandler {
 	rc = ScriptableObject.getProperty(obj, key);
       }
 
+      if (rc == Scriptable.NOT_FOUND) {
+	throw Context.reportRuntimeError("Can't find property " + key + " in " + obj);
+      }
+
       return rc;
     }
 
