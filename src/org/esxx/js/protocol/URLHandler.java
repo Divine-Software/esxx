@@ -29,9 +29,9 @@ import org.mozilla.javascript.*;
 
 public class URLHandler
   extends ProtocolHandler {
-  public URLHandler(URI uri, JSURI jsuri)
+  public URLHandler(JSURI jsuri)
     throws URISyntaxException {
-    super(uri, jsuri);
+    super(jsuri);
   }
 
   @Override
@@ -39,7 +39,7 @@ public class URLHandler
 		     String type, HashMap<String,String> params)
     throws Exception {
     ESXX      esxx = ESXX.getInstance();
-    URL        url = uri.toURL();
+    URL        url = jsuri.getURI().toURL();
     String[]    ct = { null };
     InputStream is = esxx.openCachedURL(url, ct);
 

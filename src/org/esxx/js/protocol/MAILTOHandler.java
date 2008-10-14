@@ -36,9 +36,9 @@ import org.mozilla.javascript.*;
 
 public class MAILTOHandler
   extends ProtocolHandler {
-  public MAILTOHandler(URI uri, JSURI jsuri)
+  public MAILTOHandler(JSURI jsuri)
     throws URISyntaxException {
-    super(uri, jsuri);
+    super(jsuri);
   }
 
   @Override
@@ -46,10 +46,10 @@ public class MAILTOHandler
 		     Object data, String type, HashMap<String,String> params)
     throws Exception {
     ESXX        esxx = ESXX.getInstance();
-    Properties props = jsuri.getParams(cx, uri);
+    Properties props = jsuri.getParams(cx, jsuri.getURI());
     Session  session = Session.getInstance(props);
 
-    String   specific = uri.getRawSchemeSpecificPart();
+    String   specific = jsuri.getURI().getRawSchemeSpecificPart();
     String[] to_query = specific.split("\\?", 2);
     String   to       = StringUtil.decodeURI(to_query[0], false);
 

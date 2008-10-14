@@ -27,43 +27,42 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 public class ProtocolHandler {
-    public ProtocolHandler(URI uri, JSURI jsuri)
+    public ProtocolHandler(JSURI jsuri)
       throws URISyntaxException {
-      this.uri   = uri;
       this.jsuri = jsuri;
     }
 
     public Object load(Context cx, Scriptable thisObj,
 		       String type, HashMap<String,String> params)
       throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+      throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support load().");
     }
 
     public Object save(Context cx, Scriptable thisObj,
 		       Object data, String type, HashMap<String,String> params)
       throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+      throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support save().");
     }
 
     public Object append(Context cx, Scriptable thisObj,
 			 Object data, String type, HashMap<String,String> params)
       throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+      throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support append().");
     }
 
     public Object remove(Context cx, Scriptable thisObj,
 			 String type, HashMap<String,String> params)
       throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+      throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support delete().");
     }
 
     public Object query(Context cx, Scriptable thisObj, Object[] args)
       throws Exception {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+      throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support query().");
     }
 
@@ -99,5 +98,4 @@ public class ProtocolHandler {
     }
 
     protected JSURI jsuri;
-    protected URI   uri;
 }

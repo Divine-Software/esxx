@@ -29,9 +29,8 @@ import org.mozilla.javascript.*;
 
 class CookieJar
   implements CookieStore {
-  public CookieJar(JSURI jsuri, URI uri) {
+  public CookieJar(JSURI jsuri) {
     this.jsuri = jsuri;
-    this.uri   = uri;
   }
 
   @Override public synchronized void addCookie(Cookie cookie) {
@@ -41,7 +40,7 @@ class CookieJar
 
     try {
       Context     cx = Context.getCurrentContext();
-      Scriptable jar = jsuri.getCookieJar(cx, uri);
+      Scriptable jar = jsuri.getCookieJar(cx, jsuri.getURI());
 
       if (jar != null) {
 	// Clear equivalent cookies
@@ -67,7 +66,7 @@ class CookieJar
   @Override public synchronized void clear() {
     try {
       Context     cx = Context.getCurrentContext();
-      Scriptable jar = jsuri.getCookieJar(cx, uri);
+      Scriptable jar = jsuri.getCookieJar(cx, jsuri.getURI());
 
       if (jar != null) {
 	jar.put("length", jar, 0);
@@ -81,7 +80,7 @@ class CookieJar
   @Override public synchronized boolean clearExpired(Date date) {
     try {
       Context     cx  = Context.getCurrentContext();
-      Scriptable  jar = jsuri.getCookieJar(cx, uri);
+      Scriptable  jar = jsuri.getCookieJar(cx, jsuri.getURI());
 
       return purge(cx, jar, date, null, null);
     }
@@ -95,7 +94,7 @@ class CookieJar
 
     try {
       Context     cx = Context.getCurrentContext();
-      Scriptable jar = jsuri.getCookieJar(cx, uri);
+      Scriptable jar = jsuri.getCookieJar(cx, jsuri.getURI());
 
       if (jar != null) {
 	Object len = jar.get("length", jar);
@@ -360,5 +359,4 @@ class CookieJar
   }
 
   private JSURI jsuri;
-  private URI uri;
 }

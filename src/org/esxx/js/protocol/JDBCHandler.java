@@ -33,9 +33,9 @@ import org.w3c.dom.Element;
 
 public class JDBCHandler
   extends ProtocolHandler {
-  public JDBCHandler(URI uri, JSURI jsuri)
+  public JDBCHandler(JSURI jsuri)
     throws URISyntaxException {
-    super(uri, jsuri);
+    super(jsuri);
 
     synchronized (JDBCHandler.class) {
       if (queryCache == null) {
@@ -87,8 +87,8 @@ public class JDBCHandler
 	}
       }
 
-      Properties p = jsuri.getParams(cx, uri);
-      Scriptable a = jsuri.getAuth(cx, uri, null);
+      Properties p = jsuri.getParams(cx, jsuri.getURI());
+      Scriptable a = jsuri.getAuth(cx, jsuri.getURI(), null);
 
       if (a != null) {
 	p.setProperty("username", Context.toString(a.get("username", a)));
@@ -149,11 +149,11 @@ public class JDBCHandler
 	};
 
       if (function == null) {
-	queryCache.executeQuery(uri, p, query, qh);
+	queryCache.executeQuery(jsuri.getURI(), p, query, qh);
 	return ESXX.domToE4X((Document) final_result[0], cx, thisObj);
       }
       else {
-	queryCache.executeTransaction(uri, p, qh);
+	queryCache.executeTransaction(jsuri.getURI(), p, qh);
 	return final_result[0];
       }
     }

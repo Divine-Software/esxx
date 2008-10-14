@@ -144,7 +144,7 @@ public class JSESXX
       InputStream   is = null;
 
       if (args[0] instanceof JSURI) {
-	uri = ((JSURI) args[0]).uri;
+	uri = ((JSURI) args[0]).getURI();
 	is  = esxx.openCachedURL(uri.toURL());
       }
       else {
@@ -152,7 +152,7 @@ public class JSESXX
 
 	try {
 	  if (js_esxx.location != null) {
-	    uri = js_esxx.location.uri.resolve(file);
+	    uri = js_esxx.location.getURI().resolve(file);
 	    is  = esxx.openCachedURL(uri.toURL());
 	  }
 	}
@@ -168,7 +168,7 @@ public class JSESXX
 
 	  for (Object path : paths_to_try) {
 	    try {
-	      uri = ((JSURI) path).uri.resolve(file);
+	      uri = ((JSURI) path).getURI().resolve(file);
 	      is  = esxx.openCachedURL(uri.toURL());
 	      // On success, break
 	      break;

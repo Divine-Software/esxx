@@ -33,12 +33,12 @@ import org.w3c.dom.Element;
 
 public class FILEHandler
   extends URLHandler {
-  public FILEHandler(URI uri, JSURI jsuri) 
+  public FILEHandler(JSURI jsuri) 
     throws URISyntaxException {
-    super(uri, jsuri);
+    super(jsuri);
     // Make sure we're not accessing compromised paths
-    if (uriSlashPattern.matcher(uri.toString()).matches()) {
-      throw new URISyntaxException(uri.toString(),
+    if (uriSlashPattern.matcher(jsuri.getURI().toString()).matches()) {
+      throw new URISyntaxException(jsuri.getURI().toString(),
 				   "Encoded path separators are not allowed in ESXX file URIs");
     }
   }
@@ -53,7 +53,7 @@ public class FILEHandler
     }
 
     if (type.equals("text/xml")) {
-      File dir = new File(uri);
+      File dir = new File(jsuri.getURI());
 
       if (dir.exists() && dir.isDirectory()) {
 	Document result = createDirectoryListing(dir);
@@ -70,7 +70,7 @@ public class FILEHandler
 		     Object data, String type, HashMap<String,String> params)
     throws Exception {
     ESXX esxx = ESXX.getInstance();
-    File file = new File(uri);
+    File file = new File(jsuri.getURI());
 
     Response.writeObject(data, type, params, esxx, cx, new FileOutputStream(file));
     return ESXX.domToE4X(createDirectoryEntry(file), cx, thisObj);
@@ -81,7 +81,7 @@ public class FILEHandler
 		       Object data, String type, HashMap<String,String> params)
     throws Exception {
     ESXX esxx = ESXX.getInstance();
-    File file = new File(uri);
+    File file = new File(jsuri.getURI());
 
     if (file.exists() && file.isDirectory()) {
       String filename = params.get("name");
@@ -108,14 +108,14 @@ public class FILEHandler
 //   @Override
 //   public Object query(Context cx, Scriptable thisObj, Object[] args)
 //     throws Exception {
-//     return createDirectoryListing(new File(uri));
+//     return createDirectoryListing(new File(jsuri.getURI()));
 //   }
 
   @Override
   public Object remove(Context cx, Scriptable thisObj,
 		       String type, HashMap<String,String> params)
     throws Exception {
-    File file = new File(uri);
+    File file = new File(jsuri.getURI());
 
     return new Boolean(file.delete());
   }

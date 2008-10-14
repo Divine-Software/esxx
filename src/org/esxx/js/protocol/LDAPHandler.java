@@ -32,9 +32,9 @@ import org.w3c.dom.Element;
 
 public class LDAPHandler
   extends ProtocolHandler {
-  public LDAPHandler(URI uri, JSURI jsuri)
+  public LDAPHandler(JSURI jsuri)
     throws URISyntaxException {
-    super(uri, jsuri);
+    super(jsuri);
   }
 
   @Override
@@ -49,12 +49,12 @@ public class LDAPHandler
     }
 
     if (!type.equals("text/xml")) {
-      throw Context.reportRuntimeError("URI protocol '" + uri.getScheme() +
+      throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' can only load 'text/xml'.");
     }
 
-    Properties p = jsuri.getParams(cx, uri);
-    Scriptable a = jsuri.getAuth(cx, uri, null);
+    Properties p = jsuri.getParams(cx, jsuri.getURI());
+    Scriptable a = jsuri.getAuth(cx, jsuri.getURI(), null);
 
     if (a != null) {
       p.setProperty(javax.naming.Context.SECURITY_PRINCIPAL, 
@@ -72,7 +72,7 @@ public class LDAPHandler
     }
 
     DirContext ctx = new InitialDirContext(p);
-    NamingEnumeration<?> answer = ctx.search(uri.toString(), "", null);
+    NamingEnumeration<?> answer = ctx.search(jsuri.getURI().toString(), "", null);
 
     Document result = esxx.createDocument("result");
     Element  root   = result.getDocumentElement();
@@ -82,8 +82,8 @@ public class LDAPHandler
 
 //      String name = sr.getName();
       String path = sr.getNameInNamespace();
-      URI    euri = new URI(uri.getScheme(), uri.getAuthority(),
-			    "/" + path, "?base", uri.getFragment());
+      URI    euri = new URI(jsuri.getURI().getScheme(), jsuri.getURI().getAuthority(),
+			    "/" + path, "?base", jsuri.getURI().getFragment());
 
       Element entry = result.createElementNS(null, "entry");
 

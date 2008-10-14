@@ -25,8 +25,8 @@ import org.esxx.js.JSURI;
 
 public class HTTPSHandler
   extends HTTPHandler {
-  public HTTPSHandler(URI uri, JSURI jsuri)
+  public HTTPSHandler(JSURI jsuri)
     throws URISyntaxException {
-    super(uri, jsuri);
+    super(jsuri);
   }
 }

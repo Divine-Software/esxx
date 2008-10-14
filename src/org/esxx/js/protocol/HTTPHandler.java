@@ -48,16 +48,16 @@ import org.mozilla.javascript.*;
 
 public class HTTPHandler
   extends URLHandler {
-  public HTTPHandler(URI uri, JSURI jsuri)
+  public HTTPHandler(JSURI jsuri)
     throws URISyntaxException {
-    super(uri, jsuri);
+    super(jsuri);
   }
 
   @Override
   public Object load(Context cx, Scriptable thisObj,
 		       String type, HashMap<String,String> params)
     throws Exception {
-    Result result = sendRequest(cx, thisObj, type, params, new HttpGet(uri));
+    Result result = sendRequest(cx, thisObj, type, params, new HttpGet(jsuri.getURI()));
 
     if (result.status / 100 != 2) {
       throw Context.reportRuntimeError("HTTP status code not 2xx.");
@@ -70,7 +70,7 @@ public class HTTPHandler
   public Object save(Context cx, Scriptable thisObj,
 		       Object data, String type, HashMap<String,String> params)
     throws Exception {
-    HttpPut put = new HttpPut(uri);
+    HttpPut put = new HttpPut(jsuri.getURI());
 
     attachObject(data, type, params, put, cx);
 
@@ -87,7 +87,7 @@ public class HTTPHandler
   public Object append(Context cx, Scriptable thisObj,
 			 Object data, String type, HashMap<String,String> params)
     throws Exception {
-    HttpPost post = new HttpPost(uri);
+    HttpPost post = new HttpPost(jsuri.getURI());
 
     attachObject(data, type, params, post, cx);
 
@@ -144,7 +144,7 @@ public class HTTPHandler
 	}
 
 	public URI getURI() {
-	  return uri;
+	  return jsuri.getURI();
 	}
       };
 
@@ -179,7 +179,7 @@ public class HTTPHandler
   public Object remove(Context cx, Scriptable thisObj,
 			 String type, HashMap<String,String> params)
     throws Exception {
-    Result result = sendRequest(cx, thisObj, type, params, new HttpDelete(uri));
+    Result result = sendRequest(cx, thisObj, type, params, new HttpDelete(jsuri.getURI()));
 
     if (result.status / 100 != 2) {
       throw Context.reportRuntimeError("HTTP status code not 2xx.");
@@ -275,7 +275,7 @@ public class HTTPHandler
 	  }
 	});
 
-      httpClient.setCookieStore(new CookieJar(jsuri, uri));
+      httpClient.setCookieStore(new CookieJar(jsuri));
     }
 
     return httpClient;
@@ -298,7 +298,7 @@ public class HTTPHandler
 	  msg.addHeader(Context.toString(p.get("name", p)),
 			Context.toString(p.get("value", p)));
 	}
-      }, uri);
+      }, jsuri.getURI());
 
     HttpResponse response = getHttpClient().execute(msg);
     HttpEntity   entity   = response.getEntity();
@@ -325,7 +325,7 @@ public class HTTPHandler
 	ESXX   esxx    = ESXX.getInstance();
 	//	JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
 	result.object  =  esxx.parseStream(type, params,
-					   entity.getContent(), uri.toURL(),
+					   entity.getContent(), jsuri.getURI().toURL(),
 					   null,
 					   null,//js_esxx.jsGet_debug(),
 					   cx, thisObj);

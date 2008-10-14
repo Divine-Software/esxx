@@ -41,7 +41,7 @@ public class JSURI
   public JSURI(URI uri)
     throws URISyntaxException {
     super();
-    this.uri = uri;
+    setURI(uri);
     protocolHandler = getProtocolHandler();
   }
 
@@ -55,6 +55,14 @@ public class JSURI
 
   @Override public Object getDefaultValue(Class<?> typeHint) {
     return "[object URI: " + uri.toString() + "]";
+  }
+
+  public URI getURI() {
+    return uri;
+  }
+
+  public void setURI(URI uri) {
+    this.uri = uri;
   }
 
   static public Object jsConstructor(Context cx,
@@ -410,11 +418,11 @@ public class JSURI
       if (constr == null) {
 	Class<? extends ProtocolHandler> cls;
 	cls = Class.forName(handler).asSubclass(ProtocolHandler.class);
-	constr = cls.getConstructor(URI.class, JSURI.class);
+	constr = cls.getConstructor(JSURI.class);
 	schemeConstructors.put(key, constr);
       }
 
-      return constr.newInstance(uri, this);
+      return constr.newInstance(this);
     }
     catch (InvocationTargetException ex) {
       if (ex.getCause() instanceof URISyntaxException) {
@@ -439,7 +447,7 @@ public class JSURI
   private static ConcurrentHashMap<String, Constructor<? extends ProtocolHandler>> schemeConstructors = new ConcurrentHashMap<String, Constructor<? extends ProtocolHandler>>();
 
   private ProtocolHandler protocolHandler;
-  protected URI uri;
+  private URI uri;
 
   static final long serialVersionUID = -5445754832118781527L;
 }
