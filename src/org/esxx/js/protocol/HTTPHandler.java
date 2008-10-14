@@ -325,7 +325,7 @@ public class HTTPHandler
 	ESXX   esxx    = ESXX.getInstance();
 	//	JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
 	result.object  =  esxx.parseStream(type, params,
-					   entity.getContent(), jsuri.getURI().toURL(),
+					   entity.getContent(), jsuri.getURI(),
 					   null,
 					   null,//js_esxx.jsGet_debug(),
 					   cx, thisObj);

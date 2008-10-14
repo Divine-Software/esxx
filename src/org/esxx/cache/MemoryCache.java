@@ -23,6 +23,9 @@ import org.esxx.util.IO;
 
 import java.io.*;
 import java.net.URL;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.HashSet;
 import net.sf.saxon.s9api.*;
@@ -67,13 +70,16 @@ public class MemoryCache
 	  if (xslt == null || checkStylesheetURLs(url, xslt)) {
 	    cachedStylesheets.remove(url_string);
 	    xslt = new Stylesheet();
-	    xslt.xsltExecutable = esxx.compileStylesheet(esxx.openCachedURL(url), url,
-							 xslt.externalURLs, app);
+	    xslt.xsltExecutable = esxx.compileStylesheet(esxx.openCachedURL(url), url.toURI(),
+							 xslt.externalURIs, app);
 	    cachedStylesheets.put(url_string, xslt);
 	  }
 	}
 
 	return xslt.xsltExecutable;
+      }
+      catch (URISyntaxException ex) {
+	throw new IOException("Failed to compile XSLT stylesheet: " + ex.getMessage(), ex);
       }
       catch (SaxonApiException ex) {
 	throw new IOException("Failed to compile XSLT stylesheet: " + ex.getMessage(), ex);
@@ -106,9 +112,13 @@ public class MemoryCache
 	return true;
       }
 
-      for (URL u : xslt.externalURLs) {
-	if (checkURL(u)) {
-	  return true;
+      for (URI u : xslt.externalURIs) {
+	try {
+	  if (checkURL(u.toURL())) {
+	    return true;
+	  }
+	}
+	catch (MalformedURLException ex) {
 	}
       }
 
@@ -126,7 +136,7 @@ public class MemoryCache
     }
 
     private class Stylesheet {
-      HashSet<URL> externalURLs = new HashSet<URL>();
+      HashSet<URI> externalURIs = new HashSet<URI>();
       XsltExecutable xsltExecutable;
     }
 

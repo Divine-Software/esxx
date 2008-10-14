@@ -23,6 +23,8 @@ import org.esxx.saxon.*;
 import org.esxx.util.SyslogHandler;
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
@@ -83,10 +85,10 @@ public class ESXX {
 
       try {
 	String[] path = settings.getProperty("esxx.app.include_path", "").split(File.pathSeparator);
-	includePath = new URL[path.length];
+	includePath = new URI[path.length];
 
 	for (int i = 0; i < path.length; ++i) {
-	  includePath[i] = new File(path[i]).toURI().toURL();
+	  includePath[i] = new File(path[i]).toURI();
 	}
       }
       catch (Exception ex) {
@@ -111,7 +113,7 @@ public class ESXX {
 	  public void entryRemoved(String key, final Application app) {
 	    getLogger().logp(Level.CONFIG, null, null, app + " unloading ...");
 
-	    // In this function, we're single-threaded (per application URL)
+	    // In this function, we're single-threaded (per application URI)
 	    app.terminate(defaultTimeout);
 
 	    // Execute the exit handler in one of the worker threads
@@ -277,25 +279,25 @@ public class ESXX {
 
 		applicationCache.filterEntries(new LRUCache.EntryFilter<String, Application>() {
 		    public boolean isStale(String key, Application app, long created) {
-		      try {
-			for (URL url : app.getExternalURLs()) {
-			  long last_modified = getLastModified(url);
-
+		      for (URI uri : app.getExternalURIs()) {
+			try {
+			  long last_modified = getLastModified(uri);
+			  
 			  if (last_modified > created) {
 			    return true;
 			  }
 			}
-		      }
-		      catch (IOException ex) {
-			return true;
+			catch (IOException ex) {
+			  // Ignore errors
+			}
 		      }
 
 		      return false;
 		    }
 
-		    private long getLastModified(URL url)
+		    private long getLastModified(URI uri)
 		      throws IOException {
-		      URLConnection uc = url.openConnection();
+		      URLConnection uc = uri.toURL().openConnection();
 		      uc.setDoInput(true);
 		      uc.setDoOutput(false);
 		      uc.setUseCaches(true);
@@ -573,7 +575,7 @@ public class ESXX {
       }
     }
 
-    public URL[] getIncludePath() {
+    public URI[] getIncludePath() {
       return includePath;
     }
 
@@ -582,10 +584,10 @@ public class ESXX {
      *
      *  @param is  The InputStream to be parsed.
      *
-     *  @param is_url  The location of the InputStream.
+     *  @param is_uri  The location of the InputStream.
      *
-     *  @param external_urls A Collection of URLs that will be
-     *  populated with all URLs visited during the parsing. Can be
+     *  @param external_uris A Collection of URIs that will be
+     *  populated with all URIs visited during the parsing. Can be
      *  'null'.
      *
      *  @param err A PrintWriter that will be used to report parser
@@ -598,14 +600,14 @@ public class ESXX {
      *  @throws IOException On I/O errors.
      */
 
-    public Document parseXML(InputStream is, URL is_url,
-			     final Collection<URL> external_urls,
+    public Document parseXML(InputStream is, URI is_uri,
+			     final Collection<URI> external_uris,
 			     final PrintWriter err)
       throws ESXXException {
       DOMImplementationLS di = getDOMImplementationLS();
       LSInput in = di.createLSInput();
 
-      in.setSystemId(is_url.toString());
+      in.setSystemId(is_uri.toString());
       in.setByteStream(is);
 
       LSParser p = di.createLSParser(DOMImplementationLS.MODE_SYNCHRONOUS, null);
@@ -638,7 +640,7 @@ public class ESXX {
 
       DOMConfiguration dc = p.getDomConfig();
 
-      URIResolver ur = new URIResolver(external_urls);
+      URIResolver ur = new URIResolver(external_uris);
 
       try {
 	dc.setParameter("comments", false);
@@ -667,12 +669,12 @@ public class ESXX {
     }
 
     public Object parseStream(String mime_type, HashMap<String,String> mime_params,
-			      InputStream is, URL is_url,
-			      Collection<URL> external_urls,
+			      InputStream is, URI is_uri,
+			      Collection<URI> external_uris,
 			      PrintWriter err,
 			      Context cx, Scriptable scope)
       throws Exception {
-      return parsers.parse(mime_type, mime_params, is, is_url, external_urls, err, cx, scope);
+      return parsers.parse(mime_type, mime_params, is, is_uri, external_uris, err, cx, scope);
     }
 
     public Application getCachedApplication(final Context cx, final Request request)
@@ -818,8 +820,8 @@ public class ESXX {
 //       "</xsl:template>" +
 //       "</xsl:transform>";
 
-    public XsltExecutable compileStylesheet(InputStream is, final URL is_url,
-					    Collection<URL> external_urls,
+    public XsltExecutable compileStylesheet(InputStream is, final URI is_uri,
+					    Collection<URI> external_uris,
 					    final Application app)
       throws SaxonApiException {
       XsltCompiler compiler = getSaxonProcessor().newXsltCompiler();
@@ -828,32 +830,32 @@ public class ESXX {
 	return compiler.compile(new StreamSource(new StringReader(identityTransform)));
       }
 
-      URIResolver ur = new URIResolver(external_urls);
+      URIResolver ur = new URIResolver(external_uris);
 
       try {
 	compiler.setURIResolver(ur);
 	compiler.setErrorListener(new ErrorListener() {
 	    public void error(TransformerException ex)
 	      throws TransformerException {
-	      app.getLogger().logp(Level.SEVERE, is_url.toString(), null,
+	      app.getLogger().logp(Level.SEVERE, is_uri.toString(), null,
 				   ex.getMessageAndLocation(), ex);
 	      throw ex;
 	    }
 
 	    public void fatalError(TransformerException ex)
 	      throws TransformerException {
-	      app.getLogger().logp(Level.SEVERE, is_url.toString(), null,
+	      app.getLogger().logp(Level.SEVERE, is_uri.toString(), null,
 				   ex.getMessageAndLocation(), ex);
 	      throw ex;
 	    }
 
 	    public void warning(TransformerException ex) {
-	      app.getLogger().logp(Level.WARNING, is_url.toString(), null,
+	      app.getLogger().logp(Level.WARNING, is_uri.toString(), null,
 				   ex.getMessageAndLocation());
 	    }
 	  });
 
-	return compiler.compile(new StreamSource(is, is_url.toString()));
+	return compiler.compile(new StreamSource(is, is_uri.toString()));
       }
       finally {
 	ur.closeAllStreams();
@@ -888,7 +890,7 @@ public class ESXX {
 
     private class URIResolver
       implements javax.xml.transform.URIResolver, LSResourceResolver {
-	public URIResolver(Collection<URL> log_visited) {
+	public URIResolver(Collection<URI> log_visited) {
 	  logVisited = log_visited;
 	  openedStreams = new LinkedList<InputStream>();
 	}
@@ -940,7 +942,7 @@ public class ESXX {
 
 	    if (logVisited != null) {
 	      // Log visited URLs if successfully opened
-	      logVisited.add(url);
+	      logVisited.add(url.toURI());
 	    }
 
 	    openedStreams.add(is);
@@ -950,9 +952,12 @@ public class ESXX {
 	  catch (IOException ex) {
 	    throw new ESXXException("URIResolver error: " + ex.getMessage(), ex);
 	  }
+	  catch (URISyntaxException ex) {
+	    throw new ESXXException("URIResolver error: " + ex.getMessage(), ex);
+	  }
 	}
 
-	private Collection<URL> logVisited;
+	private Collection<URI> logVisited;
         private Collection<InputStream> openedStreams;
     }
 
@@ -974,7 +979,7 @@ public class ESXX {
     }
 
     private int defaultTimeout;
-    private URL[] includePath;
+    private URI[] includePath;
 
     private MemoryCache memoryCache;
     private LRUCache<String, Application> applicationCache;

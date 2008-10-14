@@ -25,7 +25,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.net.URL;
+import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -45,8 +45,8 @@ class Parsers {
 
       parserMap.put("application/octet-stream", new Parser() {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URL is_url,
-				Collection<URL> external_urls,
+				InputStream is, URI is_uri,
+				Collection<URI> external_uris,
 				PrintWriter err,
 				Context cx, Scriptable scope)
 	      throws IOException, org.xml.sax.SAXException {
@@ -60,8 +60,8 @@ class Parsers {
 
       parserMap.put("application/json", new Parser() {
 	  public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URL is_url,
-			      Collection<URL> external_urls,
+				InputStream is, URI is_uri,
+			      Collection<URI> external_uris,
 			      PrintWriter err,
 			      Context cx, Scriptable scope)
 	    throws IOException {
@@ -136,8 +136,8 @@ class Parsers {
 
 //       parserMap.put("application/xslt+xml", new Parser() {
 // 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-// 				InputStream is, URL is_url,
-// 				Collection<URL> external_urls,
+// 				InputStream is, URI is_uri,
+// 				Collection<URI> external_uris,
 // 				PrintWriter err,
 // 				Context cx, Scriptable scope)
 // 	      throws IOException, org.xml.sax.SAXException {
@@ -147,8 +147,8 @@ class Parsers {
 
       parserMap.put("message/rfc822", new Parser() {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URL is_url,
-				Collection<URL> external_urls,
+				InputStream is, URI is_uri,
+				Collection<URI> external_uris,
 				PrintWriter err,
 				Context cx, Scriptable scope)
 	      throws IOException, org.xml.sax.SAXException {
@@ -205,12 +205,12 @@ class Parsers {
 
       Parser xml_parser =  new Parser() {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URL is_url,
-				Collection<URL> external_urls,
+				InputStream is, URI is_uri,
+				Collection<URI> external_uris,
 				PrintWriter err,
 				Context cx, Scriptable scope)
 	      throws IOException, org.xml.sax.SAXException {
-	      Document result = esxx.parseXML(is, is_url, external_urls, err);
+	      Document result = esxx.parseXML(is, is_uri, external_uris, err);
 	      return ESXX.domToE4X(result, cx, scope);
 	    }
 	};
@@ -220,8 +220,8 @@ class Parsers {
 
       parserMap.put("text/html", new Parser() {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URL is_url,
-				Collection<URL> external_urls,
+				InputStream is, URI is_uri,
+				Collection<URI> external_uris,
 				PrintWriter err,
 				Context cx, Scriptable scope)
 	      throws IOException, javax.xml.parsers.ParserConfigurationException  {
@@ -246,8 +246,8 @@ class Parsers {
 
       parserMap.put("text/plain", new Parser() {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URL is_url,
-				Collection<URL> external_urls,
+				InputStream is, URI is_uri,
+				Collection<URI> external_uris,
 				PrintWriter err,
 				Context cx, Scriptable scope)
 	      throws IOException {
@@ -265,8 +265,8 @@ class Parsers {
 
       Parser image_parser = new Parser() {
 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URL is_url,
-				Collection<URL> external_urls,
+				InputStream is, URI is_uri,
+				Collection<URI> external_uris,
 				PrintWriter err,
 				Context cx, Scriptable scope)
 	      throws IOException {
@@ -298,8 +298,8 @@ class Parsers {
     }
 
     public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, final URL is_url,
-			Collection<URL> external_urls,
+			InputStream is, final URI is_uri,
+			Collection<URI> external_uris,
 			PrintWriter err,
 			Context cx, Scriptable scope)
       throws Exception {
@@ -315,16 +315,16 @@ class Parsers {
 	}
       }
 
-      Object result =  parser.parse(mime_type, mime_params, is, is_url,
-				    external_urls, err, cx, scope);
+      Object result =  parser.parse(mime_type, mime_params, is, is_uri,
+				    external_uris, err, cx, scope);
       is.close();
       return result;
     }
 
     private interface Parser {
 	public Object parse(String mime_type, HashMap<String,String> mime_params,
-			    InputStream is, URL is_url,
-			    Collection<URL> external_urls,
+			    InputStream is, URI is_uri,
+			    Collection<URI> external_uris,
 			    PrintWriter err,
 			    Context cx, Scriptable scope)
 	  throws Exception;

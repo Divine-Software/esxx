@@ -81,8 +81,8 @@ public class Application
     return jsESXX;
   }
 
-  public Collection<URL> getExternalURLs() {
-    return externalURLs;
+  public Collection<URI> getExternalURIs() {
+    return externalURIs;
   }
 
   public synchronized Logger getLogger() {
@@ -361,7 +361,7 @@ public class Application
     boolean is_handled = false;
     InputStream is = esxx.openCachedURL(baseURL);
 
-    externalURLs.add(baseURL);
+    externalURIs.add(baseURI);
 
     // Check if it's an XML document or a JS file
 
@@ -413,7 +413,7 @@ public class Application
   private void loadESXXFile(InputStream is) 
     throws IOException {
     try {
-      xml = esxx.parseXML(is, baseURL, externalURLs, null);
+      xml = esxx.parseXML(is, baseURI, externalURIs, null);
 
       // Extract ESXX information, if any
 
@@ -528,7 +528,7 @@ public class Application
     // Create JS versions of the document, it's URI and the include path
     mainDocument = ESXX.domToE4X(xml, cx, applicationScope);
     mainURI = (JSURI) cx.newObject(applicationScope, "URI", new Object[] { baseURL });
-    URL[] include_path = esxx.getIncludePath();
+    URI[] include_path = esxx.getIncludePath();
 
     includePath = cx.newArray(applicationScope, include_path.length);
 
@@ -590,7 +590,7 @@ public class Application
     try {
       Code c = new Code(url, line, data);
       codeList.put(url.toURI().normalize().toString(), c);
-      externalURLs.add(url);
+      externalURIs.add(url.toURI());
 
       return c;
     }
@@ -624,9 +624,13 @@ public class Application
 	try {
 	  URL url = new URL(baseURL, href);
 	  stylesheets.put("", url);
-	  externalURLs.add(url);
+	  externalURIs.add(url.toURI());
 	}
 	catch (MalformedURLException ex) {
+	  throw new ESXXException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
+				  ex.getMessage());
+	}
+	catch (URISyntaxException ex) {
 	  throw new ESXXException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
 				  ex.getMessage());
 	}
@@ -750,9 +754,13 @@ public class Application
     try {
       URL url = new URL(baseURL, href);
       stylesheets.put(media_type, url);
-      externalURLs.add(url);
+      externalURIs.add(url.toURI());
     }
     catch (MalformedURLException ex) {
+      throw new ESXXException("<stylesheet> attribute 'href' is invalid: " +
+			      ex.getMessage());
+    }
+    catch (URISyntaxException ex) {
       throw new ESXXException("<stylesheet> attribute 'href' is invalid: " +
 			      ex.getMessage());
     }
@@ -783,7 +791,7 @@ public class Application
   private ESXX esxx;
   private URI baseURI;
   private URL baseURL;
-  private HashSet<URL> externalURLs = new HashSet<URL>();
+  private HashSet<URI> externalURIs = new HashSet<URI>();
   private URL workingDirectory;
 
   private String ident;

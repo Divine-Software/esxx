@@ -54,7 +54,7 @@ public class URLHandler
 
     //    JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
     Object result  = esxx.parseStream(type, params,
-				      is, url,
+				      is, jsuri.getURI(),
 				      null,
 				      null, //js_esxx.jsGet_debug(),
 				      cx, thisObj);
