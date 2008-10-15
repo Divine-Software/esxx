@@ -290,10 +290,6 @@ class Parsers {
 	    }
 	};
 
-      parserMap.put("image/bmp", image_parser);
-      parserMap.put("image/gif", image_parser);
-      parserMap.put("image/jpeg", image_parser);
-      parserMap.put("image/wbmp", image_parser);
       parserMap.put("image/*", image_parser);
     }
 
@@ -309,6 +305,9 @@ class Parsers {
       if (parser == null) {
 	if (mime_type.endsWith("+xml")) {
 	  parser = parserMap.get("application/xml");
+	}
+	else if (mime_type.startsWith("image/")) {
+	  parser = parserMap.get("image/*");
 	}
 	else {
 	  parser = parserMap.get("application/octet-stream");
