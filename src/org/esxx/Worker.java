@@ -67,11 +67,7 @@ class Worker {
 	}
 	else if (app.hasHandlers()) {
 	  String request_method = request.getProperties().getProperty("REQUEST_METHOD");
-	  String path_info = "/" + request.getPathInfo().toString();
-
-	  if (path_info == null || path_info.isEmpty()) {
-	    path_info = "/";
-	  }
+	  String path_info = request.getPathInfo();
 
 	  result = app.executeHTTPMethod(cx, jsreq, request_method, path_info);
 	}

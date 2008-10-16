@@ -49,7 +49,12 @@ public class JSRequest
     public JSRequest(Request request, Context cx, Scriptable scope) {
       this();
 
-      ESXX esxx    = ESXX.getInstance();
+      ESXX esxx = ESXX.getInstance();
+
+      requestURI = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getRequestURI() });
+      scriptURI  = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getScriptURI() });
+      scriptName = request.getScriptName();
+      pathInfo   = request.getPathInfo();
 
       env     = cx.newObject(scope);
       headers = cx.newObject(scope);
@@ -118,6 +123,22 @@ public class JSRequest
       return "Request";
     }
 
+    public JSURI jsGet_requestURI() {
+      return requestURI;
+    }
+
+    public JSURI jsGet_scriptURI() {
+      return scriptURI;
+    }
+
+    public String jsGet_scriptName() {
+      return scriptName;
+    }
+
+    public String jsGet_pathInfo() {
+      return pathInfo;
+    }
+
     public Scriptable jsGet_env() {
       return env;
     }
@@ -158,6 +179,10 @@ public class JSRequest
       return soapAction;
     }
 
+    private JSURI requestURI;
+    private JSURI scriptURI;
+    private String scriptName;
+    private String pathInfo;
 
     private Scriptable env;
     private Scriptable headers;

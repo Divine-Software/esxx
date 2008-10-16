@@ -38,31 +38,46 @@ public abstract class Request {
 
       workingDirectory = new File("").toURI();
 
-      URI path_uri = scriptFilename;
+      String protocol = properties.getProperty("HTTPS", "off").equals("on") ? "https" : "http";
+      String hostname = properties.getProperty("HTTP_HOST", "localhost");
+      String querystr = properties.getProperty("QUERY_STRING", "");
 
-      String path_translated = properties.getProperty("PATH_TRANSLATED");
+      String path_translated = properties.getProperty("PATH_TRANSLATED", scriptFilename.toString());
+      String request_uri     = properties.getProperty("REQUEST_URI");
 
-      if (path_translated != null) {
-	path_uri = new File(path_translated).toURI();
-      }
-
-      pathInfo = scriptFilename.relativize(path_uri);
-
-      String req_uri = properties.getProperty("REQUEST_URI");
-
-      if (req_uri == null) {
+      if (request_uri == null) {
 	// Fall back to PATH_INFO (it might work too)
-	req_uri = properties.getProperty("PATH_INFO");
+	request_uri = properties.getProperty("PATH_INFO");
       }
-      
-      scriptName = null;
 
-      if (req_uri != null && req_uri.endsWith(pathInfo.toString())) {
-	try {
-	  scriptName = new URI(req_uri.substring(0, (req_uri.length() - 
-						     pathInfo.toString().length())));
+      try {
+	URI pt_uri = new URI("file", null, path_translated, null).normalize();
+	
+	pathInfo = script_filename.relativize(pt_uri).toString();
+	request_uri = new URI(request_uri).normalize().toString();
+
+	if (request_uri.endsWith(pathInfo)) {
+	  scriptName = request_uri.substring(0, request_uri.length() - pathInfo.length());
+
+	  if (!scriptName.endsWith("/")) {
+	    // Always terminate scriptname with a slash to make it easy
+	    // to resolve subresources.
+	    scriptName = scriptName + "/";
+	  }
+
+	  // Create the absolute URI version of scriptName
+	  scriptURI = new URI(protocol, hostname, scriptName, null, null);
 	}
-	catch (java.net.URISyntaxException ex) {}
+
+	// Create the absolute URI version of request_uri
+	requestURI = new URI(protocol, hostname, request_uri, 
+			     (querystr.length() == 0 ? null : querystr), null);
+
+	// pathInfo always begins with a slash
+	pathInfo = "/" + pathInfo;
+      } 
+      catch (java.net.URISyntaxException ex) {
+	throw new IOException("Failed to construct Request: " + ex.getMessage(), ex);
       }
     }
 
@@ -82,15 +97,23 @@ public abstract class Request {
       return debuggerActivated;
     }
 
+    public URI getRequestURI() {
+      return requestURI;
+    }
+
+    public URI getScriptURI() {
+      return scriptURI;
+    }
+
     public URI getScriptFilename() {
       return scriptFilename;
     }
 
-    public URI getScriptName() {
+    public String getScriptName() {
       return scriptName;
     }
 
-    public URI getPathInfo() {
+    public String getPathInfo() {
       return pathInfo;
     }
 
@@ -161,9 +184,11 @@ public abstract class Request {
       }
     }
 
+    private URI requestURI;
+    private URI scriptURI;
     private URI scriptFilename;
-    private URI scriptName;
-    private URI pathInfo;
+    private String scriptName;
+    private String pathInfo;
     private URI workingDirectory;
     private String[] args;
     private InputStream in;
