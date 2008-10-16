@@ -33,10 +33,9 @@ import org.mozilla.javascript.*;
 public class HTTPRequest
   extends WebRequest {
 
-  public HTTPRequest(URI root_uri, URI script_filename, URI path_translated,
-		     URI app_file, HttpExchange he)
+  public HTTPRequest(URI root_uri, URI script_filename, URI path_translated, HttpExchange he)
     throws IOException {
-    super(app_file, null, createProperties(root_uri, script_filename, path_translated, he),
+    super(script_filename, null, createProperties(root_uri, script_filename, path_translated, he),
 	  he.getRequestBody(),
 	  System.err,
 	  null);
@@ -107,10 +106,8 @@ public class HTTPRequest
       query_string = "";
     }
 
-    String root        = root_uri.toString();
-    String script_name = script_filename.toString();
-    String path_info   = path_translated.toString().substring(script_name.length());
-    script_name = script_name.substring(root.length() - 1);
+    String script_name = "/" + root_uri.relativize(script_filename).toString();
+    String path_info   = "/" + script_filename.relativize(path_translated).toString();
 
     p.setProperty("GATEWAY_INTERFACE", "CGI/1.1");
     p.setProperty("SERVER_SOFTWARE",   "ESXX/1.0");
@@ -121,8 +118,8 @@ public class HTTPRequest
     p.setProperty("REMOTE_PORT",       "" + remote.getPort());
     p.setProperty("SERVER_ADDR",       local.getAddress().toString().replaceFirst("[^/]*/", ""));
     p.setProperty("SERVER_PORT",       "" + local.getPort());
-    p.setProperty("PATH_TRANSLATED",   new File(path_translated).toString());
-    p.setProperty("SCRIPT_FILENAME",   new File(script_filename).toString());
+    p.setProperty("PATH_TRANSLATED",   path_translated.getPath());
+    p.setProperty("SCRIPT_FILENAME",   script_filename.getPath());
     p.setProperty("PATH_INFO",         path_info);
     p.setProperty("SCRIPT_NAME",       script_name);
     p.setProperty("QUERY_STRING",      query_string);
@@ -170,8 +167,8 @@ public class HTTPRequest
 	  String req_uri_xml = encodeXMLAttribute(he.getRequestURI().getPath());
 
 	  try {
-	    File file = new File(root_uri.resolve(req_uri_raw.substring(1))).getCanonicalFile();
-	    File real = file;
+	    URI path_translated = root_uri.resolve(req_uri_raw.substring(1));
+	    File file = new File(path_translated).getCanonicalFile();
 	    URI  uri  = file.toURI();
 
 	    if (!file.getAbsolutePath().startsWith(root)) {
@@ -179,7 +176,7 @@ public class HTTPRequest
 	      throw new FileNotFoundException("Not Found");
 	    }
 	    else {
-	      URI app_file = null;
+	      File app_file = null;
 
 	      if (file.exists()) {
 		if (file.isDirectory()) {
@@ -243,7 +240,7 @@ public class HTTPRequest
 		}
 		else {
 		  if (fileTypeMap.getContentType(file).equals("application/x-esxx+xml")) {
-		    app_file = file.toURI();
+		    app_file = file;
 		  }
 		  else {
 		    he.getResponseHeaders().set("Content-Type", fileTypeMap.getContentType(file));
@@ -254,26 +251,24 @@ public class HTTPRequest
 	      }
 	      else {
 		// Find a file that do exists
-		while (real != null && !real.exists()) {
-		  real = real.getParentFile();
+		app_file = file;
+		while (app_file != null && !app_file.exists()) {
+		  app_file = app_file.getParentFile();
 		}
 
-		if (real.isDirectory()) {
+		if (app_file.isDirectory()) {
 		  throw new FileNotFoundException("Not Found");
 		}
 
-		if (!fileTypeMap.getContentType(real).equals("application/x-esxx+xml")) {
+		if (!fileTypeMap.getContentType(app_file).equals("application/x-esxx+xml")) {
 		  throw new FileNotFoundException("Only ESXX files are directories");
 		}
-
-		app_file = real.toURI();
 	      }
 
 	      if (app_file != null) {
 		HTTPRequest hr = new HTTPRequest(root_uri,
-						 real.toURI(),
-						 file.toURI(),
-						 app_file,
+						 app_file.toURI(),
+						 path_translated,
 						 he);
 		esxx.addRequest(hr, hr, 0);
 		he = null;
