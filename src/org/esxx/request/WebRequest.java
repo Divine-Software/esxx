@@ -107,6 +107,9 @@ public class WebRequest
     out.println(esxx.getHTMLFooter());
     out.close();
 
+    // Dump exception on error stream too
+    ex.printStackTrace(new PrintWriter(getErrorWriter()));
+
     try {
       return handleResponse(esxx, cx,
 			    new Response(code, "text/html; charset=UTF-8",
