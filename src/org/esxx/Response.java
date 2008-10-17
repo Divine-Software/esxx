@@ -302,6 +302,9 @@ public class Response  {
 
 	object = new JSONArray(array).toString();
       }
+      else if (object instanceof Wrapper) {
+	object = jsToJSON(((Wrapper) object).unwrap(), cx);
+      }
       else if (object instanceof Scriptable) {
 	Scriptable jsobject = (Scriptable) object;
 
