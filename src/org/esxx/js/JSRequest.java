@@ -95,7 +95,7 @@ public class JSRequest
 	}
 
 	if (name.equals("QUERY_STRING")) {
-	  handleQueryHeader(value);
+	  handleQueryHeader(query, value);
 	}
       }
 
@@ -169,6 +169,9 @@ public class JSRequest
       return logger;
     }
 
+    public Object jsGet_contentType() {
+      return contentType;
+    }
 
     public Object jsGet_message() {
       return message;
@@ -198,6 +201,7 @@ public class JSRequest
 
     private String soapAction;
     private String contentType;
+    private HashMap<String,String> contentTypeParams;
     private long contentLength;
     private MimeHeaders mimeHeaders;
 
@@ -318,7 +322,7 @@ public class JSRequest
     }
 
 
-    private void handleQueryHeader(String value) {
+    private void handleQueryHeader(Scriptable object, String value) {
       if (value.length() > 0) {
 	String[] args = value.split("&");
 
@@ -329,11 +333,11 @@ public class JSRequest
 	    String n = URLDecoder.decode(nv[0], "UTF-8").trim();
 
 	    if (nv.length == 1) {
-	      ScriptableObject.putProperty(query, StringUtil.makeXMLName(n, ""), "");
+	      ScriptableObject.putProperty(object, StringUtil.makeXMLName(n, ""), "");
 	    }
 	    else if (nv.length == 2) {
 	      String v = URLDecoder.decode(nv[1], "UTF-8");
-	      ScriptableObject.putProperty(query, StringUtil.makeXMLName(n, ""), v);
+	      ScriptableObject.putProperty(object, StringUtil.makeXMLName(n, ""), v);
 	    }
 	  }
 	  catch (UnsupportedEncodingException ex) {
@@ -347,7 +351,8 @@ public class JSRequest
     public void handleContentHeader(String name, String value) {
       if (name.startsWith("Content-")) {
 	if (name.equals("Content-Type")) {
-	  contentType = value;
+	  contentTypeParams = new HashMap<String,String>();
+	  contentType       = ESXX.parseMIMEType(value, contentTypeParams);
 	}
 	else if (name.equals("Content-Length")) {
 	  contentLength = Long.parseLong(value);
@@ -382,17 +387,15 @@ public class JSRequest
       }
       else if (contentType != null && contentLength > 0) {
 	try {
-	  HashMap<String,String> params = new HashMap<String,String>();
-	  String                 ct     = ESXX.parseMIMEType(contentType, params);
-
-	  if ("application/x-www-form-urlencoded".equals(ct)) {
+	  if ("application/x-www-form-urlencoded".equals(contentType)) {
 	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
 	    IO.copyStream(request.getInputStream(), bos);
-	    handleQueryHeader(bos.toString("UTF-8"));
+	    message = cx.newObject(scope);
+	    handleQueryHeader((Scriptable) message, bos.toString("UTF-8"));
 	  }
 	  else {
-	    message = esxx.parseStream(ct, params, request.getInputStream(), 
+	    message = esxx.parseStream(contentType, contentTypeParams, request.getInputStream(), 
 				       request.getScriptFilename(),
 				       null,
 				       new java.io.PrintWriter(request.getDebugWriter()),

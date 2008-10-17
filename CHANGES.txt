@@ -18,6 +18,13 @@
 	* The Request object now has requestURI, scriptURI, scriptName
 	and pathInfo properties.
 
+	* Request.query now only contains parameters from the
+	URI. 'application/x-www-form-urlencoded'-encoded data is now
+	in Request.message.
+
+	* Added Request.contentType, which contains the basic content
+	type (without parameters).
+
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
 	System.console() to return null.
