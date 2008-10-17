@@ -209,11 +209,28 @@ public class Application
   public Object executeErrorHandler(Context cx, JSRequest req, 
 				    Exception error)
     throws Exception {
-    Object result;
+    Object result  = null;
     String handler = getErrorHandlerFunction();
 
-    if (handler == null) {
-      // No installed error handler: throw (unwrapped) exception
+    if (handler != null) {
+      try {
+	Object args[] = { req, Context.javaToJS(error, applicationScope) };
+
+	result = JS.callJSMethod(handler, args, "Error handler", cx, applicationScope);
+      }
+      catch (Exception ex) {
+	throw new ESXXException("Failed to handle error '" + error.toString() +
+				"':\n" +
+				"Error handler '" + handler +
+				"' failed with message '" +
+				ex.getMessage() + "'",
+				ex);
+      }
+    }
+
+    if (result == null || result == Context.getUndefinedValue()) {
+      // No installed error handler or handler returned
+      // null/undefined: throw (unwrapped) exception
       if (error instanceof WrappedException) {
 	Throwable t = ((WrappedException) error).getWrappedException();
 
@@ -223,20 +240,6 @@ public class Application
       }
 
       throw error;
-    }
-
-    try {
-      Object args[] = { req, Context.javaToJS(error, applicationScope) };
-
-      result = JS.callJSMethod(handler, args, "Error handler", cx, applicationScope);
-    }
-    catch (Exception ex) {
-      throw new ESXXException("Failed to handle error '" + error.toString() +
-			      "':\n" +
-			      "Error handler '" + handler +
-			      "' failed with message '" +
-			      ex.getMessage() + "'",
-			      ex);
     }
 
     return result;

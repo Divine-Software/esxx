@@ -25,6 +25,10 @@
 	* Added Request.contentType, which contains the basic content
 	type (without parameters).
 
+	* The application's error handler may now return null or
+	undefined to make it act as if there were not error handler
+	installed at all.
+
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
 	System.console() to return null.
