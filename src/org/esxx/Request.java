@@ -42,12 +42,12 @@ public abstract class Request {
       String hostname = properties.getProperty("HTTP_HOST", "localhost");
       String querystr = properties.getProperty("QUERY_STRING", "");
 
-      String path_translated = properties.getProperty("PATH_TRANSLATED", scriptFilename.toString());
+      String path_translated = properties.getProperty("PATH_TRANSLATED", scriptFilename.getPath());
       String request_uri     = properties.getProperty("REQUEST_URI");
 
       if (request_uri == null) {
 	// Fall back to PATH_INFO (it might work too)
-	request_uri = properties.getProperty("PATH_INFO");
+	request_uri = properties.getProperty("PATH_INFO", "");
       }
 
       try {
@@ -77,6 +77,7 @@ public abstract class Request {
 	pathInfo = "/" + pathInfo;
       } 
       catch (java.net.URISyntaxException ex) {
+	ex.printStackTrace();
 	throw new IOException("Failed to construct Request: " + ex.getMessage(), ex);
       }
     }
