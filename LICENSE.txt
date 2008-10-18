@@ -5,3 +5,6 @@ APL2-licensed code from the Apache project, JavaMail from Sun, Rhino
 from the Mozilla project and Saxon by Michael Kay.
 
 Martin Blom reserves the right to extend the above list of exceptions.
+
+Not happy with the GNU GPL license? Contact martin@blom.org for
+commercial licensing options.
