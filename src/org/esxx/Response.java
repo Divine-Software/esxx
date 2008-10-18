@@ -19,6 +19,7 @@
 package org.esxx;
 
 import org.esxx.util.IO;
+import org.esxx.util.StringUtil;
 
 import java.awt.image.RenderedImage;
 import java.io.*;
@@ -143,37 +144,13 @@ public class Response  {
     }
     else if (object instanceof Scriptable) {
       if ("application/x-www-form-urlencoded".equals(mime_type)) {
-	Scriptable    s  = (Scriptable) object;
-	StringBuilder sb = new StringBuilder();
-	String        cs = mime_params.get("charset");
+	String cs = mime_params.get("charset");
 
 	if (cs == null) {
 	  cs = "UTF-8";
 	}
 
-	for (Object o : s.getIds()) {
-	  if (sb.length() != 0) {
-	    sb.append("&");
-	  }
-
-	  if (o instanceof String) {
-	    String key   = (String) o;
-	    String value = Context.toString(s.get(key, s));
-
-	    sb.append(URLEncoder.encode(key, cs));
-	    sb.append("=");
-	    sb.append(URLEncoder.encode(value, cs));
-	  }
-	  else {
-	    int key      = (Integer) o;
-	    String value = Context.toString(s.get(key, s));
-
-	    sb.append(key + "=");
-	    sb.append(URLEncoder.encode(value, cs));
-	  }
-	}
-
-	object = sb.toString();
+	object = StringUtil.encodeFormVariables(cs, (Scriptable) object);
       }
       else {
 	object = jsToJSON(object, cx).toString();

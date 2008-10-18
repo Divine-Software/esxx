@@ -19,6 +19,7 @@
 package org.esxx;
 
 import org.esxx.util.IO;
+import org.esxx.util.StringUtil;
 import org.esxx.xmtp.MIMEParser;
 
 import java.io.ByteArrayOutputStream;
@@ -131,6 +132,28 @@ class Parsers {
 	    }
 
 	    return res;
+	  }
+	});
+
+      parserMap.put("application/x-www-form-urlencoded", new Parser() {
+	  public Object parse(String mime_type, HashMap<String,String> mime_params,
+			      InputStream is, URI is_uri,
+			      Collection<URI> external_uris,
+			      PrintWriter err,
+			      Context cx, Scriptable scope)
+	    throws IOException {
+	    String cs = mime_params.get("charset");
+
+	    if (cs == null) {
+	      cs = "UTF-8";
+	    }
+
+	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	    IO.copyStream(is, bos);
+
+	    Scriptable result = cx.newObject(scope);
+	    StringUtil.decodeFormVariables(bos.toString(cs), result);
+	    return result;
 	  }
 	});
 

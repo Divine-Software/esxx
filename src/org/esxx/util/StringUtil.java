@@ -18,10 +18,15 @@
 
 package org.esxx.util;
 
-import org.esxx.ESXXException;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.esxx.ESXXException;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 
 public abstract class StringUtil {
   public interface ParamResolver {
@@ -63,7 +68,55 @@ public abstract class StringUtil {
     Pattern.compile("(\\{[^\\}]+\\})" +    // Group 1: Matches {identifier}
 		    "|" + quotePattern1 + "|" + quotePattern2 + "|" + quotePattern3);
 
+  public static String encodeFormVariables(String cs, Scriptable values)
+    throws java.io.UnsupportedEncodingException {
+    StringBuilder sb = new StringBuilder();
+    
+    for (Object o : values.getIds()) {
+      if (sb.length() != 0) {
+	sb.append("&");
+      }
 
+      if (o instanceof String) {
+	String key   = (String) o;
+	String value = Context.toString(values.get(key, values));
+
+	sb.append(URLEncoder.encode(key, cs));
+	sb.append("=");
+	sb.append(URLEncoder.encode(value, cs));
+      }
+      else {
+	int key      = (Integer) o;
+	String value = Context.toString(values.get(key, values));
+
+	sb.append(key + "=");
+	sb.append(URLEncoder.encode(value, cs));
+      }
+    }
+
+    return sb.toString();
+  }
+
+  public static void decodeFormVariables(String value, Scriptable result)
+    throws java.io.UnsupportedEncodingException {
+    if (value.length() > 0) {
+      String[] args = value.split("&");
+
+      for (String arg : args) {
+	String[] nv = arg.split("=", 2);
+
+	String n = URLDecoder.decode(nv[0], "UTF-8").trim();
+
+	if (nv.length == 1) {
+	  ScriptableObject.putProperty(result, makeXMLName(n, ""), "");
+	}
+	else if (nv.length == 2) {
+	  String v = URLDecoder.decode(nv[1], "UTF-8");
+	  ScriptableObject.putProperty(result, makeXMLName(n, ""), v);
+	}
+      }
+    }
+  }
 
 
   public static String makeXMLName(String s, String replacement) {

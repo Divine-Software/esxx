@@ -25,7 +25,6 @@ import org.esxx.util.StringUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +94,12 @@ public class JSRequest
 	}
 
 	if (name.equals("QUERY_STRING")) {
-	  handleQueryHeader(query, value);
+	  try {
+	    StringUtil.decodeFormVariables(value, query);
+	  }
+	  catch (UnsupportedEncodingException ex) {
+	    throw new ESXXException("Unable to parse request entity: " + ex.getMessage(), ex);
+	  }
 	}
       }
 
@@ -322,30 +326,6 @@ public class JSRequest
     }
 
 
-    private void handleQueryHeader(Scriptable object, String value) {
-      if (value.length() > 0) {
-	String[] args = value.split("&");
-
-	for (String arg : args) {
-	  String[] nv = arg.split("=", 2);
-
-	  try {
-	    String n = URLDecoder.decode(nv[0], "UTF-8").trim();
-
-	    if (nv.length == 1) {
-	      ScriptableObject.putProperty(object, StringUtil.makeXMLName(n, ""), "");
-	    }
-	    else if (nv.length == 2) {
-	      String v = URLDecoder.decode(nv[1], "UTF-8");
-	      ScriptableObject.putProperty(object, StringUtil.makeXMLName(n, ""), v);
-	    }
-	  }
-	  catch (UnsupportedEncodingException ex) {
-	    // Ignore illegal headers -- Or throw?
-	  }
-	}
-      }
-    }
 
 
     public void handleContentHeader(String name, String value) {
@@ -387,23 +367,14 @@ public class JSRequest
       }
       else if (contentType != null && contentLength > 0) {
 	try {
-	  if ("application/x-www-form-urlencoded".equals(contentType)) {
-	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-
-	    IO.copyStream(request.getInputStream(), bos);
-	    message = cx.newObject(scope);
-	    handleQueryHeader((Scriptable) message, bos.toString("UTF-8"));
-	  }
-	  else {
-	    message = esxx.parseStream(contentType, contentTypeParams, request.getInputStream(), 
-				       request.getScriptFilename(),
-				       null,
-				       new java.io.PrintWriter(request.getDebugWriter()),
-				       cx, scope);
-	  }
+	  message = esxx.parseStream(contentType, contentTypeParams, request.getInputStream(), 
+				     request.getScriptFilename(),
+				     null,
+				     new java.io.PrintWriter(request.getDebugWriter()),
+				     cx, scope);
 	}
 	catch (Exception ex) {
-	  throw new ESXXException("Unable to parse request entity: " + ex.getMessage());
+	  throw new ESXXException("Unable to parse request entity: " + ex.getMessage(), ex);
 	}
 	finally {
 	  try { request.getInputStream().close(); } catch (Exception ex) {}
