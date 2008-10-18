@@ -29,6 +29,10 @@
 	undefined to make it act as if there were not error handler
 	installed at all.
 
+	* Added esxx/Object.js include file, which adds extras to the
+	Object class. Currently, it only adds _(), which can be used
+	to sanitize the 'this' variable in closures.
+
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
 	System.console() to return null.
