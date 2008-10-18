@@ -12,7 +12,7 @@
 esxx.include("esxx/Object.js");
 
 with (JavaImporter(java.awt,
-		   javax.swing)) {
+                   javax.swing)) {
   function MyFrame() {
     this.frame = new JFrame("Test");
     this.btn = new JButton("Click me");
@@ -20,10 +20,11 @@ with (JavaImporter(java.awt,
     this.frame.add(this.btn, BorderLayout.CENTER);
     this.frame.locationRelativeTo = null;
 
-    this.btn.addActionListener(this._(function(ev) {
-					esxx.log.info("'" + this.btn.label
+    this.btn.addActionListener(this.$(function(ev) {
+                                        esxx.log.info("'" + this.btn.label
                                                       + "' got event " + ev.getClass().getName());
-				      }));
+                                        esxx.notify(this);
+                                      }));
 
     this.frame.pack();
     this.frame.show();
@@ -37,14 +38,14 @@ with (JavaImporter(java.awt,
       esxx.log.info(i);
     }
 
-    esxx.wait(this);
+    esxx.wait(frame);
     return 0;
   }
 }
 </pre>
  */
 
-function Object.prototype._(func) {
+function Object.prototype.$(func) {
   let self = this;
 
   return function() {
@@ -52,9 +53,8 @@ function Object.prototype._(func) {
   };
 };
 
-// Never enumerate extra properties in Object!
-
+// Never enumerate extra properties in Object.prototype!
 java.lang.Class.forName("org.mozilla.javascript.ScriptableObject")
   .getMethod("setAttributes", java.lang.String, java.lang.Integer.TYPE)
-  .invoke(Object.prototype, "_",
-	  new java.lang.Integer(org.mozilla.javascript.ScriptableObject.DONTENUM));
+  .invoke(Object.prototype, "$",
+          new java.lang.Integer(org.mozilla.javascript.ScriptableObject.DONTENUM));

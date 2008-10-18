@@ -30,7 +30,7 @@
 	installed at all.
 
 	* Added esxx/Object.js include file, which adds extras to the
-	Object class. Currently, it only adds _(), which can be used
+	Object class. Currently, it only adds $(), which can be used
 	to sanitize the 'this' variable in closures.
 
 0.9.20080927
