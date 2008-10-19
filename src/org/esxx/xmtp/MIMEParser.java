@@ -349,7 +349,7 @@ public class MIMEParser {
       throws MessagingException {
       while (headers.hasMoreElements()) {
 	Header hdr  = (Header) headers.nextElement();
-	String name = hdr.getName();
+	String name = normalizeHeader(hdr.getName());
 
 	try {
 	  if (name.equalsIgnoreCase("Content-Type")) {
@@ -577,6 +577,30 @@ public class MIMEParser {
     private java.util.regex.Pattern nonPrintableChars = // Cntrl - Space
       java.util.regex.Pattern.compile("[\\x00-\\x1F\\x7F&&[^ \\t\\n\\x0B\\f\\r]]");
 
+
+    private String normalizeHeader(String original) {
+      char[] result = original.toCharArray();
+      
+      boolean up = true;
+      for (int i = 0; i < result.length; ++i) {
+	if (Character.isLetter(result[i])) {
+	  if (up) {
+	    result[i] = Character.toTitleCase(result[i]);
+	    up = false;
+	  }
+	  else {
+	    result[i] = Character.toLowerCase(result[i]);
+	  }
+	}
+	else {
+	  // Uppercase next letter
+	  up = true;
+	}
+      }
+
+      return new String(result);
+    }
+  
     private String decodeMIMEValue(String value) {
       if (value != null) {
 	try {
