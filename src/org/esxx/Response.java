@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.Map;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
+import javax.xml.transform.dom.DOMSource;
 import org.json.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Node;
@@ -137,10 +138,45 @@ public class Response  {
       return;
     }
 
+    // Unwrap wrapped objects
     object = unwrap(object);
 
+    // Convert complex types to primitive types
     if (object instanceof Node) {
-      object = esxx.serializeNode((Node) object);
+      if ("message/rfc822".equals(mime_type)) {
+	try {
+	  String xml = esxx.serializeNode((Node) object);
+	  org.esxx.xmtp.XMTPParser xmtpp = new org.esxx.xmtp.XMTPParser();
+	  javax.mail.Message msg = xmtpp.convertMessage(new StringReader(xml));
+	  object = new ByteArrayOutputStream();
+	  msg.writeTo(new FilterOutputStream((OutputStream) object) {
+	      public void write(int b)
+		throws IOException {
+		if (b == '\r') {
+		  return;
+		}
+		else if (b == '\n') {
+		  out.write('\r');
+		  out.write('\n');
+		}
+		else {
+		  out.write(b);
+		}
+	      }
+	    });
+	}
+	catch (javax.xml.stream.XMLStreamException ex) {
+	  throw new ESXXException("Failed to serialize Node as message/rfc822:" + ex.getMessage(), 
+				  ex);
+	}
+	catch (javax.mail.MessagingException ex) {
+	  throw new ESXXException("Failed to serialize Node as message/rfc822:" + ex.getMessage(), 
+				  ex);
+	}
+      }
+      else {
+	object = esxx.serializeNode((Node) object);
+      }
     }
     else if (object instanceof Scriptable) {
       if ("application/x-www-form-urlencoded".equals(mime_type)) {
@@ -160,6 +196,7 @@ public class Response  {
       object = new ByteArrayInputStream((byte[]) object);
     }
 
+    // Serialize primitive types
     if (object instanceof ByteArrayOutputStream) {
       ByteArrayOutputStream bos = (ByteArrayOutputStream) object;
 
