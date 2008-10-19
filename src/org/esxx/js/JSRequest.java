@@ -60,6 +60,7 @@ public class JSRequest
       cookies = cx.newObject(scope);
       accept  = cx.newObject(scope);
       query   = cx.newObject(scope);
+      message = cx.newObject(scope);
       args    = null;
 
       mimeHeaders = new MimeHeaders();
