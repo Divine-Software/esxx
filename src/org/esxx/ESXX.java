@@ -18,9 +18,6 @@
 
 package org.esxx;
 
-import org.esxx.cache.*;
-import org.esxx.saxon.*;
-import org.esxx.util.SyslogHandler;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -29,14 +26,18 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.transform.*;
 import javax.xml.transform.stream.*;
+import org.esxx.cache.*;
+import org.esxx.saxon.*;
+import org.esxx.util.SyslogHandler;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextAction;
 import org.mozilla.javascript.ContextFactory;
@@ -886,6 +887,21 @@ public class ESXX {
       }
 
       return type;
+    }
+
+    public static String combineMIMEType(String type, HashMap<String,String> params) {
+      try {
+	javax.mail.internet.ContentType ct = new javax.mail.internet.ContentType(type);
+
+	for (Map.Entry<String,String> e : params.entrySet()) {
+	  ct.setParameter(e.getKey(), e.getValue());
+	}
+      
+	return ct.toString();
+      }
+      catch (javax.mail.internet.ParseException ex) {
+	throw new ESXXException("Failed to parse MIME type " + type + ": " + ex.getMessage(), ex);
+      }
     }
 
     private class URIResolver
