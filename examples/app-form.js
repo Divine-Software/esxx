@@ -39,7 +39,7 @@ function App.prototype.increasePricesForm(req, errorMessage) {
   // Display the "Price Increase" form
   return <increasePrices>
     <percentageValue>
-      {req.query.percentageValue || esxx.document.increase.@def}
+      {req.message.percentageValue || esxx.document.increase.@def}
     </percentageValue>
     {errorMessage}
   </increasePrices>;
@@ -47,12 +47,12 @@ function App.prototype.increasePricesForm(req, errorMessage) {
 
 function App.prototype.increasePricesAction(req) {
   /** This function handles of the "Price Increase" form data **/
-  var increase = parseFloat(req.query.percentageValue);
+  var increase = parseFloat(req.message.percentageValue);
   var min      = esxx.document.increase.@min;
   var max      = esxx.document.increase.@max;
 
   // Validate form input
-  if (!req.query.percentageValue) {
+  if (!req.message.percentageValue) {
     return this.increasePricesForm(req, "Percentage not specified!!!");
   }
   else if (isNaN(increase)) {

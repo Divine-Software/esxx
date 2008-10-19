@@ -26,19 +26,19 @@ function showMessages(req) {
 }
 
 function addMessage(req) {
-  if (!req.query.name || !req.query.message) {
+  if (!req.message.name || !req.message.message) {
     return <wall>
       <error>Name and message must be non-empty.</error>
       <form>
-        <name>{req.query.name}</name>
-        <message>{req.query.message}</message>
+        <name>{req.message.name}</name>
+        <message>{req.message.message}</message>
       </form>
     </wall>;
   }
 
   db.query("INSERT INTO GUESTBOOK(name, message, date) VALUES({name}, {message}, NOW());",
-	   req.query);
-  esxx.log.info(req.query.name + " wrote: " + req.query.message);
+	   req.message);
+  esxx.log.info(req.message.name + " wrote: " + req.message.message);
 
   return [303, {Location: req.env.SCRIPT_NAME}];
 }
