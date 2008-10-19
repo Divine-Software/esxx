@@ -170,8 +170,6 @@ class Worker {
 				    JSESXX js_esxx, Application app,
 				    Context cx, Scriptable scope)
     throws IOException, SaxonApiException {
-    ESXX   esxx         = ESXX.getInstance();
-    Node   node         = (Node) response.getResult();
     String content_type = response.getContentType(true);
 
     HashMap<String,String> params = new HashMap<String,String>();
@@ -182,6 +180,14 @@ class Worker {
     if (stylesheet == null) {
       stylesheet = app.getStylesheet("");
     }
+
+    if (stylesheet == null) {
+      // Do nothing at all
+      return;
+    }
+
+    ESXX esxx = ESXX.getInstance();
+    Node node = (Node) response.getResult();
 
     XsltExecutable  xe = esxx.getCachedStylesheet(stylesheet, app);
     XsltTransformer tr = xe.load();
