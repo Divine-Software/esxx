@@ -112,7 +112,7 @@ public class DATAHandler
       type = ESXX.parseMIMEType(response.getContentType(true), params);
     }
 
-    String b64 = Base64.encodeBytes(bos.toByteArray());
+    String b64 = Base64.encodeBytes(bos.toByteArray(), Base64.DONT_BREAK_LINES);
 
     // Attach parameters
     for (java.util.Map.Entry<String, String> p : params.entrySet()) {
