@@ -890,11 +890,17 @@ public class ESXX {
     }
 
     public static String combineMIMEType(String type, HashMap<String,String> params) {
+      if (type == null) {
+	return null;
+      }
+
       try {
 	javax.mail.internet.ContentType ct = new javax.mail.internet.ContentType(type);
-
-	for (Map.Entry<String,String> e : params.entrySet()) {
-	  ct.setParameter(e.getKey(), e.getValue());
+	
+	if (params != null) {
+	  for (Map.Entry<String,String> e : params.entrySet()) {
+	    ct.setParameter(e.getKey(), e.getValue());
+	  }
 	}
       
 	return ct.toString();
