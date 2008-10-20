@@ -42,8 +42,18 @@ public abstract class Request {
       String hostname = properties.getProperty("HTTP_HOST", "localhost");
       String querystr = properties.getProperty("QUERY_STRING", "");
 
-      String path_translated = properties.getProperty("PATH_TRANSLATED", scriptFilename.getPath());
-      String request_uri     = properties.getProperty("REQUEST_URI");
+      String path_translated;
+      String request_uri;
+
+      if (ESXX.getInstance().isHandlerMode()) {
+	path_translated = properties.getProperty("PATH_TRANSLATED", scriptFilename.getPath());
+      }
+      else {
+	path_translated = properties.getProperty("SCRIPT_FILENAME") 
+	  + properties.getProperty("PATH_INFO");
+      }
+
+      request_uri = properties.getProperty("REQUEST_URI");
 
       if (request_uri == null) {
 	// Fall back to PATH_INFO (it might work too)

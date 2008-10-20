@@ -7,7 +7,7 @@
 	* esxx.document can now be modified.
 
 	* Enabled a proper https URI implementation.
-	
+
 	* New method: esxx.condWait(mutex, timeout, function), which
 	waits on mutex until function returns true.
 
@@ -32,6 +32,10 @@
 	* Added esxx/Object.js include file, which adds extras to the
 	Object class. Currently, it only adds $(), which can be used
 	to sanitize the 'this' variable in closures.
+
+	* Added --no-handler option, for web servers that invoke
+	FastCGI servers without an extra file type handler, such as
+	lighttpd.
 
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing

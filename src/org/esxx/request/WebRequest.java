@@ -123,15 +123,29 @@ public class WebRequest
 
   protected static URI createURL(Properties headers)
     throws IOException {
-    File file = new File(headers.getProperty("PATH_TRANSLATED"));
+    ESXX esxx = ESXX.getInstance();
+    File file;
 
-    while (file != null && !file.exists()) {
-      file = file.getParentFile();
+    if (esxx.isHandlerMode()) {
+      String pt = headers.getProperty("PATH_TRANSLATED");
+      
+      if (pt == null) {
+	throw new ESXXException("PATH_TRANSLATED not set; try --no-handler mode instead");
+      }
+
+      file = new File(headers.getProperty("PATH_TRANSLATED"));
+
+      while (file != null && !file.exists()) {
+	file = file.getParentFile();
+      }
+
+      if (file.isDirectory()) {
+	throw new IOException("Unable to find a file in path "
+			      + headers.getProperty("PATH_TRANSLATED"));
+      }
     }
-
-    if (file.isDirectory()) {
-      throw new IOException("Unable to find a file in path "
-                            + headers.getProperty("PATH_TRANSLATED"));
+    else {
+      file = new File(headers.getProperty("SCRIPT_FILENAME"));
     }
 
     return file.toURI();

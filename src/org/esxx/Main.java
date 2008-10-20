@@ -53,6 +53,7 @@ public class Main {
     mode_opt.addOption(new Option("s", "script", false, "Force script mode."));
 
     opt.addOptionGroup(mode_opt);
+    opt.addOption("n", "no-handler",      false, "Requests are direct, without extra handler");
     opt.addOption("m", "method",          true,  "Override CGI request method");
     opt.addOption("f", "file",            true,  "Override CGI request file");
     opt.addOption("r", "http-root",       true,  "Set HTTP root directory or file");
@@ -109,6 +110,8 @@ public class Main {
       }
 
       ESXX esxx = ESXX.initInstance(System.getProperties());
+
+      esxx.setHandlerMode(cmd.hasOption('n') == false);
 
       // Install our ResponseCache implementation
 //       java.net.ResponseCache.setDefault(new org.esxx.cache.DBResponseCache("/tmp/ESXX.WebCache", 

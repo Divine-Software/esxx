@@ -334,6 +334,13 @@ public class ESXX {
       return settings;
     }
 
+    public void setHandlerMode(boolean handler_mode) {
+      handlerMode = handler_mode;
+    }
+
+    public boolean isHandlerMode() {
+      return handlerMode;
+    }
 
     /** Returns a global, non-application tied Logger.
      *
@@ -999,6 +1006,8 @@ public class ESXX {
 	throws Exception;
       Integer handleError(ESXX esxx, Context cx, Throwable error);
     }
+
+    private boolean handlerMode;
 
     private int defaultTimeout;
     private URI[] includePath;
