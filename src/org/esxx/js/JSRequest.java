@@ -366,7 +366,7 @@ public class JSRequest
 	  try { request.getInputStream().close(); } catch (Exception ex) {}
 	}
       }
-      else if (contentType != null && contentLength > 0) {
+      else if (contentType != null) {
 	try {
 	  message = esxx.parseStream(contentType, contentTypeParams, request.getInputStream(), 
 				     request.getScriptFilename(),
