@@ -225,7 +225,9 @@ public class HTTPHandler
 	    @Override public void checkClientTrusted(X509Certificate[] certs, String auth) {}
 	  } }, new java.security.SecureRandom());
 
-	sr.register(new Scheme("https", new SSLSocketFactory(sslcontext, null), 443));
+	SSLSocketFactory ssf = new SSLSocketFactory(sslcontext, null);
+	ssf.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+	sr.register(new Scheme("https", ssf, 443));
       }
       catch (Exception ex) {
 	ex.printStackTrace();
