@@ -169,7 +169,7 @@ public class Application
 							     cx, applicationScope);
 
     if (match == null) {
-      throw new ESXXException(501, "'" + request_method + "' handler not defined for URI "
+      throw new ESXXException(404, "'" + request_method + "' handler not defined for URI "
 			      + "'" + path_info + "'");
     }
 
