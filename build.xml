@@ -49,6 +49,11 @@
       <fileset dir="examples" excludes="*~"/>
     </copy>
 
+    <mkdir dir="${dist.dir}/share"/>
+    <copy todir="${dist.dir}/share">
+      <fileset dir="share" excludes="*~"/>
+    </copy>
+
     <exec-jar in="${build.dir}/esxx.jar" out="${dist.dir}/esxx.jar"/>
   </target>
 

@@ -151,6 +151,7 @@ IF (UNIX AND NOT WIN32)
 ELSEIF (WIN32)
  INSTALL (PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/package/start-http.bat
                    ${CMAKE_CURRENT_SOURCE_DIR}/package/start-fastcgi.bat
+                   ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx-js.bat
            DESTINATION ${CMAKE_INSTALL_PREFIX})
   INSTALL (DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/dist/
    	       DESTINATION ${CMAKE_INSTALL_PREFIX})
