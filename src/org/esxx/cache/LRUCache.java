@@ -57,6 +57,9 @@ public class LRUCache<K, V> {
 
     if (entry != null) {
       synchronized (entry) {
+	// Update expire time and return value
+	long now = System.currentTimeMillis();
+	entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
 	return entry.value;
       }
     }
@@ -118,7 +121,8 @@ public class LRUCache<K, V> {
 	  if (entry.value ==  null) {
 	    long now = System.currentTimeMillis();
 
-	    entry.expires = age == 0 ? Long.MAX_VALUE : now + age;
+	    entry.maxAge  = age;
+	    entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
 	    entry.created = now;
 	    entry.value   = factory.create(key, age);
 	    fireAddedEvent(key, entry.value);
@@ -164,7 +168,8 @@ public class LRUCache<K, V> {
 
 	  long now = System.currentTimeMillis();
 
-	  entry.expires = age == 0 ? Long.MAX_VALUE : now + age;
+	  entry.maxAge  = age;
+	  entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
 	  entry.created = now;
 	  entry.value   = value;
 	  fireAddedEvent(key, entry.value);
@@ -234,7 +239,8 @@ public class LRUCache<K, V> {
 
 	    long now = System.currentTimeMillis();
 
-	    entry.expires = age == 0 ? Long.MAX_VALUE : now + age;
+	    entry.maxAge  = age;
+	    entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
 	    entry.created = now;
 	    entry.value   = factory.create(key, age);
 	    fireAddedEvent(key, entry.value);
@@ -462,6 +468,7 @@ public class LRUCache<K, V> {
 
   class LRUEntry {
     public void markAsDeleted() {
+      maxAge  = Long.MIN_VALUE;
       expires = Long.MIN_VALUE;
       created = Long.MIN_VALUE;
       value   = null;
@@ -473,6 +480,7 @@ public class LRUCache<K, V> {
 
     long expires;
     long created;
+    long maxAge;
     V value;
   }
 
