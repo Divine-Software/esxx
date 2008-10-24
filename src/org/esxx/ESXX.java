@@ -374,18 +374,6 @@ public class ESXX {
       return logger;
     }
 
-    public String getHTMLHeader() {
-      return htmlHeader.replaceAll("@RESOURCE_URI@", 
-				   settings.getProperty("esxx.resource-uri", 
-							"http://esxx.org/"));
-    }
-
-    public String getHTMLFooter() {
-      return htmlFooter.replaceAll("@RESOURCE_URI@", 
-				   settings.getProperty("esxx.resource-uri", 
-							"http://esxx.org/"));
-    }
-
     /** Adds a Request to the work queue.
      *
      *  Once the request has been executed, Request.finished will be

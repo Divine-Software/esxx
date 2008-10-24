@@ -191,7 +191,7 @@ public class HTTPRequest
 
 		  StringBuilder sb = new StringBuilder();
 
-		  sb.append(esxx.getHTMLHeader() +
+		  sb.append(getHTMLHeader(esxx) +
 			    "<table summary='Directory Listing of " + req_uri_xml + "'>" +
 			    "<caption>Directory Listing of " + req_uri_xml + "</caption>" +
 			    "<thead><tr>" +
@@ -234,7 +234,7 @@ public class HTTPRequest
 		    sb.append("</tr>");
 		  }
 
-		  sb.append("</tbody></table>" + esxx.getHTMLFooter());
+		  sb.append("</tbody></table>" + getHTMLFooter(esxx));
 
 		  respond(he, 200, "text/html", sb.toString());
 		}
@@ -288,11 +288,11 @@ public class HTTPRequest
 	    }
 
 	    respond(he, code, "text/html",
-		    esxx.getHTMLHeader() +
+		    getHTMLHeader(esxx) +
 		    "<h2>" + title + "</h2>" +
 		    "<p>The requested resource " + req_uri_xml + " failed: " +
 		    encodeXMLContent(ex.getMessage()) +
-		    ".</p>" + esxx.getHTMLFooter());
+		    ".</p>" + getHTMLFooter(esxx));
 	  }
 	  finally {
 	    if (he != null) {
