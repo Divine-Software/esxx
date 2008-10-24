@@ -183,45 +183,44 @@ public class ESXX {
 	  }
 	};
 
-//       org.mozilla.javascript.tools.debugger.Main main = 
-// 	new org.mozilla.javascript.tools.debugger.Main("ESXX Debugger");
-//       main.doBreak();
-//       main.attachTo(contextFactory);
-//       main.pack();
-//       main.setSize(800, 600);
-//       main.setVisible(true);
+      contextFactory.addListener(new ContextFactory.Listener() {
+	  @Override public void contextCreated(Context cx) {
+	    // Enable all optimizations, but do count instructions
+	    cx.setOptimizationLevel(9);
+	    cx.setInstructionObserverThreshold((int) 100e6);
+	    cx.setLanguageVersion(Context.VERSION_1_7);
 
+	    // Provide a better mapping for primitive types on this context
+	    WrapFactory wf = new WrapFactory() {
+		@Override public Object wrap(Context cx, Scriptable scope, 
+					     Object obj, Class<?> static_type) {
+		  if (obj instanceof char[]) {
+		    return new String((char[]) obj);
+		  }
+		  else {
+		    return super.wrap(cx, scope, obj, static_type);
+		  }
+		}
+	      };
+	    wf.setJavaPrimitiveWrap(false);
+	    cx.setWrapFactory(wf);
+	  }
+
+	  @Override public void contextReleased(Context cx) {
+	  }
+	});
+
+      // ESXX is a singleton, so it's OK to call this static method here
+      ContextFactory.initGlobal(contextFactory);
+
+      // Make sure all threads we create ourselves have a valid Context
       ThreadFactory tf = new ThreadFactory() {
 	  public Thread newThread(final Runnable r) {
 	    return new Thread() {
-	      @Override
-		public void run() {
+	      @Override public void run() {
 		contextFactory.call(new ContextAction() {
-		    public Object run(Context cx) {
-		      // Enable all optimizations, but do count instructions
- 		      cx.setOptimizationLevel(9);
-//  		      cx.setOptimizationLevel(-1);
-		      cx.setInstructionObserverThreshold((int) 100e6);
-		      cx.setLanguageVersion(Context.VERSION_1_7);
-
-		      // Provide a better mapping for primitive types on this context
-		      WrapFactory wf = new WrapFactory() {
-			  @Override public Object wrap(Context cx, Scriptable scope, 
-					     Object obj, Class<?> static_type) {
-			    if (obj instanceof char[]) {
-			      return new String((char[]) obj);
-			    }
-			    else {
-			      return super.wrap(cx, scope, obj, static_type);
-			    }
-			  }
-			};
-		      wf.setJavaPrimitiveWrap(false);
-		      cx.setWrapFactory(wf);
-
-		      // Now call the Runnable
+		    @Override public Object run(Context cx) {
 		      r.run();
-
 		      return null;
 		    }
 		  });
@@ -322,6 +321,14 @@ public class ESXX {
 	    }
 	  }
 	});
+
+//       org.mozilla.javascript.tools.debugger.Main main = 
+// 	new org.mozilla.javascript.tools.debugger.Main("ESXX Debugger");
+//       main.doBreak();
+//       main.attachTo(contextFactory);
+//       main.pack();
+//       main.setSize(800, 600);
+//       main.setVisible(true);
     }
 
 
