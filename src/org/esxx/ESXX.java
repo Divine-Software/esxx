@@ -1021,35 +1021,4 @@ public class ESXX {
     private ExecutorService executorService;
     private PriorityBlockingQueue<Workload> workloadSet;
     private Logger logger;
-
-    private static final String htmlHeader =
-      "<?xml version='1.0' encoding='UTF-8'?>" +
-      "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' " +
-      "'http://www.w3.org/TR/2002/REC-xhtml1-20020801/DTD/xhtml1-strict.dtd'>" +
-      "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'><head>" +
-      "<title>ESXX - The friendly ECMAscript/XML Application Server</title>" +
-      "<link href='@RESOURCE_URI@favicon.ico' rel='shortcut icon' type='image/vnd.microsoft.icon'/>" +
-      "<link rel='alternale stylesheet' type='text/css' href='@RESOURCE_URI@css/blackwhite.css' title='Black &amp; white'/>" +
-      "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/pastel.css' title='Pastel'/>" +
-      "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/plain.css' title='Plain'/>" +
-      "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/system.css' title='System default'/>" +
-      "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/amiga.css' title='Workbench 1.x' class='default'/>" +
-      "<script type='text/javascript' src='@RESOURCE_URI@js/styleswitch.js' defer='defer'></script>" +
-      "</head><body>" +
-      "<h1>ESXX - The friendly ECMAscript/XML Application Server</h1>";
-
-    private static final String htmlFooter =
-      "<p><br /><br /><br /></p>" +
-      "<table id='switcher'>" +
-      "<tr>" +
-      "<td><a href='#' onclick='setActiveStyleSheet(\"Black &amp; white\"); return false;'>Black &amp; white</a></td>" +
-      "<td><a href='#' onclick='setActiveStyleSheet(\"Pastel\"); return false;'>Pastel</a></td>" +
-      "<td><a href='#' onclick='setActiveStyleSheet(\"Plain\"); return false;'>Plain</a></td>" +
-      "<td><a href='#' onclick='setActiveStyleSheet(\"System default\"); return false;'>System default</a></td>" +
-      "<td><a href='#' onclick='setActiveStyleSheet(\"Workbench 1.x\"); return false;'>Workbench 1.x</a></td>" +
-      "<td class='logo'><img src='@RESOURCE_URI@gfx/logo.gif' alt='Leviticus, Divine Software' /></td>" +
-      "</tr>" +
-      "</table>" +
-      "</body></html>";
-
 };
