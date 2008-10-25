@@ -165,8 +165,8 @@ public class ESXX {
       listenerList = new EventListenerList();
       executorService.submit(new Runnable() {
 	  @Override public void run() {
-	    while (true) {
-	      try {
+	    try {
+	      while (true) {
 		Thread.sleep(1000);
 		
 		for (PeriodicJob j : listenerList.getListeners(PeriodicJob.class)) {
