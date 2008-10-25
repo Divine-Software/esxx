@@ -106,42 +106,7 @@ public class ESXX {
 	Integer.parseInt(settings.getProperty("esxx.cache.apps.max_entries", "1024")),
 	Long.parseLong(settings.getProperty("esxx.cache.apps.max_age", "3600")) * 1000);
 
-      applicationCache.addListener(new LRUCache.LRUListener<String, Application>() {
-	  public void entryAdded(String key, Application app) {
-	    getLogger().logp(Level.CONFIG, null, null, app + " loaded.");
-	  }
-
-	  public void entryRemoved(String key, final Application app) {
-	    getLogger().logp(Level.CONFIG, null, null, app + " unloading ...");
-
-	    // In this function, we're single-threaded (per application URI)
-	    app.terminate(defaultTimeout);
-
-	    // Execute the exit handler in one of the worker threads
-	    Workload workload = addContextAction(null, new ContextAction() {
-		public Object run(Context cx) {
-		  app.executeExitHandler(cx);
-		  return null;
-		}
-	      }, -1 /* no timeout */);
-
-	    try {
-	      workload.future.get();
-	    }
-	    catch (InterruptedException ex) {
-	      Thread.currentThread().interrupt();
-	      ex.printStackTrace();
-	    }
-	    catch (Exception ex) {
-	      ex.printStackTrace();
-	    }
-	    finally {
-	      mxUnregister("Application", app.getAppFilename());
-
-	      getLogger().logp(Level.CONFIG, null, null, app + " unloaded.");
-	    }
-	  }
-	});
+      applicationCache.addListener(new ApplicationCacheListener());
 
       parsers = new Parsers(this);
 
@@ -152,65 +117,9 @@ public class ESXX {
       cgiToHTTPMap.put("CONTENT_LENGTH", "Content-Length");
       cgiToHTTPMap.put("Authorization", "Authorization"); // For mod_fastcgi
 
-      contextFactory = new ContextFactory() {
-	  @Override
-	  public boolean hasFeature(Context cx, int feature) {
-	    if (//feature == Context.FEATURE_DYNAMIC_SCOPE ||
-		feature == Context.FEATURE_LOCATION_INFORMATION_IN_ERROR ||
-		feature == Context.FEATURE_MEMBER_EXPR_AS_FUNCTION_NAME ||
-		//feature == Context.FEATURE_WARNING_AS_ERROR ||
-		feature == Context.FEATURE_STRICT_MODE) {
-	      return true;
-	    }
-	    else {
-	      return super.hasFeature(cx, feature);
-	    }
-	  }
-
-	  @Override
-	  public void observeInstructionCount(Context cx, int instruction_count) {
-	    Workload workload = (Workload) cx.getThreadLocal(Workload.class);
-
-	    if (workload == null) {
-	      return;
-	    }
-
-	    synchronized (workload) {
-	      if (workload.future != null && workload.future.isCancelled()) {
-		throw new ESXXException.TimeOut();
-	      }
-	    }
-	  }
-	};
-
-      contextFactory.addListener(new ContextFactory.Listener() {
-	  @Override public void contextCreated(Context cx) {
-	    // Enable all optimizations, but do count instructions
-	    cx.setOptimizationLevel(9);
-	    cx.setInstructionObserverThreshold((int) 100e6);
-	    cx.setLanguageVersion(Context.VERSION_1_7);
-
-	    // Provide a better mapping for primitive types on this context
-	    WrapFactory wf = new WrapFactory() {
-		@Override public Object wrap(Context cx, Scriptable scope, 
-					     Object obj, Class<?> static_type) {
-		  if (obj instanceof char[]) {
-		    return new String((char[]) obj);
-		  }
-		  else {
-		    return super.wrap(cx, scope, obj, static_type);
-		  }
-		}
-	      };
-	    wf.setJavaPrimitiveWrap(false);
-	    cx.setWrapFactory(wf);
-	  }
-
-	  @Override public void contextReleased(Context cx) {
-	  }
-	});
-
-      // ESXX is a singleton, so it's OK to call this static method here
+      // ESXX is a singleton, so it's OK to call the static method
+      // ContextFactory.initGlobal() here
+      contextFactory = new ESXXContextFactory();
       ContextFactory.initGlobal(contextFactory);
 
       // Make sure all threads we create ourselves have a valid Context
@@ -693,11 +602,7 @@ public class ESXX {
 	      // single-threaded (per application URL) here, so only
 	      // one Application will ever be created, no matter how
 	      // many concurrent requests there are.
-	      Application app = new Application(cx, request);
-	      
-	      mxRegister("Application", app.getAppFilename(), app);
-
-	      return app;
+	      return new Application(cx, request);
 	    }
 	}, 0);
 
@@ -909,6 +814,117 @@ public class ESXX {
       }
       catch (javax.mail.internet.ParseException ex) {
 	throw new ESXXException("Failed to parse MIME type " + type + ": " + ex.getMessage(), ex);
+      }
+    }
+
+    /** This class monitors all applications that are being loaded and
+     *  unload, and handles MX registration and application exit
+     *  handlers.
+     */
+	
+    private class ApplicationCacheListener
+      implements LRUCache.LRUListener<String, Application> {
+
+      public void entryAdded(String key, Application app) {
+	mxRegister("Application", app.getAppFilename(), app);
+	getLogger().logp(Level.CONFIG, null, null, app + " loaded.");
+      }
+
+      public void entryRemoved(String key, final Application app) {
+	getLogger().logp(Level.CONFIG, null, null, app + " unloading ...");
+
+	// In this function, we're single-threaded (per application URI)
+	app.terminate(defaultTimeout);
+
+	// Execute the exit handler in one of the worker threads
+	Workload workload = addContextAction(null, new ContextAction() {
+	    public Object run(Context cx) {
+	      app.executeExitHandler(cx);
+	      return null;
+	    }
+	  }, -1 /* no timeout */);
+
+	try {
+	  workload.future.get();
+	}
+	catch (InterruptedException ex) {
+	  Thread.currentThread().interrupt();
+	  ex.printStackTrace();
+	}
+	catch (Exception ex) {
+	  ex.printStackTrace();
+	}
+	finally {
+	  mxUnregister("Application", app.getAppFilename());
+
+	  getLogger().logp(Level.CONFIG, null, null, app + " unloaded.");
+	}
+      }
+    }
+
+    /** This is ESXX ContextFactory, which makes sure all Rhino
+     *  Context objects are set up with the desired properties and
+     *  features.
+     */
+
+    private static class ESXXContextFactory
+      extends ContextFactory {
+      public ESXXContextFactory() {
+	super();
+
+	addListener(new ContextFactory.Listener() {
+	    @Override public void contextCreated(Context cx) {
+	      // Enable all optimizations, but do count instructions
+	      cx.setOptimizationLevel(9);
+	      cx.setInstructionObserverThreshold((int) 100e6);
+	      cx.setLanguageVersion(Context.VERSION_1_7);
+
+	      // Provide a better mapping for primitive types on this context
+	      WrapFactory wf = new WrapFactory() {
+		  @Override public Object wrap(Context cx, Scriptable scope, 
+					       Object obj, Class<?> static_type) {
+		    if (obj instanceof char[]) {
+		      return new String((char[]) obj);
+		    }
+		    else {
+		      return super.wrap(cx, scope, obj, static_type);
+		    }
+		  }
+		};
+	      wf.setJavaPrimitiveWrap(false);
+	      cx.setWrapFactory(wf);
+	    }
+
+	    @Override public void contextReleased(Context cx) {
+	    }
+	  });
+      }
+
+      @Override	public boolean hasFeature(Context cx, int feature) {
+	if (//feature == Context.FEATURE_DYNAMIC_SCOPE ||
+	    feature == Context.FEATURE_LOCATION_INFORMATION_IN_ERROR ||
+	    feature == Context.FEATURE_MEMBER_EXPR_AS_FUNCTION_NAME ||
+	    //feature == Context.FEATURE_WARNING_AS_ERROR ||
+	    feature == Context.FEATURE_STRICT_MODE) {
+	  return true;
+	}
+	else {
+	  return super.hasFeature(cx, feature);
+	}
+      }
+
+      @Override public void observeInstructionCount(Context cx, int instruction_count) {
+	Workload workload = (Workload) cx.getThreadLocal(Workload.class);
+	
+	if (workload == null) {
+	  return;
+	}
+
+	synchronized (workload) {
+	  if (workload.future != null && workload.future.isCancelled()) {
+	    throw new ESXXException.TimeOut();
+	  }
+	}
       }
     }
 
