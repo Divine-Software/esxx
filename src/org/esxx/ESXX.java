@@ -26,6 +26,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.EventListener;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -33,6 +34,7 @@ import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.event.EventListenerList;
 import javax.xml.transform.*;
 import javax.xml.transform.stream.*;
 import org.esxx.cache.*;
@@ -159,77 +161,32 @@ public class ESXX {
 	  }
 	});
 
-      // Start a thread that cancels exired Workloads and expunges Applications
+      // Set up periodic events, run at most once a second
+      listenerList = new EventListenerList();
       executorService.submit(new Runnable() {
-	  public void run() {
-	    main: while (true) {
+	  @Override public void run() {
+	    while (true) {
 	      try {
 		Thread.sleep(1000);
-
-		long now = System.currentTimeMillis();
-
-		wl: while (true) {
-		  Workload w = workloadSet.peek();
-
-		  if (w == null) {
-		    break wl;
-		  }
-
-		  if (w.expires < now) {
-		    w.future.cancel(true);
-		    workloadSet.poll();
-		  }
-		  else {
-		    // No need to look futher, since the workloads are
-		    // sorted by expiration time
-		    break wl;
-		  }
+		
+		for (PeriodicJob j : listenerList.getListeners(PeriodicJob.class)) {
+		  j.run();
 		}
-
-		applicationCache.filterEntries(new LRUCache.EntryFilter<String, Application>() {
-		    public boolean isStale(String key, Application app, long created) {
-		      for (URI uri : app.getExternalURIs()) {
-			try {
-			  long last_modified = getLastModified(uri);
-			  
-			  if (last_modified > created) {
-			    return true;
-			  }
-			}
-			catch (IOException ex) {
-			  // Ignore errors
-			}
-		      }
-
-		      return false;
-		    }
-
-		    private long getLastModified(URI uri)
-		      throws IOException {
-		      URLConnection uc = uri.toURL().openConnection();
-		      uc.setDoInput(true);
-		      uc.setDoOutput(false);
-		      uc.setUseCaches(true);
-		      uc.setConnectTimeout(3000);
-		      uc.setReadTimeout(3000);
-		      uc.connect();
-
-		      long last_modified =  uc.getLastModified();
-
-		      uc.getInputStream().close();
-
-		      return last_modified;
-		    }
-		  });
 	      }
 	      catch (InterruptedException ex) {
 		// Preserve status and exit
 		Thread.currentThread().interrupt();
-		break main;
 	      }
 	    }
 	  }
 	});
+
+
+      // Add periodic Worklock cancellation
+      addPeriodicJob(new WorkloadCancellator());
+
+      // Add periodic check to expunge applications
+      addPeriodicJob(new ApplicationCacheFilter());
 
 //       org.mozilla.javascript.tools.debugger.Main main = 
 // 	new org.mozilla.javascript.tools.debugger.Main("ESXX Debugger");
@@ -281,6 +238,14 @@ public class ESXX {
       }
 
       return logger;
+    }
+
+    public void addPeriodicJob(PeriodicJob job) {
+      listenerList.add(PeriodicJob.class, job);
+    }
+
+    public void removePeriodicJob(PeriodicJob job) {
+      listenerList.remove(PeriodicJob.class, job);
     }
 
     /** Adds a Request to the work queue.
@@ -774,8 +739,6 @@ public class ESXX {
       return contextFactory;
     } 
 
-
-
     public static String parseMIMEType(String ct, HashMap<String,String> params) {
       String[] parts = ct.split(";");
       String   type  = parts[0].trim();
@@ -861,6 +824,54 @@ public class ESXX {
 	}
       }
     }
+
+
+     /** This class checks if any of an Application's files have been
+     *   modified since the application was loaded, and if so, unloads
+     *   the application.
+     */
+
+    private class ApplicationCacheFilter
+      implements PeriodicJob {
+      @Override public void run() {
+	applicationCache.filterEntries(new LRUCache.EntryFilter<String, Application>() {
+	    public boolean isStale(String key, Application app, long created) {
+	      for (URI uri : app.getExternalURIs()) {
+		try {
+		  long last_modified = getLastModified(uri);
+
+		  if (last_modified > created) {
+		    return true;
+		  }
+		}
+		catch (IOException ex) {
+		  // Ignore errors
+		}
+	      }
+
+	      return false;
+	    }
+	  });
+      }
+
+      private long getLastModified(URI uri)
+	throws IOException {
+	URLConnection uc = uri.toURL().openConnection();
+	uc.setDoInput(true);
+	uc.setDoOutput(false);
+	uc.setUseCaches(true);
+	uc.setConnectTimeout(3000);
+	uc.setReadTimeout(3000);
+	uc.connect();
+
+	long last_modified =  uc.getLastModified();
+
+	uc.getInputStream().close();
+
+	return last_modified;
+      }
+    }
+
 
     /** This is ESXX ContextFactory, which makes sure all Rhino
      *  Context objects are set up with the desired properties and
@@ -1002,6 +1013,32 @@ public class ESXX {
     }
 
 
+    private class WorkloadCancellator 
+      implements PeriodicJob {
+      @Override public void run() {
+	long now = System.currentTimeMillis();
+
+	while (true) {
+	  Workload w = workloadSet.peek();
+
+	  if (w == null) {
+	    break;
+	  }
+
+	  if (w.expires < now) {
+	    w.future.cancel(true);
+	    workloadSet.poll();
+	  }
+	  else {
+	    // No need to look futher, since the workloads are
+	    // sorted by expiration time
+	    break;
+	  }
+	}
+      }
+    }
+
+
     public static class Workload {
       public Workload(long exp) {
 	future    = null;
@@ -1010,6 +1047,11 @@ public class ESXX {
 
       public Future<Object> future;
       public long expires;
+    }
+
+    public interface PeriodicJob
+      extends EventListener {
+      public void run();
     }
 
     public interface ResponseHandler {
@@ -1036,5 +1078,6 @@ public class ESXX {
     private ContextFactory contextFactory;
     private ExecutorService executorService;
     private PriorityBlockingQueue<Workload> workloadSet;
+    private EventListenerList listenerList;
     private Logger logger;
 };
