@@ -41,14 +41,12 @@ public class JDBCHandler
       if (queryCache == null) {
 	queryCache = new QueryCache(10, 2 * 60000, 1000, 1 * 60000);
 
-	new Thread(new Runnable() {
-	    public void run() {
-	      while (true) {
-		try { Thread.sleep(1000); } catch (Exception ex) {}
-		queryCache.purgeConnections();
-	      }
+	// Purge connections peridically
+	ESXX.getInstance().addPeriodicJob(new ESXX.PeriodicJob() {
+	    @Override public void run() {
+	      queryCache.purgeConnections();
 	    }
-	  }).start();
+	  });
       }
     }
   }
