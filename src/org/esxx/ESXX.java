@@ -41,6 +41,7 @@ import javax.xml.transform.stream.*;
 import org.esxx.cache.*;
 import org.esxx.saxon.*;
 import org.esxx.util.SyslogHandler;
+import org.esxx.util.URIResolver;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextAction;
 import org.mozilla.javascript.ContextFactory;
@@ -525,7 +526,7 @@ public class ESXX {
 
       DOMConfiguration dc = p.getDomConfig();
 
-      URIResolver ur = new URIResolver(external_uris);
+      URIResolver ur = new URIResolver(this, external_uris);
 
       try {
 	dc.setParameter("comments", false);
@@ -711,7 +712,7 @@ public class ESXX {
 	return compiler.compile(new StreamSource(new StringReader(identityTransform)));
       }
 
-      URIResolver ur = new URIResolver(external_uris);
+      URIResolver ur = new URIResolver(this, external_uris);
 
       try {
 	compiler.setURIResolver(ur);
@@ -978,80 +979,6 @@ public class ESXX {
 	}
       }
     }
-
-    private class URIResolver
-      implements javax.xml.transform.URIResolver, LSResourceResolver {
-	public URIResolver(Collection<URI> log_visited) {
-	  logVisited = log_visited;
-	  openedStreams = new LinkedList<InputStream>();
-	}
-
-        public void closeAllStreams() {
-	  for (InputStream is : openedStreams) {
-	    try { is.close(); } catch (IOException ex) {}
-	  }
-	}
-
-	public Source resolve(String href,
-			      String base) {
-	  URL url = getURL(href, base);
-	  return new StreamSource(getIS(url));
-	}
-
-
-	public LSInput resolveResource(String type,
-				       String namespaceURI,
-				       String publicId,
-				       String systemId,
-				       String baseURI) {
-	  LSInput lsi = getDOMImplementationLS().createLSInput();
-	  URL     url = getURL(systemId, baseURI);
-
-	  lsi.setSystemId(url.toString());
-	  lsi.setByteStream(getIS(url));
-
-	  return lsi;
-	}
-
-	private URL getURL(String uri, String base_uri) {
-	  try {
-	    if (base_uri != null) {
-	      return new URL(new URL(base_uri), uri);
-	    }
-	    else {
-	      return new URL(uri);
-	    }
-	  }
-	  catch (MalformedURLException ex) {
-	    throw new ESXXException("URIResolver error: " + ex.getMessage(), ex);
-	  }
-	}
-
-	private InputStream getIS(URL url) {
-	  try {
-	    InputStream is = openCachedURL(url);
-
-	    if (logVisited != null) {
-	      // Log visited URLs if successfully opened
-	      logVisited.add(url.toURI());
-	    }
-
-	    openedStreams.add(is);
-
-	    return is;
-	  }
-	  catch (IOException ex) {
-	    throw new ESXXException("URIResolver error: " + ex.getMessage(), ex);
-	  }
-	  catch (URISyntaxException ex) {
-	    throw new ESXXException("URIResolver error: " + ex.getMessage(), ex);
-	  }
-	}
-
-	private Collection<URI> logVisited;
-        private Collection<InputStream> openedStreams;
-    }
-
 
     private class WorkloadCancellator 
       implements PeriodicJob {
