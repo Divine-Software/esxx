@@ -37,6 +37,8 @@
 	FastCGI servers without an extra file type handler, such as
 	lighttpd.
 
+	* Embedded H2 updated to 1.1.102, 2008-10-24.
+
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
 	System.console() to return null.
