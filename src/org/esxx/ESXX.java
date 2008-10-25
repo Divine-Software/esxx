@@ -173,10 +173,10 @@ public class ESXX {
 		  j.run();
 		}
 	      }
-	      catch (InterruptedException ex) {
-		// Preserve status and exit
-		Thread.currentThread().interrupt();
-	      }
+	    }
+	    catch (InterruptedException ex) {
+	      // Preserve status and exit
+	      Thread.currentThread().interrupt();
 	    }
 	  }
 	});
