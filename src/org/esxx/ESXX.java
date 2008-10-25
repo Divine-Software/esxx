@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
@@ -110,6 +111,13 @@ public class ESXX {
 
       applicationCache.addListener(new ApplicationCacheListener());
 
+      stylesheetCache = new LRUCache<String, Stylesheet>(
+	Integer.parseInt(settings.getProperty("esxx.cache.xslt.max_entries", "1024")),
+	Long.parseLong(settings.getProperty("esxx.cache.xslt.max_age", "3600")) * 1000);
+
+      stylesheetCache.addListener(new StylesheetCacheListener());
+
+
       parsers = new Parsers(this);
 
       // Custom CGI-to-HTTP translations
@@ -185,8 +193,8 @@ public class ESXX {
       // Add periodic Worklock cancellation
       addPeriodicJob(new WorkloadCancellator());
 
-      // Add periodic check to expunge applications
-      addPeriodicJob(new ApplicationCacheFilter());
+      // Add periodic check to expunge applications and xslt stylesheets
+      addPeriodicJob(new CacheFilter());
 
 //       org.mozilla.javascript.tools.debugger.Main main = 
 // 	new org.mozilla.javascript.tools.debugger.Main("ESXX Debugger");
@@ -780,6 +788,7 @@ public class ESXX {
       }
     }
 
+
     /** This class monitors all applications that are being loaded and
      *  unload, and handles MX registration and application exit
      *  handlers.
@@ -826,26 +835,50 @@ public class ESXX {
     }
 
 
-     /** This class checks if any of an Application's files have been
-     *   modified since the application was loaded, and if so, unloads
-     *   the application.
+    /** This class monitors all styleseets that are being loaded and
+     *  unload and handles MX registration.
+     */
+	
+    private class StylesheetCacheListener
+      implements LRUCache.LRUListener<String, Stylesheet> {
+
+      public void entryAdded(String key, Stylesheet xslt) {
+	mxRegister("Stylesheet", xslt.getFilename(), xslt);
+	getLogger().logp(Level.CONFIG, null, null, xslt + " loaded.");
+      }
+
+      public void entryRemoved(String key, Stylesheet xslt) {
+	mxUnregister("Stylesheet", xslt.getFilename());
+	getLogger().logp(Level.CONFIG, null, null, xslt + " unloaded.");
+      }
+    }
+
+
+     /** This class checks if any of an Application's or Stylesheet's
+     *   files have been modified since it was loaded, and if so,
+     *   unloads the cached object.
      */
 
-    private class ApplicationCacheFilter
+    private class CacheFilter
       implements PeriodicJob {
       @Override public void run() {
 	applicationCache.filterEntries(new LRUCache.EntryFilter<String, Application>() {
 	    public boolean isStale(String key, Application app, long created) {
 	      for (URI uri : app.getExternalURIs()) {
-		try {
-		  long last_modified = getLastModified(uri);
-
-		  if (last_modified > created) {
-		    return true;
-		  }
+		if (getLastModified(uri) > created) {
+		  return true;
 		}
-		catch (IOException ex) {
-		  // Ignore errors
+	      }
+
+	      return false;
+	    }
+	  });
+
+	stylesheetCache.filterEntries(new LRUCache.EntryFilter<String, Stylesheet>() {
+	    public boolean isStale(String key, Stylesheet xslt, long created) {
+	      for (URI uri : xslt.getExternalURIs()) {
+		if (getLastModified(uri) > created) {
+		  return true;
 		}
 	      }
 
@@ -854,21 +887,28 @@ public class ESXX {
 	  });
       }
 
-      private long getLastModified(URI uri)
-	throws IOException {
-	URLConnection uc = uri.toURL().openConnection();
-	uc.setDoInput(true);
-	uc.setDoOutput(false);
-	uc.setUseCaches(true);
-	uc.setConnectTimeout(3000);
-	uc.setReadTimeout(3000);
-	uc.connect();
+      private long getLastModified(URI uri) {
+	URLConnection uc = null;
 
-	long last_modified =  uc.getLastModified();
+	try {
+	  uc = uri.toURL().openConnection();
+	  uc.setDoInput(true);
+	  uc.setDoOutput(false);
+	  uc.setUseCaches(true);
+	  uc.setConnectTimeout(3000);
+	  uc.setReadTimeout(3000);
+	  uc.connect();
 
-	uc.getInputStream().close();
-
-	return last_modified;
+	  return uc.getLastModified();
+	}
+	catch (IOException ex) {
+	  return 0;
+	}
+	finally {
+	  if (uc != null) {
+	    try { uc.getInputStream().close(); } catch (IOException ex) {}
+	  }
+	}
       }
     }
 
@@ -1038,7 +1078,6 @@ public class ESXX {
       }
     }
 
-
     public static class Workload {
       public Workload(long exp) {
 	future    = null;
@@ -1067,6 +1106,7 @@ public class ESXX {
 
     private MemoryCache memoryCache;
     private LRUCache<String, Application> applicationCache;
+    private LRUCache<String, Stylesheet> stylesheetCache;
 
     private Parsers parsers;
     private Properties settings;
