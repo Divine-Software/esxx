@@ -39,6 +39,10 @@
 
 	* Embedded H2 updated to 1.1.102, 2008-10-24.
 
+	* The stylesheets are now independent from the applications
+	and may be viewed and unloaded via JMX. It's also possible to 
+	view runtime statistics of individual stylesheets.
+
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
 	System.console() to return null.

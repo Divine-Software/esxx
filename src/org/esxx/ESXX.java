@@ -179,7 +179,12 @@ public class ESXX {
 		Thread.sleep(1000);
 		
 		for (PeriodicJob j : listenerList.getListeners(PeriodicJob.class)) {
+		  try {
 		  j.run();
+		  }
+		  catch (Exception ex) {
+		    ex.printStackTrace();
+		  }
 		}
 	      }
 	    }
@@ -549,6 +554,11 @@ public class ESXX {
       return memoryCache.openCachedURL(url, content_type);
     }
 
+    public InputStream openCachedURI(URI uri) 
+      throws IOException {
+      return memoryCache.openCachedURL(uri.toURL(), null);
+    }
+
     public InputStream openCachedURL(URL url)
       throws IOException {
       return memoryCache.openCachedURL(url, null);
@@ -602,9 +612,27 @@ public class ESXX {
       applicationCache.remove(app.getAppFilename());
     }
 
-    public XsltExecutable getCachedStylesheet(URL url, Application app)
+    public Stylesheet getCachedStylesheet(final URI uri)
       throws IOException {
-      return memoryCache.getCachedStylesheet(url, app);
+      try {
+	return stylesheetCache.add(uri.toString(), new LRUCache.ValueFactory<String, Stylesheet>() {
+	    public Stylesheet create(String key, long age) 
+	      throws IOException {
+	      return new Stylesheet(uri);
+	    }
+	  }, 0);
+      }
+      catch (IOException ex) {
+	throw ex;
+      }
+      catch (Exception ex) {
+	throw new ESXXException("Unexpected exception in getCachedStylesheet(): " + ex.getMessage(),
+				ex);
+      }
+    }
+
+    public void removeCachedStylesheet(Stylesheet xslt) {
+      stylesheetCache.remove(xslt.getFilename());
     }
 
 
@@ -899,7 +927,6 @@ public class ESXX {
 	  uc.setConnectTimeout(3000);
 	  uc.setReadTimeout(3000);
 	  uc.connect();
-
 	  return uc.getLastModified();
 	}
 	catch (IOException ex) {

@@ -22,7 +22,7 @@ import org.esxx.js.*;
 import org.esxx.saxon.ESXXExpression;
 
 import java.io.*;
-import java.net.URL;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Properties;
 import javax.xml.transform.dom.*;
@@ -175,7 +175,7 @@ class Worker {
     HashMap<String,String> params = new HashMap<String,String>();
     String                 ct     = ESXX.parseMIMEType(content_type, params);
 
-    URL stylesheet = app.getStylesheet(ct);
+    URI stylesheet = app.getStylesheet(ct);
 
     if (stylesheet == null) {
       stylesheet = app.getStylesheet("");
@@ -189,63 +189,71 @@ class Worker {
     ESXX esxx = ESXX.getInstance();
     Node node = (Node) response.getResult();
 
-    XsltExecutable  xe = esxx.getCachedStylesheet(stylesheet, app);
-    XsltTransformer tr = xe.load();
-    ByteArrayOutputStream os = new ByteArrayOutputStream();
-    Serializer s = new Serializer();
-    s.setOutputStream(os);
-
-    // Remove this code when upgrading to Saxon 9.1 (?)
-    Properties op = xe.getUnderlyingCompiledStylesheet().getOutputProperties();
-    s.setOutputProperty(BYTE_ORDER_MARK,        op.getProperty("byte-order-mark"));
-    s.setOutputProperty(CDATA_SECTION_ELEMENTS, op.getProperty("cdata-section-elements"));
-    s.setOutputProperty(DOCTYPE_PUBLIC,         op.getProperty("doctype-public"));
-    s.setOutputProperty(DOCTYPE_SYSTEM,         op.getProperty("doctype-system"));
-    s.setOutputProperty(ENCODING,               op.getProperty("encoding"));
-    s.setOutputProperty(ESCAPE_URI_ATTRIBUTES,  op.getProperty("escape-uri-attributes"));
-    s.setOutputProperty(INCLUDE_CONTENT_TYPE,   op.getProperty("include-content-type"));
-    s.setOutputProperty(INDENT,                 op.getProperty("indent"));
-    s.setOutputProperty(MEDIA_TYPE,             op.getProperty("media-type", content_type));
-    s.setOutputProperty(METHOD,                 op.getProperty("method"));
-    //    s.setOutputProperty(NORMALIZATION_FORM,     op.getProperty("normalization-form"));
-    s.setOutputProperty(OMIT_XML_DECLARATION,   op.getProperty("omit-xml-declaration"));
-    s.setOutputProperty(STANDALONE,             op.getProperty("standalone"));
-    s.setOutputProperty(UNDECLARE_PREFIXES,     op.getProperty("undeclare-prefixes"));
-    s.setOutputProperty(USE_CHARACTER_MAPS,     op.getProperty("use-character-maps"));
-    s.setOutputProperty(VERSION,                op.getProperty("version"));
-
-    // This is sad, but Saxon can only transform the DOM Document Element node.
-    org.w3c.dom.DOMImplementation di = node.getOwnerDocument().getImplementation();
-    Document doc = di.createDocument(null, "dummy", null);
-    Node adopted = doc.adoptNode(node);
-    if (adopted == null) {
-      // Ugh ...
-      adopted = doc.importNode(node, true);
-    }
-    //    doc.appendChild(adopted);
-    doc.replaceChild(adopted, doc.getDocumentElement());
-
-    // Append the debug output while we're at it, and let the
-    // stylesheet decide if it should be output or not.
-    String ds = request.getLogAsString();
-    doc.appendChild(doc.createComment("Start ESXX Request Log\n" +
-				      ds.replaceAll("--", "\u2012\u2012") +
-				      "End ESXX Request Log"));
-
-    tr.setSource(new DOMSource(doc));
-    tr.setDestination(s);
+    long start_time = System.currentTimeMillis();
+    Stylesheet xslt = esxx.getCachedStylesheet(stylesheet);
 
     try {
-      // Make current scope available to ESXXExpression and begin transformation
-      cx.putThreadLocal(ESXXExpression.class, scope);
-      tr.transform();
+      XsltExecutable  xe = xslt.getExecutable();
+      XsltTransformer tr = xe.load();
+      ByteArrayOutputStream os = new ByteArrayOutputStream();
+      Serializer s = new Serializer();
+      s.setOutputStream(os);
+
+      // Remove this code when upgrading to Saxon 9.1 (?)
+      Properties op = xe.getUnderlyingCompiledStylesheet().getOutputProperties();
+      s.setOutputProperty(BYTE_ORDER_MARK,        op.getProperty("byte-order-mark"));
+      s.setOutputProperty(CDATA_SECTION_ELEMENTS, op.getProperty("cdata-section-elements"));
+      s.setOutputProperty(DOCTYPE_PUBLIC,         op.getProperty("doctype-public"));
+      s.setOutputProperty(DOCTYPE_SYSTEM,         op.getProperty("doctype-system"));
+      s.setOutputProperty(ENCODING,               op.getProperty("encoding"));
+      s.setOutputProperty(ESCAPE_URI_ATTRIBUTES,  op.getProperty("escape-uri-attributes"));
+      s.setOutputProperty(INCLUDE_CONTENT_TYPE,   op.getProperty("include-content-type"));
+      s.setOutputProperty(INDENT,                 op.getProperty("indent"));
+      s.setOutputProperty(MEDIA_TYPE,             op.getProperty("media-type", content_type));
+      s.setOutputProperty(METHOD,                 op.getProperty("method"));
+      //    s.setOutputProperty(NORMALIZATION_FORM,     op.getProperty("normalization-form"));
+      s.setOutputProperty(OMIT_XML_DECLARATION,   op.getProperty("omit-xml-declaration"));
+      s.setOutputProperty(STANDALONE,             op.getProperty("standalone"));
+      s.setOutputProperty(UNDECLARE_PREFIXES,     op.getProperty("undeclare-prefixes"));
+      s.setOutputProperty(USE_CHARACTER_MAPS,     op.getProperty("use-character-maps"));
+      s.setOutputProperty(VERSION,                op.getProperty("version"));
+
+      // This is sad, but Saxon can only transform the DOM Document Element node.
+      org.w3c.dom.DOMImplementation di = node.getOwnerDocument().getImplementation();
+      Document doc = di.createDocument(null, "dummy", null);
+      Node adopted = doc.adoptNode(node);
+      if (adopted == null) {
+	// Ugh ...
+	adopted = doc.importNode(node, true);
+      }
+      //    doc.appendChild(adopted);
+      doc.replaceChild(adopted, doc.getDocumentElement());
+
+      // Append the debug output while we're at it, and let the
+      // stylesheet decide if it should be output or not.
+      String ds = request.getLogAsString();
+      doc.appendChild(doc.createComment("Start ESXX Request Log\n" +
+					ds.replaceAll("--", "\u2012\u2012") +
+					"End ESXX Request Log"));
+
+      tr.setSource(new DOMSource(doc));
+      tr.setDestination(s);
+
+      try {
+	// Make current scope available to ESXXExpression and begin transformation
+	cx.putThreadLocal(ESXXExpression.class, scope);
+	tr.transform();
+      }
+      finally {
+	cx.removeThreadLocal(ESXXExpression.class);
+      }
+
+      response.setContentType(s.getOutputProperty(MEDIA_TYPE));
+      response.setResult(os);
     }
     finally {
-      cx.removeThreadLocal(ESXXExpression.class);
+      xslt.logUsage(start_time);
     }
-
-    response.setContentType(s.getOutputProperty(MEDIA_TYPE));
-    response.setResult(os);
   }
 
   private ESXX esxx;

@@ -335,7 +335,7 @@ public class Application
     includePath = paths;
   }
 
-  public URL getStylesheet(String media_type) {
+  public URI getStylesheet(String media_type) {
     return stylesheets.get(media_type);
   }
 
@@ -626,8 +626,8 @@ public class Application
 
 	try {
 	  URL url = new URL(baseURL, href);
-	  stylesheets.put("", url);
-	  externalURIs.add(url.toURI());
+	  stylesheets.put("", url.toURI());
+	  //	  externalURIs.add(url.toURI());
 	}
 	catch (MalformedURLException ex) {
 	  throw new ESXXException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
@@ -756,8 +756,8 @@ public class Application
 
     try {
       URL url = new URL(baseURL, href);
-      stylesheets.put(media_type, url);
-      externalURIs.add(url.toURI());
+      stylesheets.put(media_type, url.toURI());
+      //      externalURIs.add(url.toURI());
     }
     catch (MalformedURLException ex) {
       throw new ESXXException("<stylesheet> attribute 'href' is invalid: " +
@@ -826,7 +826,7 @@ public class Application
 
   private RequestMatcher requestMatcher = new RequestMatcher();
   private Map<String,String> soapActions  = new HashMap<String,String>();
-  private Map<String,URL>    stylesheets  = new HashMap<String,URL>();
+  private Map<String,URI>    stylesheets  = new HashMap<String,URI>();
   private String errorHandler;
   private String exitHandler;
 };
