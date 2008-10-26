@@ -316,7 +316,7 @@ public class HTTPRequest
 
     while (true) {
       try {
-	Thread.sleep(1000);
+	Thread.sleep(10000);
       }
       catch (InterruptedException ex) {
 	Thread.currentThread().interrupt();
