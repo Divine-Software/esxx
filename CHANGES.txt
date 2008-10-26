@@ -50,6 +50,10 @@
 	/etc/{default,defaults,sysconfig}/esxx-js so remote JMX ports
 	do not interfer with scripts.
 
+	* Moved global constructors Logger, Request and Response to
+	ESXX.Logger, ESXX.Request and ESXX.Response in order to reduce
+	the number of ESXX-introduced global variables. URI stays.
+
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
 	System.console() to return null.
