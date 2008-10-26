@@ -55,8 +55,8 @@ class Worker {
       Exception error  = null;
 
       // Create a Request object
-      JSRequest jsreq = (JSRequest) cx.newObject(global, "Request",
-						 new Object[] { request });
+      JSRequest jsreq = (JSRequest) JSESXX.newObject(cx, global, "Request", 
+						     new Object[] { request });
 
       try {
 	// Execute the SOAP or HTTP handler (if available)
@@ -121,16 +121,16 @@ class Worker {
       }
       else if (result instanceof NativeArray) {
 	// Automatically convert an JS Array into a Response
-	js_response = (JSResponse) cx.newObject(global, "Response",
-						cx.getElements((NativeArray) result));
+	js_response = (JSResponse) JSESXX.newObject(cx, global, "Response",
+						    cx.getElements((NativeArray) result));
       }
       else if (result instanceof Number) {
-	js_response = (JSResponse) cx.newObject(global, "Response",  
-						new Object[] { result, null, null, null });
+	js_response = (JSResponse) JSESXX.newObject(cx, global, "Response",  
+						    new Object[] { result, null, null, null });
       }
       else {
-	js_response = (JSResponse) cx.newObject(global, "Response",  
-						new Object[] { 200, null, result, null });
+	js_response = (JSResponse) JSESXX.newObject(cx, global, "Response",  
+						    new Object[] { 200, null, result, null });
       }
 
       Response response = js_response.getResponse();

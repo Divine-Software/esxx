@@ -104,8 +104,8 @@ public class JSRequest
 	}
       }
 
-      logger  = (JSLogger) cx.newObject(scope, "Logger", new Object[] { 
-	  request, request.getProperties().getProperty("SCRIPT_NAME") });
+      logger  = (JSLogger) JSESXX.newObject(cx, scope, "Logger", new Object[] { 
+	  request, request.getScriptName() });
 
       // Now parse the POST/PUT/etc. message
       parseMessage(request, cx, scope);

@@ -20,12 +20,12 @@ MyApp.prototype.handleGet = function(req) {
 
 //   URI.prototype.auth.push({
 //         username: "uid=martin,ou=People,dc=blom,dc=org",
-// 	password: "****", 
+// 	password: "****",
 // 	mechanism: "simple" });
 //   req.log.info(ldap.load());
 
   //     var db = new URI("jdbc:postgresql:esxx?user=esxx&password=secret");
-    
+
   //     return db.query("select * from customers where country = {c}", {
   // 	c : "Sweden"
   // 	  });
@@ -37,9 +37,9 @@ MyApp.prototype.handleGet = function(req) {
 
   req.log.debug("**** END GET HANDLER ****");
 
-  var rc = new Response(200, null,
-			<html><body><p>Hello, world och Örjan!</p><div/></body></html>,
-			"text/html");
+  var rc = new ESXX.Response(200, null,
+			     <html><body><p>Hello, world och Örjan!</p><div/></body></html>,
+			     "text/html");
   rc.buffered = true;
 
   return rc;

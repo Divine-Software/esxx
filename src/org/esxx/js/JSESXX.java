@@ -42,8 +42,6 @@ public class JSESXX
       this();
 
       this.app      = app;
-      this.logger   = (JSLogger) cx.newObject(scope, "Logger", 
-					      new Object[] { app, app.getAppName() });
       this.wd       = (JSURI) cx.newObject(scope, "URI", new Object[] { app.getWD() });
       this.location = null;
     }
@@ -66,13 +64,32 @@ public class JSESXX
       return "ESXX";
     }
 
-    static public Object jsConstructor(Context cx,
+    public static Object jsConstructor(Context cx,
 				       java.lang.Object[] args,
 				       Function ctorObj,
 				       boolean inNewExpr) {
+      // Since we ever only create one ESXX instance, it's ok to
+      // define these properties here.
+      try {
+	ScriptableObject.defineClass(ctorObj, JSLogger.class);
+	ScriptableObject.defineClass(ctorObj, JSRequest.class);
+	ScriptableObject.defineClass(ctorObj, JSResponse.class);
+      }
+      catch (Exception ex) {
+	throw new ESXXException("Failed to define Logger, Request and Response classes");
+      }
+
       return new JSESXX(cx, ctorObj, (Application) args[0]);
     }
 
+    public static Scriptable newObject(Context cx, Scriptable scope, String name, Object[] args) {
+	Scriptable global = getTopLevelScope(scope);
+	Scriptable esxx   = (Scriptable) global.get("ESXX", global);
+	Function   ctor   = (Function) esxx.get(name, esxx);
+	
+	return ctor.construct(cx, scope, args);
+    }
+    
     public Synchronizer jsFunction_sync(Function f) {
       return new Synchronizer(f);
     }
@@ -323,6 +340,11 @@ public class JSESXX
     }
 
     public synchronized JSLogger jsGet_log() {
+      if (logger == null) {
+	Context cx = Context.getCurrentContext();
+	logger = (JSLogger) newObject(cx, this, "Logger", new Object[] { app, app.getAppName() });
+      }
+
       return logger;
     }
 

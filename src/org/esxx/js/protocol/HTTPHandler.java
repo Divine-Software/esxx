@@ -169,7 +169,7 @@ public class HTTPHandler
       hdr.put(h.getName(), hdr, h.getValue());
     }
 
-    return cx.newObject(thisObj, "Response", new Object[] { 
+    return JSESXX.newObject(cx, thisObj, "Response", new Object[] { 
 	result.status, hdr, result.object, result.contentType
       });
   }
