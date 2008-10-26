@@ -41,7 +41,8 @@ find @CPACK_RPM_DIRECTORY@/@CPACK_PACKAGE_FILE_NAME@ -type f -printf '/%%P\n' > 
 
 %defattr(-,root,root,-)
 %files -f @CPACK_PACKAGE_FILE_NAME@.files
-%config(noreplace) %{_sysconfdir}/sysconfig/esxx
+%config(noreplace) %{_sysconfdir}/sysconfig/esxx 
+%config(noreplace) %{_sysconfdir}/sysconfig/esxx-js
 %dir %attr(755,root,root) %{_docdir}/esxx
 %dir %attr(755,root,root) %{_docdir}/esxx/examples
 %dir %attr(755,root,root) %{_datadir}/esxx

@@ -43,6 +43,13 @@
 	and may be viewed and unloaded via JMX. It's also possible to 
 	view runtime statistics of individual stylesheets.
 
+	* Added support for running multiple ESXX instances via init
+	scripts.
+
+	* Command line script files now reads config file from
+	/etc/{default,defaults,sysconfig}/esxx-js so remote JMX ports
+	do not interfer with scripts.
+
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
 	System.console() to return null.

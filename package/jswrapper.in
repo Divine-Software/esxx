@@ -10,8 +10,8 @@ if [ ! -z "${JAVA_HOME}" ]; then
     JAVA=${JAVA_HOME}/bin/java
 fi
 
-if [ -f @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@ ]; then
-    . @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@
+if [ -f @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@-js ]; then
+    . @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@-js
 fi
 
 

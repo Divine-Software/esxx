@@ -7,7 +7,7 @@
 # description: @PACKAGE_DESCRIPTION@
 #
 # processname: @PROJECT_NAME@
-# config:      /etc/sysconfig/@PROJECT_NAME@
+# config:      @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@
 # pidfile:     @LOCALSTATE_INSTALL_PREFIX@/run/@PROJECT_NAME@.pid
 
 ### BEGIN INIT INFO
@@ -24,23 +24,25 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
+ESXX_INSTANCE=${ESXX_INSTANCE:-""}
+ESXX_OPTIONS=${ESXX_OPTIONS:-"--bind 7654"}
+
 prog=@PROJECT_NAME@
 absprog=@SBIN_INSTALL_DIR@/$prog
 desc="@PACKAGE_DESCRIPTION_SUMMARY@"
-pidfile=@LOCALSTATE_INSTALL_PREFIX@/run/$prog.pid
+pidfile=@LOCALSTATE_INSTALL_PREFIX@/run/$prog${ESXX_INSTANCE}.pid
+conffile=@SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@${ESXX_INSTANCE}
 timeout=10
-
-OPTIONS="--bind 7654"
 
 if [ -f /etc/init.d/functions ]; then
   # RedHat-style startup
-  lockfile=@LOCALSTATE_INSTALL_PREFIX@/lock/subsys/$prog
+  lockfile=@LOCALSTATE_INSTALL_PREFIX@/lock/subsys/$prog${ESXX_INSTANCE}
   grep --quiet -- --pidfile /etc/init.d/functions && long_pidfile="--pidfile $pidfile"
   grep --quiet -- --pidfile /etc/init.d/functions && short_pidfile="-p $pidfile"
-  OPTIONS="$OPTIONS --user apache"
+  ESXX_OPTIONS="$ESXX_OPTIONS --user apache"
 
-  if [ -f /etc/sysconfig/@PROJECT_NAME@ ]; then
-    . /etc/sysconfig/@PROJECT_NAME@
+  if [ -f $conffile ]; then
+    . $conffile
   fi
 
   . /etc/init.d/functions
@@ -51,7 +53,7 @@ if [ -f /etc/init.d/functions ]; then
       RETVAL=1
       failure
     else
-      daemon $long_pidfile $absprog --pidfile $pidfile $OPTIONS
+      daemon $long_pidfile $absprog --pidfile $pidfile $ESXX_OPTIONS
       RETVAL=$?
       [ $RETVAL -eq 0 ] && touch $lockfile
     fi
@@ -74,11 +76,11 @@ if [ -f /etc/init.d/functions ]; then
   }
 else
   # Debian-style startup
-  lockfile=@LOCALSTATE_INSTALL_PREFIX@/lock/$prog
-  OPTIONS="$OPTIONS --user www-data"
+  lockfile=@LOCALSTATE_INSTALL_PREFIX@/lock/$prog${ESXX_INSTANCE}
+  ESXX_OPTIONS="$ESXX_OPTIONS --user www-data"
 
-  if [ -f /etc/default/@PROJECT_NAME@ ]; then
-    . /etc/default/@PROJECT_NAME@
+  if [ -f $conffile ]; then
+    . $conffile
   fi
 
   start() {
@@ -88,7 +90,7 @@ else
       echo -n " failed"
     else
       sh -c "start-stop-daemon --start --quiet --exec $absprog \
-    	       --pidfile $pidfile -- --pidfile $pidfile $OPTIONS"
+    	       --pidfile $pidfile -- --pidfile $pidfile $ESXX_OPTIONS"
       RETVAL=$?
       if [ $RETVAL -eq 0 ]; then
         touch $lockfile
