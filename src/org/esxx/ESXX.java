@@ -712,65 +712,6 @@ public class ESXX {
     return new javax.management.ObjectName(object_name);
   }
 
-  private static String identityTransform =
-      "<xsl:transform xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='2.0'>" +
-      "<xsl:template match='/'>" +
-      "<xsl:copy-of select='.'/>" +
-      "</xsl:template>" +
-      "</xsl:transform>";
-
-//       "<xsl:transform xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='2.0'>" +
-//       "<xsl:template match='element()'>" +
-//       "<xsl:copy>" +
-//       "<xsl:apply-templates select='@*,node()'/>" +
-//       "</xsl:copy>" +
-//       "</xsl:template>" +
-//       "<xsl:template match='attribute()|text()|comment()|processing-instruction()'>" +
-//       "<xsl:copy/>" +
-//       "</xsl:template>" +
-//       "</xsl:transform>";
-
-    public XsltExecutable compileStylesheet(InputStream is, final URI is_uri,
-					    Collection<URI> external_uris,
-					    final Application app)
-      throws SaxonApiException {
-      XsltCompiler compiler = getSaxonProcessor().newXsltCompiler();
-
-      if (is == null) {
-	return compiler.compile(new StreamSource(new StringReader(identityTransform)));
-      }
-
-      URIResolver ur = new URIResolver(this, external_uris);
-
-      try {
-	compiler.setURIResolver(ur);
-	compiler.setErrorListener(new ErrorListener() {
-	    public void error(TransformerException ex)
-	      throws TransformerException {
-	      app.getLogger().logp(Level.SEVERE, is_uri.toString(), null,
-				   ex.getMessageAndLocation(), ex);
-	      throw ex;
-	    }
-
-	    public void fatalError(TransformerException ex)
-	      throws TransformerException {
-	      app.getLogger().logp(Level.SEVERE, is_uri.toString(), null,
-				   ex.getMessageAndLocation(), ex);
-	      throw ex;
-	    }
-
-	    public void warning(TransformerException ex) {
-	      app.getLogger().logp(Level.WARNING, is_uri.toString(), null,
-				   ex.getMessageAndLocation());
-	    }
-	  });
-
-	return compiler.compile(new StreamSource(is, is_uri.toString()));
-      }
-      finally {
-	ur.closeAllStreams();
-      }
-    }
 
     public ContextFactory getContextFactory() {
       return contextFactory;
