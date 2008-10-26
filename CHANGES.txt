@@ -8,8 +8,8 @@
 
 	* Enabled a proper https URI implementation.
 
-	* New method: esxx.condWait(mutex, timeout, function), which
-	waits on mutex until function returns true.
+	* New esxx.wait signature: esxx.wait(mutex, timeout,
+	function), which waits on mutex until function returns true.
 
 	* The URI constructor now allows {...} syntax and a parameter
 	object to automatically build proper URIs. The file URI class

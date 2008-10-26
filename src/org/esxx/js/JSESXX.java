@@ -89,43 +89,53 @@ public class JSESXX
       }
     }
 
-//     public void jsFunction_wait(Object o)
-//       throws InterruptedException {
-//       synchronized (o) {
-// 	o.wait();
-//       }
-//     }
-
-    public void jsFunction_wait(Object o, int timeout_ms)
+    public static boolean jsFunction_wait(Context cx, Scriptable thisObj,
+					  Object[] args, Function funcObj)
       throws InterruptedException {
-      // If not specified in JS, timeout_ms == 0 which is the same as o.wait().
-      synchronized (o) {
-	o.wait(timeout_ms);
-      }
-    }
+      Object   object = null;
+      Function   func = null;
+      long timeout_ms = 0;
 
-    public static boolean jsFunction_condWait(Context cx, Scriptable thisObj,
-					      Object[] args, Function funcObj)
-      throws InterruptedException {
-      if (args.length < 3 || !(args[2] instanceof Function)) {
-	throw Context.reportRuntimeError("Third argument must be a Function.");
+      if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
+	throw Context.reportRuntimeError("Required argument missing.");
       }
 
-      Function  func = (Function) args[2];
-      int    timeout = (int) Context.toNumber(args[1]);
+      object = args[0];
+
+      if (args.length >= 2) {
+	if (!(args[1] instanceof Number)) {
+	  throw Context.reportRuntimeError("Third argument must be a number.");
+	}
+
+	timeout_ms = (long) Context.toNumber(args[1]);
+      }
+
+      if (args.length >= 3) {
+	if (!(args[2] instanceof Function)) {
+	  throw Context.reportRuntimeError("Third argument must be a function.");
+	}
+
+	func = (Function) args[2];
+      }
 
       long       now = System.currentTimeMillis();
-      long   expires = timeout != 0 ? now + timeout : Long.MAX_VALUE;
-      Object[] fargs = new Object[] { args[0] };
+      long   expires = timeout_ms != 0 ? now + timeout_ms : Long.MAX_VALUE;
+      Object[] fargs = new Object[] { object };
       boolean lastrc = false;
 
-      synchronized (args[0]) {
-	Scriptable thiz = func.getParentScope();
+      synchronized (object) {
+	if (func == null) {
+	  // If not specified in JS, timeout_ms == 0 which is the same as o.wait().
+	  object.wait(timeout_ms);
+	}
+	else {
+	  Scriptable thiz = func.getParentScope();
 
-	while (now < expires && 
-	       (lastrc = Context.toBoolean(func.call(cx, thiz, thiz, fargs))) == false) {
-	  args[0].wait(expires - now);
-	  now = System.currentTimeMillis();
+	  while (now < expires && 
+		 (lastrc = Context.toBoolean(func.call(cx, thiz, thiz, fargs))) == false) {
+	    object.wait(expires - now);
+	    now = System.currentTimeMillis();
+	  }
 	}
       }
 
