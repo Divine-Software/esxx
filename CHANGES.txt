@@ -54,6 +54,9 @@
 	ESXX.Logger, ESXX.Request and ESXX.Response in order to reduce
 	the number of ESXX-introduced global variables. URI stays.
 
+	* New class, ESXX.LRUCache. New magic property, esxx.tls,
+	which is a per-application, per-thread LRUCache object.
+
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
 	System.console() to return null.
