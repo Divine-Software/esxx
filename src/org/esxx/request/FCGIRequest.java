@@ -38,9 +38,12 @@ public class FCGIRequest
   @Override
   public Integer handleResponse(ESXX esxx, Context cx, Response response)
     throws Exception {
-    Integer result = super.handleResponse(esxx, cx, response);
-    jFast.end();
-    return result;
+    try {
+      return super.handleResponse(esxx, cx, response);
+    }
+    finally {
+      jFast.end();
+    }
   }
 
   public static void runServer(int fastcgi_port)

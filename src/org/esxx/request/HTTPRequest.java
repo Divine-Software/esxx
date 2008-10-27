@@ -74,22 +74,25 @@ public class HTTPRequest
       httpExchange.sendResponseHeaders(status, content_length);
 
       // Output body
-      try {
-	if (content_length != -1) {
-	  OutputStream os = httpExchange.getResponseBody();
-	  response.writeResult(esxx, cx, os);
-	  try { os.close(); } catch (Exception ex) {}
-	}
-      }
-      finally {
-	httpExchange.close();
+      if (content_length != -1) {
+	OutputStream os = httpExchange.getResponseBody();
+	response.writeResult(esxx, cx, os);
+	try { os.close(); } catch (Exception ex) {}
       }
 
       return 0;
     }
+    catch (IOException ex) {
+      // If we fail to send response, it's probably just because
+      // nobody is listening anyway.
+      return 20;
+    }
     catch (Exception ex) {
       ex.printStackTrace();
       throw ex;
+    }
+    finally {
+      httpExchange.close();
     }
   }
 
