@@ -150,7 +150,34 @@ public class LRUCache<K, V> {
    *  previous value in the cache.
    */
 
-  public V set(K key, V value, long age) {
+  public V set(K key, final V value, long age) {
+    try {
+      return set(key, new ValueFactory<K, V>() {
+	  public V create(K key, long age) {
+	    return value;
+	  }
+	}, age);
+    }
+    catch (Exception ex) {
+      throw new IllegalStateException("set() should not have thrown!", ex);
+    }
+  }
+
+
+  /** Unconditionally inserts a value into the cache.
+   *
+   *  @param key    The key
+   *  @param value  A ValueFactory
+   *  @param age    The maximum number of milliseconds to keep the value
+   *                in the cache. If 0, the cache's global maximum age
+   *                is used.
+   *
+   *  @result The value that was replaced, or null if there were no
+   *  previous value in the cache.
+   */
+
+  public V set(K key, ValueFactory<K, V> factory, long age) 
+    throws Exception {
     if (age == 0) {
       age = maxAge;
     }
@@ -171,7 +198,7 @@ public class LRUCache<K, V> {
 	  entry.maxAge  = age;
 	  entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
 	  entry.created = now;
-	  entry.value   = value;
+	  entry.value   = factory.create(key, age);
 	  fireAddedEvent(key, entry.value);
 
 	  return old_value;
