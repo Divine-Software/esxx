@@ -916,6 +916,27 @@ public class ESXX {
 	    }
 
 	    @Override public void contextReleased(Context cx) {
+	      // At this point, cx is un-associated, so we need to
+	      // enter it again in order to call clearTLS(). And then
+	      // we (naturally) have to exit it ... which will call
+	      // contextReleased! Argh.
+
+	      if (cx.getThreadLocal(ESXXContextFactory.class) != null) {
+		// Prevent infinite recursion
+		return;
+	      }
+
+	      cx.putThreadLocal(ESXXContextFactory.class, this);
+
+	      enterContext(cx);
+	      try {
+		org.esxx.js.JSESXX.clearTLS(cx);
+	      }
+	      finally {
+		Context.exit();
+	      }
+
+	      cx.removeThreadLocal(ESXXContextFactory.class);
 	    }
 	  });
       }

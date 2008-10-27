@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.mozilla.javascript.*;
@@ -68,18 +69,22 @@ public class JSESXX
 				       java.lang.Object[] args,
 				       Function ctorObj,
 				       boolean inNewExpr) {
-      // Since we ever only create one ESXX instance, it's ok to
-      // define these properties here.
+      return new JSESXX(cx, ctorObj, (Application) args[0]);
+    }
+
+    public static void finishInit(Scriptable scope, 
+				  FunctionObject constructor,
+				  Scriptable prototype) {
+      // Define classes in constructor object
       try {
-	ScriptableObject.defineClass(ctorObj, JSLogger.class);
-	ScriptableObject.defineClass(ctorObj, JSRequest.class);
-	ScriptableObject.defineClass(ctorObj, JSResponse.class);
+	ScriptableObject.defineClass(constructor, JSLogger.class);
+	ScriptableObject.defineClass(constructor, JSLRUCache.class);
+	ScriptableObject.defineClass(constructor, JSRequest.class);
+	ScriptableObject.defineClass(constructor, JSResponse.class);
       }
       catch (Exception ex) {
 	throw new ESXXException("Failed to define Logger, Request and Response classes");
       }
-
-      return new JSESXX(cx, ctorObj, (Application) args[0]);
     }
 
     public static Scriptable newObject(Context cx, Scriptable scope, String name, Object[] args) {
@@ -348,6 +353,57 @@ public class JSESXX
       return logger;
     }
 
+  // Move to app
+//     public synchronized JSLRUCache jsGet_pls() {
+//       if (cache == null) {
+// 	Context cx = Context.getCurrentContext();
+// 	cache = (JSLRUCache) newObject(cx, this, "LRUCache", 
+// 				       new Object[] { Integer.MAX_VALUE, Integer.MAX_VALUE });
+//       }
+      
+//       return cache;
+//     }
+
+//     public void clearPLS() {
+//       if (cache != null) {
+// 	cache.jsFunction_clear();
+//       }
+//     }
+
+    private static class TLS {
+      HashMap<Object, JSLRUCache> caches = new HashMap<Object, JSLRUCache>();
+    };
+
+    public JSLRUCache jsGet_tls() {
+      Context cx = Context.getCurrentContext();
+      TLS    tls = (TLS) cx.getThreadLocal(TLS.class);
+
+      if (tls == null) {
+	tls = new TLS();
+	cx.putThreadLocal(TLS.class, tls);
+      }
+
+      JSLRUCache cache = tls.caches.get(app);
+
+      if (cache == null) {
+	cache = (JSLRUCache) newObject(cx, this, "LRUCache",
+				       new Object[] { Integer.MAX_VALUE, Integer.MAX_VALUE });
+	tls.caches.put(app, cache);
+      }
+
+      return cache;
+    }
+
+    public static void clearTLS(Context cx) {
+      TLS tls = (TLS) cx.getThreadLocal(TLS.class);
+
+      if (tls != null) {
+	for (JSLRUCache c : tls.caches.values()) {
+	  c.jsFunction_clear();
+	}
+      }
+    }
+
     public Scriptable jsGet_document() {
       return app.getMainDocument();
     }
@@ -473,6 +529,7 @@ public class JSESXX
 
     private Application app;
     private JSLogger logger;
+    private JSLRUCache cache;
     private JSURI wd;
     private JSURI location;
 }
