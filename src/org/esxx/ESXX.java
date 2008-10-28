@@ -782,6 +782,7 @@ public class ESXX {
 	Workload workload = addContextAction(null, new ContextAction() {
 	    public Object run(Context cx) {
 	      app.executeExitHandler(cx);
+	      app.clearPLS();
 	      return null;
 	    }
 	  }, -1 /* no timeout */);
@@ -930,7 +931,7 @@ public class ESXX {
 
 	      enterContext(cx);
 	      try {
-		org.esxx.js.JSESXX.clearTLS(cx);
+		Application.clearTLS(cx);
 	      }
 	      finally {
 		Context.exit();

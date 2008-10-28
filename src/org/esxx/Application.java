@@ -107,6 +107,54 @@ public class Application
     return logger;
   }
 
+  public synchronized JSLRUCache getPLS(Context cx) {
+    if (cache == null) {
+      cache = newLRUCache(cx);
+    }
+
+    return cache;
+  }
+
+  public void clearPLS() {
+    if (cache != null) {
+      cache.jsFunction_clear();
+    }
+  }
+
+  public JSLRUCache getTLS(Context cx) {
+    TLS tls = (TLS) cx.getThreadLocal(TLS.class);
+
+    if (tls == null) {
+      tls = new TLS();
+      cx.putThreadLocal(TLS.class, tls);
+    }
+
+    JSLRUCache cache = tls.caches.get(this);
+
+    if (cache == null) {
+      cache = newLRUCache(cx);
+      tls.caches.put(this, cache);
+    }
+
+    return cache;
+  }
+
+  public static void clearTLS(Context cx) {
+    TLS tls = (TLS) cx.getThreadLocal(TLS.class);
+
+    if (tls != null) {
+      for (JSLRUCache c : tls.caches.values()) {
+	c.jsFunction_clear();
+      }
+    }
+  }
+
+  private JSLRUCache newLRUCache(Context cx) {
+    return (JSLRUCache) jsESXX.newObject(cx, jsESXX, "LRUCache",
+					 new Object[] { Integer.MAX_VALUE, Integer.MAX_VALUE });
+  }
+
+
   public synchronized void importAndExecute(Context cx, Scriptable scope, JSESXX js_esxx,
 					    URL url, InputStream is)
     throws IOException {
@@ -200,10 +248,10 @@ public class Application
     String handler = getExitHandlerFunction();
 
     if (handler != null) {
-	Object args[] = { };
+      Object args[] = { };
 
-	JS.callJSMethod(handler, args, "Exit handler", cx, applicationScope);
-      }
+      JS.callJSMethod(handler, args, "Exit handler", cx, applicationScope);
+    }
   }
 
   public Object executeErrorHandler(Context cx, JSRequest req, 
@@ -607,7 +655,7 @@ public class Application
     throws XMLStreamException {
 
     XMLStreamReader xsr = xmlInputFactory.createXMLStreamReader(
-	new StringReader("<esxx-stylesheet " + data + "/>"));
+								new StringReader("<esxx-stylesheet " + data + "/>"));
 
     while (xsr.hasNext()) {
       if (xsr.next() == XMLStreamConstants.START_ELEMENT) {
@@ -647,7 +695,7 @@ public class Application
     throws XMLStreamException {
 
     XMLStreamReader xsr = xmlInputFactory.createXMLStreamReader(
-	new StringReader("<esxx-include " + data + "/>"));
+								new StringReader("<esxx-include " + data + "/>"));
 
     while (xsr.hasNext()) {
       if (xsr.next() == XMLStreamConstants.START_ELEMENT) {
@@ -789,6 +837,10 @@ public class Application
     public boolean hasExecuted;
   };
 
+  private static class TLS {
+    HashMap<Object, JSLRUCache> caches = new HashMap<Object, JSLRUCache>();
+  };
+
   private XMLInputFactory xmlInputFactory;
 
   private ESXX esxx;
@@ -805,6 +857,7 @@ public class Application
 
   private JSGlobal applicationScope;
   private JSESXX jsESXX;
+  private JSLRUCache cache;
 
   private int enterCount = 0;
   private boolean terminated = false;

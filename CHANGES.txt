@@ -55,7 +55,8 @@
 	the number of ESXX-introduced global variables. URI stays.
 
 	* New class, ESXX.LRUCache. New magic property, esxx.tls,
-	which is a per-application, per-thread LRUCache object.
+	which is a per-application, per-thread LRUCache object, and
+	non-magic esxx.pls, which is just a per-application LRUCache.
 
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing

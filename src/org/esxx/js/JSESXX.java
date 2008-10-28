@@ -353,55 +353,12 @@ public class JSESXX
       return logger;
     }
 
-  // Move to app
-//     public synchronized JSLRUCache jsGet_pls() {
-//       if (cache == null) {
-// 	Context cx = Context.getCurrentContext();
-// 	cache = (JSLRUCache) newObject(cx, this, "LRUCache", 
-// 				       new Object[] { Integer.MAX_VALUE, Integer.MAX_VALUE });
-//       }
-      
-//       return cache;
-//     }
-
-//     public void clearPLS() {
-//       if (cache != null) {
-// 	cache.jsFunction_clear();
-//       }
-//     }
-
-    private static class TLS {
-      HashMap<Object, JSLRUCache> caches = new HashMap<Object, JSLRUCache>();
-    };
-
-    public JSLRUCache jsGet_tls() {
-      Context cx = Context.getCurrentContext();
-      TLS    tls = (TLS) cx.getThreadLocal(TLS.class);
-
-      if (tls == null) {
-	tls = new TLS();
-	cx.putThreadLocal(TLS.class, tls);
-      }
-
-      JSLRUCache cache = tls.caches.get(app);
-
-      if (cache == null) {
-	cache = (JSLRUCache) newObject(cx, this, "LRUCache",
-				       new Object[] { Integer.MAX_VALUE, Integer.MAX_VALUE });
-	tls.caches.put(app, cache);
-      }
-
-      return cache;
+    public JSLRUCache jsGet_pls() {
+      return app.getPLS(Context.getCurrentContext());
     }
 
-    public static void clearTLS(Context cx) {
-      TLS tls = (TLS) cx.getThreadLocal(TLS.class);
-
-      if (tls != null) {
-	for (JSLRUCache c : tls.caches.values()) {
-	  c.jsFunction_clear();
-	}
-      }
+    public JSLRUCache jsGet_tls() {
+      return app.getTLS(Context.getCurrentContext());
     }
 
     public Scriptable jsGet_document() {
@@ -435,6 +392,7 @@ public class JSESXX
     public JSURI jsGet_location() {
       return location;
     }
+
 
 
     private interface ForkedFunction {
