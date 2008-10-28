@@ -124,7 +124,7 @@ public class LRUCache<K, V> {
 	    entry.maxAge  = age;
 	    entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
 	    entry.created = now;
-	    entry.value   = factory.create(key, age);
+	    entry.value   = factory.create(key, entry.expires);
 	    fireAddedEvent(key, entry.value);
 	  }
 	
@@ -198,7 +198,7 @@ public class LRUCache<K, V> {
 	  entry.maxAge  = age;
 	  entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
 	  entry.created = now;
-	  entry.value   = factory.create(key, age);
+	  entry.value   = factory.create(key, entry.expires);
 	  fireAddedEvent(key, entry.value);
 
 	  return old_value;
@@ -269,7 +269,7 @@ public class LRUCache<K, V> {
 	    entry.maxAge  = age;
 	    entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
 	    entry.created = now;
-	    entry.value   = factory.create(key, age);
+	    entry.value   = factory.create(key, entry.expires);
 	    fireAddedEvent(key, entry.value);
 	  }
 

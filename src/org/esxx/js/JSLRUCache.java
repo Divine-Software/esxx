@@ -127,11 +127,11 @@ public class JSLRUCache
       this.destructor = destructor;
     }
     
-    public Object create(String key, long max_age) {
+    public Object create(String key, long expires) {
       if (value instanceof Function) {
 	Context cx = Context.getCurrentContext();
 	Function f = (Function) value;
-	Object[] a = new Object[] { key, new Double(max_age) };
+	Object[] a = new Object[] { key, new java.util.Date(expires) };
 	value = f.call(cx, JSLRUCache.this, JSLRUCache.this, a);
       }
 

@@ -580,7 +580,7 @@ public class ESXX {
 
       while (true) {
 	app = applicationCache.add(url_string, new LRUCache.ValueFactory<String, Application>() {
-	    public Application create(String key, long age) 
+	    public Application create(String key, long expires) 
 	    throws IOException {
 	      // The application cache makes sure we are
 	      // single-threaded (per application URL) here, so only
@@ -616,7 +616,7 @@ public class ESXX {
       throws IOException {
       try {
 	return stylesheetCache.add(uri.toString(), new LRUCache.ValueFactory<String, Stylesheet>() {
-	    public Stylesheet create(String key, long age) 
+	    public Stylesheet create(String key, long expires) 
 	      throws IOException {
 	      return new Stylesheet(uri);
 	    }

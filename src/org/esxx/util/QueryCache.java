@@ -295,7 +295,7 @@ public class QueryCache {
 
       try {
 	return queryCache.add(query, new LRUCache.ValueFactory<String, Query>() {
-	    public Query create(String key, long age)
+	    public Query create(String key, long expires)
 	      throws SQLException {
 	      return new Query(query, connection);
 	    }
