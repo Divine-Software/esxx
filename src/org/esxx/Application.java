@@ -151,7 +151,7 @@ public class Application
 
   private JSLRUCache newLRUCache(Context cx) {
     return (JSLRUCache) jsESXX.newObject(cx, jsESXX, "LRUCache",
-					 new Object[] { Integer.MAX_VALUE, Integer.MAX_VALUE });
+					 new Object[] { Integer.MAX_VALUE, Long.MAX_VALUE });
   }
 
 

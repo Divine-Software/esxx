@@ -29,7 +29,7 @@ public class JSLRUCache
     super();
   }
 
-  public JSLRUCache(int max_entries, int max_age) {
+  public JSLRUCache(int max_entries, long max_age) {
     super();
 
     cache = new LRUCache<String, Object>(max_entries, max_age);
@@ -62,14 +62,14 @@ public class JSLRUCache
 				     Function ctorObj,
 				     boolean inNewExpr) {
     int max_entries;
-    int max_age;
+    long max_age;
 
     if (args.length < 2) {
       throw Context.reportRuntimeError("Required argument missing.");
     }
 
     max_entries = (int) Context.toNumber(args[0]);
-    max_age     = (int) Context.toNumber(args[1]);
+    max_age     = (long) Context.toNumber(args[1]);
     return new JSLRUCache(max_entries, max_age);
   }
 
