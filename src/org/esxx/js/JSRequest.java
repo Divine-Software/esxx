@@ -50,6 +50,8 @@ public class JSRequest
 
       ESXX esxx = ESXX.getInstance();
 
+      this.request = request;
+
       requestURI = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getRequestURI() });
       scriptURI  = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getScriptURI() });
       scriptName = request.getScriptName();
@@ -60,7 +62,6 @@ public class JSRequest
       cookies = cx.newObject(scope);
       accept  = cx.newObject(scope);
       query   = cx.newObject(scope);
-      message = cx.newObject(scope);
       args    = null;
 
       mimeHeaders = new MimeHeaders();
@@ -106,9 +107,6 @@ public class JSRequest
 
       logger  = (JSLogger) JSESXX.newObject(cx, scope, "Logger", new Object[] { 
 	  request, request.getScriptName() });
-
-      // Now parse the POST/PUT/etc. message
-      parseMessage(request, cx, scope);
     }
 
     public void setArgs(Scriptable uri_params) {
@@ -178,7 +176,12 @@ public class JSRequest
       return contentType;
     }
 
-    public Object jsGet_message() {
+    public synchronized Object jsGet_message() {
+      if (message == null) {
+	// Now parse the POST/PUT/etc. message
+	message = parseMessage();
+      }
+
       return message;
     }
 
@@ -186,6 +189,8 @@ public class JSRequest
     public String jsGet_soapAction() {
       return soapAction;
     }
+
+    private Request request;
 
     private JSURI requestURI;
     private JSURI scriptURI;
@@ -345,16 +350,13 @@ public class JSRequest
     }
 
 
-    private void parseMessage(Request request, Context cx, Scriptable scope) {
-      ESXX esxx = ESXX.getInstance();
-
+    private Object parseMessage() {
       // Consume SOAP message, if any
       // TODO: Add a SOAP handler in Parser.java
       if (soapAction != null) {
 	try {
-	  message = MessageFactory.newInstance(
-	      SOAPConstants.DYNAMIC_SOAP_PROTOCOL).createMessage(mimeHeaders,
-								 request.getInputStream());
+	  return MessageFactory.newInstance(SOAPConstants.DYNAMIC_SOAP_PROTOCOL)
+	    .createMessage(mimeHeaders, request.getInputStream());
 	}
 	catch (IOException ex) {
 	  throw new ESXXException("Unable to read SOAP message stream: " + ex.getMessage());
@@ -368,11 +370,12 @@ public class JSRequest
       }
       else if (contentType != null) {
 	try {
-	  message = esxx.parseStream(contentType, contentTypeParams, request.getInputStream(), 
-				     request.getScriptFilename(),
-				     null,
-				     new java.io.PrintWriter(request.getDebugWriter()),
-				     cx, scope);
+	  ESXX esxx = ESXX.getInstance();
+	  return esxx.parseStream(contentType, contentTypeParams, request.getInputStream(), 
+				  request.getScriptFilename(),
+				  null,
+				  new java.io.PrintWriter(request.getDebugWriter()),
+				  Context.getCurrentContext(), this);
 	}
 	catch (Exception ex) {
 	  throw new ESXXException("Unable to parse request entity: " + ex.getMessage(), ex);
@@ -380,6 +383,10 @@ public class JSRequest
 	finally {
 	  try { request.getInputStream().close(); } catch (Exception ex) {}
 	}
+      }
+      else {
+	// Return a dummy object
+	return Context.getCurrentContext().newObject(this);
       }
     }
 }
