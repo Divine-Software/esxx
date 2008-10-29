@@ -119,7 +119,7 @@ public class ESXX {
       stylesheetCache.addListener(new StylesheetCacheListener());
 
 
-      parsers = new Parsers(this);
+      parsers = new Parsers();
 
       // Custom CGI-to-HTTP translations
       cgiToHTTPMap = new HashMap<String,String>();

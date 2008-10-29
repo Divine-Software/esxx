@@ -20,7 +20,6 @@ package org.esxx;
 
 import org.esxx.util.IO;
 import org.esxx.util.StringUtil;
-import org.esxx.xmtp.MIMEParser;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -42,316 +41,318 @@ import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 
 class Parsers {
-    public Parsers(final ESXX esxx) {
+  public Parsers() {
+    parserMap.put("application/json",                  new JSONParser());
+    parserMap.put("application/octet-stream",          new BinaryParser());
+    parserMap.put("application/x-www-form-urlencoded", new FormParser());
+    parserMap.put("application/xml",                   new XMLParser());
+    parserMap.put("image/*",                           new ImageParser());
+    parserMap.put("message/rfc822",                    new MIMEParser());
+    parserMap.put("text/html",                         new HTMLParser());
+    parserMap.put("text/plain",                        new StringParser());
+    parserMap.put("text/xml",                          new XMLParser());
+  }
 
-      parserMap.put("application/octet-stream", new Parser() {
-	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URI is_uri,
-				Collection<URI> external_uris,
-				PrintWriter err,
-				Context cx, Scriptable scope)
-	      throws IOException, org.xml.sax.SAXException {
-	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+  public Object parse(String mime_type, HashMap<String,String> mime_params,
+		      InputStream is, final URI is_uri,
+		      Collection<URI> external_uris,
+		      PrintWriter err,
+		      Context cx, Scriptable scope)
+    throws Exception {
+    // Read-only accesses; no syncronization required
+    Parser parser = parserMap.get(mime_type);
 
-	      IO.copyStream(is, bos);
-
-	      return java.nio.ByteBuffer.wrap(bos.toByteArray());
-	    }
-	});
-
-      parserMap.put("application/json", new Parser() {
-	  public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URI is_uri,
-			      Collection<URI> external_uris,
-			      PrintWriter err,
-			      Context cx, Scriptable scope)
-	    throws IOException {
-	    String cs = mime_params.get("charset");
-
-	    if (cs == null) {
-	      cs = "UTF-8";
-	    }
-
-	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	    IO.copyStream(is, bos);
-
-	    try {
-	      JSONTokener tok = new JSONTokener(bos.toString(cs));
-
-	      char first = tok.nextClean();
-	      tok.back();
-
-	      if (first == '{') {
-		return jsonToJS(new JSONObject(tok), cx, scope);
-	      }
-	      else if (first == '[') {
-		return jsonToJS(new JSONArray(tok), cx, scope);
-	      }
-	      else {
-		throw new IOException("Not a JSON Array or Object");
-	      }
-	    }
-	    catch (JSONException ex) {
-	      throw new IOException("Failed to parse JSON data: " + ex.getMessage(), ex);
-	    }
-	  }
-
-	  private Object jsonToJS(Object json, Context cx, Scriptable scope)
-	    throws IOException, JSONException {
-	    Scriptable res;
-
-	    if (json == JSONObject.NULL) {
-	      return null;
-	    }
-	    else if (json instanceof String ||
-		     json instanceof Number ||
-		     json instanceof Boolean) {
-	      return json;
-	    }
-	    else if (json instanceof JSONObject) {
-	      JSONObject jo = (JSONObject) json;
-	      res  = cx.newObject(scope);
-
-	      for (Iterator<?> i = jo.keys(); i.hasNext();) {
-		String  key = (String) i.next();
-		Object  val = jsonToJS(jo.get(key), cx, scope);
-		res.put(key, res, val);
-	      }
-	    }
-	    else if (json instanceof JSONArray) {
-	      JSONArray ja = (JSONArray) json;
-	      res = cx.newArray(scope, ja.length());
-
-	      for (int i = 0; i < ja.length(); ++i) {
-		Object val = jsonToJS(ja.get(i), cx, scope);
-		res.put(i, res, val);
-	      }
-	    }
-	    else {
-	      res = Context.toObject(json, scope);
-	    }
-
-	    return res;
-	  }
-	});
-
-      parserMap.put("application/x-www-form-urlencoded", new Parser() {
-	  public Object parse(String mime_type, HashMap<String,String> mime_params,
-			      InputStream is, URI is_uri,
-			      Collection<URI> external_uris,
-			      PrintWriter err,
-			      Context cx, Scriptable scope)
-	    throws IOException {
-	    String cs = mime_params.get("charset");
-
-	    if (cs == null) {
-	      cs = "UTF-8";
-	    }
-
-	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	    IO.copyStream(is, bos);
-
-	    Scriptable result = cx.newObject(scope);
-	    StringUtil.decodeFormVariables(bos.toString(cs), result);
-	    return result;
-	  }
-	});
-
-//       parserMap.put("application/xslt+xml", new Parser() {
-// 	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-// 				InputStream is, URI is_uri,
-// 				Collection<URI> external_uris,
-// 				PrintWriter err,
-// 				Context cx, Scriptable scope)
-// 	      throws IOException, org.xml.sax.SAXException {
-// //	      Transformer transformer = esxx.getCachedStylesheet(is_url);
-// 	    }
-// 	});
-
-      parserMap.put("message/rfc822", new Parser() {
-	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URI is_uri,
-				Collection<URI> external_uris,
-				PrintWriter err,
-				Context cx, Scriptable scope)
-	      throws IOException, org.xml.sax.SAXException {
-	      boolean xmtp;
-	      boolean ns;
-	      boolean html;
-
-	      String fmt = mime_params.get("x-format");
-	      String prc = mime_params.get("x-process-html");
-
-	      if (fmt == null || fmt.equals("esxx")) {
-		xmtp = false;
-		ns   = false;
-		html = true;
-	      }
-	      else if (fmt.equals("xmtp")) {
-		xmtp = true;
-		ns   = true;
-		html = false;
-	      }
-	      else if (fmt.equals("xios")) {
-		xmtp = false;
-		ns   = true;
-		html = true;
-	      }
-	      else {
-		throw new IOException("No support for param 'x-format=" + fmt + "'");
-	      }
-
-	      if (prc == null) {
-		// Leave html as-is
-	      }
-	      else if (prc.equals("true")) {
-		html = true;
-	      }
-	      else if (prc.equals("false")) {
-		html = false;
-	      }
-	      else {
-		throw new IOException("Invalid value in param 'x-process-html=" + prc + "'");
-	      }
-
-	      try {
-		MIMEParser p = new MIMEParser(xmtp, ns, html, true);
-		p.convertMessage(is);
-		Document result = p.getDocument();
-		return ESXX.domToE4X(result, cx, scope);
-	      }
-	      catch (Exception ex) {
-		throw new IOException("Unable to parse email message", ex);
-	      }
-	    }
-	});
-
-      Parser xml_parser =  new Parser() {
-	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URI is_uri,
-				Collection<URI> external_uris,
-				PrintWriter err,
-				Context cx, Scriptable scope)
-	      throws IOException, org.xml.sax.SAXException {
-	      Document result = esxx.parseXML(is, is_uri, external_uris, err);
-	      return ESXX.domToE4X(result, cx, scope);
-	    }
-	};
-
-      parserMap.put("text/xml", xml_parser);
-      parserMap.put("application/xml", xml_parser);
-
-      parserMap.put("text/html", new Parser() {
-	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URI is_uri,
-				Collection<URI> external_uris,
-				PrintWriter err,
-				Context cx, Scriptable scope)
-	      throws IOException, javax.xml.parsers.ParserConfigurationException  {
-	      String            cs = mime_params.get("charset");
-	      HtmlCleaner       hc = new HtmlCleaner();
-	      CleanerProperties hp = hc.getProperties();
-	      TagNode           tn;
-	      
-	      hp.setHyphenReplacementInComment("\u2012\u2012");
-	      hp.setUseCdataForScriptAndStyle(false);
-
-	      if (cs != null) {
-		tn = hc.clean(is, cs);
-	      }
-	      else {
-		tn = hc.clean(is);
-	      }
-
-	      return ESXX.domToE4X(new NSDomSerializer(hp, true).createDOM(tn), cx, scope);
-	    }
-	});
-
-      parserMap.put("text/plain", new Parser() {
-	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URI is_uri,
-				Collection<URI> external_uris,
-				PrintWriter err,
-				Context cx, Scriptable scope)
-	      throws IOException {
-	      String cs = mime_params.get("charset");
-
-	      if (cs == null) {
-		cs = "UTF-8";
-	      }
-
-	      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	      IO.copyStream(is, bos);
-	      return bos.toString(cs);
-	    }
-	});
-
-      Parser image_parser = new Parser() {
-	    public Object parse(String mime_type, HashMap<String,String> mime_params,
-				InputStream is, URI is_uri,
-				Collection<URI> external_uris,
-				PrintWriter err,
-				Context cx, Scriptable scope)
-	      throws IOException {
-	      if (mime_type.equals("image/*")) {
-		return ImageIO.read(is);
-	      }
-	      else {
-		Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType(mime_type);
-
-		if (readers.hasNext()) {
-		  ImageReader reader = readers.next();
-		  String      index  = mime_params.get("x-index");
-
-		  reader.setInput(new FileCacheImageInputStream(is, null));
-		  return reader.read(index != null ? Integer.parseInt(index) : 0);
-		}
-		else {
-		  return null;
-		}
-	      }
-	    }
-	};
-
-      parserMap.put("image/*", image_parser);
+    if (parser == null) {
+      if (mime_type.endsWith("+xml")) {
+	parser = parserMap.get("application/xml");
+      }
+      else if (mime_type.startsWith("image/")) {
+	parser = parserMap.get("image/*");
+      }
+      else {
+	parser = parserMap.get("application/octet-stream");
+      }
     }
 
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, final URI is_uri,
-			Collection<URI> external_uris,
-			PrintWriter err,
-			Context cx, Scriptable scope)
-      throws Exception {
-      // Read-only accesses; no syncronization required
-      Parser parser = parserMap.get(mime_type);
+    Object result =  parser.parse(mime_type, mime_params, is, is_uri,
+				  external_uris, err, cx, scope);
+    is.close();
+    return result;
+  }
 
-      if (parser == null) {
-	if (mime_type.endsWith("+xml")) {
-	  parser = parserMap.get("application/xml");
-	}
-	else if (mime_type.startsWith("image/")) {
-	  parser = parserMap.get("image/*");
-	}
-	else {
-	  parser = parserMap.get("application/octet-stream");
-	}
+  /** The interface all parsers must implement */
+  private interface Parser {
+    public Object parse(String mime_type, HashMap<String,String> mime_params,
+			InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope)
+      throws Exception;
+  }
+
+  /** A HashMap of all registered parsers */
+  private HashMap<String, Parser> parserMap = new HashMap<String, Parser>();
+
+
+  /** A Parser that reads raw bytes and returns a ByteBuffer Java object. */
+  private static class BinaryParser
+    implements Parser {
+    public Object parse(String mime_type, HashMap<String,String> mime_params,
+			InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope)
+      throws IOException, org.xml.sax.SAXException {
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+      IO.copyStream(is, bos);
+
+      return java.nio.ByteBuffer.wrap(bos.toByteArray());
+    }
+  }
+
+  /** A Parser that reads characters and returns a string. */
+  private static class StringParser
+    implements Parser {
+    public Object parse(String mime_type, HashMap<String,String> mime_params,
+			InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope)
+      throws IOException {
+      String cs = mime_params.get("charset");
+
+      if (cs == null) {
+	cs = "UTF-8";
       }
 
-      Object result =  parser.parse(mime_type, mime_params, is, is_uri,
-				    external_uris, err, cx, scope);
-      is.close();
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      IO.copyStream(is, bos);
+      return bos.toString(cs);
+    }
+  }
+
+  /** A Parser that parses XML and returns an E4X XML Node. */
+  private static class XMLParser
+    implements Parser {
+    public Object parse(String mime_type, HashMap<String,String> mime_params,
+			InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope)
+      throws IOException, org.xml.sax.SAXException {
+      Document result = ESXX.getInstance().parseXML(is, is_uri, external_uris, err);
+      return ESXX.domToE4X(result, cx, scope);
+    }
+  }
+
+  /** A Parser that parses HTML and returns XHTML as an E4X XML Node. */
+  private static class HTMLParser
+    implements Parser {
+    public Object parse(String mime_type, HashMap<String,String> mime_params,
+			InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope)
+      throws IOException, javax.xml.parsers.ParserConfigurationException  {
+      String            cs = mime_params.get("charset");
+      HtmlCleaner       hc = new HtmlCleaner();
+      CleanerProperties hp = hc.getProperties();
+      TagNode           tn;
+
+      hp.setHyphenReplacementInComment("\u2012\u2012");
+      hp.setUseCdataForScriptAndStyle(false);
+
+      if (cs != null) {
+	tn = hc.clean(is, cs);
+      }
+      else {
+	tn = hc.clean(is);
+      }
+
+      return ESXX.domToE4X(new NSDomSerializer(hp, true).createDOM(tn), cx, scope);
+    }
+  }
+
+  /** A Parser that parses HTML Form submissions and returns a JavaScript Object. */
+  private static class FormParser
+    implements Parser {
+    public Object parse(String mime_type, HashMap<String,String> mime_params,
+			InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope)
+      throws IOException {
+      String cs = mime_params.get("charset");
+
+      if (cs == null) {
+	cs = "UTF-8";
+      }
+
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      IO.copyStream(is, bos);
+
+      Scriptable result = cx.newObject(scope);
+      StringUtil.decodeFormVariables(bos.toString(cs), result);
       return result;
     }
+  }
 
-    private interface Parser {
-	public Object parse(String mime_type, HashMap<String,String> mime_params,
-			    InputStream is, URI is_uri,
-			    Collection<URI> external_uris,
-			    PrintWriter err,
-			    Context cx, Scriptable scope)
-	  throws Exception;
+  /** A Parser that parses JSON and returns a JavaScrip Array or Object. */
+  private static class JSONParser
+    implements Parser {
+    public Object parse(String mime_type, HashMap<String,String> mime_params,
+			InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope)
+      throws IOException {
+      String cs = mime_params.get("charset");
 
+      if (cs == null) {
+	cs = "UTF-8";
+      }
+
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      IO.copyStream(is, bos);
+
+      try {
+	JSONTokener tok = new JSONTokener(bos.toString(cs));
+
+	char first = tok.nextClean();
+	tok.back();
+
+	if (first == '{') {
+	  return jsonToJS(new JSONObject(tok), cx, scope);
+	}
+	else if (first == '[') {
+	  return jsonToJS(new JSONArray(tok), cx, scope);
+	}
+	else {
+	  throw new IOException("Not a JSON Array or Object");
+	}
+      }
+      catch (JSONException ex) {
+	throw new IOException("Failed to parse JSON data: " + ex.getMessage(), ex);
+      }
     }
 
-    private HashMap<String, Parser> parserMap = new HashMap<String, Parser>();
+    private static Object jsonToJS(Object json, Context cx, Scriptable scope)
+      throws IOException, JSONException {
+      Scriptable res;
+
+      if (json == JSONObject.NULL) {
+	return null;
+      }
+      else if (json instanceof String ||
+	       json instanceof Number ||
+	       json instanceof Boolean) {
+	return json;
+      }
+      else if (json instanceof JSONObject) {
+	JSONObject jo = (JSONObject) json;
+	res  = cx.newObject(scope);
+
+	for (Iterator<?> i = jo.keys(); i.hasNext();) {
+	  String  key = (String) i.next();
+	  Object  val = jsonToJS(jo.get(key), cx, scope);
+	  res.put(key, res, val);
+	}
+      }
+      else if (json instanceof JSONArray) {
+	JSONArray ja = (JSONArray) json;
+	res = cx.newArray(scope, ja.length());
+
+	for (int i = 0; i < ja.length(); ++i) {
+	  Object val = jsonToJS(ja.get(i), cx, scope);
+	  res.put(i, res, val);
+	}
+      }
+      else {
+	res = Context.toObject(json, scope);
+      }
+
+      return res;
+    }
+  }
+
+  /** A Parser that parses emails and returns an E4X XML Node. */
+  private static class MIMEParser
+    implements Parser {
+    public Object parse(String mime_type, HashMap<String,String> mime_params,
+			InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope)
+      throws IOException, org.xml.sax.SAXException {
+      boolean xmtp;
+      boolean ns;
+      boolean html;
+
+      String fmt = mime_params.get("x-format");
+      String prc = mime_params.get("x-process-html");
+
+      if (fmt == null || fmt.equals("esxx")) {
+	xmtp = false;
+	ns   = false;
+	html = true;
+      }
+      else if (fmt.equals("xmtp")) {
+	xmtp = true;
+	ns   = true;
+	html = false;
+      }
+      else if (fmt.equals("xios")) {
+	xmtp = false;
+	ns   = true;
+	html = true;
+      }
+      else {
+	throw new IOException("No support for param 'x-format=" + fmt + "'");
+      }
+
+      if (prc == null) {
+	// Leave html as-is
+      }
+      else if (prc.equals("true")) {
+	html = true;
+      }
+      else if (prc.equals("false")) {
+	html = false;
+      }
+      else {
+	throw new IOException("Invalid value in param 'x-process-html=" + prc + "'");
+      }
+
+      try {
+	org.esxx.xmtp.MIMEParser p = new org.esxx.xmtp.MIMEParser(xmtp, ns, html, true);
+	p.convertMessage(is);
+	Document result = p.getDocument();
+	return ESXX.domToE4X(result, cx, scope);
+      }
+      catch (Exception ex) {
+	throw new IOException("Unable to parse email message", ex);
+      }
+    }
+  }
+
+  /** A Parser that parses images and returns a BufferedImage Java object. */
+  private static class ImageParser
+    implements Parser {
+    public Object parse(String mime_type, HashMap<String,String> mime_params,
+			InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope)
+      throws IOException {
+      if (mime_type.equals("image/*")) {
+	return ImageIO.read(is);
+      }
+      else {
+	Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType(mime_type);
+
+	if (readers.hasNext()) {
+	  ImageReader reader = readers.next();
+	  String      index  = mime_params.get("x-index");
+
+	  reader.setInput(new FileCacheImageInputStream(is, null));
+	  return reader.read(index != null ? Integer.parseInt(index) : 0);
+	}
+	else {
+	  return null;
+	}
+      }
+    }
+  }
 }
