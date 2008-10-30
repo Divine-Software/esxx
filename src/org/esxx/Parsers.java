@@ -236,7 +236,12 @@ class Parsers {
 	Scriptable result = cx.newObject(scope);
 
 	// Parse request entity using SharedFileInputStream to avoid
-	// excessive memory usage
+	// excessive memory usage.  TODO: Create a custom
+	// SharedFileInputStream that allows us to read the absolute
+	// file offset, and add support in FILEHandler to read URIs
+	// with offset and length parameters. This would avoid the
+	// disk-to-disk copying that happens when extracting the
+	// actual file parts.
 	Session session = Session.getInstance(System.getProperties());
 	MimeMessage message = new MimeMessage(session, new SharedFileInputStream(temp));
 
