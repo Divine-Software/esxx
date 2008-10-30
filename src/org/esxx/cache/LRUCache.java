@@ -57,15 +57,16 @@ public class LRUCache<K, V> {
 
     if (entry != null) {
       synchronized (entry) {
-	// Update expire time and return value
-	long now = System.currentTimeMillis();
-	entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
-	return entry.value;
+	if (!entry.isDeleted()) {
+	  // Update expire time and return value
+	  long now = System.currentTimeMillis();
+	  entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
+	  return entry.value;
+	}
       }
     }
-    else {
-      return null;
-    }
+
+    return null;
   }
 
 
