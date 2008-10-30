@@ -58,6 +58,9 @@
 	which is a per-application, per-thread LRUCache object, and
 	non-magic esxx.pls, which is just a per-application LRUCache.
 
+	* Added a multipart/form-data parser to handle HTTP file
+	uploads.
+
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
 	System.console() to return null.
