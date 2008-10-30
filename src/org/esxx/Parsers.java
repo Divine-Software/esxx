@@ -25,16 +25,26 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Properties;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.FileCacheImageInputStream;
+import javax.mail.Header;
+import javax.mail.Session;
+import javax.mail.internet.ContentDisposition;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.util.SharedFileInputStream;
 import org.htmlcleaner.CleanerProperties;
-import org.htmlcleaner.NSDomSerializer;
 import org.htmlcleaner.HtmlCleaner;
+import org.htmlcleaner.NSDomSerializer;
 import org.htmlcleaner.TagNode;
 import org.json.*;
 import org.mozilla.javascript.*;
@@ -48,6 +58,7 @@ class Parsers {
     parserMap.put("application/xml",                   new XMLParser());
     parserMap.put("image/*",                           new ImageParser());
     parserMap.put("message/rfc822",                    new MIMEParser());
+    parserMap.put("multipart/form-data",               new MultipartFormParser());
     parserMap.put("text/html",                         new HTMLParser());
     parserMap.put("text/plain",                        new StringParser());
     parserMap.put("text/xml",                          new XMLParser());
@@ -189,6 +200,113 @@ class Parsers {
       Scriptable result = cx.newObject(scope);
       StringUtil.decodeFormVariables(bos.toString(cs), result);
       return result;
+    }
+  }
+
+  /** A Parser that parses HTML Multipart Form submissions and returns
+   * a JavaScript Object. */
+  private static class MultipartFormParser
+    implements Parser {
+    public MultipartFormParser() {
+      // Make "mail.mime.encodefilename" true if unspecified. Note
+      // that this property is a System property and not a
+      // Session.getInstance() parameter.
+ 
+      Properties p = System.getProperties();
+      p.setProperty("mail.mime.encodefilename",
+		    p.getProperty("mail.mime.encodefilename", "true"));
+    }
+
+    public Object parse(String mime_type, HashMap<String,String> mime_params,
+			InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope)
+      throws Exception {
+      try {
+	ESXX esxx = ESXX.getInstance();
+	File temp = esxx.getTempFile(cx);
+
+	// Add required MIME header and stream data to a temporary file
+	FileOutputStream fos = new FileOutputStream(temp);
+	fos.write(("Content-Type: " + ESXX.combineMIMEType(mime_type, mime_params) 
+		   + "\r\n\r\n").getBytes());
+	IO.copyStream(is, fos);
+	fos.close();
+
+	Scriptable result = cx.newObject(scope);
+
+	// Parse request entity using SharedFileInputStream to avoid
+	// excessive memory usage
+	Session session = Session.getInstance(System.getProperties());
+	MimeMessage message = new MimeMessage(session, new SharedFileInputStream(temp));
+
+	MimeMultipart mmp = (MimeMultipart) message.getContent();
+	for (int i = 0; i < mmp.getCount(); ++i) {
+	  MimeBodyPart mbp = (MimeBodyPart) mmp.getBodyPart(i);
+	  String[] disp = mbp.getHeader("Content-Disposition");
+
+	  if (disp.length == 0) {
+	    // We don't handle parts with no Content-Disposition header
+	    continue;
+	  }
+	  
+	  String name     = new ContentDisposition(disp[0]).getParameter("name");
+	  String filename = mbp.getFileName();
+	  Object value;
+
+	  if (filename == null) {
+	    // Not a file, so parse it
+	    HashMap<String,String> params = new HashMap<String,String>();
+	    String ct = ESXX.parseMIMEType(mbp.getContentType(), params);
+
+	    // Default content-type is text/plain for
+	    // multipart/form-data parts
+	    if (ct == null) {
+	      ct = "text/plain";
+	    }
+
+	    value = esxx.parseStream(ct, params, mbp.getInputStream(), temp.toURI(),
+				     null, err, cx, scope);
+	    value = Context.javaToJS(value, scope);
+	  }
+	  else {
+	    // Create a new temporary file and create a description as value.
+	    temp = esxx.getTempFile(cx);
+	    fos = new FileOutputStream(temp);
+	    IO.copyStream(mbp.getInputStream(), fos);
+	    fos.close();
+	    
+	    Scriptable descr = cx.newObject(scope);
+	    descr.put("uri",    descr, temp.toURI().toString());
+	    descr.put("name",   descr, filename);
+	    descr.put("length", descr, temp.length());
+
+	    Scriptable headers = cx.newObject(scope);
+	    for (java.util.Enumeration<Header> e = mbp.getAllHeaders(); e.hasMoreElements();) {
+	      Header hdr = e.nextElement();
+	      headers.put(hdr.getName(), headers, hdr.getValue());
+	    }
+	    descr.put("headers", descr, headers);
+
+	    value = descr;
+	  }
+
+	  if (name != null) {
+	    result.put(name, result, value);
+	  }
+	  else {
+	    result.put(i, result, value);
+	  }
+	}
+
+	return result;
+      }
+      catch (ClassCastException ex) {
+	throw new IOException("Failed to parse form data: " + ex.getMessage(), ex);
+      }
+      catch (javax.mail.MessagingException ex) {
+	throw new IOException("Failed to parse form data: " + ex.getMessage(), ex);
+      }
     }
   }
 
