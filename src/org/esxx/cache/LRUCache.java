@@ -47,6 +47,13 @@ public class LRUCache<K, V> {
   }
 
 
+  /** Returns a value from the cache.
+   *
+   *  @param key    The key
+   *
+   *  @result The value from the cache or null if not found.
+   */
+
   public V get(K key) {
     LRUEntry entry;
 
