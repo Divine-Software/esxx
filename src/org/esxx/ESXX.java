@@ -1024,9 +1024,12 @@ public class ESXX {
 	for (File temp : tempFiles) {
 	  try { temp.delete(); } catch (Exception ex) {}
 	}
+	tempFiles.clear();
       }
 
-      @Override void finalize() {
+      @Override protected void finalize() 
+	throws Throwable {
+	super.finalize();
 	close();
       }
 
