@@ -24,12 +24,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.*;
@@ -341,6 +341,7 @@ public class ESXX {
 		  new_cx.removeThreadLocal(Workload.class);
 		}
 
+		workload.close();
 		workloadSet.remove(workload);
 	      }
 	    }
@@ -562,6 +563,20 @@ public class ESXX {
     public InputStream openCachedURL(URL url)
       throws IOException {
       return memoryCache.openCachedURL(url, null);
+    }
+
+    public File getTempFile(Context cx) 
+      throws IOException {
+      File temp = File.createTempFile(getClass().getName(), null);
+      temp.deleteOnExit();
+
+      Workload workload = (Workload) cx.getThreadLocal(Workload.class);
+
+      if (workload != null) {
+	workload.addTempFile(temp);
+      }
+
+      return temp;
     }
 
     public Object parseStream(String mime_type, HashMap<String,String> mime_params,
@@ -1001,8 +1016,23 @@ public class ESXX {
 	expires   = exp;
       }
 
+      public void addTempFile(File file) {
+	tempFiles.add(file);
+      }
+
+      public void close() {
+	for (File temp : tempFiles) {
+	  try { temp.delete(); } catch (Exception ex) {}
+	}
+      }
+
+      @Override void finalize() {
+	close();
+      }
+
       public Future<Object> future;
       public long expires;
+      public Collection<File> tempFiles = new ArrayList<File>();
     }
 
     public interface PeriodicJob
