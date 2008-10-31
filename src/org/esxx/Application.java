@@ -30,6 +30,7 @@ import javax.xml.stream.*;
 import org.esxx.js.*;
 import org.esxx.util.*;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextAction;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.WrappedException;
@@ -305,6 +306,11 @@ public class Application
   }
 
   public synchronized void terminate(long timeout) {
+    if (timer != null) {
+      // Cancel all timers
+      timer.cancel();
+    }
+
     while (enterCount != 0) {
       try {
 	this.wait(timeout);
@@ -509,6 +515,9 @@ public class Application
 	  else if (name.equals("soap")) {
 	    handleSOAPHandler(e);
 	  }
+	  else if (name.equals("timer")) {
+	    handleTimerHandler(e);
+	  }
 	  else if (name.equals("stylesheet")) {
 	    handleStylesheet(e);
 	  }
@@ -553,6 +562,9 @@ public class Application
 
       // Prevent handler from adding global variables
       applicationScope.disallowNewGlobals();
+
+      // Start timers, if any
+      startTimers();
     }
     catch (IllegalAccessException ex) {
       throw new ESXXException("Failed to initialize Application: " + ex.getMessage(), ex);
@@ -600,6 +612,35 @@ public class Application
 	}
       }
       hasExecuted = true;
+    }
+  }
+
+  private void startTimers() {
+    // Start timers, if any
+    if (!timerHandlers.isEmpty()) {
+      timer = new Timer(getAppName() + " timer thread");
+
+      for (final TimerHandler th : timerHandlers) {
+	timer.scheduleAtFixedRate(new TimerTask() {
+	    @Override public void run() {
+	      esxx.addContextAction(null, new ContextAction() {
+		  @Override public Object run(Context cx) {
+		    try{
+		      Object[] args = { new Date(scheduledExecutionTime()) };
+		      
+		      return JS.callJSMethod(th.handler, args, 
+					     getAppName() + " timer", 
+					     cx, applicationScope);
+		    }
+		    catch (Exception ex) {
+		      ex.printStackTrace();
+		      return null;
+		    }
+		  }
+		}, (int) (th.period * 2) /* Timeout */);
+	    }
+	  }, th.delay, th.period);
+      }
     }
   }
 
@@ -757,6 +798,27 @@ public class Application
     soapActions.put(e.getAttributeNS(null, "action"), object);
   }
 
+  private void handleTimerHandler(Element e) {
+    String delay   = e.getAttributeNS(null, "delay").trim();
+    String period  = e.getAttributeNS(null, "period").trim();
+    String handler = e.getAttributeNS(null, "handler").trim();
+
+    if (delay.equals("") && period.equals("")) {
+      throw new ESXXException("<timer> attribute 'delat' or 'period' must must be specified");
+    }
+
+    if (handler.equals("")) {
+      throw new ESXXException("<timer> attribute 'handler' must be specified");
+    }
+
+    if (handler.endsWith(")")) {
+      throw new ESXXException("<timer> attribute 'handler' value should not include parentheses");
+    }
+
+
+    timerHandlers.add(new TimerHandler(delay, period, handler));
+  }
+
   private void handleErrorHandler(Element e) {
     String handler = e.getAttributeNS(null, "handler").trim();
 
@@ -841,6 +903,18 @@ public class Application
     HashMap<Object, JSLRUCache> caches = new HashMap<Object, JSLRUCache>();
   };
 
+  private class TimerHandler {
+    TimerHandler(String delay, String period, String handler) {
+      try { this.delay  = Long.parseLong(delay);  } catch (NumberFormatException ex) {}
+      try { this.period = Long.parseLong(period); } catch (NumberFormatException ex) {}
+      this.handler = handler;
+    }
+
+    public long delay;
+    public long period;
+    public String handler;
+  }
+
   private XMLInputFactory xmlInputFactory;
 
   private ESXX esxx;
@@ -882,4 +956,7 @@ public class Application
   private Map<String,URI>    stylesheets  = new HashMap<String,URI>();
   private String errorHandler;
   private String exitHandler;
+
+  private Timer timer;
+  private Collection<TimerHandler> timerHandlers = new LinkedList<TimerHandler>();
 };
