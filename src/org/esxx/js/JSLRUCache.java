@@ -114,7 +114,8 @@ public class JSLRUCache
 	public boolean isStale(String key, Object value, long created) {
 	  Context cx = Context.getCurrentContext();
 	  Object[] a = new Object[] { key, value, new java.util.Date(created) };
-	  return Context.toBoolean(f.call(cx, JSLRUCache.this, JSLRUCache.this, a));
+	  // Negate return value to get Array.filter() semantics
+	  return !Context.toBoolean(f.call(cx, JSLRUCache.this, JSLRUCache.this, a));
 	}
       });
   }
