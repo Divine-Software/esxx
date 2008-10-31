@@ -65,9 +65,7 @@ public class LRUCache<K, V> {
     if (entry != null) {
       synchronized (entry) {
 	if (!entry.isDeleted()) {
-	  // Update expire time and return value
-	  long now = System.currentTimeMillis();
-	  entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
+	  entry.updateExpires(System.currentTimeMillis());
 	  return entry.value;
 	}
       }
@@ -126,14 +124,17 @@ public class LRUCache<K, V> {
 
       synchronized (entry) {
 	if (!entry.isDeleted()) {
-	  if (entry.value ==  null) {
-	    long now = System.currentTimeMillis();
+	  long now = System.currentTimeMillis();
 
+	  if (entry.value ==  null) {
 	    entry.maxAge  = age;
-	    entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
 	    entry.created = now;
+	    entry.updateExpires(now);
 	    entry.value   = factory.create(key, entry.expires);
 	    fireAddedEvent(key, entry.value);
+	  }
+	  else {
+	    entry.updateExpires(now);
 	  }
 	
 	  return entry.value;
@@ -204,8 +205,8 @@ public class LRUCache<K, V> {
 	  long now = System.currentTimeMillis();
 
 	  entry.maxAge  = age;
-	  entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
 	  entry.created = now;
+	  entry.updateExpires(now);
 	  entry.value   = factory.create(key, entry.expires);
 	  fireAddedEvent(key, entry.value);
 
@@ -268,17 +269,19 @@ public class LRUCache<K, V> {
       synchronized (entry) {
 	if (!entry.isDeleted()) {
 	  V old_value = entry.value;
+	  long now = System.currentTimeMillis();
 
 	  if (old_value != null) {
 	    fireRemovedEvent(key, old_value);
 
-	    long now = System.currentTimeMillis();
-
 	    entry.maxAge  = age;
-	    entry.expires = entry.maxAge == 0 ? Long.MAX_VALUE : now + entry.maxAge;
 	    entry.created = now;
+	    entry.updateExpires(now);
 	    entry.value   = factory.create(key, entry.expires);
 	    fireAddedEvent(key, entry.value);
+	  }
+	  else {
+	    entry.updateExpires(now);
 	  }
 
 	  return old_value;
@@ -511,6 +514,10 @@ public class LRUCache<K, V> {
 
     public boolean isDeleted() {
       return expires == Long.MIN_VALUE;
+    }
+
+    public void updateExpires(long now) {
+      expires = maxAge == 0 ? Long.MAX_VALUE : now + maxAge;
     }
 
     long expires;
