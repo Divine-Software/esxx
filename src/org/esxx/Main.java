@@ -109,6 +109,12 @@ public class Main {
 	}
       }
 
+      if (script != null) {
+	// "Never" unload Applications in script mode
+	System.getProperties().setProperty("esxx.cache.apps.max_age", 
+					   Long.toString(3600 * 24 * 365 * 10 /* 10 years */));
+      }
+
       ESXX esxx = ESXX.initInstance(System.getProperties());
 
       esxx.setHandlerMode(cmd.hasOption('n') == false);
