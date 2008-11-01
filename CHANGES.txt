@@ -1,4 +1,4 @@
-0.9.2008xxxx
+0.9.20081101
 	* Bug fixes as usual.
 
 	* Upgraded to Rhino 1.7 release 2 PRERELEASE 2008 09 30, so we
