@@ -71,7 +71,7 @@ ADD_CUSTOM_TARGET (dist ALL COMMAND
 		   ${ANT} -buildfile ${CMAKE_CURRENT_SOURCE_DIR}/build.xml 
 		          -Dbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build
 		          -Ddist.dir=${CMAKE_CURRENT_BINARY_DIR}/dist
-			  dist)
+			  clean dist)
 ADD_CUSTOM_TARGET (antclean COMMAND
 		   ${ANT} -buildfile ${CMAKE_CURRENT_SOURCE_DIR}/build.xml
 		          -Dbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build
