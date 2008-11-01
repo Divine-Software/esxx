@@ -21,7 +21,7 @@ function main(cmd, title) {
   frame.pack();
   frame.show();
 
-  esxx.wait(signal, 10000);
+  esxx.wait(signal, 10);
 
   return 0;
 }
