@@ -86,7 +86,8 @@ public class ESXX {
     private ESXX(Properties p) {
       settings = p;
 
-      defaultTimeout = Integer.parseInt(settings.getProperty("esxx.app.timeout", "60")) * 1000;
+      defaultTimeout = (int) (Double.parseDouble(settings.getProperty("esxx.app.timeout", "60")) 
+			      * 1000);
 
       try {
 	String[] path = settings.getProperty("esxx.app.include_path", "").split(File.pathSeparator);
@@ -104,17 +105,17 @@ public class ESXX {
 	this,
 	Integer.parseInt(settings.getProperty("esxx.cache.max_entries", "1024")),
 	Long.parseLong(settings.getProperty("esxx.cache.max_size", "16")) * 1024 * 1024,
-	Long.parseLong(settings.getProperty("esxx.cache.max_age", "3600")) * 1000);
+	(long) (Double.parseDouble(settings.getProperty("esxx.cache.max_age", "3600")) * 1000));
 
       applicationCache = new LRUCache<String, Application>(
 	Integer.parseInt(settings.getProperty("esxx.cache.apps.max_entries", "1024")),
-	Long.parseLong(settings.getProperty("esxx.cache.apps.max_age", "3600")) * 1000);
+	(long) (Double.parseDouble(settings.getProperty("esxx.cache.apps.max_age", "3600")) * 1000));
 
       applicationCache.addListener(new ApplicationCacheListener());
 
       stylesheetCache = new LRUCache<String, Stylesheet>(
 	Integer.parseInt(settings.getProperty("esxx.cache.xslt.max_entries", "1024")),
-	Long.parseLong(settings.getProperty("esxx.cache.xslt.max_age", "3600")) * 1000);
+	(long) (Double.parseDouble(settings.getProperty("esxx.cache.xslt.max_age", "3600")) * 1000));
 
       stylesheetCache.addListener(new StylesheetCacheListener());
 

@@ -129,7 +129,7 @@ public class JSESXX
 	  throw Context.reportRuntimeError("Third argument must be a number.");
 	}
 
-	timeout_ms = (long) Context.toNumber(args[1]);
+	timeout_ms = (long) (1000 * Context.toNumber(args[1]));
       }
 
       if (args.length >= 3) {
@@ -245,7 +245,7 @@ public class JSESXX
       Scriptable scope = funcObj.getParentScope();
 
       Object[] fargs = Context.emptyArgs;
-      int    timeout = Integer.MAX_VALUE;
+      int timeout_ms = Integer.MAX_VALUE;
       int  max_tasks = Integer.MAX_VALUE;
 
       // The first argument is the workload array
@@ -260,9 +260,9 @@ public class JSESXX
 	fargs = cx.getElements((Scriptable) args[1]);
       }
 
-      // The third (optional) argument is the timeout in ms
+      // The third (optional) argument is the timeout in s
       if (args.length > 2 && args[2] != Context.getUndefinedValue()) {
-	timeout = (int) Context.toNumber(args[2]);
+	timeout_ms = (int) (1000 * Context.toNumber(args[2]));
       }
 
       // The fourth (optional) argument is the parallel limit
@@ -288,7 +288,7 @@ public class JSESXX
 	      return Context.getUndefinedValue();
 	    }
 	  }
-      }, timeout, max_tasks);
+      }, timeout_ms, max_tasks);
 
       return join(cx, scope, workloads);
     }
@@ -309,12 +309,12 @@ public class JSESXX
       final Object   data[] = cx.getElements((NativeArray) args[0]);
       final Function   func = (Function) args[1];
       final Scriptable thiz = func.getParentScope();
-      int           timeout = Integer.MAX_VALUE;
+      int        timeout_ms = Integer.MAX_VALUE;
       int         max_tasks = Integer.MAX_VALUE;
 
-      // The third (optional) argument is the timeout in ms
+      // The third (optional) argument is the timeout in s
       if (args.length > 2 && args[2] != Context.getUndefinedValue()) {
-	timeout = (int) Context.toNumber(args[2]);
+	timeout_ms = (int) (1000 * Context.toNumber(args[2]));
       }
 
       // The fourth (optional) argument is the parallel limit
@@ -339,7 +339,7 @@ public class JSESXX
 	      return undefined;
 	    }
 	  }
-      }, timeout, max_tasks);
+      }, timeout_ms, max_tasks);
 
       return join(cx, thisObj, workloads);
     }
@@ -403,7 +403,7 @@ public class JSESXX
     private static void fork(Context cx,
 			     ESXX.Workload[] workloads,
 			     final ForkedFunction ff,
-			     int timeout, int max_tasks) {
+			     int timeout_ms, int max_tasks) {
       ESXX esxx = ESXX.getInstance();
 
       // Submit workloads, limit if asked to
@@ -438,7 +438,7 @@ public class JSESXX
 		limit.release();
 	      }
 	    }
-	  }, timeout);
+	  }, timeout_ms);
       }
     }
 

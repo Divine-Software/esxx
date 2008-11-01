@@ -905,8 +905,24 @@ public class Application
 
   private class TimerHandler {
     TimerHandler(String delay, String period, String handler) {
-      try { this.delay  = Long.parseLong(delay);  } catch (NumberFormatException ex) {}
-      try { this.period = Long.parseLong(period); } catch (NumberFormatException ex) {}
+      try {
+	if (!delay.isEmpty()) {
+	  this.delay = (long) (1000 * Double.parseDouble(delay));
+	}
+      } 
+      catch (NumberFormatException ex) {
+	throw new ESXXException("Failed to parse <timer> attribute 'delay': " + ex.getMessage());
+      }
+
+      try {
+	if (!period.isEmpty()) {
+	  this.period = (long) (1000 * Double.parseDouble(period));
+	}
+      } 
+      catch (NumberFormatException ex) {
+	throw new ESXXException("Failed to parse <timer> attribute 'period': " + ex.getMessage());
+      }
+
       this.handler = handler;
     }
 

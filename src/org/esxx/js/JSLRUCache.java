@@ -29,10 +29,10 @@ public class JSLRUCache
     super();
   }
 
-  public JSLRUCache(int max_entries, long max_age) {
+  public JSLRUCache(int max_entries, long max_age_ms) {
     super();
 
-    cache = new LRUCache<String, Object>(max_entries, max_age);
+    cache = new LRUCache<String, Object>(max_entries, max_age_ms);
 
     cache.addListener(new LRUCache.LRUListener<String, Object>() {
 	public void entryAdded(String key, Object value) {
@@ -62,15 +62,15 @@ public class JSLRUCache
 				     Function ctorObj,
 				     boolean inNewExpr) {
     int max_entries;
-    long max_age;
+    long max_age_ms;
 
     if (args.length < 2) {
       throw Context.reportRuntimeError("Required argument missing.");
     }
 
     max_entries = (int) Context.toNumber(args[0]);
-    max_age     = (long) Context.toNumber(args[1]);
-    return new JSLRUCache(max_entries, max_age);
+    max_age_ms  = (long) (1000 * Context.toNumber(args[1]));
+    return new JSLRUCache(max_entries, max_age_ms);
   }
 
 
@@ -85,19 +85,19 @@ public class JSLRUCache
   public Object jsFunction_add(final String key, Double max_age, 
 			       final Object value, Function destructor) 
     throws Exception {
-    return cache.add(key, new VF(value, destructor), max_age.longValue());
+    return cache.add(key, new VF(value, destructor), (long) (1000 * max_age));
   }
 
   public Object jsFunction_set(final String key, Double max_age, 
 			       final Object value, Function destructor) 
     throws Exception {
-    return cache.set(key, new VF(value, destructor), max_age.longValue());
+    return cache.set(key, new VF(value, destructor), (long) (1000 * max_age));
   }
 
   public Object jsFunction_replace(final String key, Double max_age, 
 				   final Object value, Function destructor) 
     throws Exception {
-    return cache.replace(key, new VF(value, destructor), max_age.longValue());
+    return cache.replace(key, new VF(value, destructor), (long) (1000 * max_age));
   }
 
   public Object jsFunction_remove(final String key) 

@@ -63,6 +63,10 @@
 
 	* Added timer handler support.
 
+	* All time parameters are now in seconds (may be decimal),
+	including system properties, methods in ESXX and LRUCache, and
+	the <timer> element's attributes.
+
 0.9.20080927
 	* Fixed a bug that closed System.in in script mode, causing
 	System.console() to return null.
