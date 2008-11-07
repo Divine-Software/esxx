@@ -22,6 +22,7 @@ import java.io.*;
 import java.net.URI;
 import java.util.Properties;
 import java.util.logging.*;
+import org.esxx.util.StringUtil;
 import org.esxx.util.TrivialFormatter;
 
 public abstract class Request {
@@ -54,6 +55,13 @@ public abstract class Request {
       }
 
       request_uri = properties.getProperty("REQUEST_URI");
+
+      try {
+	request_uri = StringUtil.decodeURI(request_uri, false);
+      }
+      catch (java.net.URISyntaxException ex) {
+	throw new IOException("Failed to decode URI: " + ex.getMessage(), ex);
+      }
 
       if (request_uri == null) {
 	// Fall back to PATH_INFO (it might work too)
