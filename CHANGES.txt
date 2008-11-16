@@ -1,3 +1,10 @@
+0.9.200811xx
+	* Fixed bug #14765: req.scriptURI has problems with encoded
+	URI:s.
+
+	* Fixed problems with the init script that made chkconfig not
+	recognize it.
+
 0.9.20081101
 	* Bug fixes as usual.
 

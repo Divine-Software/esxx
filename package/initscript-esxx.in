@@ -1,10 +1,10 @@
 #!/bin/bash
 #
 # @PROJECT_NAME@ This shell script takes care of starting and stopping \
-#   @PROJECT_NAME@ (@PACKAGE_DESCRIPTION_SUMMARY@).
+#   @PROJECT_NAME@ (@CPACK_PACKAGE_DESCRIPTION_SUMMARY@).
 #
 # chkconfig: 2345 66 34
-# description: @PACKAGE_DESCRIPTION@
+# description: @CPACK_PACKAGE_DESCRIPTION_SUMMARY@
 #
 # processname: @PROJECT_NAME@
 # config:      @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@
@@ -19,7 +19,7 @@
 # Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
 # Short-Description: start and stop @PROJECT_NAME@
-# Description: @PACKAGE_DESCRIPTION@
+# Description: @CPACK_PACKAGE_DESCRIPTION_SUMMARY@
 ### END INIT INFO
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
@@ -29,7 +29,7 @@ ESXX_OPTIONS=${ESXX_OPTIONS:-"--bind 7654"}
 
 prog=@PROJECT_NAME@
 absprog=@SBIN_INSTALL_DIR@/$prog
-desc="@PACKAGE_DESCRIPTION_SUMMARY@"
+desc="@CPACK_PACKAGE_DESCRIPTION_SUMMARY@"
 pidfile=@LOCALSTATE_INSTALL_PREFIX@/run/$prog${ESXX_INSTANCE}.pid
 conffile=@SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@${ESXX_INSTANCE}
 timeout=10
