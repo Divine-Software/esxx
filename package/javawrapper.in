@@ -23,7 +23,7 @@ fi
 while `[ $# -gt 0 ]` ; do
     arg="$1"
     case "$arg" in
-	-\? | --help | --usage)
+	-\? | --help)
 	    echo "Usage: $0 [OPTIONS...]"
 	    echo "  -u, --user=<user>                     Execute @PROJECT_NAME@.jar as 'user'"
 	    echo "  -p, --pidfile=</path/to/file>         Fork and write PID to file"
