@@ -394,7 +394,13 @@ public class XMTPParser {
 	}
       }
       else if (base_type.startsWith("text/")) {
-	part.setContent(convertTextBody(xr), part.getContentType());
+	try {
+	  part.setDataHandler(new DataHandler(new ByteArrayDataSource(convertTextBody(xr),
+								      part.getContentType())));
+	}
+	catch (IOException ex) {
+	  throw new XMLStreamException("Unable to convert text Body: " + ex.getMessage(), ex);
+	}
       }
       else {
 	String encoding[] = part.getHeader("Content-Transfer-Encoding");

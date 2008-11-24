@@ -210,6 +210,9 @@ public class MIMEParser {
 	else if (procHTML && base_type.equals("text/html")) {
 	  part_type = HTML_PART;
 	}
+	else if (base_type.startsWith("text/")) {
+	  part_type = STRING_PART;
+	}
 	else {
 	  part_type = BASE64_PART;
 	}
@@ -223,6 +226,20 @@ public class MIMEParser {
 
       switch (part_type) {
         case STRING_PART: {
+	  if (content_stream != null) {
+	    InputStreamReader isr = new InputStreamReader(content_stream, 
+							  content_type.getParameter("charset"));
+	    StringWriter sw = new StringWriter();
+	    char[] buf = new char[4096];
+	    int len;
+
+	    while ((len = isr.read(buf)) != -1) {
+	      sw.write(buf, 0, len);
+	    }
+
+	    content = sw.toString();
+	  }
+
 	  // Nuke all obviously illegal characters
 	  String value = nonPrintableChars.matcher((String) content).replaceAll("");
 
@@ -349,7 +366,7 @@ public class MIMEParser {
       throws MessagingException {
       while (headers.hasMoreElements()) {
 	Header hdr  = (Header) headers.nextElement();
-	String name = normalizeHeader(hdr.getName());
+	String name = hdr.getName();
 
 	try {
 	  if (name.equalsIgnoreCase("Content-Type")) {
@@ -577,30 +594,6 @@ public class MIMEParser {
     private java.util.regex.Pattern nonPrintableChars = // Cntrl - Space
       java.util.regex.Pattern.compile("[\\x00-\\x1F\\x7F&&[^ \\t\\n\\x0B\\f\\r]]");
 
-
-    private String normalizeHeader(String original) {
-      char[] result = original.toCharArray();
-      
-      boolean up = true;
-      for (int i = 0; i < result.length; ++i) {
-	if (Character.isLetter(result[i])) {
-	  if (up) {
-	    result[i] = Character.toTitleCase(result[i]);
-	    up = false;
-	  }
-	  else {
-	    result[i] = Character.toLowerCase(result[i]);
-	  }
-	}
-	else {
-	  // Uppercase next letter
-	  up = true;
-	}
-      }
-
-      return new String(result);
-    }
-  
     private String decodeMIMEValue(String value) {
       if (value != null) {
 	try {

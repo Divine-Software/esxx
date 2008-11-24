@@ -5,6 +5,9 @@
 	* Fixed problems with the init script that made chkconfig not
 	recognize it.
 
+	* The XMIME/XMTP parser and serializer how handles all text/*
+	MIME types, not just text/plain.
+
 0.9.20081101
 	* Bug fixes as usual.
 
