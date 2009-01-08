@@ -57,7 +57,9 @@ public abstract class Request {
       request_uri = properties.getProperty("REQUEST_URI");
 
       try {
-	request_uri = StringUtil.decodeURI(request_uri, false);
+	if (request_uri != null) {
+	  request_uri = StringUtil.decodeURI(request_uri, false);
+	}
       }
       catch (java.net.URISyntaxException ex) {
 	throw new IOException("Failed to decode URI: " + ex.getMessage(), ex);
