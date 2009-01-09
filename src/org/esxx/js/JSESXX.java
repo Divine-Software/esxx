@@ -169,8 +169,12 @@ public class JSESXX
       throws java.net.MalformedURLException, IOException {
       ESXX        esxx = ESXX.getInstance();
       JSESXX   js_esxx = (JSESXX) thisObj;
-      Scriptable scope = thisObj.getParentScope();
+      Scriptable scope = ScriptableObject.getTopLevelScope(thisObj);
       Application  app = js_esxx.app;
+
+      if (args.length > 1 && args[1] != Context.getUndefinedValue()) {
+	scope = (Scriptable) args[1];
+      }
 
       URI          uri = null;
       InputStream   is = null;
