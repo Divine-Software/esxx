@@ -187,10 +187,16 @@ public class JSESXX
 	String file = Context.toString(args[0]);
 
 	try {
+	  // If location is set, resolve files relative the current
+	  // file. Else, resolve files relative the working directory.
 	  if (js_esxx.location != null) {
 	    uri = js_esxx.location.getURI().resolve(file);
-	    is  = esxx.openCachedURL(uri.toURL());
 	  }
+	  else {
+	    uri = js_esxx.wd.getURI().resolve(file);
+	  }
+
+	  is  = esxx.openCachedURL(uri.toURL());
 	}
 	catch (IOException ex) {
 	  
