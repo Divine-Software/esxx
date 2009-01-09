@@ -13,6 +13,9 @@
 	be evaluated in.  If unspecified, the global scope is used
 	just like before.
 
+	* When using ESXX.include from a function, files are now
+	first resolved relative the working directory.
+
 
 0.9.20081101
 	* Bug fixes as usual.
