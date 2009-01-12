@@ -110,7 +110,7 @@ function Assert.isNotNan(arg, comment) {
 function Assert.isEqual(arg1, arg2, comment) {
   if (arg1 != arg2) {
     throw new Assert.Failed("Assert.isEqual",
-			    arg1 + "(" + Assert.typeOf(arg1) 
+			    arg1 + "(" + Assert.typeOf(arg1)
 			    + ") != " + arg2 + "(" + Assert.typeOf(arg2) + ")",
 			    comment);
   }
@@ -119,7 +119,7 @@ function Assert.isEqual(arg1, arg2, comment) {
 function Assert.isNotEqual(arg1, arg2, comment) {
   if (arg1 == arg2) {
     throw new Assert.Failed("Assert.isNotEqual",
-			    arg1  + "(" + Assert.typeOf(arg1) 
+			    arg1  + "(" + Assert.typeOf(arg1)
 			    + ") == " + arg2 + "(" + Assert.typeOf(arg2) + ")",
 			    comment);
   }
@@ -128,7 +128,7 @@ function Assert.isNotEqual(arg1, arg2, comment) {
 function Assert.isIdentical(arg1, arg2, comment) {
   if (arg1 !== arg2) {
     throw new Assert.Failed("Assert.isIdentical",
-			    arg1 + "(" + Assert.typeOf(arg1) 
+			    arg1 + "(" + Assert.typeOf(arg1)
 			    + ") !== " + arg2 + "(" + Assert.typeOf(arg2) + ")",
 			    comment);
   }
@@ -137,8 +137,47 @@ function Assert.isIdentical(arg1, arg2, comment) {
 function Assert.isNotIdentical(arg1, arg2, comment) {
   if (arg1 === arg2) {
     throw new Assert.Failed("Assert.isNotIdentical",
-			    arg1  + "(" + Assert.typeOf(arg1) 
+			    arg1  + "(" + Assert.typeOf(arg1)
 			    + ") === " + arg2 + "(" + Assert.typeOf(arg2) + ")",
+			    comment);
+  }
+}
+
+function Assert.fnThrows(fn, type, comment) {
+  try {
+    fn();
+  }
+  catch (ex) {
+    if (type instanceof Function) {
+      if (!type(ex)) {
+	throw new Assert.Failed("Assert.throws",
+				fn + " did not throw an exception that did not pass test " + type,
+				comment);
+      }
+    }
+    else if (type) {
+      if (!(ex instanceof type)) {
+	throw new Assert.Failed("Assert.throws",
+				fn + " did not throw an instance of " + type,
+				comment);
+      }
+    }
+
+    return;
+  }
+
+  throw new Assert.Failed("Assert.throws",
+			  fn + " did not throw an exception",
+			  comment);
+}
+
+function Assert.fnNotThrows(fn, comment) {
+  try {
+    fn();
+  }
+  catch (ex) {
+    throw new Assert.Failed("Assert.notThrows",
+			    fn + " threw an exception (" + Assert.typeOf(ex) + ")",
 			    comment);
   }
 }
