@@ -363,6 +363,10 @@ public class JSESXX
       return logger;
     }
 
+    public Scriptable jsGet_global() {
+      return getTopLevelScope(this);
+    }
+
     public JSLRUCache jsGet_pls() {
       return app.getPLS(Context.getCurrentContext());
     }

@@ -8,14 +8,15 @@
 	* The XMIME/XMTP parser and serializer how handles all text/*
 	MIME types, not just text/plain.
 
-	* ESXX.include now takes a secondary argument, scope, which
+	* esxx.include now takes a secondary argument, scope, which
 	can be used to specify in what scope the included file should 
 	be evaluated in.  If unspecified, the global scope is used
 	just like before.
 
-	* When using ESXX.include from a function, files are now
+	* When using esxx.include from a function, files are now
 	first resolved relative the working directory.
 
+	* esxx.global is now available, and refers to the global scope.
 
 0.9.20081101
 	* Bug fixes as usual.
