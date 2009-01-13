@@ -7,7 +7,7 @@ function main(prog) {
   let scope = esxx.global;
 
   for (let v in scope) {
-    if (/^test.*/.test(v)) {
+    if (/^test.*/.test(v) && scope[v] instanceof Function) {
       out.print("Running " + v + "() ... ");
 
       try {
