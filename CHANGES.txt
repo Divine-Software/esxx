@@ -16,7 +16,12 @@
 	* When using esxx.include from a function, files are now
 	first resolved relative the working directory.
 
-	* esxx.global is now available, and refers to the global scope.
+	* esxx.global is now available, and refers to the global
+	scope.
+	
+	* The HTTP protocol handler now simply throws an ESXX.Response
+	object if the HTTP status in load(), save(), append() or
+	remove() is not 2xx.
 
 0.9.20081101
 	* Bug fixes as usual.

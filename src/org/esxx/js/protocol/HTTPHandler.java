@@ -60,7 +60,7 @@ public class HTTPHandler
     Result result = sendRequest(cx, thisObj, type, params, new HttpGet(jsuri.getURI()));
 
     if (result.status / 100 != 2) {
-      throw Context.reportRuntimeError("HTTP status code not 2xx.");
+      throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
     }
 
     return result.object;
@@ -77,7 +77,7 @@ public class HTTPHandler
     Result result = sendRequest(cx, thisObj, null, null, put);
     
     if (result.status / 100 != 2) {
-      throw Context.reportRuntimeError("HTTP status code not 2xx.");
+      throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
     }
 
     return result.object;
@@ -94,7 +94,7 @@ public class HTTPHandler
     Result result = sendRequest(cx, thisObj, null, null, post);
     
     if (result.status / 100 != 2) {
-      throw Context.reportRuntimeError("HTTP status code not 2xx.");
+      throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
     }
 
     return result.object;
@@ -163,15 +163,7 @@ public class HTTPHandler
 
     Result result = sendRequest(cx, thisObj, recv_ct, recv_params, req);
 
-    Scriptable hdr = cx.newObject(thisObj);
-
-    for (Header h : result.headers) {
-      hdr.put(h.getName(), hdr, h.getValue());
-    }
-
-    return JSESXX.newObject(cx, thisObj, "Response", new Object[] { 
-	result.status, hdr, result.object, result.contentType
-      });
+    return makeJSResponse(cx, thisObj, result);
   }
 
 
@@ -182,7 +174,7 @@ public class HTTPHandler
     Result result = sendRequest(cx, thisObj, type, params, new HttpDelete(jsuri.getURI()));
 
     if (result.status / 100 != 2) {
-      throw Context.reportRuntimeError("HTTP status code not 2xx.");
+      throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
     }
 
     return result.object;
@@ -354,6 +346,18 @@ public class HTTPHandler
     response.writeResult(esxx, cx, bos);
     entity.setHeader("Content-Type", response.getContentType(true));
     entity.setEntity(new ByteArrayEntity(bos.toByteArray()));
+  }
+
+  private static Scriptable makeJSResponse(Context cx, Scriptable scope, Result result) {
+    Scriptable hdr = cx.newObject(scope);
+
+    for (Header h : result.headers) {
+      hdr.put(h.getName(), hdr, h.getValue());
+    }
+
+    return JSESXX.newObject(cx, scope, "Response", new Object[] { 
+	result.status, hdr, result.object, result.contentType
+      });
   }
 
   private static HttpParams httpParams;
