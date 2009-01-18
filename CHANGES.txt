@@ -23,6 +23,8 @@
 	object if the HTTP status in load(), save(), append() or
 	remove() is not 2xx.
 
+	* Added initial IPS (OpenSolaris) package.
+
 0.9.20081101
 	* Bug fixes as usual.
 
