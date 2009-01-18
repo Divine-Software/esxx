@@ -6,8 +6,6 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 FIND_PACKAGE (Java REQUIRED)
 FIND_PROGRAM (ANT ant REQUIRED)
-FIND_PROGRAM (RPM rpmbuild)
-FIND_PROGRAM (DPKG dpkg-deb)
 
 SET (CPACK_SET_DESTDIR ON)
 SET (CPACK_PACKAGE_NAME ${PROJECT_NAME})
@@ -22,26 +20,19 @@ SET (CPACK_PACKAGE_VERSION_PATCH "20081101")
 SET (CPACK_PACKAGE_INSTALL_DIRECTORY "ESXX")
 SET (CPACK_IGNORE_FILES "/etc")
 
-IF (RPM AND NOT DPKG)
-  # RedHat-style package
-  SET (CONFDIR sysconfig)
-  SET (CPACK_GENERATOR RPM)
-  SET (CPACK_RPM_PACKAGE_ARCHITECTURE "noarch")
-  SET (CPACK_RPM_PACKAGE_RELEASE "1")
-  SET (CPACK_RPM_PACKAGE_LICENSE "GPLv3")
-  SET (CPACK_RPM_PACKAGE_GROUP "System Environment/Daemons")
-  SET (CPACK_RPM_USER_BINARY_SPECFILE "${CMAKE_CURRENT_SOURCE_DIR}/package/esxx.spec.in")
-ELSEIF (DPKG)
-  # Debian-style package
-  SET (CONFDIR default)
-  SET (CPACK_GENERATOR DEB)
-  SET (CPACK_DEBIAN_PACKAGE_ARCHITECTURE all)
-  SET (CPACK_DEBIAN_PACKAGE_SECTION web)
-ELSEIF (APPLE)
-  SET (CONFDIR defaults)
-#  SET (CPACK_GENERATOR  PackageMaker)
-  SET (CPACK_GENERATOR TGZ)
-ELSEIF (WIN32)
+SET (PACKAGE_LICENSE "GPLv3")
+SET (PACKAGE_DESCRIPTION 
+"ESXX (pronounced 'Essex') is a rather silly acronym and stands for
+'ECMAScript, SQL, XML and XSLT'. It's a very simple and easy-to-use,
+yet powerful, XML Application Server written in Java (6) and utilizing
+FastCGI for web server communication.
+
+It's built around an E4X-enabled JavaScript run-time (Mozilla's
+Rhino), Java 6's JDBC API for SQL queries and the Saxon 9 XSLT 2.0
+processor.")
+
+
+IF (CMAKE_HOST_WIN32)
   # Plain ZIP package and Windows installer
   SET (CPACK_GENERATOR ZIP NSIS)
   SET (CPACK_NSIS_DISPLAY_NAME ${CPACK_PACKAGE_DESCRIPTION_SUMMARY})
@@ -53,14 +44,41 @@ ELSEIF (WIN32)
 	CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Start HTTP Server.lnk\\\" \\\"$INSTDIR\\\\start-http.bat\\\"
 	CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Start FastCGI Server.lnk\\\" \\\"$INSTDIR\\\\start-fastcgi.bat\\\"
 ")
- SET(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
+  SET(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
 	!insertmacro MUI_STARTMENU_GETFOLDER Application $MUI_TEMP
 	Delete \\\"$SMPROGRAMS\\\\$MUI_TEMP\\\\Batch File.lnk\\\"
 	Delete \\\"$SMPROGRAMS\\\\$MUI_TEMP\\\\Project ReadMe.lnk\\\"
 ")
-ELSE (RPM AND NOT DPKG)
+ELSEIF (CMAKE_HOST_APPLE)
+  SET (CONFDIR defaults)
+  SET (CPACK_GENERATOR TGZ)
+ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "SunOS")
+  SET (CONFDIR default)
+  SET (CPACK_GENERATOR TGZ)
+ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  FIND_PROGRAM (RPM rpmbuild)
+  FIND_PROGRAM (DPKG dpkg-deb)
+
+  IF (RPM AND NOT DPKG)
+    # RedHat-style package
+    SET (CONFDIR sysconfig)
+    SET (CPACK_GENERATOR RPM)
+    SET (CPACK_RPM_PACKAGE_ARCHITECTURE "noarch")
+    SET (CPACK_RPM_PACKAGE_RELEASE "1")
+    SET (CPACK_RPM_PACKAGE_LICENSE ${PACKAGE_LICENSE})
+    SET (CPACK_RPM_PACKAGE_GROUP "System Environment/Daemons")
+    SET (CPACK_RPM_USER_BINARY_SPECFILE "${CMAKE_CURRENT_SOURCE_DIR}/package/esxx.spec.in")
+  ELSEIF (DPKG)
+    # Debian-style package
+    SET (CONFDIR default)
+    SET (CPACK_GENERATOR DEB)
+    SET (CPACK_DEBIAN_PACKAGE_ARCHITECTURE all)
+    SET (CPACK_DEBIAN_PACKAGE_SECTION web)
+  ENDIF (RPM AND NOT DPKG)
+ELSE (CMAKE_HOST_WIN32)
+  # Generic package if unknown system
   SET (CPACK_GENERATOR ZIP)
-ENDIF (RPM AND NOT DPKG)
+ENDIF (CMAKE_HOST_WIN32)
 
 
 INCLUDE (Prefix)
@@ -79,24 +97,14 @@ ADD_CUSTOM_TARGET (antclean COMMAND
 		    	   clean)
 
 IF (UNIX AND NOT WIN32)
-  # Create init scripts and shell wrappers
-  IF (APPLE)
-    CONFIGURE_FILE(package/org.esxx.ESXX.plist.in 
-                   ${CMAKE_CURRENT_BINARY_DIR}/package/org.esxx.ESXX.plist @ONLY)
-    CONFIGURE_FILE(package/config.osx.in ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
-  ELSE (APPLE)
-    CONFIGURE_FILE(package/initscript-esxx.in 
-                   ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@ @ONLY)
-    CONFIGURE_FILE(package/initscript-binfmt.in 
-                   ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@-binfmt @ONLY)
-    CONFIGURE_FILE(package/config.in 
-    		   ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
-  ENDIF (APPLE)
+  CONFIGURE_FILE(package/version.in
+		 ${CMAKE_CURRENT_BINARY_DIR}/package/version 
+		 ESCAPE_QUOTES @ONLY)
 
+  # Create and install binaries
   CONFIGURE_FILE(package/javawrapper.in ${CMAKE_CURRENT_BINARY_DIR}/@PROJECT_NAME@ @ONLY)
   CONFIGURE_FILE(package/jswrapper.in ${CMAKE_CURRENT_BINARY_DIR}/@PROJECT_NAME@-js @ONLY)
 
-  # Install binaries
   INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-js
            DESTINATION ${BIN_INSTALL_DIR})
 
@@ -104,15 +112,32 @@ IF (UNIX AND NOT WIN32)
 	  	    ${CMAKE_CURRENT_BINARY_DIR}/dist/esxx.jar 
            DESTINATION ${SBIN_INSTALL_DIR})
 
-  # Install init scripts
-  IF (APPLE)
+  # Create and install init scripts
+  IF (CMAKE_HOST_APPLE)
+    CONFIGURE_FILE(package/org.esxx.ESXX.plist.in 
+                   ${CMAKE_CURRENT_BINARY_DIR}/package/org.esxx.ESXX.plist @ONLY)
+
     INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/org.esxx.ESXX.plist
              DESTINATION ${CMAKE_INSTALL_DIR}/Library/LaunchDaemons)
-  ELSE (APPLE)
+  ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "SunOS")
+  ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    CONFIGURE_FILE(package/initscript-esxx.in 
+                   ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@ @ONLY)
+    CONFIGURE_FILE(package/initscript-binfmt.in 
+                   ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@-binfmt @ONLY)
+
     INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@
 		      ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@-binfmt
              DESTINATION ${SYSCONF_INSTALL_DIR}/init.d)
-  ENDIF (APPLE)
+  ENDIF (CMAKE_HOST_APPLE)
+
+  # Create and install config file
+  IF (CMAKE_HOST_APPLE)
+    CONFIGURE_FILE(package/config.osx.in ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
+  ELSE (CMAKE_HOST_APPLE)
+    CONFIGURE_FILE(package/config.in 
+    		   ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
+  ENDIF (CMAKE_HOST_APPLE)
 
   INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf
 	   DESTINATION ${SYSCONF_INSTALL_DIR}/${CONFDIR}
@@ -127,12 +152,6 @@ IF (UNIX AND NOT WIN32)
 	   DESTINATION ${SHARE_INSTALL_PREFIX}/${PROJECT_NAME}/
 	   PATTERN ".svn" EXCLUDE)
 
-  # Install docs
-  #FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/dist/docs)
-
-  #INSTALL (DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/dist/docs
-  #	 DESTINATION ${SHARE_INSTALL_PREFIX}/doc/${PROJECT_NAME}/)
-
   # Install examples
   INSTALL (DIRECTORY examples
 	   DESTINATION ${SHARE_INSTALL_PREFIX}/doc/${PROJECT_NAME}/
@@ -142,6 +161,7 @@ IF (UNIX AND NOT WIN32)
 	   	       GROUP_EXECUTE GROUP_READ
 		       WORLD_EXECUTE WORLD_READ)
 
+  # Install licences, changelog and readme files
   INSTALL (FILES CHANGES.txt
   	  	 LICENSE.txt
   	  	 LICENSE.APL2
@@ -154,9 +174,9 @@ IF (UNIX AND NOT WIN32)
 		 README
 	   DESTINATION ${SHARE_INSTALL_PREFIX}/doc/${PROJECT_NAME}/)
 ELSEIF (WIN32)
- INSTALL (PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/package/start-http.bat
-                   ${CMAKE_CURRENT_SOURCE_DIR}/package/start-fastcgi.bat
-                   ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx-js.bat
+  INSTALL (PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/package/start-http.bat
+                    ${CMAKE_CURRENT_SOURCE_DIR}/package/start-fastcgi.bat
+                    ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx-js.bat
            DESTINATION ${CMAKE_INSTALL_PREFIX})
   INSTALL (DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/dist/
    	       DESTINATION ${CMAKE_INSTALL_PREFIX})
