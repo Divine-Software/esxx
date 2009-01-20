@@ -120,6 +120,19 @@ IF (UNIX AND NOT WIN32)
     INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/org.esxx.ESXX.plist
              DESTINATION ${CMAKE_INSTALL_DIR}/Library/LaunchDaemons)
   ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "SunOS")
+    CONFIGURE_FILE(package/svc-method.in
+                   ${CMAKE_CURRENT_BINARY_DIR}/package/svc-method @ONLY)
+    CONFIGURE_FILE(package/svc-manifest.xml.in
+                   ${CMAKE_CURRENT_BINARY_DIR}/package/svc-manifest.xml @ONLY)
+
+    INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/svc-method
+             DESTINATION /lib/svc/method
+	     RENAME @PROJECT_NAME@)
+
+    INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/svc-manifest.xml
+             DESTINATION /var/svc/manifest/network
+	     RENAME @PROJECT_NAME@.xml)
+
   ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     CONFIGURE_FILE(package/initscript-esxx.in 
                    ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@ @ONLY)
@@ -136,7 +149,7 @@ IF (UNIX AND NOT WIN32)
     CONFIGURE_FILE(package/config.osx.in ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
   ELSE (CMAKE_HOST_APPLE)
     CONFIGURE_FILE(package/config.in 
-    		   ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
+		   ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
   ENDIF (CMAKE_HOST_APPLE)
 
   INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf
@@ -163,8 +176,8 @@ IF (UNIX AND NOT WIN32)
 
   # Install licences, changelog and readme files
   INSTALL (FILES CHANGES.txt
-  	  	 LICENSE.txt
-  	  	 LICENSE.APL2
+	  	 LICENSE.txt
+	  	 LICENSE.APL2
 	         LICENSE.BSD
 	         LICENSE.GPL-3
 	         LICENSE.HtmlCleaner
@@ -179,5 +192,5 @@ ELSEIF (WIN32)
                     ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx-js.bat
            DESTINATION ${CMAKE_INSTALL_PREFIX})
   INSTALL (DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/dist/
-   	       DESTINATION ${CMAKE_INSTALL_PREFIX})
+	       DESTINATION ${CMAKE_INSTALL_PREFIX})
 ENDIF (UNIX AND NOT WIN32)

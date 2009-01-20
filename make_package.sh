@@ -26,6 +26,8 @@ case $(uname) in
 	pid=$!
 	sleep 2
 
+	test -d /proc/$pid
+
 	$(pkgsend open ${package_name}@${package_major}.${package_minor}.${package_patch}-1)
 	pkgsend add set name=description value="${package_summary}"
 	pkgsend add set name=info.classification \
@@ -39,6 +41,7 @@ case $(uname) in
 	umask 0002
 	make install DESTDIR=root
 	chown -R root:sys root
+	chown -R root:bin root/lib
 	chown -R root:bin root/usr/bin
 	chown -R root:bin root/usr/share/esxx
 	chown -R root:bin root/usr/share/doc/esxx

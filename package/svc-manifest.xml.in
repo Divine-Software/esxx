@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<!DOCTYPE service_bundle SYSTEM "/usr/share/lib/xml/dtd/service_bundle.dtd.1">
+
+<service_bundle type='manifest' name='esxx:esxx'>
+  
+  <service
+     name='network/esxx'
+     type='service'
+     version='1'>
+    
+    <create_default_instance enabled='false' />
+    
+    <!-- Wait for all local filesystems -->
+    <dependency
+       name='fs'
+       grouping='require_all'
+       restart_on='none'
+       type='service'>
+      <service_fmri value='svc:/system/filesystem/local' />
+    </dependency>
+    
+    <!-- If enabled, wait for all autofs filesystems -->
+    <dependency
+       name='autofs'
+       grouping='optional_all'
+       restart_on='error'
+       type='service'>
+      <service_fmri value='svc:/system/filesystem/autofs' />
+    </dependency>
+    
+    <!-- Wait for network interfaces -->
+    <dependency
+       name='network'
+       grouping='require_all'
+       restart_on='error'
+       type='service'>
+      <service_fmri value='svc:/milestone/network' />
+    </dependency>
+    
+    <!-- Start me before the web server -->
+    <dependent
+       name='esxx_http'
+       grouping='optional_all'
+       restart_on='none'>
+      <service_fmri value='svc:/network/http' />
+    </dependent>
+    
+    <!-- Start method -->
+    <exec_method
+       type='method'
+       name='start'
+       exec='/lib/svc/method/esxx start'
+       timeout_seconds='0' >
+      <method_context>
+        <method_credential user='webservd' group='webservd' />
+      </method_context>
+    </exec_method>
+    
+    <!-- Stop method -->
+    <exec_method
+       type='method'
+       name='stop'
+       exec='/lib/svc/method/esxx stop %{restarter/contract}'
+       timeout_seconds='10' />
+    
+    
+    <!-- Default instance -->
+    <instance name='default' enabled='false'>
+
+      <!-- Per-instance properties -->
+      <property_group name='esxx' type='application'>
+        <propval name='protocol'   type='astring' value='fcgi'  />
+        <propval name='port'       type='count'   value='7654'  />
+        <propval name='no-handler' type='boolean' value='false' />
+        <propval name='http-root'  type='astring' value=''      />
+      </property_group>
+    </instance>
+    
+    <stability value='Unstable' />
+    
+    <template>
+      <common_name>
+        <loctext xml:lang='C'>
+          @CPACK_PACKAGE_DESCRIPTION_SUMMARY@
+        </loctext>
+      </common_name>
+      
+      <documentation>
+        <doc_link name='esxx.org'
+                  uri='http://esxx.org/' />
+      </documentation>
+    </template>
+  </service>
+  
+</service_bundle>
