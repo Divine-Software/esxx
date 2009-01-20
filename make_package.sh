@@ -64,6 +64,11 @@ case $(uname) in
 	kill $pid
 	sleep 1
 	;;
+
+    Linux)
+	make package 
+	mv ${package_name}-${package_major}.${package_minor}.${package_patch}-$(uname).* ${SOURCE}
+	;;
 esac
 
 cd ${SOURCE}
