@@ -59,26 +59,27 @@ class Worker {
 						     new Object[] { request });
 
       try {
-	// Execute the SOAP or HTTP handler (if available)
-	String object = getSOAPAction(jsreq, app);
-
-	if (object != null) {
-	  result = app.executeSOAPAction(cx, jsreq, object);
-	}
-	else if (app.hasHandlers()) {
-	  String request_method = request.getProperties().getProperty("REQUEST_METHOD");
-	  String path_info = request.getPathInfo();
-
-	  result = app.executeHTTPMethod(cx, jsreq, request_method, path_info);
-	}
-	else if (app.getMainDocument() != null) {
-	  // No handlers; the document is the result
-
-	  result = app.getMainDocument();
+	if (request instanceof org.esxx.request.ScriptRequest) {
+	  result = app.executeMain(cx, jsreq, request.getCommandLine());
 	}
 	else {
-	  // No handlers, no document -- call main()
-	  result = app.executeMain(cx, jsreq, request.getCommandLine());
+	  // Execute the SOAP or HTTP handler (if available)
+	  String object = getSOAPAction(jsreq, app);
+
+	  if (object != null) {
+	    result = app.executeSOAPAction(cx, jsreq, object);
+	  }
+	  else if (app.hasHandlers()) {
+	    String request_method = request.getProperties().getProperty("REQUEST_METHOD");
+	    String path_info = request.getPathInfo();
+
+	    result = app.executeHTTPMethod(cx, jsreq, request_method, path_info);
+	  }
+	  else {
+	    // No handlers; the document is the result
+
+	    result = app.getMainDocument();
+	  }
 	}
       }
       catch (ESXXException.TimeOut ex) {
