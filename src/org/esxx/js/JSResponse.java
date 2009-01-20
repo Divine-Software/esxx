@@ -141,8 +141,25 @@ public class JSResponse
   }
 
 
+  @Override public String toString() {
+    return jsFunction_toString();
+  }
+
   @Override public String getClassName() {
     return "Response";
+  }
+
+  @Override public Object getDefaultValue(Class<?> typeHint) {
+    return "[object Response: " + jsGet_status() + ", "
+      + jsGet_contentType() + ": " + jsGet_data() + "]";
+  }
+
+  public Object jsFunction_valueOf() {
+    return jsGet_data();
+  }
+
+  public String jsFunction_toString() {
+    return (String) getDefaultValue(String.class);
   }
 
   public int jsGet_status() {

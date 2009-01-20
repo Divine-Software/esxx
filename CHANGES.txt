@@ -25,6 +25,9 @@
 
 	* Added initial IPS (OpenSolaris) package.
 
+	* Added ESXX.Response methods: toString(), valueOf() and
+	[from Java] getDefaultValue().
+
 0.9.20081101
 	* Bug fixes as usual.
 
