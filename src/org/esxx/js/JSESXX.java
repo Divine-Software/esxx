@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.mozilla.javascript.*;
@@ -501,7 +500,6 @@ public class JSESXX
 
     private Application app;
     private JSLogger logger;
-    private JSLRUCache cache;
     private JSURI wd;
     private JSURI location;
 }

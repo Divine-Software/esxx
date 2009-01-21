@@ -23,7 +23,6 @@ import org.esxx.util.StringUtil;
 
 import java.awt.image.RenderedImage;
 import java.io.*;
-import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.HashMap;
@@ -31,7 +30,6 @@ import java.util.Iterator;
 import java.util.Map;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
-import javax.xml.transform.dom.DOMSource;
 import org.json.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Node;

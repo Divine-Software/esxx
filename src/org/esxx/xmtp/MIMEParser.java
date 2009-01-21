@@ -613,7 +613,7 @@ public class MIMEParser {
     private void decodeMIMEParams(ParameterList params) {
       // Strictly speaking, params may not be encoded, but the real
       // world is not strict ...
-      for (Enumeration e = params.getNames(); e.hasMoreElements(); ) {
+      for (Enumeration<?> e = params.getNames(); e.hasMoreElements(); ) {
 	String name = (String) e.nextElement();
 	
 	params.set(name, decodeMIMEValue(params.get(name)));

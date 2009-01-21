@@ -25,6 +25,8 @@ import org.mozilla.javascript.*;
 public class JSLRUCache
   extends ScriptableObject {
 
+  private static final long serialVersionUID = -6799670003560008699L;
+	
   public JSLRUCache() {
     super();
   }

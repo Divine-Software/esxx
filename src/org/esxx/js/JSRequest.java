@@ -19,10 +19,8 @@
 package org.esxx.js;
 
 import org.esxx.*;
-import org.esxx.util.IO;
 import org.esxx.util.StringUtil;
 
-import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -212,7 +210,6 @@ public class JSRequest
     private String soapAction;
     private String contentType;
     private HashMap<String,String> contentTypeParams;
-    private long contentLength;
     private MimeHeaders mimeHeaders;
 
     private Scriptable acceptValueOf;
@@ -341,7 +338,7 @@ public class JSRequest
 	  contentType       = ESXX.parseMIMEType(value, contentTypeParams);
 	}
 	else if (name.equals("Content-Length")) {
-	  contentLength = Long.parseLong(value);
+	  Long.parseLong(value);
 	}
 	else {
 	  throw new ESXXException(501, "Unsupported Content header: " + name);

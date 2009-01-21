@@ -19,9 +19,7 @@
 package org.esxx;
 
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -29,15 +27,12 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.EventListener;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.event.EventListenerList;
-import javax.xml.transform.*;
-import javax.xml.transform.stream.*;
 import org.esxx.cache.*;
 import org.esxx.saxon.*;
 import org.esxx.util.SyslogHandler;

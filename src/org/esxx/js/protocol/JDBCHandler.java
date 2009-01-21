@@ -18,7 +18,6 @@
 
 package org.esxx.js.protocol;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
 import java.util.Properties;

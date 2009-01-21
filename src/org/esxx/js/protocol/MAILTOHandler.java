@@ -20,7 +20,6 @@ package org.esxx.js.protocol;
 
 import java.io.ByteArrayInputStream;
 import java.io.StringReader;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;

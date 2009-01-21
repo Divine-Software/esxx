@@ -20,7 +20,6 @@ package org.esxx.js.protocol;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.regex.Pattern;

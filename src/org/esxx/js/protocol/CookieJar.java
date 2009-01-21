@@ -18,7 +18,6 @@
 
 package org.esxx.js.protocol;
 
-import java.net.URI;
 import java.util.*;
 import org.apache.http.client.*;
 import org.apache.http.cookie.*;
