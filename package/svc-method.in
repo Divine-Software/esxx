@@ -54,7 +54,7 @@ case "$1" in
 	;;
 
     stop)
-	smf_kill_contract $2 TERM 1
+	smf_kill_contract $2 TERM 10
 	[ $? -ne 0 ] && exit 1
 	;;
 
