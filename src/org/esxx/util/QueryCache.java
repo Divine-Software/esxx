@@ -205,7 +205,7 @@ public class QueryCache {
 	    }
 	    else {
 	      try {
-		res.wait();
+		connections.wait();
 	      }
 	      catch (InterruptedException ex) {
 		ex.printStackTrace();
