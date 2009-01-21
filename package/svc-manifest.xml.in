@@ -8,8 +8,6 @@
      type='service'
      version='1'>
     
-    <create_default_instance enabled='false' />
-    
     <!-- Wait for all local filesystems -->
     <dependency
        name='fs'

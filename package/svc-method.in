@@ -37,8 +37,10 @@ else
 	arg_nohandler="--nohandler"
     fi
 
-    if svcprop -q -p esxx/http-root ${SMF_FMRI}; then
-	arg_httproot="--http-root $(svcprop -p esxx/http-root ${SMF_FMRI})"
+    httproot="$(svcprop -p esxx/http-root ${SMF_FMRI})"
+
+    if [ -n "${httproot}" ]; then
+	arg_httproot="--http-root ${httproot}"
     fi
 
     smf_clear_env
