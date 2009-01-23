@@ -28,6 +28,9 @@
 	* Added ESXX.Response methods: toString(), valueOf() and
 	[from Java] getDefaultValue().
 
+	* Added a dns: URI protocol handler, with LDAP URI-inspired
+	query part.
+
 0.9.20081101
 	* Bug fixes as usual.
 

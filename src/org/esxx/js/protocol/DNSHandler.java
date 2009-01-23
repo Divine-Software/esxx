@@ -23,27 +23,30 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Properties;
 import javax.naming.NamingEnumeration;
+import javax.naming.Binding;
 import javax.naming.directory.*;
 import org.esxx.*;
 import org.esxx.js.*;
+import org.esxx.util.StringUtil;
+import org.esxx.xmtp.Base64;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-public class LDAPHandler
+public class DNSHandler
   extends ProtocolHandler {
-  public LDAPHandler(JSURI jsuri)
+
+  public DNSHandler(JSURI jsuri)
     throws URISyntaxException {
     super(jsuri);
   }
 
-  @Override
-  public Object load(Context cx, Scriptable thisObj,
-		     String type, HashMap<String,String> params)
+  @Override public Object load(Context cx, Scriptable thisObj,
+			       String type, HashMap<String,String> params)
     throws Exception {
     ESXX esxx = ESXX.getInstance();
 
-    // Default ldap: load() media type is XML
+    // Default dns: load() media type is XML
     if (type == null) {
       type = "text/xml";
     }
@@ -53,57 +56,107 @@ public class LDAPHandler
 				       "' can only load 'text/xml'.");
     }
 
-    Properties p = jsuri.getParams(cx, jsuri.getURI());
-    Scriptable a = jsuri.getAuth(cx, jsuri.getURI(), null);
+    try {
+      String query = jsuri.getURI().getQuery();
+      String[]  as = query == null ? new String[] { null, null } : query.split("\\?", 2);
+      String[] att = as[0] == null || as[0].isEmpty() ? null : as[0].split(",");
+      String scope = as.length < 2 || as[1] == null ? "" : as[1];
+      URI      uri = new URI(jsuri.getURI().getScheme(),
+			     jsuri.getURI().getAuthority(),
+			     jsuri.getURI().getPath(), 
+			     null /* query */,
+			     null /* fragment */);
 
-    if (a != null) {
-      p.setProperty(javax.naming.Context.SECURITY_PRINCIPAL, 
-		    Context.toString(a.get("username", a)));
-      p.setProperty(javax.naming.Context.SECURITY_CREDENTIALS, 
-		    Context.toString(a.get("password", a)));
+      Properties    p = jsuri.getParams(cx, jsuri.getURI());
+      //      p.setProperty(javax.naming.Context.PROVIDER_URL, uri.toString());
+      DirContext  ctx = new InitialDirContext(p);
+      Document result = esxx.createDocument("result");
 
-      if (a.has("mechanism", a)) {
-	p.setProperty(javax.naming.Context.SECURITY_AUTHENTICATION, 
-		      Context.toString(a.get("mechanism", a)));
+      if ("".equals(scope) || "base".equals(scope)) {
+	addEntry(result, ctx, uri, att);
+      }
+      else if ("one".equals(scope)) {
+	addEntry(result, ctx, uri, att);
+	addEntries(result, ctx, uri, att, false);
+      }
+      else if ("sub".equals(scope)) {
+	addEntry(result, ctx, uri, att);
+	addEntries(result, ctx, uri, att, true);
       }
       else {
-	p.setProperty(javax.naming.Context.SECURITY_AUTHENTICATION, "simple");
+	throw Context.reportRuntimeError("The DNS URI scope must be empty, 'base', 'one' or 'sub'");
       }
+
+      return ESXX.domToE4X(result, cx, thisObj);
     }
+    catch (javax.naming.CommunicationException ex) {
+      throw new ESXXException(504 /* Gateway Timeout */, ex.getMessage(), ex);
+    }
+    catch (javax.naming.NamingException ex) {
+      throw new ESXXException(502 /* Bad Gateway */, ex.getMessage(), ex);
+    }
+    catch (URISyntaxException ex) {
+      throw Context.reportRuntimeError("The URI " + jsuri.getURI().toString() 
+				       + " is not a valid DNS URI.");
+    }
+  }
 
-    DirContext ctx = new InitialDirContext(p);
-    NamingEnumeration<?> answer = ctx.search(jsuri.getURI().toString(), "", null);
+  private void addEntries(Document result, DirContext ctx, 
+			  URI uri, String[] att, boolean recursive)
+    throws URISyntaxException, javax.naming.NamingException {
+    try {
+      for (NamingEnumeration<Binding> ne = ctx.listBindings(uri.toString());
+	   ne.hasMore(); ) {
+	Binding b = (Binding) ne.next();
 
-    Document result = esxx.createDocument("result");
-    Element  root   = result.getDocumentElement();
+	URI sub_uri = new URI(uri.getScheme(), 
+			      uri.getAuthority(),
+			      "/" + b.getNameInNamespace(),
+			      null, null);
 
-    while (answer.hasMore()) {
-      SearchResult sr = (SearchResult) answer.next();
+	addEntry(result, ctx, sub_uri, att);
 
-//      String name = sr.getName();
-      String path = sr.getNameInNamespace();
-      URI    euri = new URI(jsuri.getURI().getScheme(), jsuri.getURI().getAuthority(),
-			    "/" + path, "?base", jsuri.getURI().getFragment());
-
-      Element entry = result.createElementNS(null, "entry");
-
-//       entry.setAttributeNS(null, "name", name);
-//       entry.setAttributeNS(null, "path", path);
-      entry.setAttributeNS(null, "uri", euri.toString());
-
-      for (NamingEnumeration<?> ae = sr.getAttributes().getAll(); ae.hasMore();) {
-	Attribute attr = (Attribute)ae.next();
-
-	for (NamingEnumeration<?> e = attr.getAll(); e.hasMore();) {
-	  Object v = e.next();
-
-	  addChild(entry, attr.getID(), v.toString());
+	if (recursive) {
+	  addEntries(result, ctx, sub_uri, att, true);
 	}
       }
+    }
+    catch (NullPointerException ex) {
+      // ne.hasMore() throws??
+    }
+  }
 
-      root.appendChild(entry);
+  private void addEntry(Document result, DirContext ctx, 
+			URI uri, String[] att) 
+    throws URISyntaxException, javax.naming.NamingException {
+
+    URI euri = new URI(uri.getScheme(), 
+		       uri.getAuthority(),
+		       uri.getPath(),
+ 		       "?base",
+ 		       uri.getFragment());
+
+    Element entry = result.createElementNS(null, "entry");
+
+    //       entry.setAttributeNS(null, "name", name);
+    //       entry.setAttributeNS(null, "path", path);
+    entry.setAttributeNS(null, "uri", euri.toString());
+
+    for (NamingEnumeration<?> ae = ctx.getAttributes(uri.toString(), att).getAll(); 
+	 ae.hasMore();) {
+      Attribute attr = (Attribute) ae.next();
+
+      for (NamingEnumeration<?> e = attr.getAll(); e.hasMore();) {
+	Object v = e.next();
+
+	if (v instanceof byte[]) {
+	  v = Base64.encodeBytes((byte[]) v, 0);
+	}
+
+	addChild(entry, StringUtil.makeXMLName(attr.getID().toLowerCase(), ""), v.toString());
+      }
     }
 
-    return ESXX.domToE4X(result, cx, thisObj);
+    result.getDocumentElement().appendChild(entry);
   }
 }
