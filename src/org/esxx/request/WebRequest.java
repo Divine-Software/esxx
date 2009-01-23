@@ -130,7 +130,7 @@ public class WebRequest
       String pt = headers.getProperty("PATH_TRANSLATED");
       
       if (pt == null) {
-	throw new ESXXException("PATH_TRANSLATED not set; try --no-handler mode instead");
+	throw new IOException("PATH_TRANSLATED not set; try --no-handler mode instead");
       }
 
       file = new File(headers.getProperty("PATH_TRANSLATED"));
