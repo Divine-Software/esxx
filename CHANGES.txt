@@ -23,7 +23,8 @@
 	object if the HTTP status in load(), save(), append() or
 	remove() is not 2xx.
 
-	* Added initial IPS (OpenSolaris) package.
+	* Added IPS (OpenSolaris) package support, including SVC
+	management script and manifest.
 
 	* Added ESXX.Response methods: toString(), valueOf() and
 	[from Java] getDefaultValue().
