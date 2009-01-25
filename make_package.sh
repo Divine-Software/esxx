@@ -21,12 +21,15 @@ ${SOURCE}/run_cmake.sh
 # Build package
 case $(uname) in
     SunOS)
+	export PKG_REPO=http://localhost:11111
+
 	# Start a private package server
-	/usr/lib/pkg.depotd -d depot -p 10000 &
+	/usr/lib/pkg.depotd -d depot -p 11111 &
 	pid=$!
 	sleep 2
 
 	test -d /proc/$pid
+
 
 	$(pkgsend open ${package_name}@${package_major}.${package_minor}.${package_patch}-1)
 	pkgsend add set name=description value="${package_summary}"
@@ -59,8 +62,8 @@ case $(uname) in
 
 	pkgsend close
 
-	fmri=$(pkgrecv -s http://localhost:10000 -n | grep esxx)
-	pkgrecv  -s http://localhost:10000 -d ips ${fmri}
+	fmri=$(pkgrecv -s ${PKG_REPO} -n | grep esxx)
+	pkgrecv  -s ${PKG_REPO} -d ips ${fmri}
 	(cd ips && tar cfz \
 	    ${SOURCE}/${package_name}-${package_major}.${package_minor}.${package_patch}-$(uname).ips.tar.gz *)
 
