@@ -79,6 +79,7 @@ case $(uname) in
 	    cd ${SOURCE}
 	    dh_clean
 	    rm debian/control debian/changelog
+	    rm -r builddir
 	else
 	    make package 
 	    mv ${package_name}-${package_major}.${package_minor}.${package_patch}-$(uname).* ${SOURCE}
