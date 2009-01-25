@@ -4,7 +4,7 @@
 #   @PROJECT_NAME@ (@CPACK_PACKAGE_DESCRIPTION_SUMMARY@).
 #
 # chkconfig: 2345 66 34
-# description: @CPACK_PACKAGE_DESCRIPTION_SUMMARY@
+# description: @PACKAGE_DESCRIPTION@
 #
 # processname: @PROJECT_NAME@
 # config:      @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@
@@ -19,7 +19,7 @@
 # Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
 # Short-Description: start and stop @PROJECT_NAME@
-# Description: @CPACK_PACKAGE_DESCRIPTION_SUMMARY@
+# Description: @PACKAGE_DESCRIPTION@
 ### END INIT INFO
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
