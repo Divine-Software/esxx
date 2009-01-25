@@ -22,14 +22,12 @@ SET (CPACK_IGNORE_FILES "/etc")
 
 SET (PACKAGE_LICENSE "GPLv3")
 SET (PACKAGE_DESCRIPTION 
-"ESXX (pronounced 'Essex') is a rather silly acronym and stands for
-'ECMAScript, SQL, XML and XSLT'. It's a very simple and easy-to-use,
-yet powerful, XML Application Server written in Java (6) and utilizing
-FastCGI for web server communication.
-
-It's built around an E4X-enabled JavaScript run-time (Mozilla's
-Rhino), Java 6's JDBC API for SQL queries and the Saxon 9 XSLT 2.0
-processor.")
+" ESXX (pronounced 'Essex') is a rather silly acronym and stands for
+ 'ECMAScript, SQL, XML and XSLT'. It's a very simple and easy-to-use,
+ yet powerful, XML Application Server written in Java (6) and utilizing
+ FastCGI for web server communication. It's built around an E4X-enabled
+ JavaScript run-time (Mozilla's Rhino), Java 6's JDBC API for SQL
+ queries and the Saxon 9 XSLT 2.0 processor.")
 
 
 IF (CMAKE_HOST_WIN32)
@@ -71,9 +69,13 @@ ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   ELSEIF (DPKG)
     # Debian-style package
     SET (CONFDIR default)
-    SET (CPACK_GENERATOR DEB)
-    SET (CPACK_DEBIAN_PACKAGE_ARCHITECTURE all)
-    SET (CPACK_DEBIAN_PACKAGE_SECTION web)
+#    SET (CPACK_GENERATOR DEB)
+#    SET (CPACK_DEBIAN_PACKAGE_ARCHITECTURE all)
+#    SET (CPACK_DEBIAN_PACKAGE_SECTION web)
+    CONFIGURE_FILE(debian/control.in 
+                   ${CMAKE_CURRENT_SOURCE_DIR}/debian/control @ONLY)
+    CONFIGURE_FILE(debian/changelog.in 
+                   ${CMAKE_CURRENT_SOURCE_DIR}/debian/changelog @ONLY)
   ENDIF (RPM AND NOT DPKG)
 ELSE (CMAKE_HOST_WIN32)
   # Generic package if unknown system

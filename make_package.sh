@@ -69,8 +69,15 @@ case $(uname) in
 	;;
 
     Linux)
-	make package 
-	mv ${package_name}-${package_major}.${package_minor}.${package_patch}-$(uname).* ${SOURCE}
+	if [ -n "$(which dpkg)" ]; then
+	    # Assume we're on Debian.  CMake has already been run,
+	    # creating the config files in ${SOURCE}/debian.
+	    cd ${SOURCE}
+	    dpkg-buildpackage
+	else
+	    make package 
+	    mv ${package_name}-${package_major}.${package_minor}.${package_patch}-$(uname).* ${SOURCE}
+	fi
 	;;
 esac
 
