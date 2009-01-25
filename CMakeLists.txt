@@ -21,14 +21,7 @@ SET (CPACK_PACKAGE_INSTALL_DIRECTORY "ESXX")
 SET (CPACK_IGNORE_FILES "/etc")
 
 SET (PACKAGE_LICENSE "GPLv3")
-SET (PACKAGE_DESCRIPTION 
-" ESXX (pronounced 'Essex') is a rather silly acronym and stands for
- 'ECMAScript, SQL, XML and XSLT'. It's a very simple and easy-to-use,
- yet powerful, XML Application Server written in Java (6) and utilizing
- FastCGI for web server communication. It's built around an E4X-enabled
- JavaScript run-time (Mozilla's Rhino), Java 6's JDBC API for SQL
- queries and the Saxon 9 XSLT 2.0 processor.")
-
+SET (PACKAGE_DESCRIPTION "An easy-to-use, yet powerful, XML Application Server written in Java.")
 
 IF (CMAKE_HOST_WIN32)
   # Plain ZIP package and Windows installer
