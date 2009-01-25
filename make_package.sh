@@ -73,7 +73,11 @@ case $(uname) in
 	    # Assume we're on Debian.  CMake has already been run,
 	    # creating the config files in ${SOURCE}/debian.
 	    cd ${SOURCE}
+	    set +e
 	    dpkg-buildpackage
+
+	    cd ${SOURCE}
+	    dh_clean
 	    rm debian/control debian/changelog
 	else
 	    make package 
