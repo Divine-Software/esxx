@@ -74,6 +74,7 @@ case $(uname) in
 	    # creating the config files in ${SOURCE}/debian.
 	    cd ${SOURCE}
 	    dpkg-buildpackage
+	    rm debian/control debian/changelog
 	else
 	    make package 
 	    mv ${package_name}-${package_major}.${package_minor}.${package_patch}-$(uname).* ${SOURCE}
