@@ -1,3 +1,5 @@
+Copyright 2007-2009 Martin Blom.
+
 ESXX is available under the GNU GPL license, version 3 or later.
 
 However, as a special exception, this program is allowed to use
