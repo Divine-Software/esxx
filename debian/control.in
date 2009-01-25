@@ -10,4 +10,4 @@ Package: esxx
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: @CPACK_PACKAGE_DESCRIPTION_SUMMARY@
-@PACKAGE_DESCRIPTION@
+ @PACKAGE_DESCRIPTION@
