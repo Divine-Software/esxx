@@ -42,7 +42,11 @@ IF (CMAKE_HOST_WIN32)
 ")
 ELSEIF (CMAKE_HOST_APPLE)
   SET (CONFDIR defaults)
-  SET (CPACK_GENERATOR TGZ)
+  SET (CPACK_GENERATOR TGZ PackageMaker)
+  CONFIGURE_FILE(package/packagemaker-descr.plist.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/package/packagemaker-descr.plist @ONLY)
+  CONFIGURE_FILE(package/packagemaker-info.plist.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/package/packagemaker-info.plist @ONLY)
 ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "SunOS")
   SET (CONFDIR default)
   SET (CPACK_GENERATOR TGZ)

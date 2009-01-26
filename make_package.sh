@@ -4,11 +4,11 @@ set -e
 
 if [ $UID -ne 0 ]; then
     echo "$0 must be executed as root"
-    exit 10
+#    exit 10
 fi
 
 SOURCE=$(cd $(dirname $0) && pwd)
-BUILD=$(mktemp -d -t esxx-build.XXXXXXXX)
+BUILD=$(mktemp -d -t esxx-build.XXXXXX)
 
 cd ${BUILD}
 
@@ -20,6 +20,28 @@ ${SOURCE}/run_cmake.sh
 
 # Build package
 case $(uname) in
+    Darwin)
+	export JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Home
+    	packagemaker=/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker
+
+	# OSX uses a symlink for /etc -- we must too
+	mkdir -p root/private/etc
+	ln -s private/etc root/etc
+	make install DESTDIR=root
+	rm root/etc
+
+	mkdir rsrc
+	cp ${SOURCE}/LICENSE.txt rsrc/License.txt
+	cp ${SOURCE}/README rsrc/ReadMe.txt
+
+	$packagemaker -build \
+	    -p ${SOURCE}/${package_name}-${package_major}.${package_minor}.${package_patch}.pkg \
+	    -f root \
+	    -r rsrc \
+	    -i package/packagemaker-info.plist \
+	    -d package/packagemaker-descr.plist \
+	    -ds
+	;;
     SunOS)
 	export PKG_REPO=http://localhost:11111
 
