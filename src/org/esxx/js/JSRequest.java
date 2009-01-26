@@ -240,8 +240,16 @@ public class JSRequest
     }
 
 
-    private void handleCookieHeader(String name, String value) {
-      // TODO
+    private void handleCookieHeader(String hdr, String value) {
+      if (hdr.equals("Cookie")) {
+	for (String cookie : value.split(";")) {
+	  String[] parts = cookie.split("=", 2);
+	  String cn = parts[0];
+	  String cv = parts.length < 2 || parts[1] == null ? "" : parts[1];
+
+	  ScriptableObject.putProperty(cookies, cn, cv);
+	}
+      }
     }
 
 
