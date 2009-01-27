@@ -34,13 +34,26 @@ case $(uname) in
 	cp ${SOURCE}/LICENSE.txt rsrc/License.txt
 	cp ${SOURCE}/README rsrc/ReadMe.txt
 
+	mkdir pkg
+	
 	$packagemaker -build \
-	    -p ${SOURCE}/${package_name}-${package_major}.${package_minor}.${package_patch}.pkg \
+	    -p pkg/${package_name}-${package_major}.${package_minor}.${package_patch}.pkg \
 	    -f root \
 	    -r rsrc \
 	    -i package/packagemaker-info.plist \
 	    -d package/packagemaker-descr.plist \
 	    -ds
+
+	rm -f ${SOURCE}/${package_name}-${package_major}.${package_minor}.${package_patch}.dmg
+
+	hdiutil create -size 32m image.dmg -srcfolder pkg -format UDRW \
+	    -volname "${package_name}-${package_major}.${package_minor}.${package_patch}"
+
+	hdiutil convert image.dmg -format UDZO -imagekey zlib-level=9 \
+	    -o ${SOURCE}/${package_name}-${package_major}.${package_minor}.${package_patch}.dmg
+
+	hdiutil internet-enable -yes \
+	    ${SOURCE}/${package_name}-${package_major}.${package_minor}.${package_patch}.dmg
 	;;
     SunOS)
 	export PKG_REPO=http://localhost:11111
