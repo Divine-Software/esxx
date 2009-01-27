@@ -4,7 +4,7 @@ set -e
 
 if [ $UID -ne 0 ]; then
     echo "$0 must be executed as root"
-#    exit 10
+    exit 10
 fi
 
 SOURCE=$(cd $(dirname $0) && pwd)
