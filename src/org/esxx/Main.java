@@ -117,7 +117,7 @@ public class Main {
 
       ESXX esxx = ESXX.initInstance(System.getProperties());
 
-      esxx.setNoHandlerMode(cmd.getOptionValue('n'));
+      esxx.setNoHandlerMode(cmd.getOptionValue('n', "lighttpd.*"));
 
       // Install our ResponseCache implementation
 //       java.net.ResponseCache.setDefault(new org.esxx.cache.DBResponseCache("/tmp/ESXX.WebCache", 

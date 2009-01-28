@@ -35,7 +35,8 @@
 	* The --no-handler option now takes a regex argument which
 	is matched against SERVER_SOFTWARE. This makes it possible
 	to use both Apache and Lighttpd with the same ESXX server
-	by specifying "--no-handler=lighttpd.*".
+	by specifying "--no-handler=lighttpd.*" (which happens to
+	be the default, so you don't actually have to specify it).
 	
 
 0.9.20081101

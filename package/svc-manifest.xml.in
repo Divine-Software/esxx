@@ -67,10 +67,10 @@
 
       <!-- Per-instance properties -->
       <property_group name='esxx' type='application'>
-        <propval name='protocol'   type='astring' value='fcgi'  />
-        <propval name='port'       type='count'   value='7654'  />
-        <propval name='no-handler' type='astring' value='lighttpd.*' />
-        <propval name='http-root'  type='astring' value=''      />
+        <propval name='protocol'   type='astring' value='fcgi' />
+        <propval name='port'       type='count'   value='7654' />
+        <propval name='no-handler' type='astring' value=''     />
+        <propval name='http-root'  type='astring' value=''     />
       </property_group>
     </instance>
     
