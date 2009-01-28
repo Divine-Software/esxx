@@ -126,7 +126,7 @@ public class WebRequest
     ESXX esxx = ESXX.getInstance();
     File file;
 
-    if (esxx.isHandlerMode()) {
+    if (esxx.isHandlerMode(headers.getProperty("SERVER_SOFTWARE"))) {
       String pt = headers.getProperty("PATH_TRANSLATED");
       
       if (pt == null) {

@@ -46,7 +46,7 @@ public abstract class Request {
       String path_translated;
       String request_uri;
 
-      if (ESXX.getInstance().isHandlerMode()) {
+      if (ESXX.getInstance().isHandlerMode(properties.getProperty("SERVER_SOFTWARE"))) {
 	path_translated = properties.getProperty("PATH_TRANSLATED", scriptFilename.getPath());
       }
       else {

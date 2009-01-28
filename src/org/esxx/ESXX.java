@@ -32,6 +32,7 @@ import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import javax.swing.event.EventListenerList;
 import org.esxx.cache.*;
 import org.esxx.saxon.*;
@@ -217,12 +218,12 @@ public class ESXX {
       return settings;
     }
 
-    public void setHandlerMode(boolean handler_mode) {
-      handlerMode = handler_mode;
+    public void setNoHandlerMode(String match) {
+      noHandlerMode = Pattern.compile(match == null ? ".*" : match);
     }
 
-    public boolean isHandlerMode() {
-      return handlerMode;
+    public boolean isHandlerMode(String server_software) {
+      return ! noHandlerMode.matcher(server_software).matches();
     }
 
     /** Returns a global, non-application tied Logger.
@@ -1045,7 +1046,7 @@ public class ESXX {
       Integer handleError(ESXX esxx, Context cx, Throwable error);
     }
 
-    private boolean handlerMode;
+    private Pattern noHandlerMode;
 
     private int defaultTimeout;
     private URI[] includePath;
