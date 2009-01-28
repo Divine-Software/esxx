@@ -25,7 +25,7 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 ESXX_INSTANCE=${ESXX_INSTANCE:-""}
-ESXX_OPTIONS=${ESXX_OPTIONS:-"--bind 7654"}
+ESXX_OPTIONS=${ESXX_OPTIONS:-"--bind 7654 --no-handler 'lighttpd.*'"}
 
 prog=@PROJECT_NAME@
 absprog=@SBIN_INSTALL_DIR@/$prog

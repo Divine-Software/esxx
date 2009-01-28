@@ -33,8 +33,10 @@ else
 	    exit $SMF_EXIT_ERR_CONFIG
     esac
 
-    if [ "$(svcprop -p esxx/no-handler ${SMF_FMRI})" = "true" ]; then
-	arg_nohandler="--nohandler"
+    no_handler="$svcprop -p esxx/no-handler ${SMF_FMRI})";
+
+    if [ -n "${no_handler}" ]; then
+	arg_nohandler="--no-handler '${no_handler}'"
     fi
 
     httproot="$(svcprop -p esxx/http-root ${SMF_FMRI})"
