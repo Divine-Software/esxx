@@ -64,16 +64,16 @@ class Worker {
 	}
 	else {
 	  // Execute the SOAP or HTTP handler (if available)
-	  String object = getSOAPAction(jsreq, app);
+	  String request_method = request.getProperties().getProperty("REQUEST_METHOD");
+	  String soap_action    = jsreq.jsGet_soapAction();
 
-	  if (object != null) {
-	    result = app.executeSOAPAction(cx, jsreq, object);
+	  if ("POST".equals(request_method) &&
+	      soap_action != null && 
+	      app.hasSOAPHandlers()) {
+	    result = app.executeSOAPAction(cx, jsreq, soap_action, request.getPathInfo());
 	  }
-	  else if (app.hasHandlers()) {
-	    String request_method = request.getProperties().getProperty("REQUEST_METHOD");
-	    String path_info = request.getPathInfo();
-
-	    result = app.executeHTTPMethod(cx, jsreq, request_method, path_info);
+	  else if (app.hasHTTPHandlers()) {
+	    result = app.executeHTTPMethod(cx, jsreq, request_method, request.getPathInfo());
 	  }
 	  else {
 	    // No handlers; the document is the result
@@ -148,23 +148,6 @@ class Worker {
     finally {
       esxx.releaseApplication(app, start_time);
     }
-  }
-
-  private String getSOAPAction(JSRequest req, Application app) {
-    String action = null;
-
-    String soap_action = req.jsGet_soapAction();
-
-    if (soap_action != null) {
-      action = app.getSOAPAction(soap_action);
-
-      if (action == null) {
-	// Try default action object
-	action = app.getSOAPAction("");
-      }
-    }
-
-    return action;
   }
 
   private void handleTransformation(Request request, Response response,

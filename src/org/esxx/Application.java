@@ -173,9 +173,20 @@ public class Application
     }
   }
 
-  public Object executeSOAPAction(Context cx, JSRequest req, String object)
+  public Object executeSOAPAction(Context cx, JSRequest req, String soap_action, String path_info)
     throws javax.xml.soap.SOAPException {
     Object result;
+    RequestMatcher.Match match = soapMatcher.matchRequest(soap_action, path_info, 
+							  cx, applicationScope);
+
+    if (match == null) {
+      throw new ESXXException(404, "'" + soap_action + "' SOAP action object not defined for URI "
+			      + "'" + path_info + "'");
+    }
+
+    req.setArgs(match.params);
+
+    String object = match.handler;
 
     javax.xml.soap.SOAPMessage message = (javax.xml.soap.SOAPMessage) req.jsGet_message();
 
@@ -393,12 +404,12 @@ public class Application
     return stylesheets.get(media_type);
   }
 
-  public boolean hasHandlers() {
-    return gotESXX;
+  public boolean hasHTTPHandlers() {
+    return gotHTTPHandlers;
   }
 
-  public String getSOAPAction(String action) {
-    return soapActions.get(action);
+  public boolean hasSOAPHandlers() {
+    return gotSOAPHandlers;
   }
 
   public String getErrorHandlerFunction() {
@@ -506,13 +517,14 @@ public class Application
 	  Element e = (Element) n;
 	  String name = e.getLocalName();
 
-	  // esxx/handlers/* matched.
-	  gotESXX = true;
-
 	  if (name.equals("http")) {
+	    // esxx/handlers/http matched.
+	    gotHTTPHandlers = true;
 	    handleHTTPHandler(e);
 	  }
 	  else if (name.equals("soap")) {
+	    // esxx/handlers/soap matched.
+	    gotSOAPHandlers = true;
 	    handleSOAPHandler(e);
 	  }
 	  else if (name.equals("timer")) {
@@ -581,7 +593,8 @@ public class Application
     throws IllegalAccessException, InstantiationException,
 	   java.lang.reflect.InvocationTargetException {
 
-    // Compile uri-matching regex pattern
+    // Compile uri-matching regex patterns
+    soapMatcher.compile();
     requestMatcher.compile();
 
     for (Code c : codeList.values()) {
@@ -788,14 +801,13 @@ public class Application
   }
 
   private void handleSOAPHandler(Element e) {
+    String action = e.getAttributeNS(null, "action").trim();
+    String uri    = e.getAttributeNS(null, "uri").trim();
     String object = e.getAttributeNS(null, "object").trim();
 
-    if (object.equals("")) {
-      throw new ESXXException("<soap> attribute 'object' must " +
-			      "must be specified");
-    }
+    // (All arguments are optional)
 
-    soapActions.put(e.getAttributeNS(null, "action"), object);
+    soapMatcher.addRequestPattern(action, uri, object);
   }
 
   private void handleTimerHandler(Element e) {
@@ -962,13 +974,14 @@ public class Application
   private Scriptable includePath;
   private boolean hasExecuted = false;
 
-  private boolean gotESXX = false;
+  private boolean gotHTTPHandlers = false;
+  private boolean gotSOAPHandlers = false;
 
   private Document xml;
   private LinkedHashMap<String, Code> codeList = new LinkedHashMap<String, Code>();
 
+  private RequestMatcher soapMatcher = new RequestMatcher();
   private RequestMatcher requestMatcher = new RequestMatcher();
-  private Map<String,String> soapActions  = new HashMap<String,String>();
   private Map<String,URI>    stylesheets  = new HashMap<String,URI>();
   private String errorHandler;
   private String exitHandler;

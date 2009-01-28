@@ -37,7 +37,9 @@
 	to use both Apache and Lighttpd with the same ESXX server
 	by specifying "--no-handler=lighttpd.*" (which happens to
 	be the default, so you don't actually have to specify it).
-	
+
+	* SOAP handlers can now match on SOAPAction and URI just like
+	HTTP handlers.
 
 0.9.20081101
 	* Bug fixes as usual.
