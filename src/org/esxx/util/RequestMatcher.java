@@ -37,7 +37,7 @@ public class RequestMatcher {
 
     public void addRequestPattern(String method, String uri, String handler) {
       if (method.isEmpty()) {
-	method = "[^ ]+";
+	method = "[^" + SEPARATOR + "]+";
       }
 
       if (uri.isEmpty()) {
