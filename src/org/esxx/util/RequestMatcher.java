@@ -67,7 +67,7 @@ public class RequestMatcher {
 
     public Match matchRequest(String method, String uri,
 			      Context cx, Scriptable scope) {
-      Matcher m = compiledPattern.matcher(method + " " + uri);
+      Matcher m = compiledPattern.matcher(method + SEPARATOR + uri);
 
       if (m.matches()) {
 	int group = 1;
@@ -161,7 +161,7 @@ public class RequestMatcher {
 	}
 
 	private void compilePattern(String method, String uri) {
-	  String regex = "(?:" + method + ") (?:" + uri + ")";
+	  String regex = "(?:" + method + ")" + SEPARATOR + "(?:" + uri + ")";
 	  Matcher   gm = groupPattern.matcher(regex);
 	  Matcher   nm = namedGroupPattern.matcher(regex);
 
@@ -229,6 +229,7 @@ public class RequestMatcher {
     private LinkedList<Request> patterns;
     private Pattern compiledPattern;
 
+    private static char SEPARATOR = '\n';
 
     public static void main(String args[]) {
       final RequestMatcher rm = new RequestMatcher();
