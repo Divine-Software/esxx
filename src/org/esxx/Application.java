@@ -193,8 +193,8 @@ public class Application
     if (!object.equals("")) {
       // RPC style SOAP handler
 
-      org.w3c.dom.Node     soap_header = null;
-      org.w3c.dom.Document soap_body   = null;
+      org.w3c.dom.Node    soap_header = null;
+      org.w3c.dom.Element soap_body   = null;
 
       try {
 	soap_header = message.getSOAPHeader();
@@ -203,15 +203,54 @@ public class Application
 	// The header is optional
       }
 
-      soap_body = message.getSOAPBody().extractContentAsDocument();
+      soap_body = message.getSOAPBody().extractContentAsDocument().getDocumentElement();
 
       Object args[] = { req,
 			ESXX.domToE4X(soap_body, cx, applicationScope),
 			ESXX.domToE4X(soap_header, cx, applicationScope) };
 
-      String method = soap_body.getDocumentElement().getLocalName();
+      String prefix = soap_body.getPrefix();
+      String nsuri  = soap_body.getNamespaceURI();
+      String method = soap_body.getLocalName();
 
       result = JS.callJSMethod(object, method, args, "SOAP handler", cx, applicationScope);
+
+      // Automatically add a SOAP-Envelope, if missing. The generated
+      // envelope is based on the request envelope.
+      if (result instanceof org.mozilla.javascript.xml.XMLObject) {
+	result = ESXX.e4xToDOM((Scriptable) result);
+      }
+
+      if (result instanceof org.w3c.dom.Node) {
+	org.w3c.dom.Node node = (org.w3c.dom.Node) result;
+
+	if (!node.getLocalName().equals("Envelope")) {
+	  // Convert Envelope to a response
+	  javax.xml.soap.SOAPPart     sp = message.getSOAPPart();
+	  javax.xml.soap.SOAPEnvelope se = sp.getEnvelope();
+
+	  if (se.getHeader() != null) { 
+	    se.getHeader().detachNode();
+	  }
+
+	  if (se.getBody() != null) {
+	    se.getBody().detachNode();
+	  }
+
+	  // Add result to the now empty SOAP Envelope
+	  javax.xml.soap.SOAPBody        sb = se.addBody();
+	  javax.xml.soap.SOAPBodyElement be = sb.addBodyElement(se.createName(method + "Response",
+									      prefix, nsuri));
+	  Document sd = be.getOwnerDocument();
+	  node = sd.adoptNode((org.w3c.dom.Node) result);
+	  if (node == null) {
+	    node = sd.importNode((org.w3c.dom.Node) result, true);
+	  }
+
+	  be.appendChild(node);
+	  result = se;
+	}
+      }
     }
     else {
       // No RPC handler; the SOAP message itself is the result
