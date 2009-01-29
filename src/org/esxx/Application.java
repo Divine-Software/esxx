@@ -452,6 +452,10 @@ public class Application
 
   }
 
+  public boolean hasHandlers() {
+    return hasHTTPHandlers() || hasSOAPHandlers();
+  }
+
   public boolean hasHTTPHandlers() {
     return gotHTTPHandlers;
   }
