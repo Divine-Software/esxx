@@ -98,6 +98,19 @@ public abstract class JS {
     System.err.flush();
   }
 
+  public static void dumpScope(Scriptable scope) {
+    System.err.println("Dump of scope " + scope);
+
+    for (Object i : ((ScriptableObject) scope).getAllIds()) {
+      if (i instanceof Number) {
+	System.err.println(i + ": " + scope.get((Integer) i, scope));
+      }
+      else {
+	System.err.println("'" + i + "': " + scope.get((String) i, scope));
+      }
+    }
+  }
+
 
   public static void printScriptStackTrace() {
     StackTraceElement[] trace = Thread.currentThread().getStackTrace();
