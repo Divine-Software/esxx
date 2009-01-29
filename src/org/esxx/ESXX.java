@@ -223,6 +223,10 @@ public class ESXX {
     }
 
     public boolean isHandlerMode(String server_software) {
+      if (server_software == null) {
+	return true;
+      }
+
       return ! noHandlerMode.matcher(server_software).matches();
     }
 

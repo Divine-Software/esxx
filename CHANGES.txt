@@ -41,6 +41,9 @@
 	* SOAP handlers can now match on SOAPAction and URI just like
 	HTTP handlers.
 
+	* XSLT stylesheets can now match on content type and URI,
+	similar to HTTP and SOAP handlers.
+
 0.9.20081101
 	* Bug fixes as usual.
 

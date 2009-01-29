@@ -159,11 +159,7 @@ class Worker {
     HashMap<String,String> params = new HashMap<String,String>();
     String                 ct     = ESXX.parseMIMEType(content_type, params);
 
-    URI stylesheet = app.getStylesheet(ct);
-
-    if (stylesheet == null) {
-      stylesheet = app.getStylesheet("");
-    }
+    URI stylesheet = app.getStylesheet(cx, ct, request.getPathInfo());
 
     if (stylesheet == null) {
       // Do nothing at all

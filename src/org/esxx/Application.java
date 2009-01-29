@@ -400,8 +400,17 @@ public class Application
     includePath = paths;
   }
 
-  public URI getStylesheet(String media_type) {
-    return stylesheets.get(media_type);
+  public URI getStylesheet(Context cx, String media_type, String path_info) {
+    try {
+      RequestMatcher.Match match = xsltMatcher.matchRequest(media_type, path_info, 
+							    cx, applicationScope);
+      return match == null ? null : new URI(match.handler);
+    }
+    catch (URISyntaxException ex) {
+      throw new ESXXException("Stylesheet 'href' is invalid: " +
+			      ex.getMessage());
+    }
+
   }
 
   public boolean hasHTTPHandlers() {
@@ -596,6 +605,7 @@ public class Application
     // Compile uri-matching regex patterns
     soapMatcher.compile();
     requestMatcher.compile();
+    xsltMatcher.compile();
 
     for (Code c : codeList.values()) {
       c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
@@ -727,15 +737,9 @@ public class Application
 	}
 
 	try {
-	  URL url = new URL(baseURL, href);
-	  stylesheets.put("", url.toURI());
-	  //	  externalURIs.add(url.toURI());
+	  xsltMatcher.addRequestPattern(null, null, new URL(baseURL, href).toString());
 	}
 	catch (MalformedURLException ex) {
-	  throw new ESXXException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
-				  ex.getMessage());
-	}
-	catch (URISyntaxException ex) {
 	  throw new ESXXException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
 				  ex.getMessage());
 	}
@@ -863,8 +867,9 @@ public class Application
 
   private void handleStylesheet(Element e) {
     String media_type = e.getAttributeNS(null, "media-type").trim();
-    String href      = e.getAttributeNS(null, "href").trim();
-    String type      = e.getAttributeNS(null, "type").trim();
+    String uri        = e.getAttributeNS(null, "uri").trim();
+    String href       = e.getAttributeNS(null, "href").trim();
+    String type       = e.getAttributeNS(null, "type").trim();
 
     if (href.equals("")) {
       throw new ESXXException("<stylesheet> attribute 'href' " +
@@ -877,15 +882,9 @@ public class Application
     }
 
     try {
-      URL url = new URL(baseURL, href);
-      stylesheets.put(media_type, url.toURI());
-      //      externalURIs.add(url.toURI());
+      xsltMatcher.addRequestPattern(media_type, uri, new URL(baseURL, href).toString());
     }
     catch (MalformedURLException ex) {
-      throw new ESXXException("<stylesheet> attribute 'href' is invalid: " +
-			      ex.getMessage());
-    }
-    catch (URISyntaxException ex) {
       throw new ESXXException("<stylesheet> attribute 'href' is invalid: " +
 			      ex.getMessage());
     }
@@ -982,7 +981,7 @@ public class Application
 
   private RequestMatcher soapMatcher = new RequestMatcher();
   private RequestMatcher requestMatcher = new RequestMatcher();
-  private Map<String,URI>    stylesheets  = new HashMap<String,URI>();
+  private RequestMatcher xsltMatcher = new RequestMatcher();
   private String errorHandler;
   private String exitHandler;
 
