@@ -45,7 +45,7 @@ clean:
 install: build
 	dh_testdir
 	dh_testroot
-	dh_prep  
+	dh_prep || true # (dapper)
 	dh_installdirs
 
 	# Add here commands to install the package into debian/esxx.
@@ -71,7 +71,7 @@ binary-arch: install
 #	dh_installpam
 #	dh_installmime
 #	dh_python
-	dh_installinit -o
+	dh_installinit -o || dh_installinit # (dapper)
 #	dh_installcron
 #	dh_installinfo
 	dh_installman
