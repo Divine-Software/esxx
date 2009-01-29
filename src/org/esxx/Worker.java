@@ -62,7 +62,7 @@ class Worker {
 	if (request instanceof org.esxx.request.ScriptRequest) {
 	  result = app.executeMain(cx, jsreq, request.getCommandLine());
 	}
-	else {
+	else if (app.hasHandlers()) {
 	  // Execute the SOAP or HTTP handler (if available)
 	  String request_method = request.getProperties().getProperty("REQUEST_METHOD");
 	  String soap_action    = jsreq.jsGet_soapAction();
@@ -72,14 +72,14 @@ class Worker {
 	      app.hasSOAPHandlers()) {
 	    result = app.executeSOAPAction(cx, jsreq, soap_action, request.getPathInfo());
 	  }
-	  else if (app.hasHTTPHandlers()) {
+	  else {
 	    result = app.executeHTTPMethod(cx, jsreq, request_method, request.getPathInfo());
 	  }
-	  else {
-	    // No handlers; the document is the result
+	}
+	else {
+	  // No handlers; the document is the result
 
-	    result = app.getMainDocument();
-	  }
+	  result = app.getMainDocument();
 	}
       }
       catch (ESXXException.TimeOut ex) {
