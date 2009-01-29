@@ -1,0 +1,13 @@
+<?xml version='1.0' ?>
+
+<?esxx-include href="app-handlers.js" ?>
+
+<esxx xmlns="http://esxx.org/1.0/">
+  <handlers>
+    <http method="(?{method}.*)" uri="/"             handler="app.handle{method}" />
+    <soap                        uri="/soap"         object="app.stock" />
+    <stylesheet                  uri="/(?!soap$).*"  href="app-handlers.xslt"/>
+
+    <error handler="app.onError" />
+  </handlers>
+</esxx>
