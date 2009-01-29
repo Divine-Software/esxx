@@ -318,6 +318,7 @@ public class JSURI
 	public void handleProperty(Scriptable p, int s) {
 	  if (s > score[0]) {
 	    res[0] = p;
+	    score[0] = s;
 	  }
 	}
       }, uri, realm);
