@@ -150,11 +150,19 @@ class Worker {
     }
   }
 
+  private static String getDebugLogForComment(Request request) {
+    return "Start ESXX Request Log\n"
+      + request.getLogAsString().replaceAll("--", "\u2012\u2012")
+      + "End ESXX Request Log";
+  }
+
   private void handleTransformation(Request request, Response response,
 				    JSESXX js_esxx, Application app,
 				    Context cx, Scriptable scope)
     throws IOException, SaxonApiException {
+    ESXX           esxx = ESXX.getInstance();
     String content_type = response.getContentType(true);
+    Node           node = (Node) response.getResult();
 
     HashMap<String,String> params = new HashMap<String,String>();
     String                 ct     = ESXX.parseMIMEType(content_type, params);
@@ -162,12 +170,13 @@ class Worker {
     URI stylesheet = app.getStylesheet(cx, ct, request.getPathInfo());
 
     if (stylesheet == null) {
-      // Do nothing at all
+      // Just serialize and attach debug log
+      response.setResult(esxx.serializeNode(node) +
+			 "<!--" + getDebugLogForComment(request) + "-->");
+      response.setContentType(content_type);
       return;
     }
 
-    ESXX esxx = ESXX.getInstance();
-    Node node = (Node) response.getResult();
 
     long start_time = System.currentTimeMillis();
     Stylesheet xslt = esxx.getCachedStylesheet(stylesheet);
@@ -212,9 +221,7 @@ class Worker {
       // Append the debug output while we're at it, and let the
       // stylesheet decide if it should be output or not.
       String ds = request.getLogAsString();
-      doc.appendChild(doc.createComment("Start ESXX Request Log\n" +
-					ds.replaceAll("--", "\u2012\u2012") +
-					"End ESXX Request Log"));
+      doc.appendChild(doc.createComment(getDebugLogForComment(request)));
 
       tr.setSource(new DOMSource(doc));
       tr.setDestination(s);
