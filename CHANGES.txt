@@ -44,6 +44,8 @@
 	* XSLT stylesheets can now match on content type and URI,
 	similar to HTTP and SOAP handlers.
 
+	* Added a "javaURI" property to the URI class.
+
 0.9.20081101
 	* Bug fixes as usual.
 

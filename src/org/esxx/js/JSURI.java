@@ -298,6 +298,10 @@ public class JSURI
     return props;
   }
 
+  public URI jsGet_javaURI() {
+    return uri;
+  }
+
   public interface PropEnumerator {
     void handleProperty(Scriptable prop, int score);
   }
