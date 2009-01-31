@@ -46,6 +46,10 @@
 
 	* Added a "javaURI" property to the URI class.
 
+	* Added include files "json2.js" (from json.org) and
+	"esxx/Harmony.js", which adds a few useful functions from 
+	the current ECMAScript 3.1 proposal.
+
 0.9.20081101
 	* Bug fixes as usual.
 
