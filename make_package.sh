@@ -101,7 +101,7 @@ case $(uname) in
 	fmri=$(pkgrecv -s ${PKG_REPO} -n | grep esxx)
 	pkgrecv  -s ${PKG_REPO} -d ips ${fmri}
 	(cd ips && tar cfz \
-	    ${SOURCE}/${package_full_name}-$(uname).ips.tar.gz *)
+	    ${SOURCE}/${package_full_name}.ips.tgz *)
 
 	kill $pid
 	sleep 1
