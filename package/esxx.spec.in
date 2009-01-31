@@ -9,7 +9,7 @@ Group:          @CPACK_RPM_PACKAGE_GROUP@
 Vendor:         @CPACK_PACKAGE_VENDOR@
 BuildArch:	@CPACK_RPM_PACKAGE_ARCHITECTURE@
 Requires:	bash, sudo, java >= 1.6.0
-Source:		%{name}-%{version}.tar
+Source:		%{name}-%{version}.tar.gz
 
 %description
 @PACKAGE_DESCRIPTION@

@@ -120,10 +120,10 @@ case $(uname) in
 	    rm debian/control debian/changelog
 	    rm -r builddir
 	else
-	    (cd ${SOURCE} && tar cf ${BUILD}/${package_full_name}.tar \
-		--transform "s,^,${package_full_name}/," .)
-	    tar rf ${package_full_name}.tar esxx.spec
-	    rpmbuild -tb --define "_topdir ${BUILD}/rpmroot" ${package_full_name}.tar
+	    mkdir -p rpmroot/{BUILD,SPECS,SRPMS,RPMS/noarch}
+	    cp -r ${SOURCE} ${package_full_name}
+	    tar cfz ${package_full_name}.tar.gz ${package_full_name} esxx.spec
+	    rpmbuild -tb --define "_topdir ${BUILD}/rpmroot" ${package_full_name}.tar.gz
 	    cp ${BUILD}/rpmroot/RPMS/noarch/${package_full_name}-*.rpm ${SOURCE}
 	fi
 	;;
