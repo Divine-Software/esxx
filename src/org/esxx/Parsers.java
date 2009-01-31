@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
@@ -287,8 +288,8 @@ class Parsers {
 	    descr.put("length", descr, temp.length());
 
 	    Scriptable headers = cx.newObject(scope);
-	    for (java.util.Enumeration<Header> e = mbp.getAllHeaders(); e.hasMoreElements();) {
-	      Header hdr = e.nextElement();
+	    for (Enumeration<?> e = mbp.getAllHeaders(); e.hasMoreElements();) {
+	      Header hdr = (Header) e.nextElement();
 	      headers.put(hdr.getName(), headers, hdr.getValue());
 	    }
 	    descr.put("headers", descr, headers);

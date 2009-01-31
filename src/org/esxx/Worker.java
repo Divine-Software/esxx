@@ -220,7 +220,6 @@ class Worker {
 
       // Append the debug output while we're at it, and let the
       // stylesheet decide if it should be output or not.
-      String ds = request.getLogAsString();
       doc.appendChild(doc.createComment(getDebugLogForComment(request)));
 
       tr.setSource(new DOMSource(doc));
