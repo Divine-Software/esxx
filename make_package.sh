@@ -17,6 +17,7 @@ ${SOURCE}/run_cmake.sh
 
 # Fetch various version variables
 . package/version
+package_full_name="${package_name}-${package_major}.${package_minor}.${package_patch}"
 
 # Build package
 case $(uname) in
@@ -37,23 +38,23 @@ case $(uname) in
 	mkdir pkg
 	
 	$packagemaker -build \
-	    -p pkg/${package_name}-${package_major}.${package_minor}.${package_patch}.pkg \
+	    -p pkg/${package_full_name}.pkg \
 	    -f root \
 	    -r rsrc \
 	    -i package/packagemaker-info.plist \
 	    -d package/packagemaker-descr.plist \
 	    -ds
 
-	rm -f ${SOURCE}/${package_name}-${package_major}.${package_minor}.${package_patch}.dmg
+	rm -f ${SOURCE}/${package_full_name}.dmg
 
 	hdiutil create -size 32m image.dmg -srcfolder pkg -format UDRW \
-	    -volname "${package_name}-${package_major}.${package_minor}.${package_patch}"
+	    -volname "${package_full_name}"
 
 	hdiutil convert image.dmg -format UDZO -imagekey zlib-level=9 \
-	    -o ${SOURCE}/${package_name}-${package_major}.${package_minor}.${package_patch}.dmg
+	    -o ${SOURCE}/${package_full_name}.dmg
 
 	hdiutil internet-enable -yes \
-	    ${SOURCE}/${package_name}-${package_major}.${package_minor}.${package_patch}.dmg
+	    ${SOURCE}/${package_full_name}.dmg
 	;;
     SunOS)
 	export PKG_REPO=http://localhost:11111
@@ -100,14 +101,14 @@ case $(uname) in
 	fmri=$(pkgrecv -s ${PKG_REPO} -n | grep esxx)
 	pkgrecv  -s ${PKG_REPO} -d ips ${fmri}
 	(cd ips && tar cfz \
-	    ${SOURCE}/${package_name}-${package_major}.${package_minor}.${package_patch}-$(uname).ips.tar.gz *)
+	    ${SOURCE}/${package_full_name}-$(uname).ips.tar.gz *)
 
 	kill $pid
 	sleep 1
 	;;
 
     Linux)
-	if [ -n "$(which dpkg)" ]; then
+	if [ -n "$(which dpkg 2> /dev/null)" ]; then
 	    # Assume we're on Debian.  CMake has already been run,
 	    # creating the config files in ${SOURCE}/debian.
 	    cd ${SOURCE}
@@ -119,8 +120,11 @@ case $(uname) in
 	    rm debian/control debian/changelog
 	    rm -r builddir
 	else
-	    make package 
-	    mv ${package_name}-${package_major}.${package_minor}.${package_patch}-$(uname).* ${SOURCE}
+	    (cd ${SOURCE} && tar cf ${BUILD}/${package_full_name}.tar \
+		--transform "s,^,${package_full_name}/," .)
+	    tar rf ${package_full_name}.tar esxx.spec
+	    rpmbuild -tb --define "_topdir ${BUILD}/rpmroot" ${package_full_name}.tar
+	    cp ${BUILD}/rpmroot/RPMS/noarch/${package_full_name}-*.rpm ${SOURCE}
 	fi
 	;;
 esac

@@ -26,6 +26,9 @@
 	* Added IPS (OpenSolaris) package support, including SVC
 	management script and manifest.
 
+	* Added proper PackageMaker (OSX), DEB and RPM support. CPack
+	is now only used for the Windows packages.
+
 	* Added ESXX.Response methods: toString(), valueOf() and
 	[from Java] getDefaultValue().
 

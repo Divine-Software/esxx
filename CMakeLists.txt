@@ -63,6 +63,9 @@ ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     SET (CPACK_RPM_PACKAGE_LICENSE ${PACKAGE_LICENSE})
     SET (CPACK_RPM_PACKAGE_GROUP "System Environment/Daemons")
     SET (CPACK_RPM_USER_BINARY_SPECFILE "${CMAKE_CURRENT_SOURCE_DIR}/package/esxx.spec.in")
+
+    CONFIGURE_FILE(package/esxx.spec.in
+                   ${CMAKE_CURRENT_BINARY_DIR}/esxx.spec @ONLY)
   ELSEIF (DPKG)
     # Debian-style package
     SET (CONFDIR default)
