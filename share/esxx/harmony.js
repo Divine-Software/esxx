@@ -7,14 +7,14 @@
  *
  */
 
-function __dontenum__(o, p) {
+__dontenum__ = function (o, p) {
   java.lang.Class.forName("org.mozilla.javascript.ScriptableObject")
     .getMethod("setAttributes", java.lang.String, java.lang.Integer.TYPE)
     .invoke(o, p, new java.lang.Integer(org.mozilla.javascript.ScriptableObject.DONTENUM));
 
   if (typeof o.constructor !== "undefined" &&
       typeof o.constructor.name !== "undefined") {
-    esxx.log.debug("esxx/Harmony.js added " + p + " to " + o.constructor.name);
+    esxx.log.debug(esxx.location.valueOf() + " added " + p + " to " + o.constructor.name);
   }
 }
 
@@ -141,6 +141,7 @@ if (typeof Date.prototype.toISOString !== "function") {
 if (typeof JSON === "undefined" ||
     (typeof JSON.parse !== "function" && typeof JSON.stringify !== "function")) {
   esxx.include("../json2.js");
+  __dontenum__(this, "JSON");
   __dontenum__(Boolean.prototype, "toJSON");
   __dontenum__(Date.prototype, "toJSON");
   __dontenum__(Number.prototype, "toJSON");
