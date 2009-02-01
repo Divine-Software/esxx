@@ -43,7 +43,7 @@ public class SyslogHandler
     Formatter formatter = getFormatter();
 
     if (formatter == null) {
-      formatter = new TrivialFormatter();
+      formatter = new TrivialFormatter(false);
       setFormatter(formatter);
     }
 
