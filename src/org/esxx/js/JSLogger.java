@@ -33,13 +33,11 @@ public class JSLogger
   public JSLogger(Application app, Request request, Logger logger, String ident) {
     super();
 
-    newLevel    = Level.ALL;
-
-    this.app    = app;
-    this.req    = request;
-
-    this.logger = logger;
-    this.ident  = ident;
+    this.app       = app;
+    this.req       = request;
+    this.logger    = logger;
+    this.ident     = ident;
+    this.lastLevel = null;
   }
 
   static public Object jsConstructor(Context cx,
@@ -76,28 +74,17 @@ public class JSLogger
     return new JSLogger(app, req, logger, ident);
   }
 
+  public static void finishInit(Scriptable scope, 
+				FunctionObject constructor,
+				Scriptable prototype) {
+    // Create and make the "level" property in the prototype visible
+    ScriptableObject.defineProperty(prototype, "level", "debug", ScriptableObject.PERMANENT);
+  }
+
 
   @Override
   public String getClassName() {
     return "Logger";
-  }
-
-  public void jsFunction_setLevel(String level) {
-    if ("debug".equals(level)) {
-      newLevel = Level.FINE;
-    }
-    else if ("info".equals(level)) {
-      newLevel = Level.INFO;
-    }
-    else if ("warn".equals(level)) {
-      newLevel = Level.WARNING;
-    }
-    else if ("error".equals(level)) {
-      newLevel = Level.SEVERE;
-    }
-    else {
-      throw Context.reportRuntimeError("Level should be 'debug', 'info', 'warn' or 'error'.");
-    }
   }
 
   public void jsFunction_debug(String msg) {
@@ -119,19 +106,39 @@ public class JSLogger
   private synchronized void log(Level level, String msg) {
     if (logger == null) {
       if (app != null) {
-	logger = app.getLogger();
+	logger = app.getAppLogger();
       }
       else if (req != null) {
-	logger = req.getLogger();
+	logger = req.getReqLogger();
       }
       else {
 	throw new IllegalStateException("Expected non-null Application or Request object");
       }
     }
 
-    if (newLevel != null) {
-      logger.setLevel(newLevel);
-      newLevel = null;
+    Object new_level_obj = ScriptableObject.getProperty(this, "level");
+
+    if (new_level_obj != lastLevel) {
+      String new_level = Context.toString(new_level_obj);
+
+      if ("debug".equals(new_level)) {
+	logger.setLevel(Level.FINE);
+      }
+      else if ("info".equals(new_level)) {
+	logger.setLevel(Level.INFO);
+      }
+      else if ("warn".equals(new_level)) {
+	logger.setLevel(Level.WARNING);
+      }
+      else if ("error".equals(new_level)) {
+	logger.setLevel(Level.SEVERE);
+      }
+      else {
+	throw Context.reportRuntimeError("Level should be 'debug', 'info', 'warn' or 'error', "
+					 + "not '" + new_level + "'");
+      }
+
+      lastLevel = new_level_obj;
     }
 
     LogRecord lr = new LogRecord(level, msg);
@@ -141,9 +148,9 @@ public class JSLogger
     logger.log(lr);
   }
 
-  private Level newLevel;
   private Application app;
   private Request req;
   private Logger logger;
   private String ident;
+  private Object lastLevel;
 }

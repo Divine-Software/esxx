@@ -53,6 +53,9 @@
 	"esxx/harmony.js", which adds a few useful functions from 
 	the current ECMAScript 3.1 proposal.
 
+	* Removed setLevel() from the Logger class in favour of a
+        "level" propery on the prototype object.
+
 0.9.20081101
 	* Bug fixes as usual.
 
