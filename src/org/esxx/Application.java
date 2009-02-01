@@ -793,7 +793,7 @@ public class Application
 	}
 
 	try {
-	  xsltMatcher.addRequestPattern(null, null, new URL(baseURL, href).toString());
+	  xsltMatcher.addRequestPattern("", "", new URL(baseURL, href).toString());
 	}
 	catch (MalformedURLException ex) {
 	  throw new ESXXException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
