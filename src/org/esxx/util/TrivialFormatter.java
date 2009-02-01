@@ -23,8 +23,17 @@ import java.util.logging.*;
 
 public class TrivialFormatter 
   extends Formatter {
+  public TrivialFormatter(boolean include_level) {
+    super();
+    includeLevel = include_level;
+  }
+
   public synchronized String format(LogRecord record) {
     StringBuffer sb = new StringBuffer();
+
+    if (includeLevel) {
+      sb.append("[" + record.getLevel() + "] ");
+    }
 
     if (record.getSourceClassName() != null) {      
       sb.append(record.getSourceClassName());
@@ -58,4 +67,6 @@ public class TrivialFormatter
     sb.append('\n');
     return sb.toString();
   }
+
+  private boolean includeLevel;
 }
