@@ -162,10 +162,10 @@ public abstract class Request {
       return properties;
     }
 
-    public synchronized Logger getLogger() {
+    public synchronized Logger getReqLogger() {
       if (logger == null) {
 	if (formatter == null) {
-	  formatter = new TrivialFormatter();
+	  formatter = new TrivialFormatter(true);
 	}
 
 	logger = Logger.getAnonymousLogger();
