@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
+import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.stream.*;
@@ -86,18 +87,30 @@ public class Application
     return externalURIs;
   }
 
-  public synchronized Logger getLogger() {
+  public synchronized Logger getAppLogger() {
     if (logger == null) {
-      String name  = Application.class.getName() + "." + ident;
-
-      logger = Logger.getLogger(name);
+      logger = Logger.getLogger(Application.class.getName() + "." + ident);
 
       if (logger.getHandlers().length == 0) {
 	try {
 	  // No specific log handler configured in
-	  // jre/lib/logging.properties -- log everything to syslog
+	  // jre/lib/logging.properties -- log everything to both
+	  // syslog and console using the TrivialFormatter.
+
+	  if (logFormatter == null) {
+	    logFormatter = new TrivialFormatter(true);
+	  }
+
+	  ConsoleHandler ch = new ConsoleHandler();
+
+	  ch.setLevel(Level.ALL);
+	  ch.setFormatter(logFormatter);
+
+	  logger.setUseParentHandlers(false);
 	  logger.setLevel(Level.ALL);
+
 	  logger.addHandler(new SyslogHandler("esxx"));
+	  logger.addHandler(ch);
 	}
 	catch (UnsupportedOperationException ex) {
 	  // Never mind
@@ -762,7 +775,7 @@ public class Application
     throws XMLStreamException {
 
     XMLStreamReader xsr = xmlInputFactory.createXMLStreamReader(
-								new StringReader("<esxx-stylesheet " + data + "/>"));
+	new StringReader("<esxx-stylesheet " + data + "/>"));
 
     while (xsr.hasNext()) {
       if (xsr.next() == XMLStreamConstants.START_ELEMENT) {
@@ -1030,4 +1043,6 @@ public class Application
 
   private Timer timer;
   private Collection<TimerHandler> timerHandlers = new LinkedList<TimerHandler>();
+
+  private static java.util.logging.Formatter logFormatter;
 };
