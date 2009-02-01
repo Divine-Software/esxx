@@ -56,6 +56,10 @@
 	* Removed setLevel() from the Logger class in favour of a
         "level" propery on the prototype object.
 
+	* Upgraded to Rhino 1.7 release 2 RC3.
+
+	* Upgraded embedded H2 to 1.1.107, 2009-01-24.
+
 0.9.20081101
 	* Bug fixes as usual.
 
