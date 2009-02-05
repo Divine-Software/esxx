@@ -107,36 +107,36 @@ function Assert.isNotNan(arg, comment) {
   }
 }
 
-function Assert.isEqual(arg1, arg2, comment) {
+function Assert.areEqual(arg1, arg2, comment) {
   if (arg1 != arg2) {
-    throw new Assert.Failed("Assert.isEqual",
+    throw new Assert.Failed("Assert.areEqual",
 			    arg1 + "(" + Assert.typeOf(arg1)
 			    + ") != " + arg2 + "(" + Assert.typeOf(arg2) + ")",
 			    comment);
   }
 }
 
-function Assert.isNotEqual(arg1, arg2, comment) {
+function Assert.areNotEqual(arg1, arg2, comment) {
   if (arg1 == arg2) {
-    throw new Assert.Failed("Assert.isNotEqual",
+    throw new Assert.Failed("Assert.areNotEqual",
 			    arg1  + "(" + Assert.typeOf(arg1)
 			    + ") == " + arg2 + "(" + Assert.typeOf(arg2) + ")",
 			    comment);
   }
 }
 
-function Assert.isIdentical(arg1, arg2, comment) {
+function Assert.areIdentical(arg1, arg2, comment) {
   if (arg1 !== arg2) {
-    throw new Assert.Failed("Assert.isIdentical",
+    throw new Assert.Failed("Assert.areIdentical",
 			    arg1 + "(" + Assert.typeOf(arg1)
 			    + ") !== " + arg2 + "(" + Assert.typeOf(arg2) + ")",
 			    comment);
   }
 }
 
-function Assert.isNotIdentical(arg1, arg2, comment) {
+function Assert.areNotIdentical(arg1, arg2, comment) {
   if (arg1 === arg2) {
-    throw new Assert.Failed("Assert.isNotIdentical",
+    throw new Assert.Failed("Assert.areNotIdentical",
 			    arg1  + "(" + Assert.typeOf(arg1)
 			    + ") === " + arg2 + "(" + Assert.typeOf(arg2) + ")",
 			    comment);
