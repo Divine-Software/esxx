@@ -1,3 +1,9 @@
+0.9.2009xxxx
+	* Added the XKCD example from the Wiki.
+
+	* Fixed apps in examples to use req.scriptURI instead of the
+	web-server dependent CGI variable SCRIPT_NAME.
+
 0.9.20090201
 	* Fixed bug #14765: req.scriptURI has problems with encoded
 	URI:s.
