@@ -1,0 +1,42 @@
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 xsi:schemaLocation="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	 version="2.5">
+  <display-name>ESXX - The friendly ECMAscript/XML Application Server</display-name>
+  <description>An easy-to-use, yet powerful, XML Application Server written in Java</description>
+
+  <servlet>
+    <servlet-name>esxx</servlet-name>
+    <servlet-class>org.esxx.ESXXServlet</servlet-class>
+    <description>This servlet runs the ESXX server inside a web container</description>
+
+    <init-param>
+      <!-- Controls from where files will be served. Can be be a
+	   relative path (to refer to resources within the web-app) or an absolute
+	   path (to refer to a filesystem directory). -->
+      <param-name>http-root</param-name>
+      <param-value>examples</param-value>
+    </init-param>
+
+    <init-param>
+      <!-- esxx.* properties may also be defined. This one gets special
+	   handling, though, because it needs to handle war-relative paths and we
+	   use '|' as a platform-independet path separator.  Other esxx.*
+	   parameters, however, will be passed unmodified. -->
+      <param-name>esxx.app.include_path</param-name>
+      <param-value>share|share/site</param-value>
+    </init-param>
+
+    <!-- You'll probably want to change this in production
+    <init-param>
+      <param-name>esxx.resource-uri</param-name>
+      <param-value>http://esxx.org/</param-value>
+    </init-param> -->
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>esxx</servlet-name>
+    <url-pattern>/</url-pattern>
+  </servlet-mapping>
+
+</web-app>
