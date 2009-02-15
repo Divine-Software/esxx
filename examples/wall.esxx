@@ -40,6 +40,6 @@ function addMessage(req) {
 	   req.message);
   esxx.log.info(req.message.name + " wrote: " + req.message.message);
 
-  return [303, {Location: req.scriptURI.valueOf()}];
+  return [303, {Location: req.scriptURI.valueOf().replace(/\/$/, "")} ];
 }
 ?>
