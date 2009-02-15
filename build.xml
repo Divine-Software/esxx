@@ -5,8 +5,10 @@
   <description>esxx build file</description>
 
   <property name="src.dir"     location="src"/>
+  <property name="jee.dir"     location="jee"/>
   <property name="build.dir"   location="build"/>
   <property name="classes.dir" location="${build.dir}/classes"/>
+  <property name="jeebuild.dir" location="${build.dir}/jee"/>
   <property name="lib.dir"     location="lib"/>
   <property name="dist.dir"    location="dist"/>
 
@@ -20,6 +22,7 @@
   <target name="init">
     <tstamp/>
     <mkdir dir="${classes.dir}"/>
+    <mkdir dir="${jeebuild.dir}"/>
   </target>
 
   <target name="compile" depends="init" description="compile everything">
@@ -37,7 +40,34 @@
     </jar>
   </target>
 
-  <target name="dist" depends="jar" description="generate the distribution" >
+  <target name="jee-compile" depends="jar" description="compile jee">
+    <javac srcdir="${jee.dir}" destdir="${jeebuild.dir}" 
+           debug="true" deprecation="true" target="1.6">
+      <classpath>
+	<pathelement path="${build.dir}/${ant.project.name}.jar" />
+	<fileset dir="${lib.dir}" includes="**/*.jar"/>
+	<pathelement path="${jee.dir}/servlet-api-2.5.jar" /> 
+     </classpath>
+      <compilerarg value="-Xlint"/>
+    </javac>
+  </target>
+
+  <target name="jee-war" depends="jee-compile,jar" description="generate a servlet">
+    <war destfile="${build.dir}/${ant.project.name}.war" 
+	 webxml="${jee.dir}/web.xml"
+	 filesetmanifest="merge">
+      <classes dir="${jeebuild.dir}"/>
+      <lib file="${build.dir}/${ant.project.name}.jar"/>
+      <lib dir="${lib.dir}">
+	<exclude name="one-jar*"/>
+      </lib>
+
+      <zipfileset prefix="examples" dir="examples" excludes="*~"/>
+      <zipfileset prefix="share" dir="share" excludes="*~"/>
+    </war>
+  </target>
+
+  <target name="dist" depends="jar,jee-war" description="generate the distribution" >
     <delete dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}"/>
     <copy todir="${dist.dir}">
@@ -54,8 +84,10 @@
       <fileset dir="share" excludes="*~"/>
     </copy>
 
-    <exec-jar in="${build.dir}/esxx.jar" out="${dist.dir}/esxx.jar"/>
+    <exec-jar in="${build.dir}/${ant.project.name}.jar" out="${dist.dir}/${ant.project.name}.jar"/>
+    <copy file="${build.dir}/${ant.project.name}.war" tofile="${dist.dir}/${ant.project.name}.war"/>
   </target>
+
 
   <target name="clean" description="clean up" >
     <delete dir="${build.dir}"/>
@@ -88,17 +120,6 @@
     <java classname="org.esxx.Main" classpathref="classpath" fork="true">
       <arg value="--http" />
       <arg value="7777" />
-    </java>
-  </target>
-
-  <target name="run" depends="dist">
-    <java jar="${dist.dir}/esxx.jar" fork="true">
-      <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
-      <arg value="--cgi" />
-      <arg value="--method" />
-      <arg value="GET" />
-      <arg value="--file" />
-      <arg file="tests/code.esxx" />
     </java>
   </target>
 </project>

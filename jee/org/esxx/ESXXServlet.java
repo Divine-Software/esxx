@@ -78,8 +78,7 @@ public class ESXXServlet extends HttpServlet {
   protected void service(HttpServletRequest sreq, HttpServletResponse sres)
     throws ServletException, IOException {
     try {
-      URI path_translated = root_uri.resolve(sreq.getServletPath().substring(1));
-      File file = new File(path_translated).getCanonicalFile();
+      File file = new File(root_uri.resolve(sreq.getServletPath().substring(1))).getCanonicalFile();
 
       if (!file.getPath().startsWith(root)) {
 	// Deny access to files outside the root

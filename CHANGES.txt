@@ -4,6 +4,11 @@
 	* Fixed apps in examples to use req.scriptURI instead of the
 	web-server dependent CGI variable SCRIPT_NAME.
 
+	* Added DOCUMENT_ROOT CGI variable in HTTP mode.
+
+	* Added Java EE Servlet support: ESXX can now run inside
+	a J2EE application server, such as Glassfish to Tomcat.
+
 0.9.20090201
 	* Fixed bug #14765: req.scriptURI has problems with encoded
 	URI:s.
