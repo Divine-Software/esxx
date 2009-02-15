@@ -226,6 +226,10 @@ public class QueryCache {
     }
 
     public void releaseConnection(PooledConnection pc) {
+      if (pc == null) {
+	return;
+      }
+
       synchronized (connections) {
 	connections.addFirst(pc);
 	connections.notify();
