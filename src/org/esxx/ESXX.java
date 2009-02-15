@@ -468,6 +468,27 @@ public class ESXX {
       }
     }
 
+    /** Utility method that translates the name of an HTTP header into
+     *  the CGI environment variable name.
+     *
+     *  @param name The name of an HTTP header.
+     *
+     *  @return  The name of the CGI variable.
+     */
+
+    public static String httpToCGI(String name) {
+      if (name.equals("Content-Type")) {
+	return "CONTENT_TYPE";
+      }
+      else if (name.equals("Content-Length")) {
+	return "CONTENT_LENGTH";
+      }
+      else {
+	return "HTTP_" + name.toUpperCase().replaceAll("-", "_");
+      }
+    }
+  
+
     public URI[] getIncludePath() {
       return includePath;
     }
@@ -1050,7 +1071,7 @@ public class ESXX {
       Integer handleError(ESXX esxx, Context cx, Throwable error);
     }
 
-    private Pattern noHandlerMode;
+    private Pattern noHandlerMode = Pattern.compile("");;
 
     private int defaultTimeout;
     private URI[] includePath;
