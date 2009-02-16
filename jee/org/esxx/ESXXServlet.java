@@ -72,6 +72,8 @@ public class ESXXServlet extends HttpServlet {
 
 
   public void destroy() {
+    esxx = null;
+    ESXX.destroyInstance();
   }
 
 

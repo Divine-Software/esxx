@@ -69,6 +69,14 @@ public class ESXX {
       return esxx;
     }
 
+    public static void destroyInstance() {
+      if (esxx != null) {
+	Runtime.getRuntime().removeShutdownHook(esxx.shutdownHook);
+	esxx.terminate();
+	esxx = null;
+      }
+    }
+
     /** The constructor.
      *
      *  Will initialize the operating environment, start the worker
@@ -172,12 +180,12 @@ public class ESXX {
       executorService.submit(new Runnable() {
 	  @Override public void run() {
 	    try {
-	      while (true) {
+	      while (!executorService.isShutdown()) {
 		Thread.sleep(1000);
 		
 		for (PeriodicJob j : listenerList.getListeners(PeriodicJob.class)) {
 		  try {
-		  j.run();
+		    j.run();
 		  }
 		  catch (Exception ex) {
 		    ex.printStackTrace();
@@ -206,6 +214,23 @@ public class ESXX {
 //       main.pack();
 //       main.setSize(800, 600);
 //       main.setVisible(true);
+
+      // Terminate all apps when the JVM exits
+      shutdownHook = new Thread() {
+	  public void run() {
+	    terminate();
+	  }
+	};
+
+      Runtime.getRuntime().addShutdownHook(shutdownHook);
+    }
+
+
+    /** Terminate all apps and shut down worker threads */
+    private void terminate() {
+      applicationCache.clear();
+      stylesheetCache.clear();
+      shutdownAndAwaitTermination(executorService);
     }
 
 
@@ -795,6 +820,23 @@ public class ESXX {
       }
     }
 
+    void shutdownAndAwaitTermination(ExecutorService pool) {
+      pool.shutdown(); // Disable new tasks from being submitted
+      try {
+	// Wait a while for existing tasks to terminate
+	if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
+	  pool.shutdownNow(); // Cancel currently executing tasks
+	  // Wait a while for tasks to respond to being cancelled
+	  if (!pool.awaitTermination(60, TimeUnit.SECONDS))
+	    System.err.println("Pool did not terminate");
+	}
+      } catch (InterruptedException ie) {
+	// (Re-)Cancel if current thread also interrupted
+	pool.shutdownNow();
+	// Preserve interrupt status
+	Thread.currentThread().interrupt();
+      }
+    }
 
     /** This class monitors all applications that are being loaded and
      *  unload, and handles MX registration and application exit
@@ -1092,4 +1134,6 @@ public class ESXX {
     private PriorityBlockingQueue<Workload> workloadSet;
     private EventListenerList listenerList;
     private Logger logger;
+  
+    private Thread shutdownHook;
 };
