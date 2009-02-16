@@ -67,7 +67,7 @@
     </war>
   </target>
 
-  <target name="dist" depends="jar,jee-war" description="generate the distribution" >
+  <target name="dist" depends="jar" description="generate the distribution" >
     <delete dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}"/>
     <copy todir="${dist.dir}">
@@ -85,7 +85,7 @@
     </copy>
 
     <exec-jar in="${build.dir}/${ant.project.name}.jar" out="${dist.dir}/${ant.project.name}.jar"/>
-    <copy file="${build.dir}/${ant.project.name}.war" tofile="${dist.dir}/${ant.project.name}.war"/>
+<!--    <copy file="${build.dir}/${ant.project.name}.war" tofile="${dist.dir}/${ant.project.name}.war"/> -->
   </target>
 
 
