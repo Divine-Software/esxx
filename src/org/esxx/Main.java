@@ -155,8 +155,12 @@ public class Main {
 	CGIRequest    cr = new CGIRequest(cgi);
 	ESXX.Workload wl = esxx.addRequest(cr, cr, 0);
 
-	Integer rc = (Integer) wl.future.get();
-	System.exit(rc);
+	try {
+	  System.exit((Integer) wl.future.get());
+	}
+	catch (java.util.concurrent.CancellationException ex) {
+	  System.exit(5);
+	}
       }
       else if (script != null && script.length != 0) {
 	File file = new File(script[0]);
@@ -166,8 +170,12 @@ public class Main {
 	sr.activateDebugger(cmd.hasOption('D'));
 	ESXX.Workload wl = esxx.addRequest(sr, sr, -1 /* no timeout for scripts */);
 
-	Integer rc = (Integer) wl.future.get();
-	System.exit(rc);
+	try {
+	  System.exit((Integer) wl.future.get());
+	}
+	catch (java.util.concurrent.CancellationException ex) {
+	  System.exit(5);
+	}
       }
       else {
 	usage(opt, "Required argument missing", 10);

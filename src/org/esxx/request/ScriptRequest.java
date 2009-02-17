@@ -67,7 +67,10 @@ public class ScriptRequest
   }
 
   public Integer handleError(ESXX esxx, Context cx, Throwable t) {
-    if (t instanceof ESXXException) {
+    if (t instanceof ESXXException.TimeOut) {
+      return 5;
+    }
+    else if (t instanceof ESXXException) {
       ESXXException ex = (ESXXException) t;
 
       System.err.println(ex.getClass().getSimpleName() + " " + ex.getStatus()

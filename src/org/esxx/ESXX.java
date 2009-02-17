@@ -228,6 +228,12 @@ public class ESXX {
 
     /** Terminate all apps and shut down worker threads */
     private void terminate() {
+      Workload w;
+
+      while ((w = workloadSet.poll()) != null) {
+	w.future.cancel(true);
+      }
+
       applicationCache.clear();
       stylesheetCache.clear();
       shutdownAndAwaitTermination(executorService);
@@ -325,14 +331,18 @@ public class ESXX {
     }
 
     public Workload addContextAction(Context old_cx, final ContextAction ca, int timeout) {
+      long expires;
+
       if (timeout == -1) {
-	timeout = Integer.MAX_VALUE;
+	expires = Long.MAX_VALUE;
       }
       else if (timeout == 0) {
-	timeout = defaultTimeout;
+	expires = System.currentTimeMillis() + defaultTimeout;
+      }
+      else {
+	expires = System.currentTimeMillis() + timeout;
       }
 
-      long         expires = System.currentTimeMillis() + timeout;
       if (old_cx != null) {
 	Workload old_work = (Workload) old_cx.getThreadLocal(Workload.class);
 

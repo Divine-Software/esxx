@@ -111,8 +111,7 @@ public class JSESXX
     }
 
     public static boolean jsFunction_wait(Context cx, Scriptable thisObj,
-					  Object[] args, Function funcObj)
-      throws InterruptedException {
+					  Object[] args, Function funcObj) {
       Object   object = null;
       Function   func = null;
       long timeout_ms = 0;
@@ -147,14 +146,25 @@ public class JSESXX
       synchronized (object) {
 	if (func == null) {
 	  // If not specified in JS, timeout_ms == 0 which is the same as o.wait().
-	  object.wait(timeout_ms);
+	  try {
+	    object.wait(timeout_ms);
+	  }
+	  catch (InterruptedException ex) {
+	    checkTimeout(cx);
+	  }
 	}
 	else {
 	  Scriptable thiz = func.getParentScope();
 
 	  while (now < expires && 
 		 (lastrc = Context.toBoolean(func.call(cx, thiz, thiz, fargs))) == false) {
-	    object.wait(expires - now);
+	    try {
+	      object.wait(expires - now);
+	    }
+	    catch (InterruptedException ex) {
+	      checkTimeout(cx);
+	    }
+
 	    now = System.currentTimeMillis();
 	  }
 	}
