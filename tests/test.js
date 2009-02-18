@@ -41,7 +41,7 @@ MyApp.prototype.handleGet = function(req) {
 			     <html><body><p>Hello, world och Örjan!</p><div/></body></html>,
 			     "text/html");
   rc.buffered = true;
-
+  rc.params.apa = "banan";
   return rc;
 };
 

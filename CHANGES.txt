@@ -9,6 +9,9 @@
 	* Added Java EE Servlet support: ESXX can now run inside
 	a J2EE application server, such as Glassfish to Tomcat.
 
+	* XSLT parameters may now be specified via the property
+	'params' in the ESXX.Response object.
+
 0.9.20090201
 	* Fixed bug #14765: req.scriptURI has problems with encoded
 	URI:s.

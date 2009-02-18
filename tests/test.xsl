@@ -5,6 +5,7 @@
 		xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
   <!-- Identity transform -->
+  <xsl:param name="apa">monkey</xsl:param>
 
   <xsl:output 
 	version="4.0"
@@ -29,6 +30,7 @@
   <xsl:template match="xhtml:p">
     <xsl:copy>
       <xsl:attribute name="class">red</xsl:attribute>
+      <xsl:attribute name="apa"><xsl:value-of select="$apa" /></xsl:attribute>
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
   </xsl:template>

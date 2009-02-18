@@ -42,7 +42,6 @@ class Worker {
     long start_time = System.currentTimeMillis();
     Application app = esxx.getCachedApplication(cx, request);
     JSGlobal global = app.getJSGlobal();
-    JSESXX js_esxx  = app.getJSESXX();
 
     try {
       //     if (app.isDebuggerActivated()) {
@@ -139,7 +138,7 @@ class Worker {
       response.unwrapResult();
 
       if (response.getResult() instanceof Node) {
-	handleTransformation(request, response, js_esxx, app, cx, global);
+	handleTransformation(request, response, js_response, app, cx, global);
       }
 
       // Return response
@@ -157,15 +156,13 @@ class Worker {
   }
 
   private void handleTransformation(Request request, Response response,
-				    JSESXX js_esxx, Application app,
+				    JSResponse js_response, Application app,
 				    Context cx, Scriptable scope)
     throws IOException, SaxonApiException {
     ESXX           esxx = ESXX.getInstance();
     String content_type = response.getContentType(true);
     Node           node = (Node) response.getResult();
-
-    HashMap<String,String> params = new HashMap<String,String>();
-    String                 ct     = ESXX.parseMIMEType(content_type, params);
+    String         ct   = ESXX.parseMIMEType(content_type, null);
 
     URI stylesheet = app.getStylesheet(cx, ct, request.getPathInfo());
 
@@ -226,6 +223,17 @@ class Worker {
       tr.setDestination(s);
 
       try {
+	// Set stylesheet params
+	Scriptable params = js_response.jsGet_params();
+
+	for (Object o : params.getIds()) {
+	  if (o instanceof String) {
+	    XdmValue xv = javaToXDM(params.get((String) o, params));
+
+	    tr.setParameter(new QName((String) o), xv);
+	  }
+	}
+
 	// Make current scope available to ESXXExpression and begin transformation
 	cx.putThreadLocal(ESXXExpression.class, scope);
 	tr.transform();
@@ -239,6 +247,24 @@ class Worker {
     }
     finally {
       xslt.logUsage(start_time);
+    }
+  }
+
+  private static XdmValue javaToXDM(Object o) {
+    if (o instanceof java.math.BigDecimal) {
+      return new XdmAtomicValue((java.math.BigDecimal) o);
+    }
+    else if (o instanceof Boolean) {
+      return new XdmAtomicValue((Boolean) o);
+    }
+    else if (o instanceof Double) {
+      return new XdmAtomicValue((Double) o);
+    }
+    else if (o instanceof URI) {
+      return new XdmAtomicValue((URI) o);
+    }
+    else {
+      return new XdmAtomicValue(o.toString());
     }
   }
 

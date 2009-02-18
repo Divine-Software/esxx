@@ -49,13 +49,11 @@ public class ESXXExpression
     setArguments(args);
   }
 
-  @Override
-public int getImplementationMethod() {
+  @Override public int getImplementationMethod() {
     return ITERATE_METHOD;
   }
 
-  @Override
-public SequenceIterator iterate(XPathContext context)
+  @Override public SequenceIterator iterate(XPathContext context)
     throws XPathException {
     Context    cx    = Context.getCurrentContext();
     Scriptable scope = (Scriptable) cx.getThreadLocal(ESXXExpression.class);
@@ -129,8 +127,7 @@ public SequenceIterator iterate(XPathContext context)
     }
 
     // Rhino depends on this method
-    @Override
-    public Object setUserData(String key, Object data, UserDataHandler handler) {
+    @Override public Object setUserData(String key, Object data, UserDataHandler handler) {
       Object old = data;
 
       this.key = key;
@@ -146,8 +143,7 @@ public SequenceIterator iterate(XPathContext context)
     }
 
     // Rhino depends on this method
-    @Override
-    public Node cloneNode(boolean deep) {
+    @Override public Node cloneNode(boolean deep) {
       if (!deep) {
 	throw new UnsupportedOperationException();
       }

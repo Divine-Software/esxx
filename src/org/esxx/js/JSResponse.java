@@ -31,11 +31,13 @@ public class JSResponse
     super();
   }
 
-  public JSResponse(int status, Scriptable headers, Object result, String content_type) {
+  public JSResponse(int status, Scriptable headers, Object result, String content_type,
+		    Scriptable params) {
     super();
 
     this.response = new Response(status, content_type, result, new HashMap<String, String>());
     this.headers  = headers;
+    this.params   = params;
   }
 
 
@@ -74,7 +76,7 @@ public class JSResponse
       content_type = Context.toString(args[3]);
     }
 
-    return new JSResponse(status, headers, result, content_type);
+    return new JSResponse(status, headers, result, content_type, cx.newObject(ctorObj));
   }
 
   public static void finishInit(Scriptable scope, 
@@ -202,6 +204,14 @@ public class JSResponse
     this.headers = headers;
   }
 
+  public Scriptable jsGet_params() {
+    return params;
+  }
+
+  public void jsSet_params(Scriptable params) {
+    this.params = params;
+  }
+
   public Response getResponse() {
     Map<String, String> headers = response.headers();
 
@@ -221,4 +231,5 @@ public class JSResponse
 
   private Response response;
   private Scriptable headers;
+  private Scriptable params;
 }
