@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+
+<esxx xmlns="http://esxx.org/1.0/">
+  <handlers>
+    <!-- The index page -->
+    <http method="GET" uri="/"      handler="getIndex" />
+
+    <!-- Publish (the same) result on /json, /xml and /html -->
+    <http method="GET" uri="/json"  handler="getCurrentDate" />
+    <http method="GET" uri="/xml"   handler="getCurrentDate" />
+    <http method="GET" uri="/html"  handler="getCurrentDate" />
+
+    <!-- Convert / and /html to HTML -->
+    <stylesheet uri="/(html)?" href="filters.xslt" />
+  </handlers>
+
+  <filters>
+    <!-- Authenticate all requests -->
+    <http filter="authenticate" />
+
+    <!-- Set XSLT params on all responses -->
+    <http filter="xsltParam" />
+
+    <!-- Convert /json to JSON -->
+    <http uri="/json" filter="xmlToJSON" />
+
+    <!-- Make all GET responses cachable -->
+    <http method="GET" filter="cacheResponse" />
+  </filters>
+</esxx>
+
+
+<?esxx 
+
+// Main index
+function getIndex(req) {
+  return <index>
+           <resource href="json">JSON</resource>
+	   <resource href="xml">XML</resource>
+	   <resource href="html">HTML</resource>
+         </index>;
+}
+
+// The date service
+function getCurrentDate(req) {
+  let now = new Date();
+
+  return <currentDate>
+           <day>{now.getDay()}</day>
+           <month>{now.getDay()}</month>
+           <year>{now.getFullYear()}</year>
+         </currentDate>;
+}
+
+// Filter to authenticate user
+function authenticate(req, next) {
+  with (JavaImporter(javax.mail.internet.MimeUtility, java.io)) {
+    function b64decode(str) {
+      let is = MimeUtility.decode(StringBufferInputStream(str), "base64");
+      return new BufferedReader(new InputStreamReader(is, "UTF-8")).readLine();
+    }
+  }
+  
+  let auth = req.headers.Authorization;
+
+  if (!auth || auth.indexOf("Basic ") != 0) {
+    return [ESXX.Response.UNAUTHORIZED, { "WWW-Authenticate": "Basic real='ESXX Filters Test'" },
+	    <unauthorized>Please use esxx/esxx to log in.</unauthorized>];
+  }
+
+  auth = b64decode(auth.replace(/Basic +/, ""));
+
+  if (auth != "esxx:esxx") {
+    return [ESXX.Response.FORBIDDEN, {}, 
+	    <forbidden>Invalid username or password. Use esxx/esxx to log in.</forbidden>];
+  }
+
+  return next(req);
+}
+
+// Filter to add XSLT params to the response
+function xsltParam(req, next) {
+  let result = next(req);
+
+  result.params.base = req.scriptURI();
+
+  return result;
+}
+
+// Filter to convert XML to JSON
+function xmlToJSON(req, next) {
+  let result = next(req);
+
+  let json = [];
+
+  for each (let node in result.data.*) {
+    let e = {};
+
+    e[node.localName()] = node.toString();
+    
+    for each (let attr in node.@*) {
+      e[attr.name()] = attr.toString();
+    }
+
+    json.push(e);
+  }
+
+  result.contentType = "application/json";
+  result.data = json;
+
+  return result;
+}
+
+// Filter to mark response as cachable
+function cacheResponse(req, next) {
+  let result  = next(req);
+
+  let maxage  = 3600;
+  let expires = new Date().getTime() + maxage * 1000;
+
+  result.buffered = true;
+  result.headers["Cache-Control"] = "max-age=" + maxage + ", public";
+  result.headers["Expires"]       = new Date(expires).toUTCString();
+  result.headers["Date"]          = new Date().toUTCString();
+  
+  return result;
+}
+
+?>
