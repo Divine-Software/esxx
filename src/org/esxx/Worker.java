@@ -250,7 +250,14 @@ class Worker {
     }
   }
 
-  private static XdmValue javaToXDM(Object o) {
+  private XdmValue javaToXDM(Object o) {
+    if (o instanceof JSURI) {
+      o = ((JSURI) o).jsGet_javaURI();
+    }
+    else if (o instanceof org.mozilla.javascript.xml.XMLObject) {
+      o = ESXX.e4xToDOM((Scriptable) o);
+    }
+
     if (o instanceof java.math.BigDecimal) {
       return new XdmAtomicValue((java.math.BigDecimal) o);
     }
@@ -263,8 +270,11 @@ class Worker {
     else if (o instanceof URI) {
       return new XdmAtomicValue((URI) o);
     }
+    else if (o instanceof Node) {
+      return esxx.getSaxonDocumentBuilder().wrap((Node) o);
+    }
     else {
-      return new XdmAtomicValue(o.toString());
+      return new XdmAtomicValue(Context.toString(o));
     }
   }
 

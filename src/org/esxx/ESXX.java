@@ -743,6 +743,14 @@ public class ESXX {
       return saxonProcessor;
     }
 
+  public synchronized DocumentBuilder getSaxonDocumentBuilder() {
+    if (saxonDocumentBuilder == null) {
+      saxonDocumentBuilder = getSaxonProcessor().newDocumentBuilder();
+    }
+
+    return saxonDocumentBuilder;
+  }
+
   private void mxRegister(String type, String name, Object object) {
     try {
       javax.management.MBeanServer mbs = 
@@ -1138,6 +1146,7 @@ public class ESXX {
 
     private DOMImplementation domImplementation;
     private Processor saxonProcessor;
+    private DocumentBuilder saxonDocumentBuilder;
 
     private ContextFactory contextFactory;
     private ExecutorService executorService;

@@ -42,6 +42,7 @@ MyApp.prototype.handleGet = function(req) {
 			     "text/html");
   rc.buffered = true;
   rc.params.apa = "banan";
+  rc.params.xml = <xml>This <em>is</em> XML!!11!!</xml>;
   return rc;
 };
 

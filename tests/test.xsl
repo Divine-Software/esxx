@@ -6,6 +6,7 @@
 
   <!-- Identity transform -->
   <xsl:param name="apa">monkey</xsl:param>
+  <xsl:param name="xml"><empty><xml/></empty></xsl:param>
 
   <xsl:output 
 	version="4.0"
@@ -31,6 +32,7 @@
     <xsl:copy>
       <xsl:attribute name="class">red</xsl:attribute>
       <xsl:attribute name="apa"><xsl:value-of select="$apa" /></xsl:attribute>
+      <xsl:copy-of select="$xml" />
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
   </xsl:template>
