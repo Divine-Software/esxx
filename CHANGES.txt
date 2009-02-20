@@ -19,6 +19,8 @@
 	set when ESXX is embedded. For instance, If ESXX is deployed as a
 	Servlet, 'esxx.host' will refer to that Servlet.
 
+	* Added HTTP filter support. And there was much rejoicing.
+
 0.9.20090201
 	* Fixed bug #14765: req.scriptURI has problems with encoded
 	URI:s.

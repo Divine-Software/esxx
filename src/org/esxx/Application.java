@@ -20,18 +20,22 @@ package org.esxx;
 
 import java.io.*;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import javax.xml.stream.*;
 import org.esxx.js.*;
 import org.esxx.util.*;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextAction;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.FunctionObject;
+import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.WrappedException;
@@ -46,13 +50,13 @@ import net.sf.saxon.dom.*;
   * will be interpreted.
   */
 
-public class Application 
+public class Application
   extends javax.management.StandardEmitterMBean
   implements org.esxx.jmx.ApplicationMXBean {
   public Application(Context cx, Request request)
     throws IOException {
 
-    super(org.esxx.jmx.ApplicationMXBean.class, true, 
+    super(org.esxx.jmx.ApplicationMXBean.class, true,
 	  new javax.management.NotificationBroadcasterSupport());
 
 
@@ -186,10 +190,11 @@ public class Application
     }
   }
 
-  public Object executeSOAPAction(Context cx, JSRequest req, String soap_action, String path_info)
+  public JSResponse executeSOAPAction(Context cx, JSRequest req,
+				      String soap_action, String path_info)
     throws javax.xml.soap.SOAPException {
     Object result;
-    RequestMatcher.Match match = soapMatcher.matchRequest(soap_action, path_info, 
+    RequestMatcher.Match match = soapMatcher.matchRequest(soap_action, path_info,
 							  cx, applicationScope);
 
     if (match == null) {
@@ -242,7 +247,7 @@ public class Application
 	  javax.xml.soap.SOAPPart     sp = message.getSOAPPart();
 	  javax.xml.soap.SOAPEnvelope se = sp.getEnvelope();
 
-	  if (se.getHeader() != null) { 
+	  if (se.getHeader() != null) {
 	    se.getHeader().detachNode();
 	  }
 
@@ -271,14 +276,13 @@ public class Application
       result = ESXX.domToE4X(message.getSOAPPart(), cx, applicationScope);
     }
 
-    return result;
+    return wrapResult(cx, result);
   }
 
-  public Object executeHTTPMethod(Context cx, JSRequest req,
-				  String request_method, String path_info) {
-    Object result;
-    RequestMatcher.Match match = requestMatcher.matchRequest(request_method, path_info, 
-							     cx, applicationScope);
+  public JSResponse executeHTTPMethod(final Context cx, JSRequest req,
+				      final String request_method, final String path_info) {
+    final RequestMatcher.Match match = requestMatcher.matchRequest(request_method, path_info,
+								   cx, applicationScope);
 
     if (match == null) {
       throw new ESXXException(404, "'" + request_method + "' handler not defined for URI "
@@ -287,16 +291,24 @@ public class Application
 
     req.setArgs(match.params);
 
-    Object args[] = { req };
+    FilterFunction ff = new FilterFunction(new HandlerCallback() {
+	public JSResponse execute(Scriptable req) {
+	  Object result;
+	  Object args[] = { req };
 
-    result = JS.callJSMethod(match.handler, args, "'" + request_method + "' handler", 
-			     cx, applicationScope);
+	  result = JS.callJSMethod(match.handler, args, "'" + request_method + "' handler",
+				   cx, applicationScope);
 
-    return result;
+	  return wrapResult(cx, result);
+	}
+      }, req, request_method, path_info);
+
+    return ff.execute(cx);
   }
 
-  public Object executeMain(Context cx, JSRequest req, 
-			    String[] cmdline) {
+  public JSResponse executeMain(Context cx, JSRequest req,
+				String[] cmdline) {
+    Object result;
     Object[] js_cmdline = new Object[cmdline.length];
 
     for (int i = 0; i < cmdline.length; ++i) {
@@ -305,7 +317,9 @@ public class Application
 
     req.setArgs(cx.newArray(applicationScope, js_cmdline));
 
-    return JS.callJSMethod("main", js_cmdline, "Program entry" , cx, applicationScope);
+    result = JS.callJSMethod("main", js_cmdline, "Program entry" , cx, applicationScope);
+
+    return wrapResult(cx, result);
   }
 
   public void executeExitHandler(Context cx) {
@@ -318,8 +332,8 @@ public class Application
     }
   }
 
-  public Object executeErrorHandler(Context cx, JSRequest req, 
-				    Exception error)
+  public JSResponse executeErrorHandler(Context cx, JSRequest req,
+					Exception error)
     throws Exception {
     Object result  = null;
     String handler = getErrorHandlerFunction();
@@ -354,7 +368,16 @@ public class Application
       throw error;
     }
 
-    return result;
+    return wrapResult(cx, result);
+  }
+
+  public JSResponse executeHTTPFilter(Context cx, Scriptable req, Function next, String filter) {
+    Object result;
+    Object args[] = { req, next };
+
+    result = JS.callJSMethod(filter, args, "'" + filter + "' filter", cx, applicationScope);
+
+    return wrapResult(cx, result);
   }
 
 
@@ -424,7 +447,7 @@ public class Application
   }
 
   public synchronized org.esxx.jmx.ApplicationStats getStatistics() {
-    return new org.esxx.jmx.ApplicationStats(invocations, executionTime, 
+    return new org.esxx.jmx.ApplicationStats(invocations, executionTime,
 					     started, new Date(lastAccessed));
   }
 
@@ -454,7 +477,7 @@ public class Application
 
   public URI getStylesheet(Context cx, String media_type, String path_info) {
     try {
-      RequestMatcher.Match match = xsltMatcher.matchRequest(media_type, path_info, 
+      RequestMatcher.Match match = xsltMatcher.matchRequest(media_type, path_info,
 							    cx, applicationScope);
       return match == null ? null : new URI(match.handler);
     }
@@ -473,6 +496,10 @@ public class Application
     return gotHTTPHandlers;
   }
 
+  public boolean hasHTTPFilters() {
+    return gotHTTPFilters;
+  }
+
   public boolean hasSOAPHandlers() {
     return gotSOAPHandlers;
   }
@@ -487,6 +514,28 @@ public class Application
 
   public void unloadApplication() {
     esxx.removeCachedApplication(this);
+  }
+
+  public JSResponse wrapResult(Context cx, Object result) {
+    if (result == null || result == Context.getUndefinedValue()) {
+      return null;
+    }
+    else if (result instanceof JSResponse) {
+      return (JSResponse) result;
+    }
+    else if (result instanceof NativeArray) {
+      // Automatically convert an JS Array into a Response
+      return (JSResponse) JSESXX.newObject(cx, applicationScope, "Response",
+					   cx.getElements((NativeArray) result));
+    }
+    else if (result instanceof Number) {
+      return (JSResponse) JSESXX.newObject(cx, applicationScope, "Response",
+					   new Object[] { result, null, null, null });
+    }
+    else {
+      return (JSResponse) JSESXX.newObject(cx, applicationScope, "Response",
+					   new Object[] { 200, null, result, null });
+    }
   }
 
   private void loadMainFile()
@@ -543,7 +592,7 @@ public class Application
     is.close();
   }
 
-  private void loadESXXFile(InputStream is) 
+  private void loadESXXFile(InputStream is)
     throws IOException {
     try {
       xml = esxx.parseXML(is, baseURI, externalURIs, null);
@@ -557,7 +606,7 @@ public class Application
 
       XPathSelector xs = xc.compile("//processing-instruction() | " +
 				    "//esxx:esxx/esxx:handlers/esxx:*").load();
-      xs.setContextItem(processor.newDocumentBuilder().wrap(xml));
+      xs.setContextItem(esxx.getSaxonDocumentBuilder().wrap(xml));
 
       for (XdmItem i : xs) {
 	Node n = (Node) ((NodeWrapper) i.getUnderlyingValue()).getUnderlyingNode();
@@ -604,6 +653,20 @@ public class Application
 	  else if (name.equals("exit")) {
 	    handleExitHandler(e);
 	  }
+	}
+      }
+
+      xs = xc.compile("//esxx:esxx/esxx:filters/esxx:*").load();
+      xs.setContextItem(esxx.getSaxonDocumentBuilder().wrap(xml));
+
+      for (XdmItem i : xs) {
+	Element elm = (Element) ((NodeWrapper) i.getUnderlyingValue()).getUnderlyingNode();
+	String name = elm.getLocalName();
+
+	if (name.equals("http")) {
+	  // esxx/filters/http matched.
+	  gotHTTPFilters = true;
+	  handleHTTPFilter(elm);
 	}
       }
     }
@@ -706,9 +769,9 @@ public class Application
 		  @Override public Object run(Context cx) {
 		    try{
 		      Object[] args = { new Date(scheduledExecutionTime()) };
-		      
-		      return JS.callJSMethod(th.handler, args, 
-					     getAppName() + " timer", 
+
+		      return JS.callJSMethod(th.handler, args,
+					     getAppName() + " timer",
 					     cx, applicationScope);
 		    }
 		    catch (Exception ex) {
@@ -775,7 +838,7 @@ public class Application
     throws XMLStreamException {
 
     XMLStreamReader xsr = xmlInputFactory.createXMLStreamReader(
-	new StringReader("<esxx-stylesheet " + data + "/>"));
+								new StringReader("<esxx-stylesheet " + data + "/>"));
 
     while (xsr.hasNext()) {
       if (xsr.next() == XMLStreamConstants.START_ELEMENT) {
@@ -946,6 +1009,24 @@ public class Application
     }
   }
 
+  private void handleHTTPFilter(Element e) {
+    String method = e.getAttributeNS(null, "method").trim();
+    String uri    = e.getAttributeNS(null, "uri").trim();
+    String filter = e.getAttributeNS(null, "filter").trim();
+
+    if (filter.equals("")) {
+      throw new ESXXException("<http> attribute 'filter' must " +
+			      "must be specified");
+    }
+
+    if (filter.endsWith(")")) {
+      throw new ESXXException("<http> attribute 'filter' value " +
+			      "should not include parentheses");
+    }
+
+    filters.add(new FilterRule(method, uri, filter));
+  }
+
   private static class Code {
     public Code(URL u, int l, String s) {
       url = u;
@@ -976,7 +1057,7 @@ public class Application
 	if (!delay.isEmpty()) {
 	  this.delay = (long) (1000 * Double.parseDouble(delay));
 	}
-      } 
+      }
       catch (NumberFormatException ex) {
 	throw new ESXXException("Failed to parse <timer> attribute 'delay': " + ex.getMessage());
       }
@@ -985,7 +1066,7 @@ public class Application
 	if (!period.isEmpty()) {
 	  this.period = (long) (1000 * Double.parseDouble(period));
 	}
-      } 
+      }
       catch (NumberFormatException ex) {
 	throw new ESXXException("Failed to parse <timer> attribute 'period': " + ex.getMessage());
       }
@@ -997,6 +1078,96 @@ public class Application
     public long period;
     public String handler;
   }
+
+  private static class FilterRule {
+    public FilterRule(String method, String uri, String filter) {
+      if (method.isEmpty()) {
+	method = "[^" + SEPARATOR + "]+";
+      }
+
+      if (uri.isEmpty()) {
+	uri = ".*";
+      }
+
+      String regex = "(?:" + method + ")" + SEPARATOR + "(?:" + uri + ")";
+
+      pattern = Pattern.compile(regex);
+      this.filter = filter;
+    }
+
+    public String matches(String method, String uri) {
+      return pattern.matcher(method + SEPARATOR + uri).matches() ? filter : null;
+    }
+
+    private Pattern pattern;
+    private String filter;
+
+    private static char SEPARATOR = '\n';
+  }
+
+  public interface HandlerCallback {
+    JSResponse execute(Scriptable req);
+  }
+
+  private class FilterFunction
+    extends FunctionObject {
+    public FilterFunction(HandlerCallback handler, JSRequest req,
+			  String method, String path_info) {
+      super("next", filterMethod, applicationScope);
+
+      this.request = req;
+      this.handler = handler;
+
+      for (FilterRule r : filters) {
+	String m = r.matches(method, path_info);
+	if (m != null) {
+	  matchingFilters.add(m);
+	}
+      }
+    }
+
+    public JSResponse execute(Context cx) {
+      if (matchingFilters.isEmpty()) {
+	return handler.execute(request);
+      }
+      else {
+	return executeHTTPFilter(cx, request, this, matchingFilters.remove(0));
+      }
+    }
+
+    private List<String> matchingFilters = new LinkedList<String>();
+    private Scriptable request;
+    private HandlerCallback handler;
+  }
+
+  static private java.lang.reflect.Method filterMethod;
+
+  @SuppressWarnings("unused") private static JSResponse next(Context cx, Scriptable thisObj,
+							     Object[] args, Function funObj) {
+    FilterFunction ff = (FilterFunction) funObj;
+
+    // Update request object, if argument is present
+    if (args.length > 1 && args[0] != Context.getUndefinedValue()) {
+      ff.request = (Scriptable) args[0];
+    }
+
+    // Execute next filter
+    return ff.execute(cx);
+  }
+
+  static {
+    try {
+      filterMethod = Application.class.getDeclaredMethod("next",
+							 Context.class,
+							 Scriptable.class,
+							 Object[].class,
+							 Function.class);
+    }
+    catch (NoSuchMethodException ex) {
+      throw new ESXXException("Failed to find Application.next(): ", ex);
+    }
+  }
+
 
   private XMLInputFactory xmlInputFactory;
 
@@ -1031,6 +1202,7 @@ public class Application
 
   private boolean gotHTTPHandlers = false;
   private boolean gotSOAPHandlers = false;
+  private boolean gotHTTPFilters = false;
 
   private Document xml;
   private LinkedHashMap<String, Code> codeList = new LinkedHashMap<String, Code>();
@@ -1040,6 +1212,8 @@ public class Application
   private RequestMatcher xsltMatcher = new RequestMatcher();
   private String errorHandler;
   private String exitHandler;
+
+  private List<FilterRule> filters = new LinkedList<FilterRule>();
 
   private Timer timer;
   private Collection<TimerHandler> timerHandlers = new LinkedList<TimerHandler>();

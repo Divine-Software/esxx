@@ -50,8 +50,8 @@ class Worker {
       // 							      app.getAppName());
       //     }
 
-      Object    result = null;
-      Exception error  = null;
+      JSResponse result = null;
+      Exception  error  = null;
 
       // Create a Request object
       JSRequest jsreq = (JSRequest) JSESXX.newObject(cx, global, "Request", 
@@ -78,7 +78,7 @@ class Worker {
 	else {
 	  // No handlers; the document is the result
 
-	  result = app.getMainDocument();
+	  result = app.wrapResult(cx, app.getMainDocument());
 	}
       }
       catch (ESXXException.TimeOut ex) {
@@ -110,35 +110,17 @@ class Worker {
       }
 
       // No error or error handled: Did we get a valid result?
-      if (result == null || result == Context.getUndefinedValue()) {
+      if (result == null) {
 	throw new ESXXException("No result from '" + request.getScriptFilename() + "'");
       }
 
-      JSResponse js_response;
 
-      if (result instanceof JSResponse) {
-	js_response = (JSResponse) result;
-      }
-      else if (result instanceof NativeArray) {
-	// Automatically convert an JS Array into a Response
-	js_response = (JSResponse) JSESXX.newObject(cx, global, "Response",
-						    cx.getElements((NativeArray) result));
-      }
-      else if (result instanceof Number) {
-	js_response = (JSResponse) JSESXX.newObject(cx, global, "Response",  
-						    new Object[] { result, null, null, null });
-      }
-      else {
-	js_response = (JSResponse) JSESXX.newObject(cx, global, "Response",  
-						    new Object[] { 200, null, result, null });
-      }
-
-      Response response = js_response.getResponse();
+      Response response = result.getResponse();
 
       response.unwrapResult();
 
       if (response.getResult() instanceof Node) {
-	handleTransformation(request, response, js_response, app, cx, global);
+	handleTransformation(request, response, result, app, cx, global);
       }
 
       // Return response

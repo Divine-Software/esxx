@@ -64,7 +64,7 @@ function authenticate(req, next) {
   let auth = req.headers.Authorization;
 
   if (!auth || auth.indexOf("Basic ") != 0) {
-    return [ESXX.Response.UNAUTHORIZED, { "WWW-Authenticate": 'Basic realm="ESXX Filters Test"' },
+    return [ESXX.Response.UNAUTHORIZED, { "WWW-Authenticate": 'Basic realm="Use esxx/esxx"' },
 	    <unauthorized>Please use esxx/esxx to log in.</unauthorized>];
   }
 
@@ -82,7 +82,7 @@ function authenticate(req, next) {
 function xsltParam(req, next) {
   let result = next(req);
 
-  result.params.base = req.scriptURI();
+  result.params.base = req.scriptURI;
 
   return result;
 }
