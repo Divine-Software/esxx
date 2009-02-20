@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<project name="esxx-war" default="war">
+  <description>Custom ESXX WAR build file</description>
+
+  <property name="web.dir"     location="WEB-INF"/>
+  <property name="classes.dir" location="${web.dir}/classes"/>
+  <property name="lib.dir"     location="${web.dir}/lib"/>
+
+  <target name="war" description="generate a servlet">
+    <war destfile="esxx.war" 
+	 webxml="${web.dir}/web.xml"
+	 filesetmanifest="merge">
+      <classes dir="${classes.dir}"/>
+      <lib dir="${lib.dir}"/>
+      <zipfileset file="build.xml"/>
+      <zipfileset prefix="share" dir="share" excludes="*~"/>
+
+      <!-- Custom payload; don't forget to change WEB-INF/web.xml -->
+      <zipfileset prefix="examples" dir="examples" excludes="*~"/>
+    </war>
+  </target>
+
+  <target name="clean" description="clean up" >
+    <delete file="esxx.war"/>
+  </target>
+</project>

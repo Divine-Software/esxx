@@ -12,6 +12,9 @@
 	* XSLT parameters may now be specified via the property
 	'params' in the ESXX.Response object.
 
+	* A build.xml file is now included in esxx.war, so it can
+	easily be rebuilt with custom content.
+
 0.9.20090201
 	* Fixed bug #14765: req.scriptURI has problems with encoded
 	URI:s.

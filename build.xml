@@ -64,6 +64,7 @@
 
       <zipfileset prefix="examples" dir="examples" excludes="*~"/>
       <zipfileset prefix="share" dir="share" excludes="*~"/>
+      <zipfileset file="jee/build.xml"/>
     </war>
   </target>
 
