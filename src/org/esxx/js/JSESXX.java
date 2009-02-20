@@ -373,7 +373,7 @@ public class JSESXX
     }
 
     public Object jsGet_host() {
-      return ESXX.getInstance().hostObject();
+      return ESXX.getInstance().getHostObject();
     }
 
     public Scriptable jsGet_global() {

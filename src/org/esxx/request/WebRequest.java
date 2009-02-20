@@ -224,14 +224,14 @@ public class WebRequest
 
   public static String getHTMLHeader(ESXX esxx) {
     return htmlHeader.replaceAll("@RESOURCE_URI@", 
-				 esxx.settings().getProperty("esxx.resource-uri", 
-							     "http://esxx.org/"));
+				 esxx.getSettings().getProperty("esxx.resource-uri", 
+								"http://esxx.org/"));
   }
 
   public static String getHTMLFooter(ESXX esxx) {
     return htmlFooter.replaceAll("@RESOURCE_URI@", 
-				 esxx.settings().getProperty("esxx.resource-uri", 
-							     "http://esxx.org/"));
+				 esxx.getSettings().getProperty("esxx.resource-uri", 
+								"http://esxx.org/"));
   }
 
   public static String getFileListing(ESXX esxx, String req_uri, File dir) 

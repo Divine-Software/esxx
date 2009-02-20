@@ -249,7 +249,7 @@ public class ESXX {
      *  @returns A Properties object.
      */
 
-    public Properties settings() {
+    public Properties getSettings() {
       return settings;
     }
 
@@ -259,7 +259,7 @@ public class ESXX {
      *  @returns A host object (for instance, a Servlet).
      */
 
-    public Object hostObject() {
+    public Object getHostObject() {
       return hostObject;
     }
 
@@ -636,7 +636,7 @@ public class ESXX {
       return memoryCache.openCachedURL(url, null);
     }
 
-    public File getTempFile(Context cx) 
+    public File createTempFile(Context cx) 
       throws IOException {
       File temp = File.createTempFile(getClass().getName(), null);
       temp.deleteOnExit();

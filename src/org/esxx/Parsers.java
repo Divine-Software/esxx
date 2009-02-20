@@ -225,7 +225,7 @@ class Parsers {
       throws Exception {
       try {
 	ESXX esxx = ESXX.getInstance();
-	File temp = esxx.getTempFile(cx);
+	File temp = esxx.createTempFile(cx);
 
 	// Add required MIME header and stream data to a temporary file
 	FileOutputStream fos = new FileOutputStream(temp);
@@ -277,7 +277,7 @@ class Parsers {
 	  }
 	  else {
 	    // Create a new temporary file and create a description as value.
-	    temp = esxx.getTempFile(cx);
+	    temp = esxx.createTempFile(cx);
 	    fos = new FileOutputStream(temp);
 	    IO.copyStream(mbp.getInputStream(), fos);
 	    fos.close();

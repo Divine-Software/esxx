@@ -208,7 +208,7 @@ public class HTTPRequest
 	}
       });
 
-    int http_threads = Integer.parseInt(esxx.settings().getProperty("esxx.http_threads", "0"));
+    int http_threads = Integer.parseInt(esxx.getSettings().getProperty("esxx.http_threads", "0"));
 
     if (http_threads == 0) {
       // Use an unbounded thread pool
