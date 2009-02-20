@@ -64,7 +64,7 @@ function authenticate(req, next) {
   let auth = req.headers.Authorization;
 
   if (!auth || auth.indexOf("Basic ") != 0) {
-    return [ESXX.Response.UNAUTHORIZED, { "WWW-Authenticate": "Basic real='ESXX Filters Test'" },
+    return [ESXX.Response.UNAUTHORIZED, { "WWW-Authenticate": 'Basic realm="ESXX Filters Test"' },
 	    <unauthorized>Please use esxx/esxx to log in.</unauthorized>];
   }
 
