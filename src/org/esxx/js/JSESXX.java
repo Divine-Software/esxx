@@ -372,6 +372,10 @@ public class JSESXX
       return logger;
     }
 
+    public Object jsGet_host() {
+      return ESXX.getInstance().hostObject();
+    }
+
     public Scriptable jsGet_global() {
       return getTopLevelScope(this);
     }

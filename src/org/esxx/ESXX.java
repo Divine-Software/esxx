@@ -64,8 +64,8 @@ public class ESXX {
       return esxx;
     }
 
-    public static ESXX initInstance(Properties p) {
-      esxx = new ESXX(p);
+    public static ESXX initInstance(Properties p, Object h) {
+      esxx = new ESXX(p, h);
       return esxx;
     }
 
@@ -85,10 +85,14 @@ public class ESXX {
      *  @param p A set of properties that can be used to tune the
      *  execution.
      *
+     *  @param h A host object that can later be referenced by the
+     *  JavaScript code as 'esxx.host'.
+     *
      */
 
-    private ESXX(Properties p) {
+    private ESXX(Properties p, Object h) {
       settings = p;
+      hostObject = h;
 
       defaultTimeout = (int) (Double.parseDouble(settings.getProperty("esxx.app.timeout", "60")) 
 			      * 1000);
@@ -247,6 +251,16 @@ public class ESXX {
 
     public Properties settings() {
       return settings;
+    }
+
+
+    /** Returns the host object
+     *
+     *  @returns A host object (for instance, a Servlet).
+     */
+
+    public Object hostObject() {
+      return hostObject;
     }
 
     public void setNoHandlerMode(String match) {
@@ -1142,6 +1156,7 @@ public class ESXX {
 
     private Parsers parsers;
     private Properties settings;
+    private Object hostObject;
     private HashMap<String,String> cgiToHTTPMap;
 
     private DOMImplementation domImplementation;

@@ -63,7 +63,7 @@ public class ESXXServlet extends HttpServlet {
 
       root     = new File(resolvePath(getInitParameter("http-root"))).getCanonicalPath();
       root_uri = new File(root).toURI();
-      esxx     = ESXX.initInstance(p);
+      esxx     = ESXX.initInstance(p, this);
     }
     catch (Exception ex) {
       throw new ServletException("ESXXServlet.init() failed: " + ex.getMessage(), ex);

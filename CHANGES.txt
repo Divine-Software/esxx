@@ -15,6 +15,10 @@
 	* A build.xml file is now included in esxx.war, so it can
 	easily be rebuilt with custom content.
 
+	* Added 'esxx.host', which refers to a host object that can be
+	set when ESXX is embedded. For instance, If ESXX is deployed as a
+	Servlet, 'esxx.host' will refer to that Servlet.
+
 0.9.20090201
 	* Fixed bug #14765: req.scriptURI has problems with encoded
 	URI:s.

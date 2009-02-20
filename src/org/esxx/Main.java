@@ -115,7 +115,7 @@ public class Main {
 					   Long.toString(3600 * 24 * 365 * 10 /* 10 years */));
       }
 
-      ESXX esxx = ESXX.initInstance(System.getProperties());
+      ESXX esxx = ESXX.initInstance(System.getProperties(), null);
 
       esxx.setNoHandlerMode(cmd.getOptionValue('n', "lighttpd.*"));
 
