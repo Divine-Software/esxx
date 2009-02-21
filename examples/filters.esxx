@@ -16,16 +16,16 @@
 
   <filters>
     <!-- Authenticate all requests -->
-    <http filter="authenticate" />
+    <filter handler="authenticate" />
 
     <!-- Set XSLT params on all responses -->
-    <http filter="xsltParam" />
+    <filter handler="xsltParam" />
 
     <!-- Convert /json to JSON -->
-    <http uri="/json" filter="xmlToJSON" />
+    <filter uri="/json" handler="xmlToJSON" />
 
     <!-- Make all GET responses cachable -->
-    <http method="GET" filter="cacheResponse" />
+    <filter method="GET" handler="cacheResponse" />
   </filters>
 </esxx>
 

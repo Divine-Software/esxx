@@ -291,7 +291,7 @@ public class Application
 
     req.setArgs(match.params);
 
-    FilterFunction ff = new FilterFunction(new HandlerCallback() {
+    HandlerCallback hcb = new HandlerCallback() {
 	public JSResponse execute(Scriptable req) {
 	  Object result;
 	  Object args[] = { req };
@@ -301,9 +301,14 @@ public class Application
 
 	  return wrapResult(cx, result);
 	}
-      }, req, request_method, path_info);
+      };
 
-    return ff.execute(cx);
+    if (hasFilters()) {
+      return new FilterFunction(hcb, req, request_method, path_info).execute(cx);
+    }
+    else {
+      return hcb.execute(req);
+    }
   }
 
   public JSResponse executeMain(Context cx, JSRequest req,
@@ -371,7 +376,7 @@ public class Application
     return wrapResult(cx, result);
   }
 
-  public JSResponse executeHTTPFilter(Context cx, Scriptable req, Function next, String filter) {
+  public JSResponse executeFilter(Context cx, Scriptable req, Function next, String filter) {
     Object result;
     Object args[] = { req, next };
 
@@ -496,8 +501,8 @@ public class Application
     return gotHTTPHandlers;
   }
 
-  public boolean hasHTTPFilters() {
-    return gotHTTPFilters;
+  public boolean hasFilters() {
+    return gotFilters;
   }
 
   public boolean hasSOAPHandlers() {
@@ -605,7 +610,8 @@ public class Application
       xc.declareNamespace("esxx", ESXX.NAMESPACE);
 
       XPathSelector xs = xc.compile("//processing-instruction() | " +
-				    "//esxx:esxx/esxx:handlers/esxx:*").load();
+				    "//esxx:esxx/esxx:handlers/esxx:* | " + 
+				    "//esxx:esxx/esxx:filters/esxx:filter").load();
       xs.setContextItem(esxx.getSaxonDocumentBuilder().wrap(xml));
 
       for (XdmItem i : xs) {
@@ -653,20 +659,10 @@ public class Application
 	  else if (name.equals("exit")) {
 	    handleExitHandler(e);
 	  }
-	}
-      }
-
-      xs = xc.compile("//esxx:esxx/esxx:filters/esxx:*").load();
-      xs.setContextItem(esxx.getSaxonDocumentBuilder().wrap(xml));
-
-      for (XdmItem i : xs) {
-	Element elm = (Element) ((NodeWrapper) i.getUnderlyingValue()).getUnderlyingNode();
-	String name = elm.getLocalName();
-
-	if (name.equals("http")) {
-	  // esxx/filters/http matched.
-	  gotHTTPFilters = true;
-	  handleHTTPFilter(elm);
+	  else if (name.equals("filter")) {
+	    gotFilters = true;
+	    handleFilter(e);
+	  }
 	}
       }
     }
@@ -939,7 +935,7 @@ public class Application
     String handler = e.getAttributeNS(null, "handler").trim();
 
     if (delay.equals("") && period.equals("")) {
-      throw new ESXXException("<timer> attribute 'delat' or 'period' must must be specified");
+      throw new ESXXException("<timer> attribute 'delay' or 'period' must must be specified");
     }
 
     if (handler.equals("")) {
@@ -1009,22 +1005,22 @@ public class Application
     }
   }
 
-  private void handleHTTPFilter(Element e) {
-    String method = e.getAttributeNS(null, "method").trim();
-    String uri    = e.getAttributeNS(null, "uri").trim();
-    String filter = e.getAttributeNS(null, "filter").trim();
+  private void handleFilter(Element e) {
+    String method  = e.getAttributeNS(null, "method").trim();
+    String uri     = e.getAttributeNS(null, "uri").trim();
+    String handler = e.getAttributeNS(null, "handler").trim();
 
-    if (filter.equals("")) {
-      throw new ESXXException("<http> attribute 'filter' must " +
+    if (handler.equals("")) {
+      throw new ESXXException("<filter> attribute 'handler' must " +
 			      "must be specified");
     }
 
-    if (filter.endsWith(")")) {
-      throw new ESXXException("<http> attribute 'filter' value " +
+    if (handler.endsWith(")")) {
+      throw new ESXXException("<filter> attribute 'handler' value " +
 			      "should not include parentheses");
     }
 
-    filters.add(new FilterRule(method, uri, filter));
+    filters.add(new FilterRule(method, uri, handler));
   }
 
   private static class Code {
@@ -1131,7 +1127,7 @@ public class Application
 	return handler.execute(request);
       }
       else {
-	return executeHTTPFilter(cx, request, this, matchingFilters.remove(0));
+	return executeFilter(cx, request, this, matchingFilters.remove(0));
       }
     }
 
@@ -1202,7 +1198,7 @@ public class Application
 
   private boolean gotHTTPHandlers = false;
   private boolean gotSOAPHandlers = false;
-  private boolean gotHTTPFilters = false;
+  private boolean gotFilters = false;
 
   private Document xml;
   private LinkedHashMap<String, Code> codeList = new LinkedHashMap<String, Code>();
