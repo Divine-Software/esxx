@@ -46,8 +46,8 @@ function getCurrentDate(req) {
   let now = new Date();
 
   return <currentDate>
-           <day>{now.getDay()}</day>
-           <month>{now.getDay()}</month>
+           <day>{now.getDate()}</day>
+           <month>{now.getMonth() + 1}</month>
            <year>{now.getFullYear()}</year>
          </currentDate>;
 }
