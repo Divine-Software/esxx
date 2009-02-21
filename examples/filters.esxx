@@ -91,18 +91,10 @@ function xsltParam(req, next) {
 function xmlToJSON(req, next) {
   let result = next(req);
 
-  let json = [];
+  let json = { type: result.data.localName() };
 
   for each (let node in result.data.*) {
-    let e = {};
-
-    e[node.localName()] = node.toString();
-    
-    for each (let attr in node.@*) {
-      e[attr.name()] = attr.toString();
-    }
-
-    json.push(e);
+      json[node.localName()] = node.toString();
   }
 
   result.contentType = "application/json";
