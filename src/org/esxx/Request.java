@@ -39,6 +39,8 @@ public abstract class Request {
 
       workingDirectory = new File("").toURI();
 
+      requestMethod = properties.getProperty("REQUEST_METHOD");
+
       String protocol = properties.getProperty("HTTPS", "off").equals("on") ? "https" : "http";
       String hostname = properties.getProperty("HTTP_HOST", "localhost");
       String querystr = properties.getProperty("QUERY_STRING", "");
@@ -116,6 +118,10 @@ public abstract class Request {
 
     public boolean isDebuggerActivated() {
       return debuggerActivated;
+    }
+
+    public String getRequestMethod() {
+      return requestMethod;
     }
 
     public URI getRequestURI() {
@@ -205,6 +211,7 @@ public abstract class Request {
       }
     }
 
+    private String requestMethod;
     private URI requestURI;
     private URI scriptURI;
     private URI scriptFilename;

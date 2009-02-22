@@ -21,6 +21,9 @@
 
 	* Added HTTP filter support. And there was much rejoicing.
 
+	* Property requestMethod is now available on the ESXX.Request
+	object.
+
 0.9.20090201
 	* Fixed bug #14765: req.scriptURI has problems with encoded
 	URI:s.

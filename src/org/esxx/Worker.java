@@ -63,7 +63,7 @@ class Worker {
 	}
 	else if (app.hasHandlers()) {
 	  // Execute the SOAP or HTTP handler (if available)
-	  String request_method = request.getProperties().getProperty("REQUEST_METHOD");
+	  String request_method = request.getRequestMethod();
 	  String soap_action    = jsreq.jsGet_soapAction();
 
 	  if ("POST".equals(request_method) &&

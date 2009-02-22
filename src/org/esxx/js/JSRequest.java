@@ -52,8 +52,6 @@ public class JSRequest
 
       requestURI = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getRequestURI() });
       scriptURI  = (JSURI) cx.newObject(scope, "URI", new Object[] { request.getScriptURI() });
-      scriptName = request.getScriptName();
-      pathInfo   = request.getPathInfo();
 
       env     = cx.newObject(scope);
       headers = cx.newObject(scope);
@@ -124,6 +122,10 @@ public class JSRequest
       return "Request";
     }
 
+    public String jsGet_requestMethod() {
+      return request.getRequestMethod();
+    }
+
     public JSURI jsGet_requestURI() {
       return requestURI;
     }
@@ -133,11 +135,11 @@ public class JSRequest
     }
 
     public String jsGet_scriptName() {
-      return scriptName;
+      return request.getScriptName();
     }
 
     public String jsGet_pathInfo() {
-      return pathInfo;
+      return request.getPathInfo();
     }
 
     public Scriptable jsGet_env() {
@@ -192,8 +194,6 @@ public class JSRequest
 
     private JSURI requestURI;
     private JSURI scriptURI;
-    private String scriptName;
-    private String pathInfo;
 
     private Scriptable env;
     private Scriptable headers;
