@@ -1,0 +1,32 @@
+<!DOCTYPE esxx [
+
+<!ENTITY post_id    "(?{post_id}\d+)">
+<!ENTITY comment_id "(?{comment_id}\d+)">
+
+]>
+
+<esxx xmlns="http://esxx.org/1.0/">
+  <handlers>
+    <http method="GET"    uri="/posts/"          handler="blog.listPosts"/>
+    <http method="POST"   uri="/posts/"          handler="blog.addPost"/>
+    <http method="GET"    uri="/posts/&post_id;" handler="blog.getPost"/>
+    <http method="PUT"    uri="/posts/&post_id;" handler="blog.updatePost"/>
+    <http method="DELETE" uri="/posts/&post_id;" handler="blog.deletePost"/>
+
+    <http method="GET"    uri="/posts/&post_id;/"             handler="blog.listComments"/>
+    <http method="POST"   uri="/posts/&post_id;/"             handler="blog.addComment"/>
+    <http method="GET"    uri="/posts/&post_id;/&comment_id;" handler="blog.getComment"/>
+    <http method="PUT"    uri="/posts/&post_id;/&comment_id;" handler="blog.updateComment"/>
+    <http method="DELETE" uri="/posts/&post_id;/&comment_id;" handler="blog.deleteComment"/>
+
+
+  </handlers>
+</esxx>
+
+<?esxx
+
+esxx.include("Blog.js");
+
+var blog = new Blog("jdbc:h2:Blog");
+
+?>
