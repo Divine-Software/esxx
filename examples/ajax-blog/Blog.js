@@ -1,6 +1,9 @@
 
 esxx.include("BlogDB.js");
 
+XML.ignoreWhitespace = false;
+XML.prettyPrinting   = false;
+
 function Blog(dburi) {
   if (!dburi) {
     throw "Blog(dburi): dburi missing.";
@@ -33,39 +36,51 @@ function Blog.getCommentLocation(req, post_id, comment_id) {
 		 }).valueOf();
 }
 
-function Blog.fixAttributes(req, xml) {
+function Blog.fixResponse(req, xml) {
   delete xml.@resultSet; // We don't want this
 
   switch (xml.localName()) {
     case "posts":
       // Add URIs to all posts
       for each (let post in xml.post) {
-	Blog.fixAttributes(req, post);
+	Blog.fixResponse(req, post);
       }
       break;
 
-    case "post":
+    case "post": {
       xml.@href = Blog.getPostLocation(req, xml.id);
+      xml.body.* = new XMLList(xml.body.toString());
       break;
+    }
 
     case "comments":
       for each (let comment in xml.comment) {
-	Blog.fixAttributes(req, comment);
+	Blog.fixResponse(req, comment);
       }
       break;
 
     case "comment":
       xml.@href = Blog.getCommentLocation(req, xml.post_id, xml.id);
+      xml.body.* = new XMLList(xml.body.toString());
       break;
   }
 
   return xml;
 }
 
+
+function Blog.prototype.renderAdminGUI(req) {
+  return <admin>
+ 	   <resourceURI>{new URI(req.scriptURI, "..").valueOf()}</resourceURI>
+ 	   <postsURI>{new URI(req.scriptURI, "posts/").valueOf()}</postsURI>
+	 </admin>;
+}
+
+
 function Blog.prototype.listPosts(req) {
   let posts = this.db.listPosts(req.query.limit || 100);
 
-  return Blog.fixAttributes(req, posts);
+  return Blog.fixResponse(req, posts);
 }
 
 function Blog.prototype.addPost(req) {
@@ -95,17 +110,17 @@ function Blog.prototype.getPost(req) {
 	    <error>Post {req.args.post_id} not found.</error>];
   }
 
-  return Blog.fixAttributes(req, post);
+  return Blog.fixResponse(req, post);
 }
 
 function Blog.prototype.updatePost(req) {
-  let title = req.message.title.toString();
-  let body  = req.message.body.toString();
-
   if (req.contentType != "application/xml") {
     return [ESXX.Response.UNSUPPORTED_MEDIA_TYPE, {},
 	    <error>Posts must be submitted as 'application/xml'.</error>];
   }
+
+  let title = req.message.title.toString();
+  let body  = req.message.body.*.toXMLString();
 
   if (!title || !body) {
     return [ESXX.Response.UNPROCESSABLE_ENTITY, {},
@@ -133,7 +148,7 @@ function Blog.prototype.deletePost(req) {
 function Blog.prototype.listComments(req) {
   let comments = this.db.listComments(req.args.post_id, req.query.limit || 100);
 
-  return Blog.fixAttributes(req, comments);
+  return Blog.fixResponse(req, comments);
 }
 
 function Blog.prototype.addComment(req) {
@@ -164,16 +179,16 @@ function Blog.prototype.getComment(req) {
 	    <error>Comment {req.args.comment_id} to post {req.args.post_id} not found.</error>];
   }
 
-  return Blog.fixAttributes(req, comment);
+  return Blog.fixResponse(req, comment);
 }
 
 function Blog.prototype.updateComment(req) {
-  let body = req.message.body.toString();
-
   if (req.contentType != "application/xml") {
     return [ESXX.Response.UNSUPPORTED_MEDIA_TYPE, {},
 	    <error>Comments must be submitted as 'application/xml'.</error>];
   }
+
+  let body = req.message.body.*.toXMLString();
 
   if (!body) {
     return [ESXX.Response.UNPROCESSABLE_ENTITY, {},

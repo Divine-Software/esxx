@@ -7,6 +7,10 @@
 
 <esxx xmlns="http://esxx.org/1.0/">
   <handlers>
+    <http method="GET"    uri="/"                     handler="blog.listPosts" />
+    <http method="GET"    uri="/admin.html"           handler="blog.renderAdminGUI" />
+    <http method="GET"    uri="/posts/&post_id;.html" handler="blog.getPost"/>
+
     <http method="GET"    uri="/posts/"          handler="blog.listPosts"/>
     <http method="POST"   uri="/posts/"          handler="blog.addPost"/>
     <http method="GET"    uri="/posts/&post_id;" handler="blog.getPost"/>
@@ -20,12 +24,13 @@
     <http method="DELETE" uri="/posts/&post_id;/&comment_id;" handler="blog.deleteComment"/>
 
 
+    <stylesheet media-type="application/xml" uri="/|/.*\.html$" href="../blog.xslt" />
   </handlers>
 </esxx>
 
 <?esxx
 
-esxx.include("Blog.js");
+esxx.include("../Blog.js");
 
 var blog = new Blog("jdbc:h2:Blog");
 
