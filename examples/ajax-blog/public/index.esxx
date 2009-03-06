@@ -7,9 +7,9 @@
 
 <esxx xmlns="http://esxx.org/1.0/">
   <handlers>
-    <http method="GET"    uri="/"                     handler="blog.listPosts" />
+    <http method="GET"    uri="/"                     handler="blog.renderBlog" />
+    <http method="GET"    uri="/posts/&post_id;.html" handler="blog.renderPost"/>
     <http method="GET"    uri="/admin.html"           handler="blog.renderAdminGUI" />
-    <http method="GET"    uri="/posts/&post_id;.html" handler="blog.getPost"/>
 
     <http method="GET"    uri="/posts/"          handler="blog.listPosts"/>
     <http method="POST"   uri="/posts/"          handler="blog.addPost"/>

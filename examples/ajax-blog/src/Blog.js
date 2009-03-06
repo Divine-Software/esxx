@@ -23,49 +23,76 @@ function Blog(dburi) {
   }
 }
 
-function Blog.getPostLocation(req, post_id) {
-  return new URI(req.scriptURI, "posts/{p}", {
+function Blog.getPostLocation(req, post_id, html) {
+  return new URI(req.scriptURI, "posts/{p}" + (html ? ".html" : ""), {
 		   p: post_id
 		 }).valueOf();
 }
 
-function Blog.getCommentLocation(req, post_id, comment_id) {
-  return new URI(req.scriptURI, "posts/{p}/{c}", {
+function Blog.getCommentLocation(req, post_id, comment_id, html) {
+  return new URI(req.scriptURI, "posts/{p}/{c}" + (html ? ".html" : ""), {
 		   p: post_id,
 		   c: comment_id
 		 }).valueOf();
 }
 
-function Blog.fixResponse(req, xml) {
+function Blog.fixResponse(req, xml, html) {
   delete xml.@resultSet; // We don't want this
 
   switch (xml.localName()) {
     case "posts":
       // Add URIs to all posts
       for each (let post in xml.post) {
-	Blog.fixResponse(req, post);
+	Blog.fixResponse(req, post, html);
       }
       break;
 
     case "post": {
-      xml.@href = Blog.getPostLocation(req, xml.id);
+      xml.@href = Blog.getPostLocation(req, xml.id, html);
       xml.body.* = new XMLList(xml.body.toString());
       break;
     }
 
     case "comments":
       for each (let comment in xml.comment) {
-	Blog.fixResponse(req, comment);
+	Blog.fixResponse(req, comment, html);
       }
       break;
 
     case "comment":
-      xml.@href = Blog.getCommentLocation(req, xml.post_id, xml.id);
+      xml.@href = Blog.getCommentLocation(req, xml.post_id, xml.id, html);
       xml.body.* = new XMLList(xml.body.toString());
       break;
   }
 
   return xml;
+}
+
+function Blog.prototype.renderBlog(req) {
+  // Gimme 10 posts
+  let posts = Blog.fixResponse(req, this.db.listPosts(10), true);
+
+  return <blog>
+           <adminURI>{new URI(req.scriptURI, "admin.html").valueOf()}</adminURI>
+           {posts}
+         </blog>
+}
+
+function Blog.prototype.renderPost(req) {
+  let post = this.db.getPost(req.args.post_id);
+
+  if (post.length() == 0) {
+    return [ESXX.Response.NOT_FOUND, {},
+	    <error>Post {req.args.post_id} not found.</error>];
+  }
+
+  let comments = this.db.listComments(req.args.post_id, req.query.limit || 100);
+
+  return <blog-entry>
+           <adminURI>{new URI(req.scriptURI, "admin.html").valueOf()}</adminURI>
+           {Blog.fixResponse(req, post, true)}
+           {Blog.fixResponse(req, comments, true)}
+         </blog-entry>;
 }
 
 
@@ -80,7 +107,7 @@ function Blog.prototype.renderAdminGUI(req) {
 function Blog.prototype.listPosts(req) {
   let posts = this.db.listPosts(req.query.limit || 100);
 
-  return Blog.fixResponse(req, posts);
+  return Blog.fixResponse(req, posts, false);
 }
 
 function Blog.prototype.addPost(req) {
@@ -99,7 +126,7 @@ function Blog.prototype.addPost(req) {
 
   let post_id = this.db.addPost(title, body);
 
-  return [ESXX.Response.CREATED, { Location: Blog.getPostLocation(req, post_id) }];
+  return [ESXX.Response.CREATED, { Location: Blog.getPostLocation(req, post_id, false) }];
 }
 
 function Blog.prototype.getPost(req) {
@@ -110,7 +137,7 @@ function Blog.prototype.getPost(req) {
 	    <error>Post {req.args.post_id} not found.</error>];
   }
 
-  return Blog.fixResponse(req, post);
+  return Blog.fixResponse(req, post, false);
 }
 
 function Blog.prototype.updatePost(req) {
@@ -148,7 +175,7 @@ function Blog.prototype.deletePost(req) {
 function Blog.prototype.listComments(req) {
   let comments = this.db.listComments(req.args.post_id, req.query.limit || 100);
 
-  return Blog.fixResponse(req, comments);
+  return Blog.fixResponse(req, comments, false);
 }
 
 function Blog.prototype.addComment(req) {
@@ -167,8 +194,8 @@ function Blog.prototype.addComment(req) {
   let comment_id = this.db.addComment(req.args.post_id, body);
 
   return [ESXX.Response.CREATED, {
-	    Location: Blog.getCommentLocation(req, req.args.post_id, comment_id)
-	  }];
+    Location: Blog.getCommentLocation(req, req.args.post_id, comment_id, false)
+  }];
 }
 
 function Blog.prototype.getComment(req) {
@@ -179,7 +206,7 @@ function Blog.prototype.getComment(req) {
 	    <error>Comment {req.args.comment_id} to post {req.args.post_id} not found.</error>];
   }
 
-  return Blog.fixResponse(req, comment);
+  return Blog.fixResponse(req, comment, false);
 }
 
 function Blog.prototype.updateComment(req) {
