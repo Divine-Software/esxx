@@ -24,13 +24,13 @@
     <http method="DELETE" uri="/posts/&post_id;/&comment_id;" handler="blog.deleteComment"/>
 
 
-    <stylesheet media-type="application/xml" uri="/|/.*\.html$" href="../blog.xslt" />
+    <stylesheet media-type="application/xml" uri="/|/.*\.html$" href="../src/blog.xslt" />
   </handlers>
 </esxx>
 
 <?esxx
 
-esxx.include("../Blog.js");
+esxx.include("../src/Blog.js");
 
 var blog = new Blog("jdbc:h2:Blog");
 
