@@ -72,8 +72,9 @@ Ext.onReady(function() {
   };
 
   var cr = function(value, metadata, record, rowIndex, colIndex, store) {
-    // Remove HTML markup
+    // Remove HTML markup & trim whitespaces
     value = value.replace(/<[^>]+>/g, "").replace(/&[^;]+;/, "");
+    value = value.replace(/^\s+|\s+$/g, "");
 
     // Don't render more that the 30 first characters of a comment
     if (value.length > 30) {
