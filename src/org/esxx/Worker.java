@@ -23,7 +23,6 @@ import org.esxx.saxon.ESXXExpression;
 
 import java.io.*;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.Properties;
 import javax.xml.transform.dom.*;
 import org.mozilla.javascript.*;

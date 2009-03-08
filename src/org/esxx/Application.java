@@ -1107,6 +1107,9 @@ public class Application
 
   private class FilterFunction
     extends FunctionObject {
+
+    private static final long serialVersionUID = -3956216539946083943L;
+
     public FilterFunction(HandlerCallback handler, JSRequest req,
 			  String method, String path_info) {
       super("next", filterMethod, applicationScope);
