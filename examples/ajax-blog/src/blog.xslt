@@ -35,11 +35,13 @@
       <head>
 	<title>The Ajax Blog</title>
       </head>
-      <body>
+      <body class="blog">
 	<h1>The Ajax Blog</h1>
-	<p><a href="{adminURI}">Administration</a></p>
+	<p class="admin-link"><a href="{adminURI}">Administration</a></p>
 
-	<xsl:apply-templates select="posts/post" />
+	<div class="posts">
+	  <xsl:apply-templates select="posts/post" />
+	</div>
       </body>
     </html>
   </xsl:template>
@@ -48,30 +50,38 @@
   <xsl:template match="/blog-entry">
     <html>
       <head>
-	<title><xsl:value-of select="post/title"/></title>
+	<title>The Ajax Blog: <xsl:value-of select="post/title"/></title>
       </head>
-      <body>
-	<h1><xsl:value-of select="post/title"/></h1>
-	<p><a href="{adminURI}">Administration</a></p>
+      <body class="blog">
+	<h1>The Ajax Blog</h1>
+	<p class="admin-link"><a href="{adminURI}">Administration</a></p>
+	
+	<div class="posts">
+	  <xsl:apply-templates select="posts/post" />
+	</div>
 
-	<p><xsl:apply-templates select="post/body/node()" mode="html-to-xhtml" /></p>
-
-	<h2>Comments</h2>
-	<xsl:apply-templates select="comments/comment" />
+	<div class="comments">
+	  <h3>Comments</h3>
+	  <xsl:apply-templates select="comments/comment" />
+	</div>
       </body>
     </html>
   </xsl:template>
 
-  <!-- The list-of-posts view -->
+  <!-- The list-of-posts sub-view -->
   <xsl:template match="posts/post">
-    <h2><a href="{@href}"><xsl:value-of select="title" /></a></h2>
-    <p><xsl:apply-templates select="body/node()" mode="html-to-xhtml" /></p>
+    <div class="post">
+      <h2><a href="{@href}"><xsl:value-of select="title" /></a></h2>
+      <p><xsl:apply-templates select="body/node()" mode="html-to-xhtml" /></p>
+    </div>
   </xsl:template>
 
-  <!-- The list-of-comments view -->
+  <!-- The list-of-comments sub-view -->
   <xsl:template match="comments/comment">
-    <p><xsl:apply-templates select="body/node()" mode="html-to-xhtml" /></p>
-    <hr/>
+    <div class="comment">
+      <p><xsl:apply-templates select="body/node()" mode="html-to-xhtml" /></p>
+      <hr/>
+    </div>
   </xsl:template>
 
   <!-- Rules to change the namespace of all elements to XHTML and make them lowercase -->
