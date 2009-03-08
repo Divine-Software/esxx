@@ -23,51 +23,6 @@ function Blog(dburi) {
   }
 }
 
-function Blog.getPostLocation(req, post_id, html) {
-  return new URI(req.scriptURI, "posts/{p}" + (html ? ".html" : ""), {
-		   p: post_id
-		 }).valueOf();
-}
-
-function Blog.getCommentLocation(req, post_id, comment_id, html) {
-  return new URI(req.scriptURI, "posts/{p}/{c}" + (html ? ".html" : ""), {
-		   p: post_id,
-		   c: comment_id
-		 }).valueOf();
-}
-
-function Blog.fixResponse(req, xml, html) {
-  delete xml.@resultSet; // We don't want this
-
-  switch (xml.localName()) {
-    case "posts":
-      // Add URIs to all posts
-      for each (let post in xml.post) {
-	Blog.fixResponse(req, post, html);
-      }
-      break;
-
-    case "post": {
-      xml.@href = Blog.getPostLocation(req, xml.id, html);
-      xml.body.* = new XMLList(xml.body.toString());
-      break;
-    }
-
-    case "comments":
-      for each (let comment in xml.comment) {
-	Blog.fixResponse(req, comment, html);
-      }
-      break;
-
-    case "comment":
-      xml.@href = Blog.getCommentLocation(req, xml.post_id, xml.id, html);
-      xml.body.* = new XMLList(xml.body.toString());
-      break;
-  }
-
-  return xml;
-}
-
 function Blog.prototype.renderBlog(req) {
   // Gimme 10 posts
   let posts = Blog.fixResponse(req, this.db.listPosts(10), true);
@@ -238,3 +193,49 @@ function Blog.prototype.deleteComment(req) {
 
   return ESXX.Response.NO_CONTENT;
 }
+
+function Blog.getPostLocation(req, post_id, html) {
+  return new URI(req.scriptURI, "posts/{p}" + (html ? ".html" : ""), {
+		   p: post_id
+		 }).valueOf();
+}
+
+function Blog.getCommentLocation(req, post_id, comment_id, html) {
+  return new URI(req.scriptURI, "posts/{p}/{c}" + (html ? ".html" : ""), {
+		   p: post_id,
+		   c: comment_id
+		 }).valueOf();
+}
+
+function Blog.fixResponse(req, xml, html) {
+  delete xml.@resultSet; // We don't want this
+
+  switch (xml.localName()) {
+    case "posts":
+      // Add URIs to all posts
+      for each (let post in xml.post) {
+	Blog.fixResponse(req, post, html);
+      }
+      break;
+
+    case "post": {
+      xml.@href = Blog.getPostLocation(req, xml.id, html);
+      xml.body.* = new XMLList(xml.body.toString());
+      break;
+    }
+
+    case "comments":
+      for each (let comment in xml.comment) {
+	Blog.fixResponse(req, comment, html);
+      }
+      break;
+
+    case "comment":
+      xml.@href = Blog.getCommentLocation(req, xml.post_id, xml.id, html);
+      xml.body.* = new XMLList(xml.body.toString());
+      break;
+  }
+
+  return xml;
+}
+
