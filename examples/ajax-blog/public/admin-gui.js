@@ -5,20 +5,20 @@
 Ext.onReady(function() {
   Ext.QuickTips.init();
 
-  function encodeXMLContent(str) {
-    return str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;") 
-  }
+  var encodeXMLContent = function(str) {
+    return str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;"); 
+  };
 
-  function htmlToXHTML(str) {
+  var htmlToXHTML = function(str) {
     var h2xh  = Ext.get('html-to-xhtml').dom;
     h2xh.innerHTML = str;
     return serializeChildren(h2xh);
-  }
+  };
 
-  function serializeChildren(node) {
+  var serializeChildren = function(node) {
     var str;
 
-    if (XMLSerializer) {
+    if (typeof XMLSerializer != "undefined") {
       str = new XMLSerializer().serializeToString(node);
     }
     else {
@@ -26,7 +26,7 @@ Ext.onReady(function() {
     }
 
     return str.replace(/^<[^>]+>/, "").replace(/<[^>]+>$/, "");
-  }
+  };
 
   var ajaxFailure = function(response, options) {
     var message = response.statusText;
@@ -41,7 +41,7 @@ Ext.onReady(function() {
       buttons: Ext.Msg.ERROR,
       icon: Ext.MessageBox.ERROR
     });
-  }
+  };
 
   var post_store = new Ext.data.Store({
     url: postsURI,
@@ -83,20 +83,20 @@ Ext.onReady(function() {
     else {
       return value;
     }
-  }
+  };
 
   var post_list = new Ext.grid.GridPanel({
     store: post_store,
     columns: [
-      { header: "ID",       dataIndex: 'id',       width: 20,  hidden: true,               },
-      { header: "Title",    dataIndex: 'title',    width: 100,                             },
+      { header: "ID",       dataIndex: 'id',       width: 20,  hidden: true                },
+      { header: "Title",    dataIndex: 'title',    width: 100                              },
       { header: "Posted",   dataIndex: 'created',  width: 120,                renderer: dr },
       { header: "Updated",  dataIndex: 'updated',  width: 120, hidden: true,  renderer: dr },
-      { header: "Comments", dataIndex: 'comments', width: 80,  hidden: true,               }
+      { header: "Comments", dataIndex: 'comments', width: 80,  hidden: true                }
     ],
     sm: new Ext.grid.RowSelectionModel({ singleSelect: true }),
     stripeRows: true,
-    autoExpandColumn: 1,
+    autoExpandColumn: 1
   });
 
   post_list.getColumnModel().defaultSortable = true;
@@ -108,7 +108,7 @@ Ext.onReady(function() {
       var href  = selected.get('href');
 
       // This is ugly
-      comment_store.proxy.conn.url = href + '/';;
+      comment_store.proxy.conn.url = href + '/';
       comment_store.reload();
 
       Ext.getCmp('blog-title').setValue(title);
@@ -134,14 +134,14 @@ Ext.onReady(function() {
   var comment_list = new Ext.grid.GridPanel({
     store: comment_store,
     columns: [
-      { header: "ID",       dataIndex: 'id',       width: 20,  hidden: true,               },
+      { header: "ID",       dataIndex: 'id',       width: 20,  hidden: true                },
       { header: "Excerpt",  dataIndex: 'body',     width: 100,                renderer: cr },
       { header: "Posted",   dataIndex: 'created',  width: 120,                renderer: dr },
-      { header: "Updated",  dataIndex: 'updated',  width: 120, hidden: true,  renderer: dr },
+      { header: "Updated",  dataIndex: 'updated',  width: 120, hidden: true,  renderer: dr }
     ],
     sm: new Ext.grid.RowSelectionModel({ singleSelect: true }),
     stripeRows: true,
-    autoExpandColumn: 1,
+    autoExpandColumn: 1
   });
     
   comment_list.on('rowdblclick', function(row, ev) {
@@ -186,7 +186,6 @@ Ext.onReady(function() {
           text: 'Save',
 	  handler: function() {
 	    var body  = htmlToXHTML(Ext.getCmp('comment-body').getValue());
-
 	    Ext.Ajax.request({
 	      method: "PUT",
 	      url: href,
@@ -199,7 +198,7 @@ Ext.onReady(function() {
 	      failure: ajaxFailure
 	    });
 	  }
-	},
+	}
       ]
     });
 
@@ -207,16 +206,16 @@ Ext.onReady(function() {
       method: "GET",
       url: href,
       success: function(response, options) {
-	var body = Ext.DomQuery.selectNode('body', response.responseXML);
+	var body = Ext.DomQuery.selectNode('body', response.responseXML);	
 	Ext.getCmp('comment-body').setValue(serializeChildren(body));
       },
       failure: ajaxFailure
     });
 
     win.show(Ext.getCmp('comments'));
-  }
+  };
 
-  new Ext.Viewport({
+  var vp = new Ext.Viewport({
     layout: 'border',
     items: [
       {
@@ -245,7 +244,7 @@ Ext.onReady(function() {
 	    layout: 'fit',
 	    height: 300,
 	    split: true,
-	    items: comment_list,
+	    items: comment_list
 	  }
 	]
       },
