@@ -1,3 +1,4 @@
+xhtmlFormatting = "not";
 
 /* The global variable 'postsURI' should exist and point to the URL that 
    fetches all blog posts. */
@@ -21,8 +22,13 @@ Ext.onReady(function() {
     if (typeof XMLSerializer != "undefined") {
       str = new XMLSerializer().serializeToString(node);
     }
-    else {
+    else if (node.xml) {
       str = node.xml;
+    }
+    else {
+      // Tragically, IE can't serialize a DOM node to XML/XHTML.
+   	  str = outerXHTML(node);
+   	  alert("Give up: " + str);
     }
 
     return str.replace(/^<[^>]+>/, "").replace(/<[^>]+>$/, "");

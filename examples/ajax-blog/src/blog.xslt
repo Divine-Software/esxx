@@ -16,6 +16,8 @@
 
 	<script type="text/javascript" 
 		src="http://extjs.cachefly.net/builds/ext-cdn-771.js"></script>
+	<script type="text/javascript"
+	    src="http://cachefile.net/scripts/xhtmljs/0.3/xhtml.js"></script>
 
 	<!-- Set 'postsURI' global variable for admin-gui.js -->
 	<script type="text/javascript">var postsURI = "<xsl:value-of select='postsURI'/>";</script>
