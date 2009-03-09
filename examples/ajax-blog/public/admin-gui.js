@@ -28,7 +28,6 @@ Ext.onReady(function() {
     else {
       // Tragically, IE can't serialize a DOM node to XML/XHTML.
    	  str = outerXHTML(node);
-   	  alert("Give up: " + str);
     }
 
     return str.replace(/^<[^>]+>/, "").replace(/<[^>]+>$/, "");
