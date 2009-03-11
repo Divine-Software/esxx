@@ -76,7 +76,7 @@ public abstract class Request {
 	URI pt_uri = new URI("file", null, path_translated, null).normalize();
 	
 	pathInfo = script_filename.relativize(pt_uri).toString();
-	request_uri = new URI(request_uri).normalize().toString();
+	request_uri = new URI(request_uri).normalize().getPath();
 
 	if (request_uri.endsWith(pathInfo)) {
 	  scriptName = request_uri.substring(0, request_uri.length() - pathInfo.length());
