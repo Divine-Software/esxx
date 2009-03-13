@@ -1,36 +1,71 @@
 xhtmlFormatting = "not";
 
-/* The global variable 'postsURI' should exist and point to the URL that 
+/* The global variable 'postsURI' should exist and point to the URL that
    fetches all blog posts. */
 
 Ext.onReady(function() {
   Ext.QuickTips.init();
 
-  var encodeXMLContent = function(str) {
-    return str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;"); 
-  };
+  function encodeXMLElement(str) {
+    return str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  }
+
+  function encodeXMLAttribute(str) {
+    return encodeXMLElement(str).replace(/"/g, "&quot;");
+  }
+
+  function innerXML(node) {
+    var res = "";
+
+    for (var i = 0; i < node.childNodes.length; ++i) {
+      res += outerXML(node.childNodes.item(i));
+    }
+
+    return res;
+  }
+
+  function outerXML(node) {
+    var i;
+    var res = "";
+
+    if (node.nodeType > 3)
+    alert(node.nodeName + ": " + node.nodeType);
+
+    switch (node.nodeType) {
+      case 1: // Element
+        res = "<" + node.tagName.toLowerCase();
+
+        for (i = 0; i < node.attributes.length; ++i) {
+          res += outerXML(node.attributes.item(i));
+        }
+
+        if (node.hasChildNodes()) {
+          res += ">" + innerXML(node) + "</" + node.tagName.toLowerCase() + ">";
+        }
+        else {
+          res += "/>";
+        }
+        break;
+
+      case 2: // Attribute
+  //    if (! /hideFocus|contentEditable|disabled|tabIndex/.test(node.nodeName) && node.nodeValue !== null && node.nodeValue !== "") {
+        if (node.nodeValue) {
+          res = " " + node.nodeName + "=\"" + encodeXMLAttribute(node.nodeValue) + "\"";
+        }
+        break;
+
+      case 3: // Text
+        res += encodeXMLElement(node.nodeValue);
+        break;
+    }
+
+    return res;
+  }
 
   var htmlToXHTML = function(str) {
     var h2xh  = Ext.get('html-to-xhtml').dom;
     h2xh.innerHTML = str;
-    return serializeChildren(h2xh);
-  };
-
-  var serializeChildren = function(node) {
-    var str;
-
-    if (typeof XMLSerializer != "undefined") {
-      str = new XMLSerializer().serializeToString(node);
-    }
-    else if (node.xml) {
-      str = node.xml;
-    }
-    else {
-      // Tragically, IE can't serialize a DOM node to XML/XHTML.
-   	  str = outerXHTML(node);
-    }
-
-    return str.replace(/^<[^>]+>/, "").replace(/<[^>]+>$/, "");
+    return innerXML(h2xh);
   };
 
   var ajaxFailure = function(response, options) {
@@ -122,7 +157,7 @@ Ext.onReady(function() {
 	url: href,
 	success: function(response, options) {
 	  var body = Ext.DomQuery.selectNode('body', response.responseXML);
-	  Ext.getCmp('blog-body').setValue(serializeChildren(body));
+	  Ext.getCmp('blog-body').setValue(innerXML(body));
 	},
 	failure: ajaxFailure
       });
@@ -148,10 +183,10 @@ Ext.onReady(function() {
     stripeRows: true,
     autoExpandColumn: 1
   });
-    
+
   comment_list.on('rowdblclick', function(row, ev) {
     var selected = comment_list.getSelectionModel().getSelected();
-			    
+
     if (selected) {
       editComment(selected.get('href'));
     }
@@ -211,8 +246,8 @@ Ext.onReady(function() {
       method: "GET",
       url: href,
       success: function(response, options) {
-	var body = Ext.DomQuery.selectNode('body', response.responseXML);	
-	Ext.getCmp('comment-body').setValue(serializeChildren(body));
+	var body = Ext.DomQuery.selectNode('body', response.responseXML);
+	Ext.getCmp('comment-body').setValue(innerXML(body));
       },
       failure: ajaxFailure
     });
@@ -241,7 +276,7 @@ Ext.onReady(function() {
 	    layout: 'fit',
 	    items: post_list
 	  },
-	  
+
 	  {
 	    region: 'south',
 	    id: 'comments',
@@ -286,7 +321,7 @@ Ext.onReady(function() {
 	    text: 'Delete',
 	    handler: function() {
 	      var selected = post_list.getSelectionModel().getSelected();
-	      
+
 	      if (selected) {
 		Ext.Ajax.request({
 		  method: "DELETE",
@@ -311,7 +346,7 @@ Ext.onReady(function() {
 	      var selected = post_list.getSelectionModel().getSelected();
 	      var href;
 	      var method;
-	      
+
 	      if (selected) {
 		href = selected.get('href');
 		method = "PUT";
@@ -320,8 +355,8 @@ Ext.onReady(function() {
 		href   = postsURI;
 		method = "POST";
 	      }
-	      
-	      var title = encodeXMLContent(Ext.getCmp('blog-title').getValue());
+
+	      var title = encodeXMLElement(Ext.getCmp('blog-title').getValue());
 	      var body  = htmlToXHTML(Ext.getCmp('blog-body').getValue());
 
 	      Ext.Ajax.request({
@@ -330,7 +365,7 @@ Ext.onReady(function() {
 		xmlData: "<post><title>" + title + "</title>" +
 		  "<body>" + body + "</body></post>",
 		headers: { "Content-Type": "application/xml" },
-		
+
 		success: function(response, options) {
 		  post_store.reload();
 		},
