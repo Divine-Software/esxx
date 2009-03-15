@@ -43,7 +43,7 @@ function Blog.prototype.renderBlog(req) {
 
   return <blog>
            {posts}
-         </blog>
+         </blog>;
 }
 
 function Blog.prototype.renderPost(req) {
