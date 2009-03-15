@@ -1,0 +1,67 @@
+<?xml version="1.0" ?>
+
+<!-- The SQL ProductManager implementation -->
+<?esxx-include href="app-form-sql-pm.js" ?>
+
+<!-- The web application -->
+<?esxx-include href="app-form.js" ?>
+
+<?esxx
+/** Create an instance of the application **/
+var app = new App(new ProductManager(esxx.document.products));
+?>
+
+<app xmlns:xi="http://www.w3.org/2001/XInclude">
+  <!-- The URI that specifies our SQL database -->
+  <db uri="jdbc:h2:H2DB.app-form-sql"/>
+
+  <increase min="0" def="10" max="100"/>
+
+  <products>
+    <product>
+      <id>1</id>
+      <description>Lamp</description>
+      <price>5.75</price>
+    </product>
+
+    <product>
+      <id>2</id>
+      <description>Table</description>
+      <price>75.25</price>
+    </product>
+
+    <product>
+      <id>3</id>
+      <description>Chair</description>
+      <price>22.79</price>
+    </product>
+  </products>
+
+  <!-- ESXX application configuration -->
+  <esxx xmlns="http://esxx.org/1.0/">
+    <handlers>
+      <!-- The front page -->
+      <http method="GET"
+            uri="/main"
+            handler="app.getIndex" />
+
+      <!-- Map GET requests to *Form methods on the "app" JS object -->
+      <http method="GET"
+            uri="/(?{method}\p{javaLetter}+)"
+            handler="app.{method}Form" />
+
+      <!-- Map POST requests to *Action methods on the "app" JS object -->
+      <http method="POST"
+            uri="/(?{method}\p{javaLetter}+)"
+            handler="app.{method}Action" />
+
+      <!-- Redirect any other URI to /main -->
+      <http method="GET" handler="app.redirectToMain"/>
+
+      <!-- An XSLT stylesheet (a.k.a. a view) used to format the
+           application's result to HTML  -->
+      <stylesheet media-type="application/xml"
+                  href="app-form.xslt" />
+    </handlers>
+  </esxx>
+</app>

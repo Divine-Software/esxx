@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE esxx PUBLIC "-//Martin Blom//DTD ESXX Application 1.0//EN"
+                      "http://martin.blom.org/esxx/1.0/dtd/" [
+]>
+
+<!-- Load a few external files -->
+<?esxx-include href="test.js" ?>
+
+<?esxx 
+
+// Inline code is totally fine here.  The recommended way is to just
+// set up the environment and nothing else. The rest should be loaded
+// using the "esxx-import" PI.
+
+// Note that when using sessions, this code and all code modules
+// will only be executed once during the session life-time.
+
+var myapp = new MyApp(esxx);
+
+//kalle();
+?>
+
+<esxx xmlns="http://esxx.org/1.0/">
+    <!-- First some information about the application -->
+    <info>
+      <title>ESXX test application</title>
+      <version>1.0</version>
+      <vendor>Divine Software</vendor>
+      <copyright>2007 Martin Blom</copyright>
+      <author>Martin Blom</author>
+      <author>You!</author>
+      <description>This file demonstrates how a basic ESXX application
+is launched.</description>
+    </info>
+
+    <!-- Application settings -->
+    <handlers>
+      <!-- Handlers for HTTP GET/POST/PUT/DELETE -->
+      <http method="GET" handler="myapp.handleGet" />
+      <http method="PUT" handler="myapp.handlePut" />
+      <http method="POST" handler="myapp.handlePost" />
+      <http method="DELETE" handler="myapp.handleDelete" />
+      <!-- etc ... -->
+
+      <!-- Handlers for SOAP actions -->
+      <soap action="http://example.com/time" object="myapp.rpcTime" />
+      <soap action="http://example.com/money" object="myapp.rpcMoney" />
+      <soap action="" object="myapp.rpcDefault" />
+
+      <!-- Transformation stylesheets -->
+      <stylesheet media-type="text/html" href="test.xsl" type="text/xsl" />
+<!--      <stylesheet media-type="text/xml+my-soap" href="test-soap.xsl" />-->
+
+      <!-- Handler for any kind of error -->
+      <error handler="myapp.handleError" />
+
+    </handlers>
+</esxx>

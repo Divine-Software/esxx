@@ -1,0 +1,37 @@
+<?esxx
+
+function count() {
+  var result = 0;
+
+  for (var i = 0; i < 1000000; ++i) {
+    result += 1;
+  }
+
+  return result;
+}
+
+function load() {
+  var uri = new URI("http://martin.blom.org/esxx/1.0/dtd");
+
+  return uri.load("text/plain");
+}
+
+function sleep(a, b, c) {
+  esxx.log.info("sleep args: " + a + ", " + b + ", " + c);
+  java.lang.Thread.sleep(1000);
+  return true;
+}
+
+esxx.log.info("Executing work in parallel: " + java.lang.System.currentTimeMillis());
+
+var results = esxx.parallel([count, load, sleep], [1.0, [10, 20]], 3000);
+
+esxx.log.info("Executed work in parallel: " + java.lang.System.currentTimeMillis());
+
+for each (var r in results) {
+  esxx.log.info("Result: " + r);
+}
+
+?>
+
+<dummy/> <!-- This is an XML file, rememeber? -->

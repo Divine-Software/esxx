@@ -1,0 +1,18 @@
+<?esxx
+
+var apa = new URI("apa:kalle");
+java.lang.System.out.println(apa);
+
+var base = new URI("file:///C:/Local/");
+java.lang.System.out.println(base);
+
+var rel1 = new URI(base, "../Windows");
+java.lang.System.out.println(rel1);
+
+// This should fail in windows but not in Unix.
+var rel2 = new URI(base, "{path}", {path: "..\\Windows"});
+java.lang.System.out.println(rel2);
+
+?>
+
+<dummy/>

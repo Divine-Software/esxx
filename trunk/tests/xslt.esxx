@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Document is XHTML 1.1 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<!-- Server-side stylesheet -->
+<?esxx-stylesheet href="test.xsl" type="text/xsl" ?>
+
+<!-- Optinal JavaScript modules referred to in the stylesheet -->
+<?esxx-include href="test.js" ?>
+
+<?esxx 
+
+default xml namespace = "http://www.w3.org/1999/xhtml";
+
+var myapp = new MyApp(esxx);
+
+// Inline JavaScript code works too, but is not recommended here
+
+function test() { 
+  // "js:test()" is now available in XPath expressions if you bind the
+  // "javascript:" namespace to prefix "js:" in your stylesheet
+  return "Test called with " + arguments.length + " arguments: " 
+         + Array.prototype.slice.call(arguments).join(", ");
+}
+
+function xmlTest() {
+  return <test>
+    <elem>An element: <tt>elem</tt></elem>
+    <elem>One more: <tt>elem</tt></elem>
+    </test>;
+}
+
+var currentDate = new Date();
+
+// Create the ESXX debug log comment
+esxx.log.info(esxx.location + " loaded")
+
+?>
+
+<!-- Client-side stylesheet -->
+<?xml-stylesheet href="test.css"    type="text/css" ?>
+
+<!-- Document starts -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
+
+ <head>
+  <title>ESXX XSLT test page</title>
+  <link href="mailto:martin@blom.org" rev="made" />
+ </head>
+
+ <body>
+  <h1>ESXX XSLT test page</h1>
+
+  <p>This is an ESXX XSLT test page. In addition to parsing and
+validating the document, this page will also apply a server-side XSLT
+transform before sending the result to the client.</p>
+
+  <p>The XSLT stylesheet has full access to the ESXX runtime via the
+<code>javascript</code> namespace:</p>
+
+  <p>Java years since 1900: <span id='ext-java-func'/></p>
+  <p>JS years since 1900: <span id='ext-js-func'/></p>
+  <p>JS Test #1: <span id='ext-js-test1' class='APA2'>EXT-JS-TEST1</span></p>
+  <p>JS Test #2: <span id='ext-js-test2'/></p>
+  <p>JS Test #3: <span id='ext-js-test3'/></p>
+
+  <!-- The ESXX debug log will appear here -->
+  <pre class="debug"/>
+
+ </body>
+</html>
+<!-- Document ends -->

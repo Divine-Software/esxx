@@ -1,0 +1,177 @@
+0.9.20090201
+	* Fixed bug #14765: req.scriptURI has problems with encoded
+	URI:s.
+
+	* Fixed problems with the init script that made chkconfig not
+	recognize it.
+
+	* The XMIME/XMTP parser and serializer how handles all text/*
+	MIME types, not just text/plain.
+
+	* esxx.include now takes a secondary argument, scope, which
+	can be used to specify in what scope the included file should 
+	be evaluated in.  If unspecified, the global scope is used
+	just like before.
+
+	* When using esxx.include from a function, files are now
+	first resolved relative the working directory.
+
+	* esxx.global is now available, and refers to the global
+	scope.
+	
+	* The HTTP protocol handler now simply throws an ESXX.Response
+	object if the HTTP status in load(), save(), append() or
+	remove() is not 2xx.
+
+	* Added IPS (OpenSolaris) package support, including SVC
+	management script and manifest.
+
+	* Added proper PackageMaker (OSX), DEB and RPM support. CPack
+	is now only used for the Windows packages.
+
+	* Added ESXX.Response methods: toString(), valueOf() and
+	[from Java] getDefaultValue().
+
+	* Added a dns: URI protocol handler, with LDAP URI-inspired
+	query part.
+
+	* The --no-handler option now takes a regex argument which
+	is matched against SERVER_SOFTWARE. This makes it possible
+	to use both Apache and Lighttpd with the same ESXX server
+	by specifying "--no-handler=lighttpd.*" (which happens to
+	be the default, so you don't actually have to specify it).
+
+	* SOAP handlers can now match on SOAPAction and URI just like
+	HTTP handlers.
+
+	* XSLT stylesheets can now match on content type and URI,
+	similar to HTTP and SOAP handlers.
+
+	* Added a "javaURI" property to the URI class.
+
+	* Added include files "json2.js" (from json.org) and
+	"esxx/harmony.js", which adds a few useful functions from 
+	the current ECMAScript 3.1 proposal.
+
+	* Removed setLevel() from the Logger class in favour of a
+        "level" propery on the prototype object.
+
+	* Upgraded to Rhino 1.7 release 2 RC3.
+
+	* Upgraded embedded H2 to 1.1.107, 2009-01-24.
+
+0.9.20081101
+	* Bug fixes as usual.
+
+	* Upgraded to Rhino 1.7 release 2 PRERELEASE 2008 09 30, so we
+	can extend abstract Java classes, which didn't work in 1.7r1.
+
+	* esxx.document can now be modified.
+
+	* Enabled a proper https URI implementation.
+
+	* New esxx.wait signature: esxx.wait(mutex, timeout,
+	function), which waits on mutex until function returns true.
+
+	* The URI constructor now allows {...} syntax and a parameter
+	object to automatically build proper URIs. The file URI class
+	will also refuse URIs with encoded path separators in then.
+
+	* The Request object now has requestURI, scriptURI, scriptName
+	and pathInfo properties.
+
+	* Request.query now only contains parameters from the
+	URI. 'application/x-www-form-urlencoded'-encoded data is now
+	in Request.message.
+
+	* Added Request.contentType, which contains the basic content
+	type (without parameters).
+
+	* The application's error handler may now return null or
+	undefined to make it act as if there were not error handler
+	installed at all.
+
+	* Added esxx/Object.js include file, which adds extras to the
+	Object class. Currently, it only adds $(), which can be used
+	to sanitize the 'this' variable in closures.
+
+	* Added --no-handler option, for web servers that invoke
+	FastCGI servers without an extra file type handler, such as
+	lighttpd.
+
+	* Embedded H2 updated to 1.1.102, 2008-10-24.
+
+	* The stylesheets are now independent from the applications
+	and may be viewed and unloaded via JMX. It's also possible to 
+	view runtime statistics of individual stylesheets.
+
+	* Added support for running multiple ESXX instances via init
+	scripts.
+
+	* Command line script files now reads config file from
+	/etc/{default,defaults,sysconfig}/esxx-js so remote JMX ports
+	do not interfer with scripts.
+
+	* Moved global constructors Logger, Request and Response to
+	ESXX.Logger, ESXX.Request and ESXX.Response in order to reduce
+	the number of ESXX-introduced global variables. URI stays.
+
+	* New class, ESXX.LRUCache. New magic property, esxx.tls,
+	which is a per-application, per-thread LRUCache object, and
+	non-magic esxx.pls, which is just a per-application LRUCache.
+
+	* Added a multipart/form-data parser to handle HTTP file
+	uploads.
+
+	* Added timer handler support.
+
+	* All time parameters are now in seconds (may be decimal),
+	including system properties, methods in ESXX and LRUCache, and
+	the <timer> element's attributes.
+
+0.9.20080927
+	* Fixed a bug that closed System.in in script mode, causing
+	System.console() to return null.
+
+	* When using the built-in HTTP server, a body will never be
+	sent when the status code is 1xx, 204 or 304, as per HTTP
+	spec.
+
+0.9.20080924
+	* Upgraded to HtmlCleaner 2.1.
+
+	* Upgraded to HTTPClient 4.0 beta 1 and HTTPCore 4.0 beta 2.
+
+	* When creating a new URI object from an old, also copy all of
+	the old object's properties (such as auth etc).
+
+	* Added code for application/x-www-form-urlencoded encoding in
+	responses (and thus HTTP URI requests).
+
+	* Recognize Apache's Authorization "CGI" environment variable
+	as an HTTP header.
+
+0.9.20080821
+	* Loads of bug fixes.
+
+	* Added getScriptFilename(), getPathInfo(), getScriptName() to
+	Request object.
+
+	* Disabled validate-if-schema feature on XML parser.
+
+	* Added exit handler support, to execute JS code when an app
+	is being unloaded.
+
+	* The error handler now receives (req, ex) arguments.
+
+	* Added 'buffered' property to the Response object, which
+	makes ESXX buffer the response in RAM, in order to be able to provide
+	the Content-Length HTTP header.
+
+	* Added JMX support. Apps can be inspected and unloaded via
+	JConsole.
+
+	* Init script now work on RHEL/CentOS 4.x.
+
+0.9.20080619
+	* Initial binary release.

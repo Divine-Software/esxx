@@ -1,0 +1,28 @@
+<?esxx
+
+function handler(req) {
+  let v1 = esxx.tls.add("Apa", 0, "Monkey", function (k, v) {
+      esxx.log.info("#1: Destroying key " + k + ", value " + v);
+    });
+
+  let v2 = esxx.tls.add("Banan", 0, 
+			   function (k, a) {
+			     esxx.log.info("Creating value for key " + k + ", max_age " + a);
+			     return "Banana";
+			   },
+			   function (k, v) {
+			     esxx.log.info("#2: Destroying key " + k + ", value " + v);
+			   });
+  
+  java.lang.Thread.sleep(1000);
+  return v1 + " & " + v2;
+}
+
+
+?>
+
+<esxx xmlns="http://esxx.org/1.0/">
+    <handlers>
+      <http method=".*" handler="handler" />
+    </handlers>
+</esxx>

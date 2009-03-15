@@ -1,0 +1,65 @@
+#!/bin/sh
+
+. /lib/svc/share/smf_include.sh
+
+prog=@PROJECT_NAME@
+absprog=@SBIN_INSTALL_DIR@/$prog
+
+protocol=fcgi
+port=7654
+
+arg_bind=
+arg_nohandler=
+arg_httproot=
+
+if [ -z "${SMF_FMRI}" ]; then
+    echo "This script must be invoked by smf(5)."
+    exit ${SMF_EXIT_ERR_NOSMF}
+else
+    protocol="$(svcprop -p esxx/protocol ${SMF_FMRI} || echo ${protocol})"
+    port="$(svcprop -p esxx/port ${SMF_FMRI} || echo ${port})"
+    no_handler="$(svcprop -p esxx/no-handler ${SMF_FMRI})"
+    httproot="$(svcprop -p esxx/http-root ${SMF_FMRI})"
+
+    case "${protocol}" in
+	fcgi)
+	    arg_bind="--bind ${port}"
+	    ;;
+
+	http)
+	    arg_bind="--http ${port}"
+	    ;;
+
+	*)
+	    echo "The 'esxx/protocol' property must be either 'fcgi' or 'http'."
+	    exit $SMF_EXIT_ERR_CONFIG
+    esac
+
+    if [ -n "${no_handler}" -a "${httproot}" != '""' ]; then
+	arg_nohandler="--no-handler '${no_handler}'"
+    fi
+
+    if [ -n "${httproot}" -a "${httproot}" != '""' ]; then
+	arg_httproot="--http-root ${httproot}"
+    fi
+
+    smf_clear_env
+fi
+
+
+case "$1" in
+    start)
+	${absprog} ${arg_bind} ${arg_nohandler} ${arg_httproot} &
+	exit ${SMF_EXIT_OK}
+	;;
+
+    stop)
+	smf_kill_contract $2 TERM 1 10
+	[ $? -ne 0 ] && exit 1
+	;;
+
+    *)
+        echo "Usage: $0 {start|stop}"
+        exit $SMF_EXIT_ERR_CONFIG
+        ;;
+esac

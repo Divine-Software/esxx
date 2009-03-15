@@ -1,0 +1,19 @@
+#!/bin/bash
+
+JAVA=java
+JVMARGS=
+ESXX_PATH=
+ARGS=("$@")
+
+
+if [ ! -z "${JAVA_HOME}" ]; then
+    JAVA=${JAVA_HOME}/bin/java
+fi
+
+if [ -f @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@-js ]; then
+    . @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@-js
+fi
+
+
+${JAVA} ${JVMARGS} -Desxx.app.include_path="${ESXX_PATH}" \
+    -jar @SBIN_INSTALL_DIR@/@PROJECT_NAME@.jar --script -- "${ARGS[@]}"

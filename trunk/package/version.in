@@ -1,0 +1,10 @@
+package_name='@CPACK_PACKAGE_NAME@'
+package_summary='@CPACK_PACKAGE_DESCRIPTION_SUMMARY@'
+package_description="@PACKAGE_DESCRIPTION@"
+package_vendor='@CPACK_PACKAGE_VENDOR@'
+package_contact='@CPACK_PACKAGE_CONTACT@'
+package_license='@PACKAGE_LICENSE@'
+package_license_file='@CPACK_RESOURCE_FILE_LICENSE@'
+package_major='@CPACK_PACKAGE_VERSION_MAJOR@'
+package_minor='@CPACK_PACKAGE_VERSION_MINOR@'
+package_patch='@CPACK_PACKAGE_VERSION_PATCH@'

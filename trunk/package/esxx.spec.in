@@ -1,0 +1,42 @@
+# -*- rpm-spec -*-
+Buildroot:      %{_tmppath}/%{name}-%{version}-root
+Summary:        @CPACK_PACKAGE_DESCRIPTION_SUMMARY@
+Name:           @CPACK_PACKAGE_NAME@
+Version:        @CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@
+Release:        @CPACK_RPM_PACKAGE_RELEASE@
+License:        @CPACK_RPM_PACKAGE_LICENSE@
+Group:          @CPACK_RPM_PACKAGE_GROUP@
+Vendor:         @CPACK_PACKAGE_VENDOR@
+BuildArch:	@CPACK_RPM_PACKAGE_ARCHITECTURE@
+Requires:	bash, sudo, java >= 1.6.0
+Source:		%{name}-%{version}.tar.gz
+
+%description
+@PACKAGE_DESCRIPTION@
+
+%prep
+rm -rf %{buildroot}
+%setup -q
+
+%build
+./run_cmake.sh
+  
+%install
+make install DESTDIR=%{buildroot}
+find %{buildroot} -type f -printf '/%%P\n' > %{name}-{%version}.files
+
+%clean
+rm -rf %{buildroot}
+
+%files -f %{name}-{%version}.files
+%defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/sysconfig/esxx 
+%config(noreplace) %{_sysconfdir}/sysconfig/esxx-js
+%dir %attr(755,root,root) %{_docdir}/esxx
+%dir %attr(755,root,root) %{_docdir}/esxx/examples
+%dir %attr(755,root,root) %{_datadir}/esxx
+%dir %attr(755,root,root) %{_datadir}/esxx/site
+
+%changelog
+* Sat Jan 31 2009 Martin Blom <martin@blom.org>
+  ESXX release.

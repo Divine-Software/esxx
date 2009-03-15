@@ -1,0 +1,17 @@
+<?esxx
+
+esxx.log.info("In main: " + esxx.location);
+esxx.include("included.js");
+
+function handler(req) {
+  esxx.log.info("In handler(): " + esxx.location);
+  return <xml/>
+}
+
+?>
+
+<esxx xmlns="http://esxx.org/1.0/">
+  <handlers>
+    <http method="GET" handler="handler" />
+  </handlers>
+</esxx>

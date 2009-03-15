@@ -1,0 +1,26 @@
+<?esxx 
+
+var counter = 0;
+
+incrCounter = esxx.sync(function() {
+  return counter++;
+});
+
+function handler(req) {
+  var cnt = this.incrCounter();
+
+  req.log.info("New counter value: " + cnt);
+
+  java.lang.Thread.sleep(5000);
+
+  return "Response #" + cnt;
+}
+
+
+?>
+
+<esxx xmlns="http://esxx.org/1.0/">
+    <handlers>
+      <http method="GET" handler="handler" />
+    </handlers>
+</esxx>

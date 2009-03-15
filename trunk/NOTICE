@@ -1,0 +1,31 @@
+This product includes software developed at the Mozilla Foundation
+(http://www.mozilla.org/): Rhino, licensed under the Mozilla Public
+License, version 1.1.
+
+This product includes software developed by Michael Kay: Saxon-B,
+licensed under the Mozilla Public License, version 1.0.
+
+This product includes software developed at The Apache Software
+Foundation (http://www.apache.org/): Commons CLI and Commons
+HttpClient, licensed under the Apache License, version 2.0.
+
+This product includes software developed by the HtmlCleaner team
+(http://htmlcleaner.sourceforge.net/): HtmlCleaner, licensed under the
+BSD License.
+
+This product includes software developed by Sun Microsystems,
+Inc. (http://www.sun.com/): JavaMail, licensed under some weired
+custom license.
+
+This product includes JFast 1.0, a FastCGI client implementation
+licensed under the BSD license.
+
+This product includes software developed at JSON.org: JSON in Java,
+licensed under a BSD-like license.
+
+This product includes software developed by Tim Endres and Jef
+Poskanzer, Syslog, licensed under the BSD license.
+
+This product includes software developed by Thomas Mueller: H2
+(http://www.h2database.com/), licensed under the H2 License, version
+1.0 (MPL-1.1 with trivial modifications).

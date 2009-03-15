@@ -1,0 +1,78 @@
+#!/bin/bash
+
+set -e
+
+JAVA=java
+JVMARGS=
+ESXX_PATH=
+ARGS=()
+RUNAS=
+PID=
+
+
+if [ ! -z "${JAVA_HOME}" ]; then
+    JAVA=${JAVA_HOME}/bin/java
+fi
+
+if [ -f @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@ ]; then
+    . @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@
+fi
+
+
+# Extract our parameters
+while `[ $# -gt 0 ]` ; do
+    arg="$1"
+    case "$arg" in
+	-\? | --help)
+	    echo "Usage: $0 [OPTIONS...]"
+	    echo "  -u, --user=<user>                     Execute @PROJECT_NAME@.jar as 'user'"
+	    echo "  -p, --pidfile=</path/to/file>         Fork and write PID to file"
+	    echo "  -j, --jvmargs=<JVM args>              Extra arguments for Java"
+	    echo
+	    ARGS[${#ARGS[*]}]="${arg}"
+	    ;;
+
+	--user=*)
+	    RUNAS="sudo -u ${arg:7}"
+	    ;;
+	-u | --user)
+	    RUNAS="sudo -u $2"
+	    shift
+	    ;;
+
+	--pidfile=*)
+	    PID="${arg:6}"
+	    ;;
+	-p | --pidfile)
+	    PID="$2"
+	    shift
+	    ;;
+
+	--jvmargs=*)
+	    JVMARGS="${arg:10}"
+	    ;;
+	-j | --jvmargs)
+	    JVMARGS="$2"
+	    shift
+	    ;;
+	--)
+	    ARGS=( ${ARGS[@]} $@ )
+	    shift $#
+	    ;;
+
+	*)
+	    ARGS[${#ARGS[*]}]="${arg}"
+	    ;;
+    esac
+    shift
+done
+
+
+if [ -z "${PID}" ]; then
+    ${RUNAS} ${JAVA} ${JVMARGS} -Desxx.app.include_path="${ESXX_PATH}" \
+	-jar @SBIN_INSTALL_DIR@/@PROJECT_NAME@.jar "${ARGS[@]}"
+else
+    ${RUNAS} ${JAVA} ${JVMARGS}  -Desxx.app.include_path="${ESXX_PATH}" \
+	-jar @SBIN_INSTALL_DIR@/@PROJECT_NAME@.jar "${ARGS[@]}" > /dev/null 2> /dev/null &
+    echo $! > "${PID}"
+fi

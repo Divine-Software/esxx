@@ -1,0 +1,5 @@
+esxx (@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@-1) unstable; urgency=low
+
+  * ESXX release.
+
+ -- Martin Blom <martin@blom.org>  Sun, 25 Jan 2009 00:42:11 +0100

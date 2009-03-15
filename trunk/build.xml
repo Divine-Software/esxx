@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+
+<project name="esxx" default="compile">
+  <import file="lib/exec-jar.xml"/>
+  <description>esxx build file</description>
+
+  <property name="src.dir"     location="src"/>
+  <property name="build.dir"   location="build"/>
+  <property name="classes.dir" location="${build.dir}/classes"/>
+  <property name="lib.dir"     location="lib"/>
+  <property name="dist.dir"    location="dist"/>
+
+  <property name="build.compiler" value="modern"/>
+
+  <path id="classpath">
+    <pathelement path="${classes.dir}"/>
+    <fileset dir="${lib.dir}" includes="**/*.jar"/>
+  </path>
+
+  <target name="init">
+    <tstamp/>
+    <mkdir dir="${classes.dir}"/>
+  </target>
+
+  <target name="compile" depends="init" description="compile everything">
+    <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" 
+           debug="true" deprecation="true" target="1.6">
+<!--      <compilerarg value="-Xlint"/>-->
+    </javac>
+  </target>
+
+  <target name="jar" depends="compile" description="generate all main jar files" >
+    <jar jarfile="${build.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+      <manifest>
+        <attribute name="Main-Class" value="org.esxx.Main"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="dist" depends="jar" description="generate the distribution" >
+    <delete dir="${dist.dir}"/>
+    <mkdir dir="${dist.dir}"/>
+    <copy todir="${dist.dir}">
+      <fileset dir="" includes="LICENSE*,README,CHANGES.txt"/>
+    </copy>
+
+    <mkdir dir="${dist.dir}/examples"/>
+    <copy todir="${dist.dir}/examples">
+      <fileset dir="examples" excludes="*~"/>
+    </copy>
+
+    <mkdir dir="${dist.dir}/share"/>
+    <copy todir="${dist.dir}/share">
+      <fileset dir="share" excludes="*~"/>
+    </copy>
+
+    <exec-jar in="${build.dir}/esxx.jar" out="${dist.dir}/esxx.jar"/>
+  </target>
+
+  <target name="clean" description="clean up" >
+    <delete dir="${build.dir}"/>
+    <delete dir="${dist.dir}"/>
+  </target>
+
+  <target name="test" depends="compile">
+    <fail message="This target requires a 'test' property. Example: -Dtest=xml" unless="test"/>
+    <echo message="Running tests/${test}.esxx ..." level="info"/>
+    <java classname="org.esxx.Main" classpathref="classpath" fork="true">
+      <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
+      <arg value="--cgi" />
+      <arg value="--method" />
+      <arg value="GET" />
+      <arg value="--file" />
+      <arg file="tests/${test}.esxx" />
+    </java>
+  </target>
+
+  <target name="fcgi" depends="compile">
+    <echo message="Starting FCGI servier on port 7654 ..." level="info"/>
+    <java classname="org.esxx.Main" classpathref="classpath" fork="true">
+      <arg value="--bind" />
+      <arg value="7654" />
+    </java>
+  </target>
+
+  <target name="http" depends="compile">
+    <echo message="Starting HTTP servier on port 7777 ..." level="info"/>
+    <java classname="org.esxx.Main" classpathref="classpath" fork="true">
+      <arg value="--http" />
+      <arg value="7777" />
+    </java>
+  </target>
+
+  <target name="run" depends="dist">
+    <java jar="${dist.dir}/esxx.jar" fork="true">
+      <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
+      <arg value="--cgi" />
+      <arg value="--method" />
+      <arg value="GET" />
+      <arg value="--file" />
+      <arg file="tests/code.esxx" />
+    </java>
+  </target>
+</project>

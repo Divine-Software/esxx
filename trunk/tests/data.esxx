@@ -1,0 +1,24 @@
+<?esxx
+
+var out = java.lang.System.out;
+
+out.println(new URI("data:Hello!").load());
+out.println(new URI("data:application/octet-stream,Hello!").load());
+out.println(new URI("data:application/octet-stream,Hello!").load("text/plain"));
+
+var data = new URI('data:text/html;charset=utf-8,%3C!DOCTYPE%20HTML%20PUBLIC%20%22-'+
+  '%2F%2FW3C%2F%2FDTD%20HTML%204.0%2F%2FEN%22%3E%0D%0A%3Chtml%20lang%3D%22en'+
+  '%22%3E%0D%0A%3Chead%3E%3Ctitle%3EEmbedded%20Window%3C%2Ftitle%3E%3C%2Fhea'+
+  'd%3E%0D%0A%3Cbody%3E%3Ch1%3E42%3C%2Fh1%3E%3C%2Fbody%3E%0D%0A%3C%2Fhtml%3E'+
+  '%0D%0A');
+
+out.println(data.load());
+
+data = new URI("data:,");
+data.save("Hallå, hallå");
+out.println(data);
+out.println(data.load());
+
+?>
+
+<dummy/> <!-- This is an XML file, rememeber? -->

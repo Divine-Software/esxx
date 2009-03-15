@@ -1,0 +1,31 @@
+<?esxx 
+
+esxx.include("json2.js");
+
+function handleGet(req) {
+  // Dump all parsed accept headers
+  for (var s in req.accept) {
+    req.log.info(s + ": " + JSON.stringify(req.accept[s]));
+  }
+
+  if (req.accept.media) {
+    for each (var m in req.accept.media) {
+      if (m == "text/html") {
+        req.log.info("Client accepts 'text/html', quality value is " + m.q + ".");
+      }
+    }
+
+    req.log.info("Client prefers '" + req.accept.media[0] + "'.");
+  }
+
+  return <xml/>;
+}
+
+
+?>
+
+<esxx xmlns="http://esxx.org/1.0/">
+    <handlers>
+      <http method="GET" handler="handleGet" />
+    </handlers>
+</esxx>

@@ -1,0 +1,58 @@
+<?esxx
+
+var db = new URI(esxx.document.uri);
+
+// Create and populate the database
+try { db.query("DROP TABLE shop"); } catch (e) { esxx.log.info("No previous table."); }
+db.query("CREATE TABLE shop(id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY, " +
+	  "item VARCHAR(32), " +
+	  "price FLOAT)");
+for each (i in esxx.document.items.item) {
+  db.query("insert into shop(item, price) values({name}, {price})", i);
+}
+
+function index(req) {
+  // Run a query
+  return db.query("SELECT id, item, price FROM shop WHERE price < {max} ORDER BY item",
+		  { max: req.query.max_price || 400 });
+}
+
+?>
+
+<settings>
+<!--  <uri>jdbc:derby:DerbyDB.esxx;create=true</uri> -->
+  <uri>jdbc:h2:H2DB.esxx</uri>
+
+  <items>
+    <item>
+      <name>Sony VAIO VGN-SZ6MN B</name>
+      <price>1644.90</price>
+    </item>
+    <item>
+      <name>Xbox 360</name>
+      <price>355.490</price>
+    </item>
+    <item>
+      <name>Motorstorm (PS3)</name>
+      <price>37.94</price>
+    </item>
+    <item>
+      <name>PS3</name>
+      <price>408.49</price>
+    </item>
+    <item>
+      <name>P1i</name>
+      <price>398.90</price>
+    </item>
+    <item>
+      <name>Canon ISUX 850 IS</name>
+      <price>237</price>
+    </item>
+  </items>
+
+  <esxx xmlns="http://esxx.org/1.0/">
+    <handlers>
+      <http method="GET" handler="index"/>
+    </handlers>
+  </esxx>
+</settings>

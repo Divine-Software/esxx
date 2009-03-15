@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+
+<!-- Include the actual application -->
+<?esxx-include href="app-cache.js" ?>
+
+<!-- Map HTTP GET to handleGet() -->
+<esxx xmlns="http://esxx.org/1.0/">
+    <handlers>
+      <http method="GET" handler="handleGet" />
+      <exit handler="handleExit" />
+    </handlers>
+</esxx>

@@ -1,0 +1,24 @@
+<?esxx
+
+function Obj() {
+  this.member = "MEMBER";
+}
+
+function Obj.prototype.mapper(value, index, array) {
+  esxx.log.info("Value: " + value + ", index: " + index 
+		+ ", same array: " + (arr === array) + ", member: " + this.member);
+  java.lang.Thread.sleep(1000);
+  return "" + value;
+}
+
+var obj = new Obj();
+var arr = [null, true, 2, "three", [1, 2, 3, 4], { five: true }, undefined];
+var res = esxx.map(arr, function(v, i, a) { 
+    return obj.mapper(v, i, a) 
+  }, undefined, 3);
+
+esxx.log.info("Result: " + res);
+
+?>
+
+<dummy/> <!-- This is an XML file, rememeber? -->

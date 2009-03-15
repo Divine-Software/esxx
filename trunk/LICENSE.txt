@@ -1,0 +1,12 @@
+Copyright 2007-2009 Martin Blom.
+
+ESXX is available under the GNU GPL license, version 3 or later.
+
+However, as a special exception, this program is allowed to use
+APL2-licensed code from the Apache project, JavaMail from Sun, Rhino
+from the Mozilla project and Saxon by Michael Kay.
+
+Martin Blom reserves the right to extend the above list of exceptions.
+
+Not happy with the GNU GPL license? Contact martin@blom.org for
+commercial licensing options.
