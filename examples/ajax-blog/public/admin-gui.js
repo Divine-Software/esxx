@@ -195,12 +195,11 @@ Ext.onReady(function() {
   var editComment = function(href) {
     var win = new Ext.Window({
       title: 'Edit comment',
-      layout      : 'fit',
-      width       : 500,
-      height      : 300,
-      closeAction :'hide',
-      plain       : true,
-      items       : {
+      layout: 'fit',
+      width: 500,
+      height: 300,
+      closable: false,
+      items: {
  	id: 'comment-body',
 	xtype:'htmleditor',
 	name: 'body',
@@ -221,7 +220,6 @@ Ext.onReady(function() {
 	    });
 	  }
         },
-
 	{
           text: 'Save',
 	  handler: function() {
@@ -237,6 +235,12 @@ Ext.onReady(function() {
 	      },
 	      failure: ajaxFailure
 	    });
+	  }
+	},
+	{
+	  text: 'Cancel',
+	  handler: function() {
+	    win.hide();
 	  }
 	}
       ]
@@ -260,7 +264,8 @@ Ext.onReady(function() {
     items: [
       {
 	region: 'north',
-	html: '<h1 class="x-panel-header">The Ajax Blog &mdash; Administration</h1>'
+	html: '<h1 class="x-panel-header">' +
+	      '<a href="' + scriptURI + '">The Ajax Blog</a> &mdash; Administration</h1>'
       },
 
       {
@@ -318,6 +323,12 @@ Ext.onReady(function() {
 	],
 	buttons: [
 	  {
+	    text: 'New',
+	    handler: function() {
+	      post_list.getSelectionModel().clearSelections();
+	    }
+	  },
+	  {
 	    text: 'Delete',
 	    handler: function() {
 	      var selected = post_list.getSelectionModel().getSelected();
@@ -332,12 +343,6 @@ Ext.onReady(function() {
 		  failure: ajaxFailure
 		});
 	      }
-	    }
-	  },
-	  {
-	    text: 'New',
-	    handler: function() {
-	      post_list.getSelectionModel().clearSelections();
 	    }
 	  },
 	  {

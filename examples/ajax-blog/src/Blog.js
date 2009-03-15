@@ -11,16 +11,30 @@ function Blog(dburi) {
 
   this.db = new BlogDB(dburi);
 
-  // Create the database, if missing
+  // Create the database, if missing, and add first post
   if (!this.db.checkDB()) {
     esxx.log.info("Creating Blog database " + dburi);
     this.db.createDB();
 
-    let one = this.db.addPost("t1", "b1");
-    this.db.addPost("t2", "En <b>bra</b>-post");
-    this.db.addComment(one, "c1");
-    this.db.addComment(one, "c2");
+    let one = this.db.addPost("First post", 
+			      <>
+			      Oh my, this <strong>ESXX</strong> thing 
+			      is <em>really</em> something!
+			      </>.toXMLString());
+    this.db.addComment(one, "Sure is.");
+    this.db.addComment(one, "Yep, it really rocks!");
   }
+}
+
+function Blog.prototype.setXSLTParams(req, next) {
+  let res = next();
+
+  res.params.scriptURI   = req.scriptURI;
+  res.params.adminURI    = new URI(req.scriptURI, "admin.html");
+  res.params.postsURI    = new URI(req.scriptURI, "posts/");
+  res.params.resourceURI = new URI(req.scriptURI, "..");
+
+  return res;
 }
 
 function Blog.prototype.renderBlog(req) {
@@ -28,7 +42,6 @@ function Blog.prototype.renderBlog(req) {
   let posts = Blog.fixResponse(req, this.db.listPosts(10), true);
 
   return <blog>
-           <adminURI>{new URI(req.scriptURI, "admin.html").valueOf()}</adminURI>
            {posts}
          </blog>
 }
@@ -44,7 +57,6 @@ function Blog.prototype.renderPost(req) {
   let comments = this.db.listComments(req.args.post_id, req.query.limit || 100);
 
   return <blog-entry>
-           <adminURI>{new URI(req.scriptURI, "admin.html").valueOf()}</adminURI>
            {Blog.fixResponse(req, post, true)}
            {Blog.fixResponse(req, comments, true)}
          </blog-entry>;
@@ -52,10 +64,7 @@ function Blog.prototype.renderPost(req) {
 
 
 function Blog.prototype.renderAdminGUI(req) {
-  return <admin>
- 	   <resourceURI>{new URI(req.scriptURI, "..").valueOf()}</resourceURI>
- 	   <postsURI>{new URI(req.scriptURI, "posts/").valueOf()}</postsURI>
-	 </admin>;
+  return <admin/>;
 }
 
 

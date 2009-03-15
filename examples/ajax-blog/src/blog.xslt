@@ -6,6 +6,12 @@
     doctype-system="http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"
     method="xhtml" version="1.0" media-type="text/html" indent="no" />
 
+  <!-- These parameters will be overridden by setXSLTParams() -->
+  <xsl:param name="scriptURI" >/index.esxx/</xsl:param>
+  <xsl:param name="resourceURI" >/</xsl:param>
+  <xsl:param name="adminURI" >/admin.html</xsl:param>
+  <xsl:param name="postsURI" >/posts/</xsl:param>
+
   <!-- The Admin GUI -->
   <xsl:template match="/admin">
     <html>
@@ -19,9 +25,14 @@
 	<script type="text/javascript"
 	    src="http://cachefile.net/scripts/xhtmljs/0.3/xhtml.js"></script>
 
-	<!-- Set 'postsURI' global variable for admin-gui.js -->
-	<script type="text/javascript">var postsURI = "<xsl:value-of select='postsURI'/>";</script>
-	<script type="text/javascript" src="{resourceURI}admin-gui.js"></script>
+	<!-- Set some global variables for admin-gui.js -->
+	<script type="text/javascript">
+	  var scriptURI    = "<xsl:value-of select='$scriptURI'  />";
+	  var resourceURI  = "<xsl:value-of select='$resourceURI'/>";
+	  var adminURI     = "<xsl:value-of select='$adminURI'   />";
+	  var postsURI     = "<xsl:value-of select='$postsURI'   />";
+	</script>
+	<script type="text/javascript" src="{$resourceURI}admin-gui.js"></script>
       </head>
 
       <body>
@@ -39,7 +50,7 @@
       </head>
       <body class="blog">
 	<h1>The Ajax Blog</h1>
-	<p class="admin-link"><a href="{adminURI}">Administration</a></p>
+	<p class="admin-link"><a href="{$adminURI}">Administration</a></p>
 
 	<div class="posts">
 	  <xsl:apply-templates select="posts/post" />
@@ -56,7 +67,7 @@
       </head>
       <body class="blog">
 	<h1>The Ajax Blog</h1>
-	<p class="admin-link"><a href="{adminURI}">Administration</a></p>
+	<p class="admin-link"><a href="{$adminURI}">Administration</a></p>
 	
 	<div class="posts">
 	  <xsl:apply-templates select="posts/post" />

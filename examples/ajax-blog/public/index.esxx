@@ -23,6 +23,7 @@
     <http method="PUT"    uri="/posts/&post_id;/&comment_id;" handler="blog.updateComment"/>
     <http method="DELETE" uri="/posts/&post_id;/&comment_id;" handler="blog.deleteComment"/>
 
+    <filter handler="blog.setXSLTParams" />
 
     <stylesheet media-type="application/xml" uri="/|/.*\.html$" href="../src/blog.xslt" />
   </handlers>
