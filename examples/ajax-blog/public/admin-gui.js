@@ -1,73 +1,5 @@
-xhtmlFormatting = "not";
-
-/* The global variable 'postsURI' should exist and point to the URL that
-   fetches all blog posts. */
 
 Ext.onReady(function() {
-  Ext.QuickTips.init();
-
-  function encodeXMLElement(str) {
-    return str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  }
-
-  function encodeXMLAttribute(str) {
-    return encodeXMLElement(str).replace(/"/g, "&quot;");
-  }
-
-  function innerXML(node) {
-    var res = "";
-
-    for (var i = 0; i < node.childNodes.length; ++i) {
-      res += outerXML(node.childNodes.item(i));
-    }
-
-    return res;
-  }
-
-  function outerXML(node) {
-    var i;
-    var res = "";
-
-    if (node.nodeType > 3)
-    alert(node.nodeName + ": " + node.nodeType);
-
-    switch (node.nodeType) {
-      case 1: // Element
-        res = "<" + node.tagName.toLowerCase();
-
-        for (i = 0; i < node.attributes.length; ++i) {
-          res += outerXML(node.attributes.item(i));
-        }
-
-        if (node.hasChildNodes()) {
-          res += ">" + innerXML(node) + "</" + node.tagName.toLowerCase() + ">";
-        }
-        else {
-          res += "/>";
-        }
-        break;
-
-      case 2: // Attribute
-  //    if (! /hideFocus|contentEditable|disabled|tabIndex/.test(node.nodeName) && node.nodeValue !== null && node.nodeValue !== "") {
-        if (node.nodeValue) {
-          res = " " + node.nodeName + "=\"" + encodeXMLAttribute(node.nodeValue) + "\"";
-        }
-        break;
-
-      case 3: // Text
-        res += encodeXMLElement(node.nodeValue);
-        break;
-    }
-
-    return res;
-  }
-
-  var htmlToXHTML = function(str) {
-    var h2xh  = Ext.get('html-to-xhtml').dom;
-    h2xh.innerHTML = str;
-    return innerXML(h2xh);
-  };
-
   var ajaxFailure = function(response, options) {
     var message = response.statusText;
 
@@ -223,7 +155,7 @@ Ext.onReady(function() {
 	{
           text: 'Save',
 	  handler: function() {
-	    var body  = htmlToXHTML(Ext.getCmp('comment-body').getValue());
+	    var body  = htmlToXML(Ext.getCmp('comment-body').getValue());
 	    Ext.Ajax.request({
 	      method: "PUT",
 	      url: href,
@@ -362,7 +294,7 @@ Ext.onReady(function() {
 	      }
 
 	      var title = encodeXMLElement(Ext.getCmp('blog-title').getValue());
-	      var body  = htmlToXHTML(Ext.getCmp('blog-body').getValue());
+	      var body  = htmlToXML(Ext.getCmp('blog-body').getValue());
 
 	      Ext.Ajax.request({
 		method: method,

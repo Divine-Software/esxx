@@ -22,8 +22,6 @@
 
 	<script type="text/javascript" 
 		src="http://extjs.cachefly.net/builds/ext-cdn-771.js"></script>
-	<script type="text/javascript"
-	    src="http://cachefile.net/scripts/xhtmljs/0.3/xhtml.js"></script>
 
 	<!-- Set some global variables for admin-gui.js -->
 	<script type="text/javascript">
@@ -32,11 +30,11 @@
 	  var adminURI     = "<xsl:value-of select='$adminURI'   />";
 	  var postsURI     = "<xsl:value-of select='$postsURI'   />";
 	</script>
+	<script type="text/javascript" src="{$resourceURI}xml-utils.js"></script>
 	<script type="text/javascript" src="{$resourceURI}admin-gui.js"></script>
       </head>
 
       <body>
-	<div id="html-to-xhtml" style="visible: none"/>
       </body>
     </html>
   </xsl:template>
@@ -47,6 +45,7 @@
     <html>
       <head>
 	<title>The Ajax Blog</title>
+	<script type="text/javascript" src="{$resourceURI}xml-utils.js"></script>
       </head>
       <body class="blog">
 	<h1>The Ajax Blog</h1>
