@@ -30,8 +30,8 @@
 	  var adminURI     = "<xsl:value-of select='$adminURI'   />";
 	  var postsURI     = "<xsl:value-of select='$postsURI'   />";
 	</script>
-	<script type="text/javascript" src="{$resourceURI}xml-utils.js"></script>
-	<script type="text/javascript" src="{$resourceURI}admin-gui.js"></script>
+	<script type="text/javascript" src="{$resourceURI}js/xml-utils.js"></script>
+	<script type="text/javascript" src="{$resourceURI}js/admin-gui.js"></script>
       </head>
 
       <body>
@@ -45,13 +45,40 @@
     <html>
       <head>
 	<title>The Ajax Blog</title>
-	<script type="text/javascript" src="{$resourceURI}xml-utils.js"></script>
+	<link rel="stylesheet" type="text/css" href="{$resourceURI}css/main.css" />
       </head>
-      <body class="blog">
-	<h1>The Ajax Blog</h1>
-	<p class="admin-link"><a href="{$adminURI}">Administration</a></p>
 
-	<div class="posts">
+      <body>
+        <div id="masthead">
+          <div id="mast-content" class="clearfix">
+            <div id="meta" class="clearfix">
+	      <h1>The Ajax Blog</h1>
+	      <p><a href="{$adminURI}">Administration</a></p>
+	    </div>
+	  
+	    <div id="navcontainer">
+	      <ul id="nav">
+		<xsl:for-each select="posts/post[7 >= position()]">
+		  <li>
+		    <span><xsl:number format="I"/></span>
+		    <a href="#{id}"><xsl:value-of select="title" /></a>
+		    <br/>
+		  </li>
+		</xsl:for-each>
+	      </ul>
+	    </div>
+
+	    <div id="ajax-image">
+	      <img src="{$resourceURI}img/ajax.jpg"/>
+	    </div>
+	  </div>
+
+	  <div id="side-image"/>
+
+
+	</div>
+
+	<div id="content">
 	  <xsl:apply-templates select="posts/post" />
 	</div>
       </body>
@@ -64,18 +91,20 @@
       <head>
 	<title>The Ajax Blog: <xsl:value-of select="post/title"/></title>
       </head>
-      <body class="blog">
-	<h1>The Ajax Blog</h1>
-	<p class="admin-link"><a href="{$adminURI}">Administration</a></p>
+      <body>
+	  <div id="header">
+	    <h1>The Ajax Blog</h1>
+	    <p><a href="{$adminURI}">Administration</a></p>
+	  </div>
 	
-	<div class="posts">
-	  <xsl:apply-templates select="posts/post" />
-	</div>
+	  <div class="posts">
+	    <xsl:apply-templates select="posts/post" />
+	  </div>
 
-	<div class="comments">
-	  <h3>Comments</h3>
-	  <xsl:apply-templates select="comments/comment" />
-	</div>
+	  <div class="comments">
+	    <h3>Comments</h3>
+	    <xsl:apply-templates select="comments/comment" />
+	  </div>
       </body>
     </html>
   </xsl:template>

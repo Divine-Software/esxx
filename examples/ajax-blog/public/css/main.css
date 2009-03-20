@@ -1,0 +1,160 @@
+html {
+  font-family: Verdana, Arial, sans-serif; 
+  color: #444;
+}
+
+body {
+  margin: 10px auto; 
+  max-width: 50em;
+  background: #FFF;
+}
+
+a:link, a:active, a:visited {
+  color: #48546A;
+}
+
+#masthead {
+  position: relative;
+  height: 15.4em;
+  background: #fff url(http://tuscany.cssmastery.com/img/bg_repeat.gif) repeat-x;
+}
+
+#mast-content {
+  position: absolute; 
+  top: 0; 
+  left: 0; 
+  z-index: 1;
+  width: 100%;
+}	
+
+#meta {
+  margin: 35px 50px 0 0; 
+  padding: 3px; 
+  border-top: 1px solid #D2D4CF; 
+  border-bottom: 1px solid #D2D4CF; 
+  text-transform: uppercase; 
+  letter-spacing: 1px;
+}
+
+#meta h1 {
+  display: block; 
+  float: left;
+  margin: 0px;
+  padding: 0px;
+  font: 1em Georgia, serif; 
+}
+
+#meta p {
+  display: block; 
+  float: right; 
+  margin: 0px;
+  padding: 0px;
+  font: 1em Georgia, serif; 
+}
+
+#side-image {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 289px;
+  height: 246px;
+  background: url(http://tuscany.cssmastery.com/img/side-image.jpg) no-repeat;
+}
+
+#ajax-image {
+  float: left;
+  width: 49%;
+  text-align: center;
+}
+
+#ajax-image img {
+  margin: 30px ;
+  width: 103px;
+  height: 117px;
+  border: 1px solid #D2D4CF;
+}
+
+#navcontainer {
+  float: left; 
+  width: 50%; 
+  margin-top: 13px;
+}
+
+ul#nav {
+  margin: 0; 
+  padding: 0; 
+  list-style: none;
+}
+
+/* Two backgrounds are used, the second being a hack for Internet Explorer */
+#nav li {
+  margin: 8px 0; 
+  padding-top: 1px; 
+  font: .6em Georgia, serif; 
+  color: #777; 
+  text-transform: uppercase; 
+  letter-spacing: 1px; 
+  background: url(http://tuscany.cssmastery.com/img/bg_dotted.gif) repeat-x 0 77% !important; 
+  background-position: 0 61%;
+} 
+
+#nav li a {
+  float: left; 
+  background: #FFF;
+  color: #777; 
+  text-decoration: none;  
+  padding: 1px 3px; 
+}
+
+#nav li a:hover {
+  color: #48546A; 
+  background: #ECEEF0;
+}
+
+ul#nav li span {
+  display: block; 
+  float: right; 
+  padding: 1px 3px; 
+  background: #FFF;
+}  
+
+#content {
+  padding: 0 1em 1em; 
+  background: #E2E2D2 url(http://tuscany.cssmastery.comimg/bg_lightbot.gif) repeat-x top left; 
+  font-size: .7em;
+}
+
+#content h2 {
+  margin: 0 auto; 
+  padding: 25px 0 0px 0px; 
+  font: normal 2em Georgia, serif; 
+  color: #48546A; 
+}
+
+#content .post {
+  padding: 0px 0px 20px 0px; 
+  border-bottom: 1px solid #D2D4CF; 
+}
+
+
+
+
+/*
+P.I.E. FLOAT CLEARING
+See http://www.positioniseverything.net/easyclearing.html 
+--------------------- */
+
+.clearfix:after {
+  content: ".";
+  clear: both;
+  height: 0;
+  visibility: hidden;
+  display: block;
+}
+.clearfix {
+  display: inline-block; /* Fixes IE/Mac */
+}
+/* Hides from IE-mac \*/
+* html .clearfix {height: 1%;}
+.clearfix {display: block;}
+/* End hide from IE-mac */    
