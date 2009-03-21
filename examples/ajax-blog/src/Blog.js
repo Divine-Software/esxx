@@ -4,12 +4,10 @@ esxx.include("BlogDB.js");
 XML.ignoreWhitespace = false;
 XML.prettyPrinting   = false;
 
-function Blog(dburi) {
-  if (!dburi) {
-    throw "Blog(dburi): dburi missing.";
-  }
-
+function Blog(dburi, username, password) {
   this.db = new BlogDB(dburi);
+  this.username = username;
+  this.password = password;
 
   // Create the database, if missing, and add first post
   if (!this.db.checkDB()) {
@@ -35,6 +33,31 @@ function Blog.prototype.setXSLTParams(req, next) {
   res.params.resourceURI = new URI(req.scriptURI, "..");
 
   return res;
+}
+
+function Blog.prototype.authenticate(req, next) {
+  with (JavaImporter(javax.mail.internet.MimeUtility, java.io)) {
+    function b64decode(str) {
+      let is = MimeUtility.decode(StringBufferInputStream(str), "base64");
+      return new BufferedReader(new InputStreamReader(is, "UTF-8")).readLine();
+    }
+  }
+
+  let auth = req.headers.Authorization;
+
+  if (!auth || auth.indexOf("Basic ") != 0) {
+    return [ESXX.Response.UNAUTHORIZED, { "WWW-Authenticate": 'Basic realm="The Ajax Blog"' },
+	    <invalid-auth>Please provide a valid username and password to log in.</invalid-auth>];
+  }
+
+  auth = b64decode(auth.replace(/Basic +/, ""));
+
+  if (auth != this.username + ":" + this.password) {
+    return [ESXX.Response.FORBIDDEN, {}, 
+	    <invalid-auth>Invalid username or password.</invalid-auth>];
+  }
+
+  return next(req);
 }
 
 function Blog.prototype.renderBlog(req) {
@@ -75,7 +98,7 @@ function Blog.prototype.postComment(req) {
   let comment = req.message.comment.toString();
 
   if (!comment) {
-    return [ESXX.Response.UNSUPPORTED_MEDIA_TYPE, {},
+    return [ESXX.Response.UNPROCESSABLE_ENTITY , {},
 	    <blog-entry>
               {Blog.fixResponse(req, this.db.getPost(req.args.post_id), true)}
 	      <error>Can't add empty comment.</error>

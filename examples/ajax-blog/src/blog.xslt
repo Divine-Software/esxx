@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 
 <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
 		xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -40,6 +41,18 @@
     </html>
   </xsl:template>
 
+  <!-- The invalid authentication view -->
+  <xsl:template match="/invalid-auth">
+    <html>
+      <head>
+        <title>Login failed</title>
+      </head>
+      <body>
+        <h1>Login failed</h1>
+        <p><xsl:value-of select="."/></p>
+      </body>
+    </html>
+  </xsl:template>
 
   <!-- The Blog view -->
   <xsl:template match="/blog">

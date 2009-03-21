@@ -26,6 +26,11 @@
 
     <filter handler="blog.setXSLTParams" />
 
+    <!-- Require authentication for /admin.html and anything except GET or HEAD
+         requests to *.html resources -->
+    <filter uri="/admin.html" handler="blog.authenticate" />
+    <filter method="(?!GET|HEAD)" uri="/(?!.*\.html)" handler="blog.authenticate" />
+
     <stylesheet media-type="application/xml" uri="/|/.*\.html$" href="../src/blog.xslt" />
   </handlers>
 </esxx>
@@ -34,6 +39,6 @@
 
 esxx.include("../src/Blog.js");
 
-var blog = new Blog("jdbc:h2:Blog");
+var blog = new Blog("jdbc:h2:Blog", "admin", "admin");
 
 ?>
