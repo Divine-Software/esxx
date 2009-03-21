@@ -9,6 +9,7 @@
   <handlers>
     <http method="GET"    uri="/"                     handler="blog.renderBlog" />
     <http method="GET"    uri="/posts/&post_id;.html" handler="blog.renderPost"/>
+    <http method="POST"   uri="/posts/&post_id;.html" handler="blog.postComment"/>
     <http method="GET"    uri="/admin.html"           handler="blog.renderAdminGUI" />
 
     <http method="GET"    uri="/posts/"          handler="blog.listPosts"/>

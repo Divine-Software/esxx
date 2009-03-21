@@ -62,6 +62,35 @@ function Blog.prototype.renderPost(req) {
          </blog-entry>;
 }
 
+function Blog.prototype.postComment(req) {
+  if (req.contentType != "application/x-www-form-urlencoded") {
+    return [ESXX.Response.UNSUPPORTED_MEDIA_TYPE, {},
+	    <blog-entry>
+              {Blog.fixResponse(req, this.db.getPost(req.args.post_id), true)}
+	      <error>Comments must be submitted as media-type 'application/x-www-form-urlencoded'.</error>
+	    </blog-entry>
+	   ];
+  }
+
+  let comment = req.message.comment.toString();
+
+  if (!comment) {
+    return [ESXX.Response.UNSUPPORTED_MEDIA_TYPE, {},
+	    <blog-entry>
+              {Blog.fixResponse(req, this.db.getPost(req.args.post_id), true)}
+	      <error>Can't add empty comment.</error>
+	    </blog-entry>
+	   ];
+  }
+
+  // XML-encode comment and replace line-breaks with <br/> tags
+  comment = <>{comment}</>.toXMLString().replace(/\r?\n/g, "<br/>");
+
+  this.db.addComment(req.args.post_id, comment);
+
+  // Ask client to reload page using GET
+  return [ESXX.Response.SEE_OTHER, { Location: req.requestURI.valueOf() }];
+}
 
 function Blog.prototype.renderAdminGUI(req) {
   return <admin/>;

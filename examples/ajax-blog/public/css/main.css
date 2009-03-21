@@ -119,16 +119,29 @@ ul#nav li span {
 }  
 
 #content {
-  padding: 0 1em 1em; 
-  background: #E2E2D2 url(http://tuscany.cssmastery.comimg/bg_lightbot.gif) repeat-x top left; 
+  padding: 0 1em 1em 1em;
+  background: #E2E2D2 url(http://tuscany.cssmastery.com/img/bg_lightbot.gif) repeat-x top left; 
   font-size: .7em;
 }
 
 #content h2 {
-  margin: 0 auto; 
+  margin: 0; 
   padding: 25px 0 0px 0px; 
   font: normal 2em Georgia, serif; 
   color: #48546A; 
+}
+
+#content h3 {
+  margin: 0; 
+  padding: 10px 0 0px 0px; 
+  font: normal 1.5em Georgia, serif; 
+  color: #48546A; 
+}
+
+#content .error {
+  color: #c44;
+  font-weight: bold;
+  text-decoration: blink;
 }
 
 #content .post {
@@ -136,7 +149,32 @@ ul#nav li span {
   border-bottom: 1px solid #D2D4CF; 
 }
 
+#content .comment {
+  border-bottom: 1px solid #D2D4CF; 
+}
 
+#content .date {
+  font-weight: bold;
+}
+
+#content form {
+  text-align: right;
+}
+
+#content textarea {
+  width: 100%;
+  height: 8em;
+  border: 1px solid #D2D4CF;
+  background: #ccb;
+  margin: 1em 0 1em 0;
+}
+
+#footer {
+  padding: 8px 0 1em; 
+  font-size: 10px; 
+  color: #999;
+  text-align: center;
+}
 
 
 /*
