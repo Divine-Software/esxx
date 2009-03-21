@@ -24,6 +24,8 @@
 	* Property requestMethod is now available on the ESXX.Request
 	object.
 
+	* Upgraded to Rhino 1.7 release 2 + patch for bug #477233.
+
 0.9.20090201
 	* Fixed bug #14765: req.scriptURI has problems with encoded
 	URI:s.
