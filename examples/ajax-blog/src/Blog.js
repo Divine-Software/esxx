@@ -1,8 +1,4 @@
-
 esxx.include("BlogDB.js");
-
-XML.ignoreWhitespace = false;
-XML.prettyPrinting   = false;
 
 function Blog(dburi, username, password) {
   this.db = new BlogDB(dburi);
@@ -16,7 +12,7 @@ function Blog(dburi, username, password) {
 
     let one = this.db.addPost("First post", 
 			      <>
-			      Oh my, this <strong>ESXX</strong> thing 
+			      Oh my, this ESXX thing 
 			      is <em>really</em> something!
 			      </>.toXMLString());
     this.db.addComment(one, "Sure is.");
@@ -47,14 +43,14 @@ function Blog.prototype.authenticate(req, next) {
 
   if (!auth || auth.indexOf("Basic ") != 0) {
     return [ESXX.Response.UNAUTHORIZED, { "WWW-Authenticate": 'Basic realm="The Ajax Blog"' },
-	    <invalid-auth>Please provide a valid username and password to log in.</invalid-auth>];
+	    <failure title="Login Failed">Please provide a valid username and password to log in.</failure>];
   }
 
   auth = b64decode(auth.replace(/Basic +/, ""));
 
   if (auth != this.username + ":" + this.password) {
     return [ESXX.Response.FORBIDDEN, {}, 
-	    <invalid-auth>Invalid username or password.</invalid-auth>];
+	    <failure title="Login Failed">Invalid username or password.</failure>];
   }
 
   return next(req);
@@ -72,9 +68,9 @@ function Blog.prototype.renderBlog(req) {
 function Blog.prototype.renderPost(req) {
   let post = this.db.getPost(req.args.post_id);
 
-  if (post.length() == 0) {
+  if (!post || post.length() == 0) {
     return [ESXX.Response.NOT_FOUND, {},
-	    <error>Post {req.args.post_id} not found.</error>];
+	    <failure title="Not Found">Post {req.args.post_id} not found.</failure>];
   }
 
   let comments = this.db.listComments(req.args.post_id, req.query.limit || 100);
@@ -95,9 +91,7 @@ function Blog.prototype.postComment(req) {
 	   ];
   }
 
-  let comment = req.message.comment.toString();
-
-  if (!comment) {
+  if (!req.message.comment) {
     return [ESXX.Response.UNPROCESSABLE_ENTITY , {},
 	    <blog-entry>
               {Blog.fixResponse(req, this.db.getPost(req.args.post_id), true)}
@@ -107,7 +101,7 @@ function Blog.prototype.postComment(req) {
   }
 
   // XML-encode comment and replace line-breaks with <br/> tags
-  comment = <>{comment}</>.toXMLString().replace(/\r?\n/g, "<br/>");
+  comment = <>{req.message.comment}</>.toXMLString().replace(/\r?\n/g, "<br/>");
 
   this.db.addComment(req.args.post_id, comment);
 
@@ -127,14 +121,14 @@ function Blog.prototype.listPosts(req) {
 }
 
 function Blog.prototype.addPost(req) {
-  let title = req.message.title.toString();
-  let body  = req.message.body.toString();
-
   if (req.contentType != "application/xml") {
     return [ESXX.Response.UNSUPPORTED_MEDIA_TYPE, {},
 	    <error>Posts must be submitted as 'application/xml'.</error>];
   }
-
+  
+  let title = req.message.title.*.toXMLString();
+  let body  = req.message.body.*.toXMLString();
+  
   if (!title || !body) {
     return [ESXX.Response.UNPROCESSABLE_ENTITY, {},
 	    <error>Posts must have a non-empty title and body.</error>];
@@ -148,7 +142,7 @@ function Blog.prototype.addPost(req) {
 function Blog.prototype.getPost(req) {
   let post = this.db.getPost(req.args.post_id);
 
-  if (post.length() == 0) {
+  if (!post || post.length() == 0) {
     return [ESXX.Response.NOT_FOUND, {},
 	    <error>Post {req.args.post_id} not found.</error>];
   }
@@ -162,7 +156,7 @@ function Blog.prototype.updatePost(req) {
 	    <error>Posts must be submitted as 'application/xml'.</error>];
   }
 
-  let title = req.message.title.toString();
+  let title = req.message.title.*.toXMLString();
   let body  = req.message.body.*.toXMLString();
 
   if (!title || !body) {
@@ -195,12 +189,12 @@ function Blog.prototype.listComments(req) {
 }
 
 function Blog.prototype.addComment(req) {
-  let body = req.message.body.toString();
-
   if (req.contentType != "application/xml") {
     return [ESXX.Response.UNSUPPORTED_MEDIA_TYPE, {},
 	    <error>Comments must be submitted as 'application/xml'.</error>];
   }
+
+  let body = req.message.body.*.toXMLString();
 
   if (!body) {
     return [ESXX.Response.UNPROCESSABLE_ENTITY, {},
@@ -217,7 +211,7 @@ function Blog.prototype.addComment(req) {
 function Blog.prototype.getComment(req) {
   let comment = this.db.getComment(req.args.post_id, req.args.comment_id);
 
-  if (comment.length() == 0) {
+  if (!comment || comment.length() == 0) {
     return [ESXX.Response.NOT_FOUND, {},
 	    <error>Comment {req.args.comment_id} to post {req.args.post_id} not found.</error>];
   }
@@ -255,19 +249,6 @@ function Blog.prototype.deleteComment(req) {
   return ESXX.Response.NO_CONTENT;
 }
 
-function Blog.getPostLocation(req, post_id, html) {
-  return new URI(req.scriptURI, "posts/{p}" + (html ? ".html" : ""), {
-		   p: post_id
-		 }).valueOf();
-}
-
-function Blog.getCommentLocation(req, post_id, comment_id, html) {
-  return new URI(req.scriptURI, "posts/{p}/{c}" + (html ? ".html" : ""), {
-		   p: post_id,
-		   c: comment_id
-		 }).valueOf();
-}
-
 function Blog.fixResponse(req, xml, html) {
   delete xml.@resultSet; // We don't want this
 
@@ -281,6 +262,7 @@ function Blog.fixResponse(req, xml, html) {
 
     case "post": {
       xml.@href = Blog.getPostLocation(req, xml.id, html);
+      xml.title.* = new XMLList(xml.title.toString());
       xml.body.* = new XMLList(xml.body.toString());
       break;
     }
@@ -300,3 +282,15 @@ function Blog.fixResponse(req, xml, html) {
   return xml;
 }
 
+function Blog.getPostLocation(req, post_id, html) {
+  return new URI(req.scriptURI, "posts/{p}" + (html ? ".html" : ""), {
+		   p: post_id
+		 }).valueOf();
+}
+
+function Blog.getCommentLocation(req, post_id, comment_id, html) {
+  return new URI(req.scriptURI, "posts/{p}/{c}" + (html ? ".html" : ""), {
+		   p: post_id,
+		   c: comment_id
+		 }).valueOf();
+}

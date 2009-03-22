@@ -15,6 +15,7 @@
   <xsl:param name="adminURI" >/admin.html</xsl:param>
   <xsl:param name="postsURI" >/posts/</xsl:param>
 
+
   <!-- The Admin GUI -->
   <xsl:template match="/admin">
     <html>
@@ -41,18 +42,20 @@
     </html>
   </xsl:template>
 
-  <!-- The invalid authentication view -->
-  <xsl:template match="/invalid-auth">
+
+  <!-- The failure view -->
+  <xsl:template match="/failure">
     <html>
       <head>
-        <title>Login failed</title>
+        <title><xsl:value-of select="@title" /></title>
       </head>
       <body>
-        <h1>Login failed</h1>
+        <h1><xsl:value-of select="@title" /></h1>
         <p><xsl:value-of select="."/></p>
       </body>
     </html>
   </xsl:template>
+
 
   <!-- The Blog view -->
   <xsl:template match="/blog">
@@ -88,8 +91,6 @@
 	  </div>
 
 	  <div id="side-image"/>
-
-
 	</div>
 
 	<div id="content">
@@ -99,6 +100,7 @@
       </body>
     </html>
   </xsl:template>
+
 
   <!-- The Blog post/comments view -->
   <xsl:template match="/blog-entry">
@@ -221,7 +223,7 @@
     </xsl:choose>
   </xsl:function>
 
-  <!-- my:date formats a date as "Day, Month NNth, YYYY" -->
+  <!-- my:date formats a date as "Day, Month NNth, year, hour.minute am/pm" -->
   <xsl:function name="my:date">
     <xsl:param name="date" />
     <xsl:variable name="dt" select="xs:dateTime(translate($date, ' ', 'T'))" />
