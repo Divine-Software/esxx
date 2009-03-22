@@ -1,9 +1,9 @@
 <!DOCTYPE esxx [
-
-<!ENTITY post_id    "(?{post_id}\d+)">
-<!ENTITY comment_id "(?{comment_id}\d+)">
-
+  <!ENTITY post_id    "(?{post_id}\d+)">
+  <!ENTITY comment_id "(?{comment_id}\d+)">
 ]>
+
+<?esxx-include href="../blog.js"?>
 
 <esxx xmlns="http://esxx.org/1.0/">
   <handlers>
@@ -34,11 +34,3 @@
     <stylesheet media-type="application/xml" uri="/|/.*\.html$" href="../src/blog.xslt" />
   </handlers>
 </esxx>
-
-<?esxx
-
-esxx.include("../src/Blog.js");
-
-var blog = new Blog("jdbc:h2:Blog", "admin", "admin");
-
-?>
