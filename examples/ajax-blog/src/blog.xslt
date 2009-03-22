@@ -118,7 +118,7 @@
 	  
 	    <div id="navcontainer">
 	      <ul id="nav">
-		<xsl:for-each select="comments/comment[7 >= position()]">
+		<xsl:for-each select="comments/comment[position() > last() - 7]">
 		  <li>
 		    <span><xsl:number format="I"/></span>
 		    <a href="#c-{id}"><xsl:value-of select="my:truncate(body//text(), 50)"  /></a>
