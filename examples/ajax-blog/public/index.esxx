@@ -29,7 +29,7 @@
     <!-- Require authentication for /admin.html and anything except GET or HEAD
          requests to *.html resources -->
     <filter uri="/admin.html" handler="blog.authenticate" />
-    <filter method="(?!GET|HEAD)" uri="/(?!.*\.html)" handler="blog.authenticate" />
+    <filter method="PUT|POST|DELETE" uri="/(?!.*\.html)" handler="blog.authenticate" />
 
     <stylesheet media-type="application/xml" uri="/|/.*\.html$" href="../src/blog.xslt" />
   </handlers>
