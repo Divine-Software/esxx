@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+<xsl:stylesheet version="2.0" 
+		xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+		xmlns:xs="http://www.w3.org/2001/XMLSchema"
 		xmlns="http://www.w3.org/1999/xhtml">
   <xsl:output
     doctype-public="-//W3C//DTD XHTML 1.1//EN"
@@ -33,7 +35,7 @@
   <p>
   <table class="msg"> 
    <tr>
-      <th class="date">Date</th>
+      <th>Date</th>
       <th>Name</th>
       <th>Message</th>
     </tr>
@@ -45,7 +47,8 @@
   <!-- A message in the table -->
   <xsl:template match="entry">
     <tr class="{if (position() mod 2 = 1) then 'odd' else 'even'}">
-      <td><xsl:value-of select="date"/></td>
+      <td><xsl:value-of select="format-dateTime(xs:dateTime(translate(date, ' ', 'T')),
+				'[MNn] [D1o], [h].[m01] [Pn]', 'en', (), ())"/></td>
       <td><xsl:value-of select="name"/></td>
       <td><xsl:value-of select="message"/></td>
     </tr>
@@ -65,7 +68,8 @@
           <td><textarea name="message"><xsl:value-of select="message"/></textarea></td>
         </tr>
         <tr>
-          <td colspan="2"><input type="submit" value="Add my message!"/></td>
+	  <td>&#160;</td>
+          <td><input type="submit" value="Add my message!"/></td>
         </tr>
       </table>
     </form>
