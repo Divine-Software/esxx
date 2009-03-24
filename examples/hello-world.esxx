@@ -1,0 +1,52 @@
+<esxx xmlns="http://esxx.org/1.0/">
+  <handlers>
+    <http method="GET" handler="hello" />
+  </handlers>
+</esxx>
+
+<?esxx
+
+function hello(req) {
+  var base = req.scriptURI.valueOf();
+
+  if (req.query.format) {
+    return world(req.query.format);
+  }
+
+  return [200, {},
+	  <html>
+	    <body>
+	      <h1>Please select a format</h1>
+	      <ul>
+	        <li><a href={ base + "?format=text"  }> Text  </a></li>
+	        <li><a href={ base + "?format=xml"   }> XML   </a></li>
+	        <li><a href={ base + "?format=json"  }> JSON  </a></li>
+	        <li><a href={ base + "?format=image" }> Image </a></li>
+	      </ul>
+            </body>
+	  </html>,
+	  "text/html"];
+}
+
+function world(format) {
+  switch (format) {
+    case "text":
+      return "Hello world";
+
+    case "xml":
+      return <xml><hello/><world/></xml>;
+
+    case "json":
+      return { hello: "world" };
+
+    case "image": {
+      with (JavaImporter(java.awt, java.awt.image)) {
+	var img = new BufferedImage(100, 32, BufferedImage.TYPE_3BYTE_BGR);
+	img.createGraphics().drawString("Hello world", 20, 20);
+	return img;
+      }
+    }
+  }
+}
+
+?>
