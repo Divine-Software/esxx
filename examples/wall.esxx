@@ -9,7 +9,7 @@
 </esxx>
 
 <?esxx
-var db = new URI("jdbc:h2:mem:wall");
+var db = new URI("jdbc:h2:mem:wall;DB_CLOSE_DELAY=-1");
 
 if (db.query("SELECT count(*) AS cnt " + 
 	     "FROM information_schema.tables " +
