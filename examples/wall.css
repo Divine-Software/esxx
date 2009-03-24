@@ -13,6 +13,10 @@ table.msg {
     border: 1px solid black;
 }
 
+table.msg tr.even {
+    background: #94c4d4;
+}
+
 table.msg th {
     color: white;
     background: #507080;

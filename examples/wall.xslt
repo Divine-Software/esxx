@@ -44,7 +44,7 @@
 
   <!-- A message in the table -->
   <xsl:template match="entry">
-    <tr>
+    <tr class="{if (position() mod 2 = 1) then 'odd' else 'even'}">
       <td><xsl:value-of select="date"/></td>
       <td><xsl:value-of select="name"/></td>
       <td><xsl:value-of select="message"/></td>
