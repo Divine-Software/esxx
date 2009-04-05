@@ -1,6 +1,6 @@
 #!/usr/bin/env esxx-js
 
-esxx.include("esxx/Test.js");
+esxx.include("esxx/QuickTest.js");
 esxx.include("../src/BlogDB.js");
 
 var db = new BlogDB("jdbc:h2:mem:BlogDB-test");
