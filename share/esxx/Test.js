@@ -52,23 +52,27 @@ function TestRunner.prototype.run() {
     let passed = 0;
 
     for (let v in tc) {
-      if (/^test.*/.test(v) && tc[v] instanceof Function) {
-	out.print("Running " + v + "() ... ");
+      if (/^test.*/.test(v) && typeof tc[v] === "function") {
+	out.print(" Running " + v + "() ... ");
 
 	try {
 	  ++tests;
+
 	  if (typeof tc.setUp === "function") {
 	    tc.setUp();
 	  }
 
-          tc[v]();
+	  try {
+            tc[v]();
 
-	  if (typeof tc.tearDown === "function") {
-	    tc.tearDown();
+            out.println("OK");
+	    ++passed;
 	  }
-
-          out.println("OK");
-	  ++passed;
+	  finally {
+	    if (typeof tc.tearDown === "function") {
+	      tc.tearDown();
+	    }
+	  }
 	}
 	catch (ex if ex instanceof Assert.Failed) {
           out.println("FAILED in " + ex.test);
