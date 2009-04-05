@@ -30,6 +30,7 @@ function BlogDB.prototype.createDB() {
 		   + "body varchar not null, "
 		   + "created timestamp not null, "
 		   + "updated timestamp not null, "
+		   + "primary key (id), "
 		   + "foreign key (post_id) references posts (id) on delete cascade"
 		   + ")");
 }
