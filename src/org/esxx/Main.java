@@ -51,6 +51,7 @@ public class Main {
 							 "this <port>")));
     mode_opt.addOption(new Option("c", "cgi",    false, "Force CGI mode."));
     mode_opt.addOption(new Option("s", "script", false, "Force script mode."));
+    mode_opt.addOption(new Option(null,"db-console", false, "Open H2's database console."));
 
     opt.addOptionGroup(mode_opt);
     opt.addOption("n", "no-handler",      true,  "Requests are direct, without extra handler");
@@ -90,6 +91,10 @@ public class Main {
       }
       else if (cmd.hasOption('s')) {
 	script = cmd.getArgs();
+      }
+      else if (cmd.hasOption("db-console")) {
+	org.h2.tools.Console.main(cmd.getArgs());
+	return;
       }
       else {
 	// Guess execution mode by looking at FCGI_PORT and

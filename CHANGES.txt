@@ -7,7 +7,7 @@
 	* Added DOCUMENT_ROOT CGI variable in HTTP mode.
 
 	* Added Java EE Servlet support: ESXX can now run inside
-	a J2EE application server, such as Glassfish to Tomcat.
+	a J2EE application server, such as Glassfish or Tomcat.
 
 	* XSLT parameters may now be specified via the property
 	'params' in the ESXX.Response object.
@@ -25,6 +25,12 @@
 	object.
 
 	* Upgraded to Rhino 1.7 release 2 + patch for bug #477233.
+
+	* Added command line option --db-console to start H2's
+	database console.
+
+	* Added the "Hello world" and "The Ajax Blog" tutorials to the
+	examples.
 
 0.9.20090201
 	* Fixed bug #14765: req.scriptURI has problems with encoded
