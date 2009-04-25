@@ -38,6 +38,7 @@ import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.RhinoException;
 import org.mozilla.javascript.WrappedException;
 import org.w3c.dom.*;
 
@@ -192,7 +193,7 @@ public class Application
 
   public JSResponse executeSOAPAction(Context cx, JSRequest req,
 				      String soap_action, String path_info)
-    throws javax.xml.soap.SOAPException {
+    throws Exception {
     Object result;
     RequestMatcher.Match match = soapMatcher.matchRequest(soap_action, path_info,
 							  cx, applicationScope);
@@ -231,7 +232,17 @@ public class Application
       String nsuri  = soap_body.getNamespaceURI();
       String method = soap_body.getLocalName();
 
-      result = JS.callJSMethod(object, method, args, "SOAP handler", cx, applicationScope);
+      try {
+	result = JS.callJSMethod(object, method, args, "SOAP handler", cx, applicationScope);
+
+	// Don't wrap result yet, but do check for null/undefined
+	if (result == null || result == Context.getUndefinedValue()) {
+	  throw new ESXXException("No result from '" + req.jsGet_scriptName() + "'");
+	}
+      }
+      catch (Exception ex) {
+	result = executeErrorHandler(cx, req, ex);
+      }
 
       // Automatically add a SOAP-Envelope, if missing. The generated
       // envelope is based on the request envelope.
@@ -276,11 +287,12 @@ public class Application
       result = ESXX.domToE4X(message.getSOAPPart(), cx, applicationScope);
     }
 
-    return wrapResult(cx, result);
+    return wrapResult(cx, req, result);
   }
 
-  public JSResponse executeHTTPMethod(final Context cx, JSRequest req,
-				      final String request_method, final String path_info) {
+  public JSResponse executeHTTPMethod(final Context cx, final JSRequest req,
+				      final String request_method, final String path_info)
+    throws Exception {
     final RequestMatcher.Match match = requestMatcher.matchRequest(request_method, path_info,
 								   cx, applicationScope);
 
@@ -292,14 +304,22 @@ public class Application
     req.setArgs(match.params);
 
     HandlerCallback hcb = new HandlerCallback() {
-	public JSResponse execute(Scriptable req) {
-	  Object result;
+	public JSResponse execute(JSRequest req)
+	throws Exception {
+	  JSResponse result;
 	  Object args[] = { req };
 
-	  result = JS.callJSMethod(match.handler, args, "'" + request_method + "' handler",
-				   cx, applicationScope);
+	  try {
+	    result = wrapResult(cx, req, 
+				JS.callJSMethod(match.handler, args, 
+						"'" + request_method + "' handler",
+						cx, applicationScope));
+	  }
+	  catch (Exception ex) {
+	    result = executeErrorHandler(cx, req, ex);
+	  }
 
-	  return wrapResult(cx, result);
+	  return result;
 	}
       };
 
@@ -312,8 +332,9 @@ public class Application
   }
 
   public JSResponse executeMain(Context cx, JSRequest req,
-				String[] cmdline) {
-    Object result;
+				String[] cmdline)
+    throws Exception {
+    JSResponse result;
     Object[] js_cmdline = new Object[cmdline.length];
 
     for (int i = 0; i < cmdline.length; ++i) {
@@ -321,10 +342,18 @@ public class Application
     }
 
     req.setArgs(cx.newArray(applicationScope, js_cmdline));
+    
+    try {
+      result = wrapResult(cx, req, 
+			  JS.callJSMethod("main", js_cmdline, 
+					  "Program entry" , 
+					  cx, applicationScope));
+    }
+    catch (Exception ex) {
+      result = executeErrorHandler(cx, req, ex);
+    }
 
-    result = JS.callJSMethod("main", js_cmdline, "Program entry" , cx, applicationScope);
-
-    return wrapResult(cx, result);
+    return result;
   }
 
   public void executeExitHandler(Context cx) {
@@ -340,17 +369,36 @@ public class Application
   public JSResponse executeErrorHandler(Context cx, JSRequest req,
 					Exception error)
     throws Exception {
+
+    if (!(error instanceof RhinoException) &&
+	!(error instanceof ESXXException)) {
+      // Never invoke error handler for "foreign" exceptions
+      throw error;
+    }
+
+    Throwable cause = error;
+
+    if (cause instanceof WrappedException) {
+      // Unwrap wrapped exceptions
+      cause = ((WrappedException) cause).getWrappedException();
+    }
+
+    if (cause instanceof ESXXException.TimeOut) {
+      // Never handle this exception, wrapped or not
+      throw (ESXXException.TimeOut) error;
+    }
+
     Object result  = null;
     String handler = getErrorHandlerFunction();
 
     if (handler != null) {
       try {
-	Object args[] = { req, Context.javaToJS(error, applicationScope) };
+	Object args[] = { req, Context.javaToJS(cause, applicationScope) };
 
 	result = JS.callJSMethod(handler, args, "Error handler", cx, applicationScope);
       }
       catch (Exception ex) {
-	throw new ESXXException("Failed to handle error '" + error.toString() +
+	throw new ESXXException("Failed to handle error '" + cause.toString() +
 				"':\n" +
 				"Error handler '" + handler +
 				"' failed with message '" +
@@ -360,29 +408,34 @@ public class Application
     }
 
     if (result == null || result == Context.getUndefinedValue()) {
-      // No installed error handler or handler returned
-      // null/undefined: throw (unwrapped) exception
-      if (error instanceof WrappedException) {
-	Throwable t = ((WrappedException) error).getWrappedException();
-
-	if (t instanceof Exception) {
-	  error = (Exception) t;
-	}
+      if (cause instanceof Exception) {
+	throw (Exception) cause;
       }
-
-      throw error;
+      else {
+	// Throw original WrappedException
+	throw error;
+      }
     }
 
-    return wrapResult(cx, result);
+    return wrapResult(cx, req, result);
   }
 
-  public JSResponse executeFilter(Context cx, Scriptable req, Function next, String filter) {
-    Object result;
+  public JSResponse executeFilter(Context cx, JSRequest req, Function next, String filter)
+    throws Exception {
+    JSResponse result;
     Object args[] = { req, next };
 
-    result = JS.callJSMethod(filter, args, "'" + filter + "' filter", cx, applicationScope);
+    try {
+      result = wrapResult(cx, req,
+			  JS.callJSMethod(filter, args, 
+					  "'" + filter + "' filter", 
+					  cx, applicationScope));
+    }
+    catch (Exception ex) {
+      result = executeErrorHandler(cx, req, ex);
+    }
 
-    return wrapResult(cx, result);
+    return result;
   }
 
 
@@ -521,9 +574,9 @@ public class Application
     esxx.removeCachedApplication(this);
   }
 
-  public JSResponse wrapResult(Context cx, Object result) {
+  public JSResponse wrapResult(Context cx, JSRequest req, Object result) {
     if (result == null || result == Context.getUndefinedValue()) {
-      return null;
+      throw new ESXXException("No result from '" + req.jsGet_scriptName() + "'");
     }
     else if (result instanceof JSResponse) {
       return (JSResponse) result;
@@ -1102,7 +1155,8 @@ public class Application
   }
 
   public interface HandlerCallback {
-    JSResponse execute(Scriptable req);
+    JSResponse execute(JSRequest req) 
+      throws Exception;
   }
 
   private class FilterFunction
@@ -1125,7 +1179,8 @@ public class Application
       }
     }
 
-    public JSResponse execute(Context cx) {
+    public JSResponse execute(Context cx) 
+      throws Exception {
       if (matchingFilters.isEmpty()) {
 	return handler.execute(request);
       }
@@ -1135,19 +1190,20 @@ public class Application
     }
 
     private List<String> matchingFilters = new LinkedList<String>();
-    private Scriptable request;
+    private JSRequest request;
     private HandlerCallback handler;
   }
 
   static private java.lang.reflect.Method filterMethod;
 
   @SuppressWarnings("unused") private static JSResponse next(Context cx, Scriptable thisObj,
-							     Object[] args, Function funObj) {
+							     Object[] args, Function funObj)
+    throws Exception {
     FilterFunction ff = (FilterFunction) funObj;
 
     // Update request object, if argument is present
     if (args.length > 1 && args[0] != Context.getUndefinedValue()) {
-      ff.request = (Scriptable) args[0];
+      ff.request = (JSRequest) args[0];
     }
 
     // Execute next filter

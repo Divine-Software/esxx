@@ -77,42 +77,13 @@ class Worker {
 	else {
 	  // No handlers; the document is the result
 
-	  result = app.wrapResult(cx, app.getMainDocument());
+	  result = app.wrapResult(cx, jsreq, app.getMainDocument());
 	}
       }
-      catch (ESXXException.TimeOut ex) {
-	// Never handle this exception
-	throw ex;
+      catch (Exception ex) {
+	// On errors, invoke error handler
+	result = app.executeErrorHandler(cx, jsreq, ex);
       }
-      catch (WrappedException ex) {
-	Throwable t = ex.getWrappedException();
-
-	if (t instanceof ESXXException.TimeOut) {
-	  throw (ESXXException.TimeOut) t;
-	}
-	else {
-	  error = ex;
-	}
-      }
-      catch (RhinoException ex) {
-	error = ex;
-      }
-      catch (ESXXException ex) {
-	error = ex;
-      }
-
-      // On errors, invoke error handler
-
-      if (error != null) {
-	// executeErrorHandler throws (unwrapped) error if no handler is installed
-	result = app.executeErrorHandler(cx, jsreq, error);
-      }
-
-      // No error or error handled: Did we get a valid result?
-      if (result == null) {
-	throw new ESXXException("No result from '" + request.getScriptFilename() + "'");
-      }
-
 
       Response response = result.getResponse();
 
