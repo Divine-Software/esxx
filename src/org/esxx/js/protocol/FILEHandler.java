@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 import org.esxx.*;
 import org.esxx.js.*;
 import org.esxx.util.StringUtil;
+import org.esxx.util.XML;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -150,16 +151,16 @@ public class FILEHandler
     }
     else if (f.isFile()) {
       element = document.createElementNS(null, "file");
-      addChild(element, "length", Long.toString(f.length()));
+      XML.addChild(element, "length", Long.toString(f.length()));
     }
 
     element.setAttributeNS(null, "uri", f.toURI().toString());
 
-    addChild(element, "name", f.getName());
-    //       addChild(element, "path", f.getPath());
-    addChild(element, "hidden", f.isHidden() ? "true" : "false");
-    addChild(element, "lastModified", Long.toString(f.lastModified()));
-    addChild(element, "id", Integer.toHexString(f.hashCode()));
+    XML.addChild(element, "name", f.getName());
+    //       XML.addChild(element, "path", f.getPath());
+    XML.addChild(element, "hidden", f.isHidden() ? "true" : "false");
+    XML.addChild(element, "lastModified", Long.toString(f.lastModified()));
+    XML.addChild(element, "id", Integer.toHexString(f.hashCode()));
 
     return element;
   }

@@ -65,16 +65,6 @@ public class ProtocolHandler {
 				       "' does not support query().");
     }
 
-
-    protected static void addChild(Element element, String name, String value) {
-      Document document = element.getOwnerDocument();
-
-      Element e = document.createElementNS(null, name);
-      e.appendChild(document.createTextNode(value));
-      element.appendChild(e);
-    }
-
-
     protected static Object evalProperty(Context cx, Scriptable obj, String key) {
       Object rc;
 

@@ -28,6 +28,7 @@ import javax.naming.directory.*;
 import org.esxx.*;
 import org.esxx.js.*;
 import org.esxx.util.StringUtil;
+import org.esxx.util.XML;
 import org.esxx.xmtp.Base64;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
@@ -153,7 +154,7 @@ public class DNSHandler
 	  v = Base64.encodeBytes((byte[]) v, 0);
 	}
 
-	addChild(entry, StringUtil.makeXMLName(attr.getID().toLowerCase(), ""), v.toString());
+	XML.addChild(entry, StringUtil.makeXMLName(attr.getID().toLowerCase(), ""), v.toString());
       }
     }
 

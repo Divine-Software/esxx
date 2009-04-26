@@ -26,6 +26,7 @@ import javax.naming.NamingEnumeration;
 import javax.naming.directory.*;
 import org.esxx.*;
 import org.esxx.js.*;
+import org.esxx.util.XML;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -97,7 +98,7 @@ public class LDAPHandler
 	for (NamingEnumeration<?> e = attr.getAll(); e.hasMore();) {
 	  Object v = e.next();
 
-	  addChild(entry, attr.getID(), v.toString());
+	  XML.addChild(entry, attr.getID(), v.toString());
 	}
       }
 

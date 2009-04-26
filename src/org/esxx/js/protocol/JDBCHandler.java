@@ -26,6 +26,7 @@ import org.esxx.js.JSURI;
 import org.esxx.util.QueryCache;
 import org.esxx.util.QueryHandler;
 import org.esxx.util.StringUtil;
+import org.esxx.util.XML;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -137,7 +138,7 @@ public class JDBCHandler
 	      }
 
 	      for (int i = 0; i < count; ++i) {
-		addChild(row, names[i], rs.getString(i + 1));
+		XML.addChild(row, names[i], rs.getString(i + 1));
 	      }
 
 	      root.appendChild(row);
