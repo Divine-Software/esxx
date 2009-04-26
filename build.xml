@@ -22,6 +22,7 @@
   <target name="init">
     <tstamp/>
     <mkdir dir="${classes.dir}"/>
+    <mkdir dir="${classes.dir}/rsrc"/>
     <mkdir dir="${jeebuild.dir}"/>
   </target>
 
@@ -30,6 +31,9 @@
            debug="true" deprecation="true" target="1.6">
 <!--      <compilerarg value="-Xlint"/>-->
     </javac>
+    <copy todir="${classes.dir}/rsrc">
+      <fileset dir="rsrc" excludes="*~"/>
+    </copy>
   </target>
 
   <target name="jar" depends="compile" description="generate all main jar files" >

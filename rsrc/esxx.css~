@@ -1,0 +1,365 @@
+/*
+Design by Free CSS Templates
+http://www.freecsstemplates.org
+Released for free under a Creative Commons Attribution 2.5 License
+
+Modified for ESXX by Martin Blom.
+*/
+
+* {
+	margin: 0;
+	padding: 0;
+}
+
+/* Force scroll bar */
+html { 
+	overflow: -moz-scrollbars-vertical;
+	overflow-x: auto;
+	overflow-y: scroll;
+	cursor: default;
+}
+
+body {
+	margin: 0px;
+	background: #350e23 url(?!esxx-rsrc=bg01.jpg) repeat-x center -55px;
+	font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+	font-size: 0.8em;
+	color: #B9B9B9;
+}
+
+h1, h2, h3 {
+	margin-bottom: 0.5em;
+}
+
+h1 {
+	font-size: 2em;
+}
+
+h2 {
+	font-size: 1.4em;
+}
+
+h3 {
+	font-size: 1em;
+}
+
+p, ul, ol, dd {
+	margin-bottom: 1.5em;
+	line-height: 140%;
+/*	line-height: 180%; */
+}
+
+pre {
+    	font-family: "Courier New";
+
+	margin-bottom: 1.5em;
+
+	/* Wrap contents */
+	white-space: pre-wrap;		/* css-3 */
+	white-space: -moz-pre-wrap;	/* Mozilla, since 1999 */
+	white-space: -pre-wrap;		/* Opera 4-6 */
+	white-space: -o-pre-wrap;	/* Opera 7 */
+	word-wrap: break-word;		/* Internet Explorer 5.5+ */
+}
+
+pre.example {
+	border-left: 2px dashed #B9B9B9;;
+    	padding-left: 1em;
+}
+
+pre.stacktrace {
+	font-size: 0.8em;
+}
+
+ul, ol {
+	margin-left: 3em;
+}
+
+blockquote, dd {
+	margin-left: 3em;
+	margin-right: 3em;
+}
+
+a {
+	color: #96a6b8;
+}
+
+a:hover {
+	text-decoration: none;
+}
+
+strong {
+	color: #D7D7D7;
+}
+
+img.left {
+	float: left;
+	margin: 5px 25px 0px 0px;
+}
+
+img.right {
+	float: right;
+	margin: 5px 0px 0px 25px;
+}
+
+/* Background */
+
+#bg1 {
+	background: url(?!esxx-rsrc=bg02.jpg) no-repeat center -55px;
+}
+
+#bg2 {
+	background: url(?!esxx-rsrc=bg03.jpg) no-repeat center top;
+}
+
+#bg3 {
+	background: url(?!esxx-rsrc=bg04.jpg) repeat-y center top;
+}
+
+#bg4 {
+	background: url(?!esxx-rsrc=bg05.jpg) no-repeat center top;
+}
+
+#bg5 {
+	background: url(?!esxx-rsrc=bg06.jpg) no-repeat center bottom;
+}
+
+/* Header */
+
+#header {
+	width: 900px;
+	height: 90px;
+	margin: 0px auto;
+	color: #FFFFFF;
+}
+
+#header h1 {
+	float: left;
+	margin: 0px;
+	padding: 15px 0px 0px 25px;
+	font-size: 40px;
+}
+
+#header h1 sup {
+	font-weight: normal;
+}
+
+#header h2 {
+	float: right;
+	margin: 0px;
+	padding: 40px 25px 0px 0px;
+	font-size: 14px;
+}
+
+#header a {
+	text-decoration: none;
+	color: #FFFFFF;
+}
+
+/* Header2 */
+
+#header2 {
+	width: 900px;
+	height: 88px;
+	margin: 0px auto;
+}
+
+/* Menu */
+
+#menu {
+	float: left;
+}
+
+#menu ul {
+	margin: 0px;
+	padding: 34px 0px 0px 20px;
+	list-style: none;
+}
+
+#menu li {
+	float: left;
+}
+
+#menu a {
+	margin-left: 30px;
+	text-decoration: none;
+	font-size: 16px;
+	font-weight: bold;
+	color: #FFFFFF;
+}
+
+/* Search */
+
+#search {
+	float: right;
+}
+
+#search form {
+	margin: 0px;
+	padding: 35px 80px 0px 0px;
+}
+
+#search fieldset {
+	margin: 0px;
+	padding: 0px;
+	border: none;
+}
+
+#search input.text {
+	width: 160px;
+	background: none;
+	border: none;
+	font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+	color: #96a6b8;
+}
+
+#search input.button {
+	display: none;
+}
+
+/* Page */
+
+#page {
+	width: 846px;
+	min-height: 500px;
+	margin: 0px auto;
+	padding: 40px 0px 0px 0px;
+}
+
+/* Content */
+
+#content {
+/*	float: left;*/
+/*	width: 583px;*/
+}
+
+#content-wide {
+	width: 100%;
+}
+
+.post {
+}
+
+.post .title {
+	height: 49px;
+	background: url(?!esxx-rsrc=img02.gif) no-repeat;
+}
+
+.post .title h2 {
+	position: absolute;
+	width: 560px;
+	padding: 12px 0px 0px 23px;
+	font-size: 24px;
+	color: #FFFFFF;
+}
+
+.post .title h2 a {
+	text-decoration: none;
+}
+
+.post .title h2 a:hover {
+	color: #96a6b8;
+}
+
+.post .title p {
+	float: right;
+	margin-top: 3px;
+	padding: 12px 24px 0px 0px;
+ 	font-size: 14px;
+	font-weight: bold;
+	color: #B9B9B9;
+}
+
+.post .entry {
+	padding: 30px 23px 0px 23px;
+}
+
+.post .meta {
+	height: 70px;
+	clear: left;
+	margin: 0px 23px;
+	padding: 15px 0px 0px 0px;
+	border-top: 1px solid #262626;
+}
+
+.post .meta .credit {
+	float: left;
+}
+
+.post .meta .links {
+	float: right;
+}
+
+.post .meta .links .more {
+	padding-left: 17px;
+	background: url(?!esxx-rsrc=img05.gif) no-repeat left center;
+}
+
+.post .meta .links .comments {
+	padding-left: 19px;
+	background: url(?!esxx-rsrc=img04.gif) no-repeat left center;
+}
+
+/* Sidebar */
+
+#sidebar {
+	float: right;
+	width: 236px;
+}
+
+#sidebar ul {
+	margin: 0px;
+	padding: 0px;
+	list-style: none;
+}
+
+#sidebar li {
+	background: url(?!esxx-rsrc=img03.gif) no-repeat;
+	padding: 0px 23px 20px 23px;
+}
+
+#sidebar li ul {
+}
+
+#sidebar li li {
+	padding: 8px 0px;
+	background: none;
+	border-bottom: 1px solid #262626;
+}
+
+#sidebar h2 {
+	margin: 0px;
+	padding: 16px 0px 30px 0px;
+ 	font-size: 14px;
+	color: #FFFFFF;
+}
+
+
+/* Donations */
+
+#donations  {
+	clear: both;
+	padding-bottom: 20px;
+}
+
+#donations table {
+	width: 100%; 
+	text-align:center;"
+}
+
+
+/* Footer */
+
+#footer {
+}
+
+#footer p {
+	margin: 0px;
+	padding: 20px 0px;
+	text-align: center;
+	color: #715d68;
+}
+
+#footer a {
+	color: #9a8892;
+}

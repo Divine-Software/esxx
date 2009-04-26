@@ -120,7 +120,7 @@ public class FILEHandler
     return new Boolean(file.delete());
   }
 
-  protected Document createDirectoryListing(File dir) {
+  public static Document createDirectoryListing(File dir) {
     ESXX     esxx     = ESXX.getInstance();
     Document document = esxx.createDocument("directory");
     Element  root     = document.getDocumentElement();
@@ -134,7 +134,7 @@ public class FILEHandler
     return document;
   }
 
-  protected Document createDirectoryEntry(File f) {
+  public static Document createDirectoryEntry(File f) {
     ESXX     esxx     = ESXX.getInstance();
     Document document = esxx.createDocument("tmp");
     
@@ -143,7 +143,7 @@ public class FILEHandler
     return document;
   }
 
-  protected Element createDirectoryEntry(Document document, File f) {
+  public static Element createDirectoryEntry(Document document, File f) {
     Element element = null;
 
     if (f.isDirectory()) {
@@ -161,6 +161,7 @@ public class FILEHandler
     XML.addChild(element, "hidden", f.isHidden() ? "true" : "false");
     XML.addChild(element, "lastModified", Long.toString(f.lastModified()));
     XML.addChild(element, "id", Integer.toHexString(f.hashCode()));
+    XML.addChild(element, "type", ESXX.fileTypeMap.getContentType(f.getName()));
 
     return element;
   }

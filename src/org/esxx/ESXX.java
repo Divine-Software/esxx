@@ -33,6 +33,8 @@ import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import javax.activation.FileTypeMap;
+import javax.activation.MimetypesFileTypeMap;
 import javax.swing.event.EventListenerList;
 import org.esxx.cache.*;
 import org.esxx.saxon.*;
@@ -308,6 +310,40 @@ public class ESXX {
       listenerList.remove(PeriodicJob.class, job);
     }
 
+    /** A pattern that matches '!esxx-rsrc=' followed by a string of valid characters 
+	and dot. (Slash is not valid.) */
+    private static java.util.regex.Pattern esxxResource = 
+      java.util.regex.Pattern.compile("^!esxx-rsrc=[a-zA-Z0-9.]+$");
+
+    public Response getEmbeddedResource(String qs) 
+      throws IOException {
+      if (qs != null && esxxResource.matcher(qs).matches()) {
+	String embedded = qs.substring(11);
+
+	try {
+	  InputStream rsrc = openCachedURI(new URI("esxx-rsrc:" + embedded));
+
+	  if (rsrc == null) {
+	    throw new ESXXException("Embedded resource '" + embedded + "' not found");
+	  }
+	  else {
+	    java.util.TreeMap<String, String> hdr = new java.util.TreeMap<String, String>();
+	    hdr.put("Cache-Control", "max-age=3600");
+
+	    return new Response(200, fileTypeMap.getContentType(embedded),
+				rsrc, hdr);
+	  }
+	}
+	catch (java.net.URISyntaxException ex) {
+	  throw new ESXXException("Failed to create URI for embedded resource '" 
+				  + embedded + "'", ex);
+	}
+      }
+      else {
+	return null;
+      }
+    }
+
     /** Adds a Request to the work queue.
      *
      *  Once the request has been executed, Request.finished will be
@@ -322,10 +358,14 @@ public class ESXX {
     public Workload addRequest(final Request request, final ResponseHandler rh, int timeout) {
       return addContextAction(null, new ContextAction() {
 	  public Object run(Context cx) {
-	    Worker worker = new Worker(ESXX.this);
-
 	    try {
-	      return rh.handleResponse(ESXX.this, cx, worker.handleRequest(cx, request));
+	      Response response = getEmbeddedResource(request.getRequestURI().getQuery());
+
+	      if (response == null) {
+		response = new Worker(ESXX.this).handleRequest(cx, request);
+	      }
+
+	      return rh.handleResponse(ESXX.this, cx, response);
 	    }
 	    catch (Throwable t) {
 	      return rh.handleError(ESXX.this, cx, t);
@@ -628,6 +668,11 @@ public class ESXX {
 
     public InputStream openCachedURI(URI uri) 
       throws IOException {
+
+      if (uri.getScheme().equals("esxx-rsrc")) {
+	return getClass().getResourceAsStream("/rsrc/" + uri.getSchemeSpecificPart());
+      }
+
       return memoryCache.openCachedURL(uri.toURL(), null);
     }
 
@@ -1143,6 +1188,36 @@ public class ESXX {
       Integer handleResponse(ESXX esxx, Context cx, Response result)
 	throws Exception;
       Integer handleError(ESXX esxx, Context cx, Throwable error);
+    }
+
+    public static final FileTypeMap fileTypeMap = new ESXXFileTypeMap();
+
+
+    private static class ESXXFileTypeMap
+      extends MimetypesFileTypeMap {
+      public ESXXFileTypeMap() {
+	super();
+
+	addIfMissing("css",   "text/css");
+	addIfMissing("esxx",  "application/x-esxx+xml");
+	addIfMissing("gif",   "image/gif");
+	addIfMissing("html",  "text/html");
+	addIfMissing("jpg",   "image/jpeg");
+	addIfMissing("js",    "application/x-javascript");
+	addIfMissing("pdf",   "application/pdf");
+	addIfMissing("png",   "image/png");
+	addIfMissing("txt",   "text/plain");
+	addIfMissing("xhtml", "application/xhtml+xml");
+	addIfMissing("xml",   "application/xml");
+	addIfMissing("xsl",   "text/xsl");
+	addIfMissing("xslt",  "text/xsl");
+      }
+
+      private void addIfMissing(String ext, String type) {
+	if (getContentType("file." + ext).equals("application/octet-stream")) {
+	  addMimeTypes(type + " " + ext + " " + ext.toUpperCase());
+	}
+      }
     }
 
     private Pattern noHandlerMode = Pattern.compile("");;

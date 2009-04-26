@@ -22,12 +22,17 @@ import java.io.*;
 import java.net.*;
 import java.util.Date;
 import java.util.Properties;
-import javax.activation.FileTypeMap;
-import javax.activation.MimetypesFileTypeMap;
 import org.esxx.*;
 import org.esxx.util.IO;
 import org.esxx.util.JS;
+import org.esxx.util.XML;
 import org.mozilla.javascript.*;
+
+import javax.xml.transform.dom.*;
+import net.sf.saxon.s9api.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import static net.sf.saxon.s9api.Serializer.Property.*;
 
 
 public class WebRequest
@@ -78,45 +83,47 @@ public class WebRequest
   }
 
   public Integer handleError(ESXX esxx, Context cx, Throwable ex) {
-    String title = "ESXX Server Error";
-    int    code  = 500;
-
-    if (ex instanceof ESXXException) {
-      code = ((ESXXException) ex).getStatus();
-    }
-
-    StringWriter sw = new StringWriter();
-    PrintWriter out = new PrintWriter(sw);
-
-    out.println(getHTMLHeader(esxx));
-    out.println("<h2>" + title + "</h2>");
-    out.println("<h3>Unhandled exception: " + ex.getClass().getSimpleName() + "</h3>");
-    if (ex instanceof ESXXException ||
-	ex instanceof javax.xml.stream.XMLStreamException ||
-	ex instanceof javax.xml.transform.TransformerException) {
-      out.println("<p><tt>" + encodeXMLContent(ex.getMessage()) + "</tt></p>");
-    }
-    else if (ex instanceof RhinoException) {
-      out.println("<pre>");
-      out.println(ex.getClass().getSimpleName() + ": " + encodeXMLContent(ex.getMessage()));
-      out.println(((RhinoException) ex).getScriptStackTrace(new JS.JSFilenameFilter()));
-      out.println("</pre>");
-    }
-    else {
-      out.println("<pre>");
-      ex.printStackTrace(out);
-      out.println("</pre>");
-    }
-    out.println(getHTMLFooter(esxx));
-    out.close();
-
-    // Dump exception on error stream too
-    ex.printStackTrace(new PrintWriter(getErrorWriter()));
+    int    code = ex instanceof ESXXException ? ((ESXXException) ex).getStatus() : 500;
+    String ct;
+    Object res;
 
     try {
-      return handleResponse(esxx, cx,
-			    new Response(code, "text/html; charset=UTF-8",
-					 sw.toString(), null));
+      ex.printStackTrace(new PrintWriter(getErrorWriter()));
+
+      Document doc = esxx.createDocument("error");
+      Element root = doc.getDocumentElement();
+
+      XML.addChild(root, "title",    "ESXX Server Error");
+      XML.addChild(root, "subtitle", "Unhandled exception: " + ex.getClass().getSimpleName());
+      XML.addChild(root, "message", ex.getMessage());
+
+      if (ex instanceof ESXXException ||
+	  ex instanceof javax.xml.stream.XMLStreamException ||
+	  ex instanceof javax.xml.transform.TransformerException) {
+	// Done
+      }
+      else if (ex instanceof RhinoException) {
+	XML.addChild(root, "stacktrace", 
+		     ((RhinoException) ex).getScriptStackTrace(new JS.JSFilenameFilter()));
+      }
+      else {
+	StringWriter sw = new StringWriter();
+	ex.printStackTrace(new PrintWriter(sw));
+	XML.addChild(root, "stacktrace", sw.toString());
+      }
+
+      res = new ByteArrayOutputStream();
+      ct  = renderHTML(doc, (ByteArrayOutputStream) res);
+    }
+    catch (Exception ex2) {
+      ex2.printStackTrace();
+      // Minimal fallback
+      ct  = "text/plain";
+      res = ex.toString();
+    }
+
+    try {
+      return handleResponse(esxx, cx, new Response(code, ct, res, null));
     }
     catch (Exception ex2) {
       // Hmm
@@ -210,149 +217,41 @@ public class WebRequest
     return file.toURI();
   }
 
-  public static String encodeXMLContent(String str) {
-    if (str == null) {
-      return "";
-    }
+  public static String renderHTML(Document doc, OutputStream dst)
+    throws Exception {
+    ESXX       esxx = ESXX.getInstance();
+    Stylesheet xslt = esxx.getCachedStylesheet(new URI("esxx-rsrc:esxx.xslt"));
 
-    return str.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
-  }
+    XsltExecutable  xe = xslt.getExecutable();
+    XsltTransformer tr = xe.load();
+    Serializer       s = new Serializer();
 
-  public static String encodeXMLAttribute(String str) {
-    return encodeXMLContent(str).replaceAll("'", "&apos;").replaceAll("\"", "&quot;");
-  }
+    s.setOutputStream(dst);
 
-  public static String getHTMLHeader(ESXX esxx) {
-    return htmlHeader.replaceAll("@RESOURCE_URI@", 
-				 esxx.getSettings().getProperty("esxx.resource-uri", 
-								"http://esxx.org/"));
-  }
+    // Remove this code when upgrading to Saxon 9.1 (?)
+    Properties op = xe.getUnderlyingCompiledStylesheet().getOutputProperties();
+    s.setOutputProperty(BYTE_ORDER_MARK,        op.getProperty("byte-order-mark"));
+    s.setOutputProperty(CDATA_SECTION_ELEMENTS, op.getProperty("cdata-section-elements"));
+    s.setOutputProperty(DOCTYPE_PUBLIC,         op.getProperty("doctype-public"));
+    s.setOutputProperty(DOCTYPE_SYSTEM,         op.getProperty("doctype-system"));
+    s.setOutputProperty(ENCODING,               op.getProperty("encoding"));
+    s.setOutputProperty(ESCAPE_URI_ATTRIBUTES,  op.getProperty("escape-uri-attributes"));
+    s.setOutputProperty(INCLUDE_CONTENT_TYPE,   op.getProperty("include-content-type"));
+    s.setOutputProperty(INDENT,                 op.getProperty("indent"));
+    s.setOutputProperty(MEDIA_TYPE,             op.getProperty("media-type", "text/html"));
+    s.setOutputProperty(METHOD,                 op.getProperty("method"));
+    //    s.setOutputProperty(NORMALIZATION_FORM,     op.getProperty("normalization-form"));
+    s.setOutputProperty(OMIT_XML_DECLARATION,   op.getProperty("omit-xml-declaration"));
+    s.setOutputProperty(STANDALONE,             op.getProperty("standalone"));
+    s.setOutputProperty(UNDECLARE_PREFIXES,     op.getProperty("undeclare-prefixes"));
+    s.setOutputProperty(USE_CHARACTER_MAPS,     op.getProperty("use-character-maps"));
+    s.setOutputProperty(VERSION,                op.getProperty("version"));
 
-  public static String getHTMLFooter(ESXX esxx) {
-    return htmlFooter.replaceAll("@RESOURCE_URI@", 
-				 esxx.getSettings().getProperty("esxx.resource-uri", 
-								"http://esxx.org/"));
-  }
+    tr.setSource(new DOMSource(doc));
+    tr.setDestination(s);
+    tr.transform();
 
-  public static String getFileListing(ESXX esxx, String req_uri, File dir) 
-    throws FileNotFoundException {
-    // Directory URIs must end with '/', or else the client will fail
-    // to resolve our relative URIs in the file listing.
-    if (!req_uri.endsWith("/")) {
-      throw new FileNotFoundException("Directory URIs must end with '/'");
-    }
-
-    URI uri = dir.toURI();
-    StringBuilder sb = new StringBuilder();
-
-    sb.append(getHTMLHeader(esxx) +
-	      "<table summary='Directory Listing of " + encodeXMLAttribute(req_uri) + "'>" +
-	      "<caption>Directory Listing of " + encodeXMLContent(req_uri) + "</caption>" +
-	      "<thead><tr>" +
-	      "<td>Name</td>" +
-	      "<td>Last Modified</td>" +
-	      "<td>Size</td>" +
-	      "<td>Type</td>" +
-	      "</tr></thead>" +
-	      "<tbody>");
-
-    if (!req_uri.equals("/")) {
-      sb.append("<tr>" +
-		"<td><a href='..'>Parent Directory</a></td>" +
-		"<td>&#160;</td>" +
-		"<td>&#160;</td>" +
-		"<td>&#160;</td>" +
-		"</tr>");
-    }
-
-    File[] files = dir.listFiles();
-    java.util.Arrays.sort(files);
-
-    for (File f : files) {
-      if (f.isHidden()) {
-	continue;
-      }
-
-      String p  = f.isDirectory() ? f.getName() + "/" : f.getName();
-      String fp = uri.relativize(f.toURI()).toASCIIString();
-      String d  = isoFormat.format(new Date(f.lastModified()));
-      String l  = f.isDirectory() ? "&#160;" : "" + f.length();
-      String t  = f.isDirectory() ? "Directory" : fileTypeMap.getContentType(f);
-
-      sb.append("<tr>");
-      sb.append("<td><a href='" + encodeXMLAttribute(fp) + "'>");
-      sb.append(encodeXMLContent(p) + "</a></td>");
-      sb.append("<td>" + d + "</td>");
-      sb.append("<td>" + l + "</td>");
-      sb.append("<td>" + t + "</td>");
-      sb.append("</tr>");
-    }
-
-    sb.append("</tbody></table>" + getHTMLFooter(esxx));
-    
-    return sb.toString();
-  }
-
-
-  public static final FileTypeMap fileTypeMap = new ESXXFileTypeMap();
-
-  private static final String htmlHeader =
-    "<?xml version='1.0' encoding='UTF-8'?>" +
-    "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' " +
-    "'http://www.w3.org/TR/2002/REC-xhtml1-20020801/DTD/xhtml1-strict.dtd'>" +
-    "<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'><head>" +
-    "<title>ESXX - The friendly ECMAscript/XML Application Server</title>" +
-    "<link href='@RESOURCE_URI@favicon.ico' rel='shortcut icon' type='image/vnd.microsoft.icon'/>" +
-    "<link rel='alternale stylesheet' type='text/css' href='@RESOURCE_URI@css/blackwhite.css' title='Black &amp; white'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/pastel.css' title='Pastel'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/plain.css' title='Plain'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/system.css' title='System default'/>" +
-    "<link rel='alternate stylesheet' type='text/css' href='@RESOURCE_URI@css/amiga.css' title='Workbench 1.x' class='default'/>" +
-    "<script type='text/javascript' src='@RESOURCE_URI@js/styleswitch.js' defer='defer'></script>" +
-    "</head><body>" +
-    "<h1>ESXX - The friendly ECMAscript/XML Application Server</h1>";
-
-  private static final String htmlFooter =
-    "<p><br /><br /><br /></p>" +
-    "<table id='switcher'>" +
-    "<tr>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Black &amp; white\"); return false;'>Black &amp; white</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Pastel\"); return false;'>Pastel</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Plain\"); return false;'>Plain</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"System default\"); return false;'>System default</a></td>" +
-    "<td><a href='#' onclick='setActiveStyleSheet(\"Workbench 1.x\"); return false;'>Workbench 1.x</a></td>" +
-    "<td class='logo'><img src='@RESOURCE_URI@gfx/logo.gif' alt='Leviticus, Divine Software' /></td>" +
-    "</tr>" +
-    "</table>" +
-    "</body></html>";
-
-  private static final java.text.SimpleDateFormat isoFormat =
-    new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-  private static class ESXXFileTypeMap
-    extends MimetypesFileTypeMap {
-    public ESXXFileTypeMap() {
-      super();
-
-      addIfMissing("css",   "text/css");
-      addIfMissing("esxx",  "application/x-esxx+xml");
-      addIfMissing("gif",   "image/gif");
-      addIfMissing("html",  "text/html");
-      addIfMissing("jpg",   "image/jpeg");
-      addIfMissing("js",    "application/x-javascript");
-      addIfMissing("pdf",   "application/pdf");
-      addIfMissing("png",   "image/png");
-      addIfMissing("txt",   "text/plain");
-      addIfMissing("xhtml", "application/xhtml+xml");
-      addIfMissing("xml",   "application/xml");
-      addIfMissing("xsl",   "text/xsl");
-    }
-
-    private void addIfMissing(String ext, String type) {
-      if (getContentType("file." + ext).equals("application/octet-stream")) {
-	addMimeTypes(type + " " + ext + " " + ext.toUpperCase());
-      }
-    }
+    return s.getOutputProperty(MEDIA_TYPE);
   }
 
   private OutputStream outStream;

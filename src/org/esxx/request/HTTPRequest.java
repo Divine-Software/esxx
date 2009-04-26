@@ -26,14 +26,17 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import org.esxx.*;
 import org.esxx.util.IO;
+import org.esxx.util.XML;
 import org.mozilla.javascript.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 public class HTTPRequest
   extends WebRequest {
 
   public HTTPRequest(HttpExchange he, URI root_uri, File canonical_script_file)
     throws IOException, java.net.URISyntaxException {
-      super(canonical_script_file.toURI(), null, 
+      super(canonical_script_file.toURI(), null,
 	    createCGIEnvironment(he, root_uri, canonical_script_file),
 	    he.getRequestBody(),
 	    System.err,
@@ -45,39 +48,7 @@ public class HTTPRequest
     throws Exception {
     try {
       // Do not call super method, since it has a null OutputStream.
-
-      final Headers headers = httpExchange.getResponseHeaders();
-      headers.set("Content-Type", response.getContentType(true));
-      response.enumerateHeaders(new Response.HeaderEnumerator() {
-	  public void header(String name, String value) {
-	    headers.set(name, value);
-	  }
-	});
-
-      int  status = response.getStatus();
-      long content_length;
-
-      if ((status >= 100 && status <= 199) ||
-	  status == 204 ||
-	  status == 205 ||
-	  status == 304) {
-	content_length = -1;
-      }
-      else if (response.isBuffered()) {
-	content_length = response.getContentLength(esxx, cx);
-      }
-      else {
-	content_length = 0;
-      }
-
-      httpExchange.sendResponseHeaders(status, content_length);
-
-      // Output body
-      if (content_length != -1) {
-	OutputStream os = httpExchange.getResponseBody();
-	response.writeResult(esxx, cx, os);
-	try { os.close(); } catch (Exception ex) {}
-      }
+      writeResponse(httpExchange, esxx, cx, response);
 
       return 0;
     }
@@ -95,18 +66,72 @@ public class HTTPRequest
     }
   }
 
+  private static void writeResponse(HttpExchange he, ESXX esxx, Context cx, Response response)
+    throws IOException {
+    final Headers headers = he.getResponseHeaders();
+    headers.set("Content-Type", response.getContentType(true));
+    response.enumerateHeaders(new Response.HeaderEnumerator() {
+	public void header(String name, String value) {
+	  headers.set(name, value);
+	}
+      });
+
+    int  status = response.getStatus();
+    long content_length;
+
+    if ((status >= 100 && status <= 199) ||
+	status == 204 ||
+	status == 205 ||
+	status == 304) {
+      content_length = -1;
+    }
+    else if (response.isBuffered()) {
+      content_length = response.getContentLength(esxx, cx);
+    }
+    else {
+      content_length = 0;
+    }
+
+    he.sendResponseHeaders(status, content_length);
+
+    // Output body
+    if (content_length != -1) {
+      OutputStream os = he.getResponseBody();
+      response.writeResult(esxx, cx, os);
+      try { os.close(); } catch (Exception ex) {}
+    }
+  }
+
+  private static void writeResponse(HttpExchange he, ESXX esxx, int status, Document doc)
+    throws IOException {
+
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    String ct;
+
+    try {
+      ct = renderHTML(doc, os);
+    }
+    catch (Exception ex) {
+      ct = "text/plain";
+      os.reset();
+      new PrintWriter(os).println(ex.getMessage());
+    }
+
+    writeResponse(he, esxx, null, new Response(status, ct, os, null));
+  }
+
   private static Properties createCGIEnvironment(HttpExchange he,
-						 URI root_uri, 
-						 File canonical_script_file) 
+						 URI root_uri,
+						 File canonical_script_file)
     throws java.net.URISyntaxException {
 
-    URI full_request_uri = new URI("http", 
+    URI full_request_uri = new URI("http",
 				   he.getRequestHeaders().getFirst("Host"),
-				   he.getRequestURI().getPath(), 
-				   he.getRequestURI().getQuery(), 
+				   he.getRequestURI().getPath(),
+				   he.getRequestURI().getQuery(),
 				   null);
-			       
-    Properties p = createCGIEnvironment(he.getRequestMethod(), he.getProtocol(), 
+
+    Properties p = createCGIEnvironment(he.getRequestMethod(), he.getProtocol(),
 					full_request_uri,
 					he.getLocalAddress(), he.getRemoteAddress(),
 					"/", root_uri, canonical_script_file);
@@ -136,7 +161,12 @@ public class HTTPRequest
 	    URI path_translated = root_uri.resolve(req_uri_raw.substring(1));
 	    File file = new File(path_translated).getCanonicalFile();
 
-	    if (!file.getPath().startsWith(root)) {
+	    Response embedded = esxx.getEmbeddedResource(he.getRequestURI().getQuery());
+
+	    if (embedded != null) {
+	      writeResponse(he, esxx, null, embedded);
+	    }
+	    else if (!file.getPath().startsWith(root)) {
 	      // Deny access to files outside the root
 	      throw new FileNotFoundException("Document is outside root");
 	    }
@@ -145,14 +175,17 @@ public class HTTPRequest
 
 	      if (file.exists()) {
 		if (file.isDirectory()) {
-		  respond(he, 200, getFileListing(esxx, req_uri, file));
+		  Document doc = org.esxx.js.protocol.FILEHandler.createDirectoryListing(file);
+		  doc.getDocumentElement().setAttributeNS(null, "requestURI", req_uri);
+		  writeResponse(he, esxx, 200, doc);
 		}
 		else {
-		  if (fileTypeMap.getContentType(file).equals("application/x-esxx+xml")) {
+		  if (ESXX.fileTypeMap.getContentType(file).equals("application/x-esxx+xml")) {
 		    app_file = file;
 		  }
 		  else {
-		    he.getResponseHeaders().set("Content-Type", fileTypeMap.getContentType(file));
+		    he.getResponseHeaders().set("Content-Type",
+						ESXX.fileTypeMap.getContentType(file));
 		    he.sendResponseHeaders(200, file.length());
 		    IO.copyStream(new FileInputStream(file), he.getResponseBody());
 		  }
@@ -169,7 +202,7 @@ public class HTTPRequest
 		  throw new FileNotFoundException("Not Found");
 		}
 
-		if (!fileTypeMap.getContentType(app_file).equals("application/x-esxx+xml")) {
+		if (!ESXX.fileTypeMap.getContentType(app_file).equals("application/x-esxx+xml")) {
 		  throw new FileNotFoundException("Only ESXX files are directories");
 		}
 	      }
@@ -193,12 +226,15 @@ public class HTTPRequest
 	      ex.printStackTrace();
 	    }
 
-	    respond(he, code,
-		    getHTMLHeader(esxx) +
-		    "<h2>" + title + "</h2>" +
-		    "<p>The requested resource " + encodeXMLContent(req_uri) + " failed: " +
-		    encodeXMLContent(ex.getMessage()) +
-		    ".</p>" + getHTMLFooter(esxx));
+	    Document doc = esxx.createDocument("error");
+	    Element root = doc.getDocumentElement();
+
+	    XML.addChild(root, "title",    "ESXX Server Error");
+	    XML.addChild(root, "subtitle", title);
+	    XML.addChild(root, "message",
+			 "The requested resource '" + req_uri + "' failed: " + ex.getMessage());
+
+	    writeResponse(he, esxx, code, doc);
 	  }
 	  finally {
 	    if (he != null) {
@@ -229,15 +265,6 @@ public class HTTPRequest
 	break;
       }
     }
-  }
-
-  private static void respond(HttpExchange he, int status, String body)
-    throws IOException {
-    he.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
-    he.sendResponseHeaders(status, 0);
-    PrintStream ps = new PrintStream(he.getResponseBody(), false, "UTF-8");
-    ps.print(body);
-    ps.close();
   }
 
   private HttpExchange httpExchange;
