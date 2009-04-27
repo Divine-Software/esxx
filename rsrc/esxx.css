@@ -209,7 +209,6 @@ img.right {
 	width: 160px;
 	background: none;
 	border: none;
-	font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
 	color: #96a6b8;
 }
 
@@ -220,6 +219,7 @@ img.right {
 /* Page */
 
 #page {
+        position: relative;
 	width: 846px;
 	min-height: 500px;
 	margin: 0px auto;
@@ -339,12 +339,17 @@ img.right {
 
 #donations  {
 	clear: both;
+	padding-top: 3em; /* Room for table head and cation */
+	height: 51px; /* Size of paypal button */
 	padding-bottom: 20px;
 }
 
 #donations table {
+	position: absolute;
+	bottom: 0px;
+	right: 0px;
 	width: 100%; 
-	text-align:center;"
+	text-align:center;
 }
 
 
