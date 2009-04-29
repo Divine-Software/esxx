@@ -102,8 +102,8 @@ public class HTTPRequest
 
     URI full_request_uri = new URI("http", 
 				   he.getRequestHeaders().getFirst("Host"),
-				   he.getRequestURI().getPath(), 
-				   he.getRequestURI().getQuery(), 
+				   he.getRequestURI().getRawPath(), 
+				   he.getRequestURI().getRawQuery(), 
 				   null);
 			       
     Properties p = createCGIEnvironment(he.getRequestMethod(), he.getProtocol(), 
