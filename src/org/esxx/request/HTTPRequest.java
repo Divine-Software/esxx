@@ -100,12 +100,13 @@ public class HTTPRequest
 						 File canonical_script_file) 
     throws java.net.URISyntaxException {
 
-    URI full_request_uri = new URI("http", 
-				   he.getRequestHeaders().getFirst("Host"),
-				   he.getRequestURI().getRawPath(), 
-				   he.getRequestURI().getRawQuery(), 
-				   null);
-			       
+    URI helper_uri = new URI("http", he.getRequestHeaders().getFirst("Host"), "/", null, null);
+    URI full_request_uri = new URI(helper_uri.getScheme()
+				   + "://" + helper_uri.getRawAuthority() 
+				   + he.getRequestURI().getRawPath()
+				   + (he.getRequestURI().getRawQuery() != null ?
+				      "?"  + he.getRequestURI().getRawQuery() : ""));
+    
     Properties p = createCGIEnvironment(he.getRequestMethod(), he.getProtocol(), 
 					full_request_uri,
 					he.getLocalAddress(), he.getRemoteAddress(),
