@@ -50,7 +50,6 @@ class Worker {
       //     }
 
       JSResponse result = null;
-      Exception  error  = null;
 
       // Create a Request object
       JSRequest jsreq = (JSRequest) JSESXX.newObject(cx, global, "Request", 

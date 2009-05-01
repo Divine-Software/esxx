@@ -22,8 +22,6 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import org.esxx.js.JSURI;
 import org.mozilla.javascript.*;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 public class ProtocolHandler {
     public ProtocolHandler(JSURI jsuri)
