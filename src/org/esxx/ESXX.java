@@ -670,7 +670,13 @@ public class ESXX {
       throws IOException {
 
       if (uri.getScheme().equals("esxx-rsrc")) {
-	return getClass().getResourceAsStream("/rsrc/" + uri.getSchemeSpecificPart());
+	InputStream rsrc = getClass().getResourceAsStream("/rsrc/" + uri.getSchemeSpecificPart());
+
+	if (rsrc == null) {
+	  throw new FileNotFoundException(uri.toString());
+	}
+
+	return rsrc;
       }
 
       return memoryCache.openCachedURL(uri.toURL(), null);
