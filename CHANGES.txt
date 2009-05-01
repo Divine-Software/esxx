@@ -32,6 +32,10 @@
 	* Added the "Hello world" and "The Ajax Blog" tutorials to the
 	examples.
 
+	* All-new look of error messages and file listings.
+
+	* Updated to Saxon 9.0.0.8.
+
 0.9.20090201
 	* Fixed bug #14765: req.scriptURI has problems with encoded
 	URI:s.
