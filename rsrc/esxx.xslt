@@ -224,7 +224,7 @@
 (function() {
   var f = document.getElementById("cse-search-box");
   if (f) if (f.q) {
-    f.q.onblur  = function() { f.q.value = "Search site, blog and wiki"; };
+    f.q.onblur  = function() { f.q.value = "Search site, blog, wiki"; };
     f.q.onfocus = function() { f.q.value = ""; };
     f.q.onblur();
   }
@@ -270,7 +270,7 @@
     <div class="post">
       <div class="title">
 	<h2><xsl:value-of select="@title" /></h2>
-	<p><xsl:value-of select="my:date(@date)" /></p>
+<!--	<p><xsl:value-of select="my:date(@date)" /></p> -->
       </div>
 
       <div class="entry">
