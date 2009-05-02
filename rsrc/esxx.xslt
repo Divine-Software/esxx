@@ -13,6 +13,16 @@
     doctype-system="http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"
     method="xhtml" version="1.0" media-type="text/html" indent="no"/>
 
+  <xsl:variable name="menu">
+    <ul>
+      <li><a href="http://developer.berlios.de/projects/esxx/">BerliOS</a></li>
+      <li><a href="http://openfacts2.berlios.de/wikien/index.php/BerliosProject:ESXX">Wiki</a></li>
+      <li><a href="http://openfacts2.berlios.de/wikien/index.php/BerliosProject:ESXX_-_Tutorials">Tutorials</a></li>
+      <li><a href="http://developer.berlios.de/bugs/?group_id=9645">Bug tracker</a></li>
+      <li><a href="mailto:martin@blom.org?subject=ESXX%20Support%20Request">Get help</a></li>
+    </ul>
+  </xsl:variable>
+
   <!-- The identity transform, except that PIs and comments are stripped -->
   <xsl:template match="element()">
     <xsl:copy>
@@ -23,7 +33,6 @@
   <xsl:template match="attribute()|text()">
     <xsl:copy/>
   </xsl:template>
-
 
   <!-- Example XML:
        <error>
@@ -37,17 +46,6 @@
   <xsl:template match="/error">
     <xsl:variable name="view">
       <view>
-	<menu>
-	  <ul>
-	    <li><a href="examples.html">Examples</a></li>
-	    <li><a href="http://openfacts2.berlios.de/wikien/index.php/BerliosProject:ESXX">Wiki</a></li>
-	    <li><a href="http://esxx.blogspot.com/">Blog</a></li>
-	    <li><a href="http://developer.berlios.de/project/showfiles.php?group_id=9645">Download</a></li>
-	    <li><a href="http://developer.berlios.de/projects/esxx/">Contribute</a></li>
-	    <li><a href="license.html">License</a></li>
-	  </ul>
-	</menu>
-
 	<post title="{title}" date="{current-dateTime()}">
 	  <h3><xsl:value-of select="subtitle" /></h3>
 	  <p><xsl:value-of select="message" /></p>
@@ -119,17 +117,6 @@
   <xsl:template match="/directory">
     <xsl:variable name="view">
       <view>
-	<menu>
-	  <ul>
-	    <li><a href="examples.html">Examples</a></li>
-	    <li><a href="http://openfacts2.berlios.de/wikien/index.php/BerliosProject:ESXX">Wiki</a></li>
-	    <li><a href="http://esxx.blogspot.com/">Blog</a></li>
-	    <li><a href="http://developer.berlios.de/project/showfiles.php?group_id=9645">Download</a></li>
-	    <li><a href="http://developer.berlios.de/projects/esxx/">Contribute</a></li>
-	    <li><a href="license.html">License</a></li>
-	  </ul>
-	</menu>
-
 	<post title="Directory Listing of '{@requestURI}'" date="{current-dateTime()}">
 	  <table width="100%">
 	    <thead>
@@ -208,7 +195,7 @@
 	<div id="bg2">
 	  <div id="header2">
 	    <div id="menu">
-	      <xsl:apply-templates select="x:menu/*" />
+	      <xsl:apply-templates select="$menu/*" />
 	    </div>
 	    
 	    <div id="search">
