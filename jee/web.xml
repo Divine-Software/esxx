@@ -27,11 +27,6 @@
       <param-value>share|share/site</param-value>
     </init-param>
 
-    <!-- You'll probably want to change this in production
-    <init-param>
-      <param-name>esxx.resource-uri</param-name>
-      <param-value>http://esxx.org/</param-value>
-    </init-param> -->
   </servlet>
 
   <servlet-mapping>
