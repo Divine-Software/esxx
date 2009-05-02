@@ -149,8 +149,14 @@
 		  <td>&#160;</td>
 		</tr>
 	      </xsl:if>
-	      <xsl:apply-templates select="directory" />
-	      <xsl:apply-templates select="file" />
+
+	      <xsl:apply-templates select="directory">
+		<xsl:sort select="name" />
+	      </xsl:apply-templates>
+
+	      <xsl:apply-templates select="file">
+		<xsl:sort select="name" />
+	      </xsl:apply-templates>
 	    </tbody>
 	  </table>
 	</post>
