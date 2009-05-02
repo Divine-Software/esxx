@@ -340,10 +340,9 @@ public class HTTPHandler
     // FIXME: This may store the data three times in memory -- If
     // there were a way to turn the Object into an InputStream
     // instead, we would not have this problem.
-    ESXX esxx = ESXX.getInstance();
     Response response = new Response(0, ESXX.combineMIMEType(type, params), data, null);
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    response.writeResult(esxx, cx, bos);
+    response.writeResult(bos);
     entity.setHeader("Content-Type", response.getContentType(true));
     entity.setEntity(new ByteArrayEntity(bos.toByteArray()));
   }

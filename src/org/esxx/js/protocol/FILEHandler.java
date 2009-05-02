@@ -69,10 +69,9 @@ public class FILEHandler
   public Object save(Context cx, Scriptable thisObj,
 		     Object data, String type, HashMap<String,String> params)
     throws Exception {
-    ESXX esxx = ESXX.getInstance();
     File file = new File(jsuri.getURI());
 
-    Response.writeObject(data, type, params, esxx, cx, new FileOutputStream(file));
+    Response.writeObject(data, type, params, new FileOutputStream(file));
     return ESXX.domToE4X(createDirectoryEntry(file), cx, thisObj);
   }
 
@@ -80,7 +79,6 @@ public class FILEHandler
   public Object append(Context cx, Scriptable thisObj,
 		       Object data, String type, HashMap<String,String> params)
     throws Exception {
-    ESXX esxx = ESXX.getInstance();
     File file = new File(jsuri.getURI());
 
     if (file.exists() && file.isDirectory()) {
@@ -96,10 +94,10 @@ public class FILEHandler
 	throw Context.reportRuntimeError("Failed to create " + file);
       }
 
-      Response.writeObject(data, type, params, esxx, cx, new FileOutputStream(file));
+      Response.writeObject(data, type, params, new FileOutputStream(file));
     }
     else {
-      Response.writeObject(data, type, params, esxx, cx, new FileOutputStream(file, true));
+      Response.writeObject(data, type, params, new FileOutputStream(file, true));
     }
 
     return ESXX.domToE4X(createDirectoryEntry(file), cx, thisObj);

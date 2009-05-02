@@ -18,14 +18,62 @@
 
 package org.esxx.request;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.util.Properties;
+import org.mozilla.javascript.Context;
+import org.esxx.Response;
+import org.esxx.util.IO;
+
 public class CGIRequest
   extends WebRequest {
 
-  public CGIRequest(java.util.Properties cgi)
-    throws java.io.IOException {
-    super(createURL(cgi), null, cgi,
-	  System.in,
-	  System.err,
-	  System.out);
+  public CGIRequest() {
+    this(System.in, System.out, System.err);
   }
+
+  protected CGIRequest(InputStream in, OutputStream out, OutputStream err) {
+    super(in, err);
+    outStream = out;
+  }
+
+  public void initRequest(Properties cgi)
+    throws java.io.IOException {
+    super.initRequest(createURL(cgi), null, cgi);
+  }
+
+  @Override public Integer handleResponse(Response response)
+    throws Exception {
+    // Output HTTP headers
+    final PrintWriter out = new PrintWriter(IO.createWriter(outStream, "US-ASCII"));
+
+    out.println("Status: " + response.getStatus());
+    out.println("Content-Type: " + response.getContentType(true));
+
+    if (response.isBuffered()) {
+      out.println("Content-Length: " + response.getContentLength());
+    }
+
+    response.enumerateHeaders(new Response.HeaderEnumerator() {
+	public void header(String name, String value) {
+	  out.println(name + ": " + value);
+	}
+      });
+
+    out.println();
+    out.flush();
+
+    response.writeResult(outStream);
+
+    getErrorWriter().flush();
+    getDebugWriter().flush();
+    outStream.flush();
+
+    return 0;
+  }
+
+  private OutputStream outStream;
 }

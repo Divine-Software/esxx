@@ -157,7 +157,8 @@ public class Main {
 	  usage(opt, "PATH_TRANSLATED not set", 10);
 	}
 
-	CGIRequest    cr = new CGIRequest(cgi);
+	CGIRequest cr = new CGIRequest();
+	cr.initRequest(cgi);
 	ESXX.Workload wl = esxx.addRequest(cr, cr, 0);
 
 	try {
@@ -170,7 +171,8 @@ public class Main {
       else if (script != null && script.length != 0) {
 	File file = new File(script[0]);
 
-	ScriptRequest sr = new ScriptRequest(file.toURI(), script);
+	ScriptRequest sr = new ScriptRequest();
+	sr.initRequest(file.toURI(), script);
 	sr.enableDebugger(cmd.hasOption('d'));
 	sr.activateDebugger(cmd.hasOption('D'));
 	ESXX.Workload wl = esxx.addRequest(sr, sr, -1 /* no timeout for scripts */);

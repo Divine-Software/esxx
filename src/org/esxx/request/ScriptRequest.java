@@ -27,20 +27,22 @@ public class ScriptRequest
   extends Request
   implements ESXX.ResponseHandler {
 
-  public ScriptRequest(java.net.URI app_file, String[] cmdline)
-    throws IOException {
-    super(app_file, cmdline, new java.util.Properties(),
-	  System.in,
-	  System.err);
+  public ScriptRequest() {
+    super(System.in, System.err);
   }
 
-  public Integer handleResponse(ESXX esxx, Context cx, Response response)
+  public void initRequest(java.net.URI app_file, String[] cmdline)
+    throws IOException {
+    super.initRequest(app_file, cmdline, new java.util.Properties());
+  }
+
+  public Integer handleResponse(Response response)
     throws Exception {
     // Output debug stream to stderr first
     System.err.print(getDebugWriter().toString());
 
     // Then write result
-    response.writeResult(esxx, cx, System.out);
+    response.writeResult(System.out);
 
     try {
       int rc = response.getStatus();
@@ -66,7 +68,7 @@ public class ScriptRequest
     }
   }
 
-  public Integer handleError(ESXX esxx, Context cx, Throwable t) {
+  public Integer handleError(Throwable t) {
     if (t instanceof ESXXException.TimeOut) {
       return 5;
     }

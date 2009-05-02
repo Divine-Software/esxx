@@ -18,17 +18,19 @@
 
 package org.esxx;
 
+import java.io.*;
+import java.net.URI;
 import java.util.Enumeration;
 import java.util.Properties;
-import java.io.*;
-
-import javax.servlet.http.*;
 import javax.servlet.*;
+import javax.servlet.http.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
-import java.net.URI;
-import org.esxx.request.WebRequest;
 import org.esxx.request.ServletRequest;
+import org.esxx.request.WebRequest;
 import org.esxx.util.IO;
+import org.esxx.util.XML;
 
 
 /** An HttpServlet that executes ESXX applications. */
@@ -79,79 +81,41 @@ public class ESXXServlet extends HttpServlet {
 
   protected void service(HttpServletRequest sreq, HttpServletResponse sres)
     throws ServletException, IOException {
+    ServletRequest sr = new ServletRequest(sreq, sres);
+
     try {
-      File file = new File(root_uri.resolve(sreq.getServletPath().substring(1))).getCanonicalFile();
+      File app_file = sr.handleWebServerRequest(root_uri.resolve(sreq.getServletPath().substring(1)),
+						sreq.getRequestURI(),
+						sreq.getQueryString(),
+						root);
 
-      if (!file.getPath().startsWith(root)) {
-	// Deny access to files outside the root
-	throw new FileNotFoundException("Document is outside root");
-      }
-      else {
-	File app_file = null;
-
-	if (file.exists()) {
-	  if (file.isDirectory()) {
-	    String listing = WebRequest.getFileListing(esxx, sreq.getRequestURI(), file);
-	    sres.setStatus(200);
-	    sres.setContentType("text/html; charset=UTF-8");
-	    sres.getWriter().print(listing);
-	  }
-	  else {
-	    if (WebRequest.fileTypeMap.getContentType(file).equals("application/x-esxx+xml")) {
-	      app_file = file;
-	    }
-	    else {
-	      sres.setStatus(200);
-	      sres.setContentType(WebRequest.fileTypeMap.getContentType(file));
-	      ServletRequest.setContentLength(sres, file.length());
-	      IO.copyStream(new FileInputStream(file), sres.getOutputStream());
-	    }
-	  }
-	}
-	else {
-	  // Find a file that do exists
-	  app_file = file;
-	  while (app_file != null && !app_file.exists()) {
-	    app_file = app_file.getParentFile();
-	  }
-
-	  if (app_file.isDirectory()) {
-	    throw new FileNotFoundException("Not Found");
-	  }
-
-	  if (!WebRequest.fileTypeMap.getContentType(app_file).equals("application/x-esxx+xml")) {
-	    throw new FileNotFoundException("Only ESXX files are directories");
-	  }
-	}
-
-	if (app_file != null) {
-	  ServletRequest sr = new ServletRequest(sreq, sres, root_uri, app_file);
-	  ESXX.Workload wl = esxx.addRequest(sr, sr, 0);
-	  sres = null;
-	  wl.future.get(); // Wait for request to complete
-	}
+      if (app_file != null) {
+	sr.initRequest(root_uri, app_file);
+	ESXX.Workload wl = esxx.addRequest(sr, sr, 0);
+	sres = null;
+	wl.future.get(); // Wait for request to complete
       }
     }
     catch (Exception ex) {
-      int code = 500;
-      String title = "Internal Server Error";
+      int    code;
+      String subtitle;
+      String message;
 
       if (ex instanceof FileNotFoundException) {
-	code = 404;
-	title = "Not Found";
+	code     = 404;
+	subtitle = "Not Found";
+	message  = "The requested resource '" + sreq.getRequestURI() + "' could not be found: "
+	  + ex.getMessage();
+	ex = null;
       }
       else {
-	ex.printStackTrace(sres.getWriter());
+	code     = 500;
+	subtitle = "Internal Server Error";
+	message  = "The requested resource '" + sreq.getRequestURI() + "' failed: " 
+	  + ex.getMessage();
       }
 
-      sres.setStatus(code);
-      sres.setContentType("text/html; charset=UTF-8");
-      sres.getWriter().print(WebRequest.getHTMLHeader(esxx) +
-			     "<h2>" + title + "</h2>" +
-			     "<p>The requested resource "
-			     + WebRequest.encodeXMLContent(sreq.getRequestURI()) + " failed: " +
-			     WebRequest.encodeXMLContent(ex.getMessage()) +
-			     ".</p>" + WebRequest.getHTMLFooter(esxx));
+      sr.reportInternalError(code, "ESXX Server Error", subtitle, message, ex);
     }
     finally {
       if (sres != null) {

@@ -34,15 +34,12 @@ import org.w3c.dom.Element;
 import static net.sf.saxon.s9api.Serializer.Property.*;
 
 
-public class WebRequest
+public abstract class WebRequest
   extends Request
   implements ESXX.ResponseHandler {
 
-  public WebRequest(URI app_file, String[] command_line, Properties properties,
-		    InputStream in, OutputStream error, OutputStream out)
-    throws IOException {
-    super(app_file, command_line, properties, in, error);
-    outStream = out;
+  protected WebRequest(InputStream in, OutputStream err) {
+    super(in, err);
   }
 
   @Override public URI getWD() {
@@ -51,57 +48,107 @@ public class WebRequest
     return new File(main).getParentFile().toURI();
   }
 
-  public Integer handleResponse(ESXX esxx, Context cx, Response response)
-    throws Exception {
-    // Output HTTP headers
-    final PrintWriter out = new PrintWriter(IO.createWriter(outStream, "US-ASCII"));
+  public Integer handleError(Throwable ex) {
+    int    code     = ex instanceof ESXXException ? ((ESXXException) ex).getStatus() : 500;
+    String title    = "ESXX Server Error";
+    String subtitle = "Unhandled exception: " + ex.getClass().getSimpleName();
+    String message  = ex.getMessage();
 
-    out.println("Status: " + response.getStatus());
-    out.println("Content-Type: " + response.getContentType(true));
-
-    if (response.isBuffered()) {
-      out.println("Content-Length: " + response.getContentLength(esxx, cx));
+    if (ex instanceof ESXXException ||
+	ex instanceof javax.xml.stream.XMLStreamException ||
+	ex instanceof javax.xml.transform.TransformerException) {
+      // Don't print stack trace
+      ex = null;
     }
 
-    response.enumerateHeaders(new Response.HeaderEnumerator() {
-	public void header(String name, String value) {
-	  out.println(name + ": " + value);
-	}
-      });
-
-    out.println();
-    out.flush();
-
-    response.writeResult(esxx, cx, outStream);
-
-    getErrorWriter().flush();
-    getDebugWriter().flush();
-    outStream.flush();
-
-    return 0;
+    return reportInternalError(code, title, subtitle, message, ex);
   }
 
-  public Integer handleError(ESXX esxx, Context cx, Throwable ex) {
-    int    code = ex instanceof ESXXException ? ((ESXXException) ex).getStatus() : 500;
-    String ct;
-    Object res;
+  public File handleWebServerRequest(URI path_translated,
+				     String request_uri,
+				     String query_string,
+				     String canonical_root) 
+    throws Exception {
+    File app_file = null;
+    Response resp = ESXX.getInstance().getEmbeddedResource(query_string);
 
-    try {
+    if (resp == null) {
+      File canonical_file = new File(path_translated).getCanonicalFile();
+
+      if (!canonical_file.getPath().startsWith(canonical_root)) {
+	// Deny access to files outside the root
+	throw new FileNotFoundException("Document is outside root");
+      }
+      else {
+	if (canonical_file.exists()) {
+	  if (canonical_file.isDirectory()) {
+	    displayFileListing(request_uri, canonical_file);
+	  }
+	  else {
+	    if (ESXX.fileTypeMap.getContentType(canonical_file).equals("application/x-esxx+xml")) {
+	      app_file = canonical_file;
+	    }
+	    else {
+	      resp = new Response(200, ESXX.fileTypeMap.getContentType(canonical_file),
+				  new FileInputStream(canonical_file), null);
+	    }
+	  }
+	}
+	else {
+	  // Find a file that do exists
+	  app_file = canonical_file;
+	  while (app_file != null && !app_file.exists()) {
+	    app_file = app_file.getParentFile();
+	  }
+
+	  if (app_file == null || app_file.isDirectory()) {
+	    throw new FileNotFoundException("Not Found");
+	  }
+
+	  if (!ESXX.fileTypeMap.getContentType(app_file).equals("application/x-esxx+xml")) {
+	    throw new FileNotFoundException("Only ESXX files are directories");
+	  }
+	}
+      }
+    }
+
+    if (resp != null) {
+      handleResponse(resp);
+      return null;
+    }
+    else {
+      return app_file;
+    }
+  }
+
+  public Integer displayFileListing(String req_uri, File dir)
+    throws Exception {
+    Document doc = org.esxx.js.protocol.FILEHandler.createDirectoryListing(dir);
+    doc.getDocumentElement().setAttributeNS(null, "requestURI", req_uri);
+
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    String ct = renderHTML(doc, os);
+
+    return handleResponse(new Response(200, ct, os, null));
+  }
+
+  public Integer reportInternalError(int code, 
+				     String title, 
+				     String subtitle, 
+				     String message, 
+				     Throwable ex) {
+    ESXX    esxx = ESXX.getInstance();
+    Document doc = esxx.createDocument("error");
+    Element root = doc.getDocumentElement();
+
+    XML.addChild(root, "title",    title);
+    XML.addChild(root, "subtitle", subtitle);
+    XML.addChild(root, "message",  message);
+
+    if (ex != null) {
       ex.printStackTrace(new PrintWriter(getErrorWriter()));
 
-      Document doc = esxx.createDocument("error");
-      Element root = doc.getDocumentElement();
-
-      XML.addChild(root, "title",    "ESXX Server Error");
-      XML.addChild(root, "subtitle", "Unhandled exception: " + ex.getClass().getSimpleName());
-      XML.addChild(root, "message", ex.getMessage());
-
-      if (ex instanceof ESXXException ||
-	  ex instanceof javax.xml.stream.XMLStreamException ||
-	  ex instanceof javax.xml.transform.TransformerException) {
-	// Done
-      }
-      else if (ex instanceof RhinoException) {
+      if (ex instanceof RhinoException) {
 	XML.addChild(root, "stacktrace", 
 		     ((RhinoException) ex).getScriptStackTrace(new JS.JSFilenameFilter()));
       }
@@ -110,25 +157,21 @@ public class WebRequest
 	ex.printStackTrace(new PrintWriter(sw));
 	XML.addChild(root, "stacktrace", sw.toString());
       }
+    }
 
-      res = new ByteArrayOutputStream();
-      ct  = renderHTML(doc, (ByteArrayOutputStream) res);
-    }
-    catch (Exception ex2) {
-      ex2.printStackTrace();
-      // Minimal fallback
-      ct  = "text/plain";
-      res = ex.toString();
-    }
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    String ct = renderHTML(doc, os);
 
     try {
-      return handleResponse(esxx, cx, new Response(code, ct, res, null));
+      return handleResponse(new Response(code, ct, os, null));
     }
     catch (Exception ex2) {
       // Hmm
+      ex2.printStackTrace();
       return 20;
     }
   }
+
 
   protected static Properties createCGIEnvironment(String request_method, String protocol,
 						   URI full_request_uri, 
@@ -152,7 +195,7 @@ public class WebRequest
     }
     else {
       throw new IllegalArgumentException("Path part of " + full_request_uri + " must begin with " 
-				      + context_path);
+					 + context_path);
     }
 
     if (raw_path.charAt(0) == '/') {
@@ -216,42 +259,46 @@ public class WebRequest
     return file.toURI();
   }
 
-  public static String renderHTML(Document doc, OutputStream dst)
-    throws Exception {
-    ESXX       esxx = ESXX.getInstance();
-    Stylesheet xslt = esxx.getCachedStylesheet(new URI("esxx-rsrc:esxx.xslt"));
+  public static String renderHTML(Document doc, OutputStream dst) {
+    try {
+      ESXX       esxx = ESXX.getInstance();
+      Stylesheet xslt = esxx.getCachedStylesheet(new URI("esxx-rsrc:esxx.xslt"));
 
-    XsltExecutable  xe = xslt.getExecutable();
-    XsltTransformer tr = xe.load();
-    Serializer       s = new Serializer();
+      XsltExecutable  xe = xslt.getExecutable();
+      XsltTransformer tr = xe.load();
+      Serializer       s = new Serializer();
 
-    s.setOutputStream(dst);
+      s.setOutputStream(dst);
 
-    // Remove this code when upgrading to Saxon 9.1 (?)
-    Properties op = xe.getUnderlyingCompiledStylesheet().getOutputProperties();
-    s.setOutputProperty(BYTE_ORDER_MARK,        op.getProperty("byte-order-mark"));
-    s.setOutputProperty(CDATA_SECTION_ELEMENTS, op.getProperty("cdata-section-elements"));
-    s.setOutputProperty(DOCTYPE_PUBLIC,         op.getProperty("doctype-public"));
-    s.setOutputProperty(DOCTYPE_SYSTEM,         op.getProperty("doctype-system"));
-    s.setOutputProperty(ENCODING,               op.getProperty("encoding"));
-    s.setOutputProperty(ESCAPE_URI_ATTRIBUTES,  op.getProperty("escape-uri-attributes"));
-    s.setOutputProperty(INCLUDE_CONTENT_TYPE,   op.getProperty("include-content-type"));
-    s.setOutputProperty(INDENT,                 op.getProperty("indent"));
-    s.setOutputProperty(MEDIA_TYPE,             op.getProperty("media-type", "text/html"));
-    s.setOutputProperty(METHOD,                 op.getProperty("method"));
-    //    s.setOutputProperty(NORMALIZATION_FORM,     op.getProperty("normalization-form"));
-    s.setOutputProperty(OMIT_XML_DECLARATION,   op.getProperty("omit-xml-declaration"));
-    s.setOutputProperty(STANDALONE,             op.getProperty("standalone"));
-    s.setOutputProperty(UNDECLARE_PREFIXES,     op.getProperty("undeclare-prefixes"));
-    s.setOutputProperty(USE_CHARACTER_MAPS,     op.getProperty("use-character-maps"));
-    s.setOutputProperty(VERSION,                op.getProperty("version"));
+      // Remove this code when upgrading to Saxon 9.1 (?)
+      Properties op = xe.getUnderlyingCompiledStylesheet().getOutputProperties();
+      s.setOutputProperty(BYTE_ORDER_MARK,        op.getProperty("byte-order-mark"));
+      s.setOutputProperty(CDATA_SECTION_ELEMENTS, op.getProperty("cdata-section-elements"));
+      s.setOutputProperty(DOCTYPE_PUBLIC,         op.getProperty("doctype-public"));
+      s.setOutputProperty(DOCTYPE_SYSTEM,         op.getProperty("doctype-system"));
+      s.setOutputProperty(ENCODING,               op.getProperty("encoding"));
+      s.setOutputProperty(ESCAPE_URI_ATTRIBUTES,  op.getProperty("escape-uri-attributes"));
+      s.setOutputProperty(INCLUDE_CONTENT_TYPE,   op.getProperty("include-content-type"));
+      s.setOutputProperty(INDENT,                 op.getProperty("indent"));
+      s.setOutputProperty(MEDIA_TYPE,             op.getProperty("media-type", "text/html"));
+      s.setOutputProperty(METHOD,                 op.getProperty("method"));
+      //    s.setOutputProperty(NORMALIZATION_FORM,     op.getProperty("normalization-form"));
+      s.setOutputProperty(OMIT_XML_DECLARATION,   op.getProperty("omit-xml-declaration"));
+      s.setOutputProperty(STANDALONE,             op.getProperty("standalone"));
+      s.setOutputProperty(UNDECLARE_PREFIXES,     op.getProperty("undeclare-prefixes"));
+      s.setOutputProperty(USE_CHARACTER_MAPS,     op.getProperty("use-character-maps"));
+      s.setOutputProperty(VERSION,                op.getProperty("version"));
 
-    tr.setSource(new DOMSource(doc));
-    tr.setDestination(s);
-    tr.transform();
+      tr.setSource(new DOMSource(doc));
+      tr.setDestination(s);
+      tr.transform();
 
-    return s.getOutputProperty(MEDIA_TYPE);
+      return s.getOutputProperty(MEDIA_TYPE);
+    }
+    catch (Exception ex) {
+      // This should never happen
+      ex.printStackTrace(new PrintWriter(dst));
+      return "text/plain";
+    }
   }
-
-  private OutputStream outStream;
 }

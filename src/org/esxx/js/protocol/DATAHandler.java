@@ -101,12 +101,10 @@ public class DATAHandler
   public Object save(Context cx, Scriptable thisObj,
 		     Object data, String type, HashMap<String,String> params)
     throws Exception {
-    ESXX esxx = ESXX.getInstance();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     Response response = new Response(0, type, data, null);
 
-    //    Response.writeObject(data, type, params, esxx, cx, bos);
-    response.writeResult(esxx, cx, bos);
+    response.writeResult(bos);
 
     if (type == null) {
       type = ESXX.parseMIMEType(response.getContentType(true), params);

@@ -24,27 +24,33 @@ import org.esxx.*;
 import org.mozilla.javascript.*;
 
 public class FCGIRequest
-  extends WebRequest {
+  extends CGIRequest {
 
-  public FCGIRequest(JFastRequest jfast)
-    throws IOException {
-    super(createURL(jfast.properties), null, jfast.properties,
-	  new ByteArrayInputStream(jfast.data),
-	  System.err,
-	  jfast.out);
+  public FCGIRequest(JFastRequest jfast) {
+    super(new ByteArrayInputStream(jfast.data), jfast.out, System.err);
     jFast = jfast;
   }
 
-  @Override
-  public Integer handleResponse(ESXX esxx, Context cx, Response response)
+  public void initRequest()
+    throws IOException {
+    super.initRequest(createURL(jFast.properties), null, jFast.properties);
+  }
+
+  @Override public void initRequest(java.util.Properties cgi) {
+    throw new UnsupportedOperationException("FCGIRequest.initRequest(Properties) not available.");
+  }
+
+
+  @Override public Integer handleResponse(Response response)
     throws Exception {
     try {
-      return super.handleResponse(esxx, cx, response);
+      return super.handleResponse(response);
     }
     finally {
       jFast.end();
     }
   }
+
 
   public static void runServer(int fastcgi_port)
     throws IOException {
@@ -54,15 +60,18 @@ public class FCGIRequest
     while (true) {
       try {
 	JFastRequest req = jfast.acceptRequest();
+	FCGIRequest fr = new FCGIRequest(req);
 
 	// Fire and forget
-	FCGIRequest fr = new FCGIRequest(req);
-	esxx.addRequest(fr, fr, 0);
+	try {
+	  fr.initRequest();
+	  esxx.addRequest(fr, fr, 0);
+	}
+	catch (IOException ex) {
+	  fr.reportInternalError(500, "ESXX Server Error", "FastCGI Error", ex.getMessage(), ex);
+	}
       }
       catch (JFastException ex) {
-	ex.printStackTrace();
-      }
-      catch (IOException ex) {
 	ex.printStackTrace();
       }
     }

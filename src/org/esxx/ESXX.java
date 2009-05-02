@@ -365,10 +365,10 @@ public class ESXX {
 		response = new Worker(ESXX.this).handleRequest(cx, request);
 	      }
 
-	      return rh.handleResponse(ESXX.this, cx, response);
+	      return rh.handleResponse(response);
 	    }
 	    catch (Throwable t) {
-	      return rh.handleError(ESXX.this, cx, t);
+	      return rh.handleError(t);
 	    }
 	  }
 	}, timeout);
@@ -1191,9 +1191,9 @@ public class ESXX {
     }
 
     public interface ResponseHandler {
-      Integer handleResponse(ESXX esxx, Context cx, Response result)
+      Integer handleResponse(Response result)
 	throws Exception;
-      Integer handleError(ESXX esxx, Context cx, Throwable error);
+      Integer handleError(Throwable error);
     }
 
     public static final FileTypeMap fileTypeMap = new ESXXFileTypeMap();

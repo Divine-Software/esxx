@@ -35,22 +35,24 @@ public class ServletRequest
   extends WebRequest {
 
   public ServletRequest(HttpServletRequest sreq, 
-			HttpServletResponse sres,
-			URI root_uri, 
-			File canonical_script_file)
-    throws IOException, URISyntaxException {
-    super(canonical_script_file.toURI(), null, 
-	  createCGIEnvironment(sreq, root_uri, canonical_script_file),
-	  sreq.getInputStream(), 
-	  System.err, null);
+			HttpServletResponse sres)
+    throws IOException {
+    super(sreq.getInputStream(), System.err);
+    this.sreq = sreq;
     this.sres = sres;
   }
 
-  public Integer handleResponse(ESXX esxx, Context cx, Response response)
+
+  public void initRequest(URI root_uri, File canonical_script_file)
+    throws IOException, URISyntaxException {
+    super.initRequest(canonical_script_file.toURI(),
+		      null,
+		      createCGIEnvironment(sreq, root_uri, canonical_script_file));
+  }
+
+  public Integer handleResponse(Response response)
     throws Exception {
     try {
-      // Do not call super method, since it has a null OutputStream.
-
       int  status = response.getStatus();
 
       sres.setStatus(status);
@@ -71,11 +73,11 @@ public class ServletRequest
       else {
 	if (response.isBuffered()) {
 	  // Output Content-Length header, if size is known
-	  setContentLength(sres, response.getContentLength(esxx, cx));
+	  setContentLength(sres, response.getContentLength());
 	}
 
 	// Output body
-	response.writeResult(esxx, cx, sres.getOutputStream());
+	response.writeResult(sres.getOutputStream());
       }
 
       return 0;
@@ -84,10 +86,6 @@ public class ServletRequest
       // If we fail to send response, it's probably just because
       // nobody is listening anyway.
       return 20;
-    }
-    catch (Exception ex) {
-      ex.printStackTrace();
-      throw ex;
     }
     finally {
       sres.flushBuffer();
@@ -135,5 +133,6 @@ public class ServletRequest
     return p;
   }
 
+  private HttpServletRequest sreq;
   private HttpServletResponse sres;
 }

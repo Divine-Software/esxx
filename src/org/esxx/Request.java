@@ -26,15 +26,17 @@ import org.esxx.util.StringUtil;
 import org.esxx.util.TrivialFormatter;
 
 public abstract class Request {
-    public Request(URI script_filename, String[] command_line, Properties properties,
-		   InputStream in, OutputStream error)
-      throws IOException {
-      scriptFilename  = script_filename;
-      this.args       = command_line != null ? command_line : new String[] {};
+    public Request(InputStream in, OutputStream error) {
       this.in         = in;
       this.debug      = new StringWriter();
       this.error      = error;
       this.errorWriter = new OutputStreamWriter(error);
+    }
+
+    protected void initRequest(URI script_filename, String[] command_line, Properties properties)
+      throws IOException {
+      scriptFilename  = script_filename;
+      this.args       = command_line != null ? command_line : new String[] {};
       this.properties = properties;
 
       workingDirectory = new File("").toURI();

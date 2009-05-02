@@ -85,7 +85,7 @@ public class Response  {
     return buffered;
   }
 
-  public long getContentLength(ESXX esxx, Context cx) 
+  public long getContentLength() 
     throws IOException {
     if (!buffered) {
       throw new IllegalStateException("getContentLength() only works on buffered responses");
@@ -94,7 +94,7 @@ public class Response  {
     if (contentLength == -1) {
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
       
-      writeResult(esxx, cx, bos);
+      writeResult(bos);
       setResult(bos.toByteArray());
       contentLength = bos.size();
     }
@@ -119,17 +119,17 @@ public class Response  {
     }
   }
 
-  public void writeResult(ESXX esxx, Context cx, OutputStream out)
+  public void writeResult(OutputStream out)
     throws IOException {
     HashMap<String,String> mime_params = new HashMap<String,String>();
     String mime_type = ESXX.parseMIMEType(guessContentType(), mime_params);
 
-    writeObject(resultObject, mime_type, mime_params, esxx, cx, out);
+    writeObject(resultObject, mime_type, mime_params, out);
   }
 
   public static void writeObject(Object object,
 				 String mime_type, HashMap<String,String> mime_params,
-				 ESXX esxx, Context cx, OutputStream out)
+				 OutputStream out)
     throws IOException {
 
     if (object == null) {
@@ -141,6 +141,8 @@ public class Response  {
 
     // Convert complex types to primitive types
     if (object instanceof Node) {
+      ESXX esxx = ESXX.getInstance();
+
       if ("message/rfc822".equals(mime_type)) {
 	try {
 	  String xml = esxx.serializeNode((Node) object);
@@ -187,7 +189,7 @@ public class Response  {
 	object = StringUtil.encodeFormVariables(cs, (Scriptable) object);
       }
       else {
-	object = jsToJSON(object, cx).toString();
+	object = jsToJSON(object).toString();
       }
     }
     else if (object instanceof byte[]) {
@@ -303,19 +305,19 @@ public class Response  {
     return contentType;
   }
 
-  private static Object jsToJSON(Object object, Context cx) {
+  private static Object jsToJSON(Object object) {
     try {
       if (object instanceof NativeArray) {
-	Object[] array = cx.getElements((Scriptable) object);
+	Object[] array = Context.getCurrentContext().getElements((Scriptable) object);
 
 	for (int i = 0; i < array.length; ++i) {
-	  array[i] = jsToJSON(array[i], cx);
+	  array[i] = jsToJSON(array[i]);
 	}
 
 	object = new JSONArray(array).toString();
       }
       else if (object instanceof Wrapper) {
-	object = jsToJSON(((Wrapper) object).unwrap(), cx);
+	object = jsToJSON(((Wrapper) object).unwrap());
       }
       else if (object instanceof Scriptable) {
 	Scriptable jsobject = (Scriptable) object;
@@ -325,7 +327,7 @@ public class Response  {
 	for (Object k : jsobject.getIds()) {
 	  if (k instanceof String) {
 	    String key = (String) k;
-	    ((JSONObject) object).put(key, jsToJSON(jsobject.get(key, jsobject), cx));
+	    ((JSONObject) object).put(key, jsToJSON(jsobject.get(key, jsobject)));
 	  }
 	}
       }
