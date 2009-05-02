@@ -74,6 +74,12 @@
 	<exclude name="one-jar*"/>
       </lib>
 
+<!--
+      <zipfileset src="${lib.dir}/h2.jar"
+		  fullpath="META-INF/services/java.sql.Driver"
+		  includes="META-INF/services/java.sql.Driver"/>
+-->
+
       <zipfileset prefix="examples" dir="examples" excludes="*~"/>
       <zipfileset prefix="share" dir="share" excludes="*~"/>
       <zipfileset file="jee/build.xml"/>

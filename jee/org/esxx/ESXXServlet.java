@@ -38,6 +38,12 @@ public class ESXXServlet extends HttpServlet {
   public void init()
     throws ServletException {
     try {
+      // (Try to) Load embedded H2 database JDBC driver into memory
+      try {
+	Class.forName("org.h2.Driver");
+      }
+      catch (ClassNotFoundException ex) {}
+
       Properties p = new Properties(System.getProperties());
 
       // Copy esxx.* servlet init parameters to p
