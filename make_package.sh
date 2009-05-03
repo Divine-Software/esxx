@@ -36,6 +36,7 @@ case $(uname) in
 	cp ${SOURCE}/README rsrc/ReadMe.txt
 
 	mkdir pkg
+	cp ${SOURCE}/package/osx-uninstall.sh "pkg/Uninstall ESXX.sh"
 	
 	$packagemaker -build \
 	    -p pkg/${package_full_name}.pkg \
