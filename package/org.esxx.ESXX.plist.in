@@ -5,13 +5,18 @@
   <dict>
     <key>Label</key>
     <string>org.esxx.ESXX</string>
+
     <key>ProgramArguments</key>
     <array>
       <string>@SBIN_INSTALL_DIR@/@PROJECT_NAME@</string>
       <string>--bind</string>
       <string>7654</string>
     </array>
+
     <key>RunAtLoad</key>
     <true/>
+
+    <key>Disabled</key>
+    <true/> <!-- Change this to enable the service -->
   </dict>
 </plist>
