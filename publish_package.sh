@@ -34,8 +34,9 @@ case $(uname) in
 	if [ -n "$(which dpkg 2> /dev/null)" ]; then
 	    if [ -d ${DEB_DIR}/binary ]; then
 		cp ${pkg_file} ${DEB_DIR}/binary/
-		dpkg-scanpackages ${DEB_DIR}/binary /dev/null | 
-			gzip -9c > ${DEB_DIR}/binary/Packages.gz
+		(cd ${DEB_DIR} && 
+		    dpkg-scanpackages binary /dev/null | 
+		    gzip -9c > binary/Packages.gz)
 	    else
 		echo "${DEB_DIR}/binary not found!"
 		exit 20
