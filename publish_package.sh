@@ -1,8 +1,13 @@
 #!/bin/bash
 
+RPM_SRV=martin@blom.org
 RPM_DIR=/opt/Media/esxx.org/repos/rpm/
+
+DEB_SRV=martin@blom.org
 DEB_DIR=/opt/Media/esxx.org/repos/deb/
-IPS_SRV=http://localhost:9999
+
+IPS_SSH="ssh -p 22022 lcs@blom.org"
+IPS_HST=http://localhost:9999
 
 set -e
 
@@ -13,47 +18,28 @@ fi
 
 pkg_file=$1
 
-case $(uname) in
-    Darwin)
+case ${pkg_file} in
+    *.dmg)
 	echo "Cannot publish OSX packages."
 	exit 20
 	;;
 
-    SunOS)
-	tmpdir=$(mktemp -d -t publish_package.XXXXXXXX)
-	(pwd=${PWD} && cd ${tmpdir} && gzcat ${pwd}/${pkg_file} | tar xf -)
-	basedir=${tmpdir}/$(ls ${tmpdir})
-	fmri=$(head -1 ${basedir}/manifest | sed -r 's/# ([^,]+), client release .*/\1/')
-	$(pkgsend -s ${IPS_SRV} open "${fmri}")
-	pkgsend -s ${IPS_SRV} include -d ${basedir} ${basedir}/manifest
-	pkgsend -s ${IPS_SRV} close
-	rm -r ${tmpdir}
+    *.ips.tgz)
+	${IPS_SSH} "pkgimport.sh" < ${pkg_file}
 	;;
 
-    Linux)
-	if [ -n "$(which dpkg 2> /dev/null)" ]; then
-	    if [ -d ${DEB_DIR}/binary ]; then
-		cp ${pkg_file} ${DEB_DIR}/binary/
-		(cd ${DEB_DIR} && 
-		    dpkg-scanpackages binary /dev/null | 
-		    gzip -9c > binary/Packages.gz)
-	    else
-		echo "${DEB_DIR}/binary not found!"
-		exit 20
-	    fi
-	else
-	    if [ -d ${RPM_DIR}/RPMS ]; then
-		cp ${pkg_file} ${RPM_DIR}/RPMS/
-		createrepo ${RPM_DIR}
-	    else
-		echo "${REPO_DIR}/rpm/RPMS not found!"
-		exit 20
-	    fi
-	fi
+    *.rpm)
+	scp ${pkg_file} ${RPM_SRV}:${RPM_DIR}/RPMS/
+	ssh ${RPM_SRV} "createrepo ${RPM_DIR}"
+	;;
+
+    *.deb)
+	scp ${pkg_file} ${DEB_SRV}:${DEB_DIR}/binary/
+	ssh ${DEB_SRV} "cd ${DEB_DIR} && dpkg-scanpackages -m binary | gzip -9c > binary/Packages.gz"
 	;;
 
     *)
-	echo "Unsupported system."
+	echo "Unsupported file extension in ${pkg_file}"
 	exit 20
 	;;
 esac
