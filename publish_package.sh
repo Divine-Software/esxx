@@ -6,8 +6,8 @@ RPM_DIR=/opt/Media/esxx.org/repos/rpm/
 DEB_SRV=martin@blom.org
 DEB_DIR=/opt/Media/esxx.org/repos/deb/
 
-IPS_SSH="ssh -p 22022 lcs@blom.org"
-IPS_HST=http://localhost:9999
+IPS_SRV=lcs@192.168.1.102
+IPS_RPO=http://localhost:10001
 
 set -e
 
@@ -25,7 +25,7 @@ case ${pkg_file} in
 	;;
 
     *.ips.tgz)
-	${IPS_SSH} "pkgimport.sh" < ${pkg_file}
+	ssh ${IPS_SRV} "PKG_REPO=${IPS_RPO} /opt/pkgimport.sh -" < ${pkg_file}
 	;;
 
     *.rpm)
