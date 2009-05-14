@@ -49,33 +49,63 @@ public class Stylesheet
 
     URIResolver ur = new URIResolver(esxx, externalURIs);
 
+    final TransformerException[] cause = { null };
+
     try {
       compiler.setURIResolver(ur);
       compiler.setErrorListener(new ErrorListener() {
 	  public void error(TransformerException ex)
 	    throws TransformerException {
-	    esxx.getLogger().logp(Level.SEVERE, uri.toString(), null,
-				 ex.getMessageAndLocation(), ex);
+	    cause[0] = ex;
+// 	    esxx.getLogger().logp(Level.SEVERE, uri.toString(), null,
+// 				  ex.getMessageAndLocation(), ex);
 	    throw ex;
 	  }
 
 	  public void fatalError(TransformerException ex)
 	    throws TransformerException {
-	    esxx.getLogger().logp(Level.SEVERE, uri.toString(), null,
-				 ex.getMessageAndLocation(), ex);
+	    cause[0] = ex;
+// 	    esxx.getLogger().logp(Level.SEVERE, uri.toString(), null,
+// 				  ex.getMessage(), ex);
 	    throw ex;
 	  }
 
 	  public void warning(TransformerException ex) {
 	    esxx.getLogger().logp(Level.WARNING, uri.toString(), null,
-				 ex.getMessageAndLocation());
+				  ex.getMessageAndLocation());
 	  }
 	});
 
       xslt = compiler.compile(new StreamSource(esxx.openCachedURI(uri), uri.toString()));
     }
     catch (net.sf.saxon.s9api.SaxonApiException ex) {
-      throw new ESXXException(ex.getMessage(), ex);
+      String system_id = null;
+      int line = 0;
+      int column = 0;
+
+      if (cause[0] != null) {
+	if (cause[0].getLocator() != null) {
+	  javax.xml.transform.SourceLocator loc = cause[0].getLocator();
+	  system_id = loc.getSystemId();
+	  line      = loc.getLineNumber();
+	  column    = loc.getColumnNumber();
+	}
+	else if (cause[0].getCause() instanceof org.xml.sax.SAXParseException) {
+	  org.xml.sax.SAXParseException sp = (org.xml.sax.SAXParseException) cause[0].getCause();
+	  system_id = sp.getSystemId();
+	  line      = sp.getLineNumber();
+	  column    = sp.getColumnNumber();
+	}
+      }
+
+      if (system_id == null) {
+	system_id = "<no system ID>";
+      }
+
+      throw new ESXXException(ex.getMessage() + ": " + system_id
+			      + ", line " + line
+			      + ", column " + column + ": " + cause[0].getMessage(),
+			      ex);
     }
     finally {
       ur.closeAllStreams();

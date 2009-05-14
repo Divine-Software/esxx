@@ -762,8 +762,11 @@ public class ESXX {
       catch (IOException ex) {
 	throw ex;
       }
+      catch (ESXXException ex) {
+	throw ex;
+      }
       catch (Exception ex) {
-	throw new ESXXException("Unexpected exception in getCachedStylesheet(): " + ex.getMessage(),
+	throw new ESXXException("Unexpected exception in getCachedStylesheet(): " + ex.toString(),
 				ex);
       }
     }
