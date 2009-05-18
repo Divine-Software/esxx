@@ -39,6 +39,10 @@
 
 	* Added an uninstall script for OSX.
 
+	* Removed utility file esxx/Object.js. Use Function.bind()
+	from esxx/harmony.js instead of Object.$(). Hey, it's still
+	alpha!
+
 0.9.20090201
 	* Fixed bug #14765: req.scriptURI has problems with encoded
 	URI:s.
