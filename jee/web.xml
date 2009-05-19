@@ -3,7 +3,7 @@
 	 xsi:schemaLocation="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
 	 version="2.5">
   <display-name>ESXX - The friendly ECMAscript/XML Application Server</display-name>
-  <description>An easy-to-use, yet powerful, XML Application Server written in Java</description>
+  <description>An easy-to-use, yet powerful, JavaScript Application Server written in Java</description>
 
   <servlet>
     <servlet-name>esxx</servlet-name>

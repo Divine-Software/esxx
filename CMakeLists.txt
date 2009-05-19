@@ -21,7 +21,7 @@ SET (CPACK_PACKAGE_INSTALL_DIRECTORY "ESXX")
 SET (CPACK_IGNORE_FILES "/etc")
 
 SET (PACKAGE_LICENSE "GPLv3")
-SET (PACKAGE_DESCRIPTION "An easy-to-use, yet powerful, XML Application Server written in Java.")
+SET (PACKAGE_DESCRIPTION "An easy-to-use, yet powerful, JavaScript Application Server written in Java.")
 
 IF (CMAKE_HOST_WIN32)
   # Plain ZIP package and Windows installer

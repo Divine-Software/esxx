@@ -4,8 +4,8 @@ What it is
 
 ESXX (pronounced "Essex") is a rather silly acronym and stands for
 "ECMAScript, SQL, XML and XSLT". It's a very simple and easy-to-use,
-yet powerful, XML Application Server written in Java (6) and utilizing
-FastCGI for web server communication.
+yet powerful, JavaScript Application Server written in Java (6) and
+utilizing FastCGI for web server communication.
 
 It's built around an E4X-enabled JavaScript run-time (Mozilla's
 Rhino), Java 6's JDBC API for SQL queries and the Saxon 9 XSLT 2.0
