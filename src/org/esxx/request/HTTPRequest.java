@@ -190,6 +190,9 @@ public class HTTPRequest
       hs.setExecutor(Executors.newFixedThreadPool(http_threads));
     }
 
+    esxx.getLogger().logp(java.util.logging.Level.INFO, null, null, 
+			  "Listening for HTTP requests on port " + http_port);
+
     hs.start();
 
     while (true) {

@@ -127,7 +127,6 @@
   </target>
 
   <target name="fcgi" depends="compile">
-    <echo message="Starting FCGI servier on port 7654 ..." level="info"/>
     <java classname="org.esxx.Main" classpathref="classpath" fork="true">
       <arg value="--bind" />
       <arg value="7654" />
@@ -135,7 +134,6 @@
   </target>
 
   <target name="http" depends="compile">
-    <echo message="Starting HTTP servier on port 7777 ..." level="info"/>
     <java classname="org.esxx.Main" classpathref="classpath" fork="true">
       <arg value="--http" />
       <arg value="7777" />

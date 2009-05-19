@@ -57,6 +57,9 @@ public class FCGIRequest
     ESXX  esxx  = ESXX.getInstance();
     JFast jfast = new JFast(fastcgi_port);
 
+    esxx.getLogger().logp(java.util.logging.Level.INFO, null, null, 
+			  "Listening for FastCGI requests on port " + fastcgi_port);
+
     while (true) {
       try {
 	JFastRequest req = jfast.acceptRequest();
