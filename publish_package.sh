@@ -20,8 +20,7 @@ pkg_file=$1
 
 case ${pkg_file} in
     *.dmg)
-	echo "Cannot publish OSX packages."
-	exit 20
+	# FTP only
 	;;
 
     *.ips.tgz)
@@ -40,6 +39,21 @@ case ${pkg_file} in
 
     *)
 	echo "Unsupported file extension in ${pkg_file}"
+	exit 20
+	;;
+esac
+
+case $(uname) in 
+    SunOS|Linux)
+	ncftpput ftp.berlios.de incoming/ ${pkg_file}
+	;;
+
+    Darwin)
+	ftp -u ftp://ftp.berlios.de/incoming/ ${pkg_file}
+	;;
+
+    *)
+	echo "Unsupported system: $(uname)"
 	exit 20
 	;;
 esac
