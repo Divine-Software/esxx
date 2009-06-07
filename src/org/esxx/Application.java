@@ -111,13 +111,13 @@ public class Application
 	  ch.setLevel(Level.ALL);
 	  ch.setFormatter(logFormatter);
 
-	  logger.setUseParentHandlers(false);
-	  logger.setLevel(Level.ALL);
-
 	  logger.addHandler(new SyslogHandler("esxx"));
 	  logger.addHandler(ch);
+
+	  logger.setUseParentHandlers(false);
+	  logger.setLevel(Level.ALL);
 	}
-	catch (UnsupportedOperationException ex) {
+	catch (Exception ex) {
 	  // Never mind
 	}
       }

@@ -27,6 +27,20 @@
       <param-value>share|share/site</param-value>
     </init-param>
 
+    <init-param>
+      <!-- Disables the use of worker threads, in order to make this servlet compatible
+	   with Google App Engine.
+
+	   Note that setting this propery to 0 also makes the JavaScript
+	   methods ESXX.map() and ESXX.parallel() single-threaded!
+
+	   For a real servlet container, you should set this property
+	   to -1 (unbounded) or a positive value.
+	-->
+      <param-name>esxx.worker_threads</param-name>
+      <param-value>0</param-value>
+    </init-param>
+
   </servlet>
 
   <servlet-mapping>

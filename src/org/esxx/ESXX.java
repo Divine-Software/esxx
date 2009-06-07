@@ -38,6 +38,7 @@ import javax.activation.MimetypesFileTypeMap;
 import javax.swing.event.EventListenerList;
 import org.esxx.cache.*;
 import org.esxx.saxon.*;
+import org.esxx.util.SingleThreadedExecutor;
 import org.esxx.util.SyslogHandler;
 import org.esxx.util.URIResolver;
 import org.mozilla.javascript.Context;
@@ -88,7 +89,7 @@ public class ESXX {
      *  execution.
      *
      *  @param h A host object that can later be referenced by the
-     *  JavaScript code as 'esxx.host'.
+     *  JavaScript code as 'esxx.host'. May be null.
      *
      */
 
@@ -160,11 +161,14 @@ public class ESXX {
 	  }
 	};
 
-      int worker_threads = Integer.parseInt(settings.getProperty("esxx.worker_threads", "0"));
+      int worker_threads = Integer.parseInt(settings.getProperty("esxx.worker_threads", "-1"));
 
-      if (worker_threads == 0) {
+      if (worker_threads == -1) {
 	// Use an unbounded thread pool
 	executorService = Executors.newCachedThreadPool(tf);
+      }
+      else if (worker_threads == 0) {
+	executorService = new SingleThreadedExecutor();
       }
       else {
 	// When using a bounded thread pool, SynchronousQueue and
@@ -181,10 +185,12 @@ public class ESXX {
 	  }
 	});
 
-      // Set up periodic events, run at most once a second
       listenerList = new EventListenerList();
-      executorService.submit(new Runnable() {
-	  @Override public void run() {
+
+      if (worker_threads != 0) {
+	// Set up periodic events, run at most once a second
+	executorService.submit(new Runnable() {
+	    @Override public void run() {
 	    try {
 	      while (!executorService.isShutdown()) {
 		Thread.sleep(1000);
@@ -205,7 +211,7 @@ public class ESXX {
 	    }
 	  }
 	});
-
+      }
 
       // Add periodic Worklock cancellation
       addPeriodicJob(new WorkloadCancellator());
@@ -221,14 +227,19 @@ public class ESXX {
 //       main.setSize(800, 600);
 //       main.setVisible(true);
 
-      // Terminate all apps when the JVM exits
-      shutdownHook = new Thread() {
-	  public void run() {
-	    terminate();
-	  }
-	};
+      try {
+	// Terminate all apps when the JVM exits
+	shutdownHook = new Thread() {
+	    public void run() {
+	      terminate();
+	    }
+	  };
 
-      Runtime.getRuntime().addShutdownHook(shutdownHook);
+	Runtime.getRuntime().addShutdownHook(shutdownHook);
+      }
+      catch(Exception ex) {
+	getLogger().logp(Level.WARNING, null, null, "Failed to add shutdown hook");
+      }
     }
 
 
@@ -290,10 +301,10 @@ public class ESXX {
 	  try {
 	    // No specific log handler configured in
 	    // jre/lib/logging.properties -- log everything to syslog
-	    logger.setLevel(Level.ALL);
 	    logger.addHandler(new SyslogHandler("esxx"));
+	    logger.setLevel(Level.ALL);
 	  }
-	  catch (UnsupportedOperationException ex) {
+	  catch (Exception ex) {
 	    // Never mind
 	  }
 	}
@@ -414,26 +425,29 @@ public class ESXX {
 	workload.future = executorService.submit(new Callable<Object>() {
 	    public Object call()
 	      throws Exception {
-	      Context new_cx = Context.getCurrentContext();
 
-	      Object old_workload = new_cx.getThreadLocal(Workload.class);
+	      return contextFactory.call(new ContextAction() {
+		  @Override public Object run(Context new_cx) {
+		    Object old_workload = new_cx.getThreadLocal(Workload.class);
 
-	      new_cx.putThreadLocal(Workload.class, workload);
+		    new_cx.putThreadLocal(Workload.class, workload);
 
-	      try {
-		return ca.run(new_cx);
-	      }
-	      finally {
-		if (old_workload != null) {
-		  new_cx.putThreadLocal(Workload.class, old_workload);
-		}
-		else {
-		  new_cx.removeThreadLocal(Workload.class);
-		}
+		    try {
+		      return ca.run(new_cx);
+		    }
+		    finally {
+		      if (old_workload != null) {
+			new_cx.putThreadLocal(Workload.class, old_workload);
+		      }
+		      else {
+			new_cx.removeThreadLocal(Workload.class);
+		      }
 
-		workload.close();
-		workloadSet.remove(workload);
-	      }
+		      workload.close();
+		      workloadSet.remove(workload);
+		    }
+		  }
+		});
 	    }
 	  });
       }
@@ -827,7 +841,7 @@ public class ESXX {
       mbs.registerMBean(object, mxObjectName(type, name));
     }
     catch (Exception ex) {
-      ex.printStackTrace();
+      getLogger().logp(Level.WARNING, null, null, "Failed to register MXBean " + name);
     }
   }
 
@@ -839,7 +853,7 @@ public class ESXX {
       mbs.unregisterMBean(mxObjectName(type, name));
     }
     catch (Exception ex) {
-      ex.printStackTrace();
+      getLogger().logp(Level.WARNING, null, null, "Failed to unregister MXBean " + name);
     }
   }
 
@@ -864,6 +878,7 @@ public class ESXX {
     public ContextFactory getContextFactory() {
       return contextFactory;
     } 
+
 
     public static String parseMIMEType(String ct, HashMap<String,String> params) {
       String[] parts = ct.split(";");

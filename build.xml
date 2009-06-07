@@ -68,6 +68,7 @@
     <war destfile="${build.dir}/${ant.project.name}.war" 
 	 webxml="${jee.dir}/web.xml"
 	 filesetmanifest="merge">
+      <webinf file="${jee.dir}/appengine-web.xml"/>
       <classes dir="${jeebuild.dir}"/>
       <lib file="${build.dir}/${ant.project.name}.jar"/>
       <lib dir="${lib.dir}">

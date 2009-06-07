@@ -5,6 +5,9 @@
 	* The Ajax Blog and app-form-sql examples now uses an
 	in-memory database by default.
 
+	* Various minor changes to get ESXX run in Googles App Engine
+	simulator.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
