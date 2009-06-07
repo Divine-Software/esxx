@@ -175,8 +175,8 @@ public abstract class WebRequest
 
   protected static Properties createCGIEnvironment(String request_method, String protocol,
 						   URI full_request_uri, 
-						   InetSocketAddress local, 
-						   InetSocketAddress remote,
+						   String local_host, int local_port,
+						   String remote_host, int remote_port,
 						   String context_path,
 						   URI root_uri, 
 						   File absolute_script_file)
@@ -202,6 +202,11 @@ public abstract class WebRequest
       throw new IllegalArgumentException("Context path " + context_path + " should end with '/'");
     }
 
+    if (local_host == null) {
+      // Probably a Google App Engine problem
+      local_host = "0.0.0.0";
+    }
+
     URI script_filename = absolute_script_file.toURI();
     URI path_translated = root_uri.resolve(raw_path);
 
@@ -215,11 +220,11 @@ public abstract class WebRequest
     p.setProperty("QUERY_STRING",      query);
     p.setProperty("SERVER_PROTOCOL",   protocol);
 
-    p.setProperty("REMOTE_ADDR",       remote.getAddress().toString().replaceFirst("[^/]*/", ""));
-    p.setProperty("REMOTE_PORT",       "" + remote.getPort());
+    p.setProperty("REMOTE_ADDR",       remote_host);
+    p.setProperty("REMOTE_PORT",       "" + remote_port);
 
-    p.setProperty("SERVER_ADDR",       local.getAddress().toString().replaceFirst("[^/]*/", ""));
-    p.setProperty("SERVER_PORT",       "" + local.getPort());
+    p.setProperty("SERVER_ADDR",       local_host);
+    p.setProperty("SERVER_PORT",       "" + local_port);
 
     p.setProperty("PATH_TRANSLATED",   path_translated.getPath());
     p.setProperty("PATH_INFO",         "/" + script_filename.relativize(path_translated).getPath());

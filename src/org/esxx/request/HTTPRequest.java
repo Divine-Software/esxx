@@ -108,9 +108,18 @@ public class HTTPRequest
 				   + (he.getRequestURI().getRawQuery() != null ?
 				      "?"  + he.getRequestURI().getRawQuery() : ""));
 
+    InetSocketAddress local = he.getLocalAddress();
+    String local_host = local.getAddress().toString().replaceFirst("[^/]*/", "");
+    int    local_port = local.getPort();
+
+    InetSocketAddress remote = he.getRemoteAddress();
+    String remote_host = local.getAddress().toString().replaceFirst("[^/]*/", "");
+    int    remote_port = local.getPort();
+
     Properties p = createCGIEnvironment(he.getRequestMethod(), he.getProtocol(),
 					full_request_uri,
-					he.getLocalAddress(), he.getRemoteAddress(),
+					local_host, local_port,
+					remote_host, remote_port,
 					"/", root_uri, canonical_script_file);
 
     // Add request headers

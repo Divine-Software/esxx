@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Enumeration;
@@ -116,10 +115,8 @@ public class ServletRequest
 			       
     Properties p = createCGIEnvironment(sreq.getMethod(), sreq.getProtocol(), 
 					full_request_uri,
-					new InetSocketAddress(sreq.getLocalAddr(), 
-							      sreq.getLocalPort()),
-					new InetSocketAddress(sreq.getRemoteAddr(), 
-							      sreq.getRemotePort()),
+					sreq.getLocalAddr(), sreq.getLocalPort(),
+					sreq.getRemoteAddr(), sreq.getRemotePort(),
 					sreq.getContextPath() + "/",
 					root_uri, canonical_script_file);
 
