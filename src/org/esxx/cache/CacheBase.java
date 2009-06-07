@@ -72,7 +72,13 @@ public abstract class CacheBase {
       if (uc instanceof HttpURLConnection) {
 	HttpURLConnection huc = (HttpURLConnection) uc;
 
-	HttpURLConnection.setFollowRedirects(true);
+	try {
+	  HttpURLConnection.setFollowRedirects(true);
+	}
+	catch (SecurityException ex) {
+	  // Probably a Google App Engine problem
+	}
+
 	huc.setRequestProperty("Accept-Encoding", "gzip, deflate");
 	huc.setRequestProperty("Accept", "text/xml,text/html;q=0.9,text/plain;q=0.8,*/*;q=0.1");
 
