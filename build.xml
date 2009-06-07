@@ -73,7 +73,9 @@
       <lib file="${build.dir}/${ant.project.name}.jar"/>
       <lib dir="${lib.dir}">
 	<exclude name="one-jar*"/>
+	<exclude name="mail.jar"/>
       </lib>
+      <lib dir="${jee.dir}/lib"/>
 
 <!--
       <zipfileset src="${lib.dir}/h2.jar"
