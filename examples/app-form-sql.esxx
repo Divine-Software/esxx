@@ -13,7 +13,7 @@ var app = new App(new ProductManager(esxx.document.products));
 
 <app xmlns:xi="http://www.w3.org/2001/XInclude">
   <!-- The URI that specifies our SQL database -->
-  <db uri="jdbc:h2:H2DB.app-form-sql"/>
+  <db uri="jdbc:h2:mem:app-form-sql;DB_CLOSE_DELAY=-1"/>
 
   <increase min="0" def="10" max="100"/>
 

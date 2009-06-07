@@ -2,6 +2,8 @@
 
 	* Upgraded embedded H2 to 1.1.114, 2009-06-01.
 
+	* The Ajax Blog and app-form-sql examples now uses an
+	in-memory database by default.
 
 0.9.20090521
 	* Added the XKCD example from the Wiki.
