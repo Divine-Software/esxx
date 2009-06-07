@@ -185,9 +185,14 @@ public class ESXX {
 	  }
 	});
 
-      listenerList = new EventListenerList();
+      try {
+	listenerList = new EventListenerList();
+      }
+      catch (Throwable t) {
+	// Probably a Google App Engine problem
+      }
 
-      if (worker_threads != 0) {
+      if (worker_threads != 0 && listenerList != null) {
 	// Set up periodic events, run at most once a second
 	executorService.submit(new Runnable() {
 	    @Override public void run() {
@@ -304,8 +309,8 @@ public class ESXX {
 	    logger.addHandler(new SyslogHandler("esxx"));
 	    logger.setLevel(Level.ALL);
 	  }
-	  catch (Exception ex) {
-	    // Never mind
+	  catch (Throwable ex) {
+	    // Probably a Google App Engine problem
 	  }
 	}
       }
@@ -314,11 +319,15 @@ public class ESXX {
     }
 
     public void addPeriodicJob(PeriodicJob job) {
-      listenerList.add(PeriodicJob.class, job);
+      if (listenerList != null) {
+	listenerList.add(PeriodicJob.class, job);
+      }
     }
 
     public void removePeriodicJob(PeriodicJob job) {
-      listenerList.remove(PeriodicJob.class, job);
+      if (listenerList != null) {
+	listenerList.remove(PeriodicJob.class, job);
+      }
     }
 
     /** A pattern that matches '!esxx-rsrc=' followed by a string of valid characters 
@@ -840,7 +849,8 @@ public class ESXX {
 
       mbs.registerMBean(object, mxObjectName(type, name));
     }
-    catch (Exception ex) {
+    catch (Throwable ex) {
+      // Probably a Google App Engine problem
       getLogger().logp(Level.WARNING, null, null, "Failed to register MXBean " + name);
     }
   }
@@ -852,7 +862,8 @@ public class ESXX {
     
       mbs.unregisterMBean(mxObjectName(type, name));
     }
-    catch (Exception ex) {
+    catch (Throwable ex) {
+      // Probably a Google App Engine problem
       getLogger().logp(Level.WARNING, null, null, "Failed to unregister MXBean " + name);
     }
   }
