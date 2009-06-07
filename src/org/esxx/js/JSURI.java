@@ -406,7 +406,7 @@ public class JSURI
       }
       catch (java.net.MalformedURLException ex) {}
     }
-    
+
     if (res == null) {
       res = getProtocolHandler(key, "org.esxx.js.protocol.ProtocolHandler");
     }
@@ -415,7 +415,7 @@ public class JSURI
       // This should never happen
       throw new IllegalStateException("Unable to create a ProtocolHandler for URI " + uri);
     }
-    
+
     return res;
   }
 
@@ -434,6 +434,8 @@ public class JSURI
       return constr.newInstance(this);
     }
     catch (InvocationTargetException ex) {
+      schemeConstructors.remove(key);
+
       if (ex.getCause() instanceof URISyntaxException) {
 	throw (URISyntaxException) ex.getCause();
       }
@@ -441,6 +443,7 @@ public class JSURI
       return null;
     } 
     catch (Exception  ex) {
+      schemeConstructors.remove(key);
       return null;
     }
   }
