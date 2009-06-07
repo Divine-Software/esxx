@@ -28,7 +28,6 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import javax.xml.stream.*;
 import org.esxx.js.*;
 import org.esxx.util.*;
 import org.mozilla.javascript.Context;
@@ -60,7 +59,6 @@ public class Application
     super(org.esxx.jmx.ApplicationMXBean.class, true,
 	  new javax.management.NotificationBroadcasterSupport());
 
-
     esxx = ESXX.getInstance();
 
     baseURI           = request.getScriptFilename();
@@ -70,7 +68,6 @@ public class Application
     debuggerEnabled   = request.isDebuggerEnabled();
     debuggerActivated = request.isDebuggerActivated();
     started           = new Date();
-    xmlInputFactory   = XMLInputFactory.newInstance();
 
     loadMainFile();
     compileAndInitialize(cx);
@@ -117,8 +114,8 @@ public class Application
 	  logger.setUseParentHandlers(false);
 	  logger.setLevel(Level.ALL);
 	}
-	catch (Exception ex) {
-	  // Never mind
+	catch (Throwable ex) {
+	  // Probably a Google App Engine problem
 	}
       }
     }
@@ -724,9 +721,6 @@ public class Application
       ex.printStackTrace();
       throw new ESXXException("SaxonApiException: " + ex.getMessage(), ex);
     }
-    catch (XMLStreamException ex) {
-      throw new ESXXException("XMLStreamException: " + ex.getMessage(), ex);
-    }
     catch (DOMException ex) {
       throw new ESXXException("DOMException: " + ex.getMessage(), ex);
     }
@@ -883,70 +877,56 @@ public class Application
   }
 
 
-  private void handleStylesheetPI(String data)
-    throws XMLStreamException {
+  private void handleStylesheetPI(String data) {
+    InputStream is = new ByteArrayInputStream(("<esxx-stylesheet " + data + "/>").getBytes());
+    Document doc = esxx.parseXML(is, baseURI, null, null);
+    Element root = doc.getDocumentElement();
 
-    XMLStreamReader xsr = xmlInputFactory.createXMLStreamReader(
-								new StringReader("<esxx-stylesheet " + data + "/>"));
+    String type  = root.getAttributeNS(null, "type").trim();
+    String href  = root.getAttributeNS(null, "href").trim();
 
-    while (xsr.hasNext()) {
-      if (xsr.next() == XMLStreamConstants.START_ELEMENT) {
-	String type = xsr.getAttributeValue(null, "type");
-	if (type == null || !type.equals("text/xsl")) {
-	  throw new ESXXException("<?esxx-stylesheet?> attribute 'type' " +
-				  "must be set to 'text/xsl'");
-	}
-
-	String href = xsr.getAttributeValue(null, "href");
-
-	if (href == null) {
-	  throw new ESXXException("<?esxx-stylesheet?> attribute 'href' " +
-				  "must be specified");
-	}
-
-	try {
-	  xsltMatcher.addRequestPattern("", "", new URL(baseURL, href).toString());
-	}
-	catch (MalformedURLException ex) {
-	  throw new ESXXException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
-				  ex.getMessage());
-	}
-      }
+    if (type == null || !type.equals("text/xsl")) {
+      throw new ESXXException("<?esxx-stylesheet?> attribute 'type' " +
+			      "must be set to 'text/xsl'");
     }
 
-    xsr.close();
+    if (href == null) {
+      throw new ESXXException("<?esxx-stylesheet?> attribute 'href' " +
+			      "must be specified");
+    }
+
+    try {
+      xsltMatcher.addRequestPattern("", "", new URL(baseURL, href).toString());
+    }
+    catch (MalformedURLException ex) {
+      throw new ESXXException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
+			      ex.getMessage());
+    }
   }
 
-  private void handleImportPI(String data)
-    throws XMLStreamException {
+  private void handleImportPI(String data) {
+    InputStream is = new ByteArrayInputStream(("<esxx-include " + data + "/>").getBytes());
+    Document doc = esxx.parseXML(is, baseURI, null, null);
+    Element root = doc.getDocumentElement();
 
-    XMLStreamReader xsr = xmlInputFactory.createXMLStreamReader(
-								new StringReader("<esxx-include " + data + "/>"));
+    String href  = root.getAttributeNS(null, "href").trim();
 
-    while (xsr.hasNext()) {
-      if (xsr.next() == XMLStreamConstants.START_ELEMENT) {
-	String href = xsr.getAttributeValue(null, "href");
-
-	if (href == null) {
-	  throw new ESXXException("<?esxx-include?> attribute 'href' " +
-				  "must be specified");
-	}
-
-	try {
-	  importCode(new URL(baseURL, href));
-	}
-	catch (MalformedURLException ex) {
-	  throw new ESXXException("<?esxx-include?> attribute 'href' is invalid: " +
-				  ex.getMessage(), ex);
-	}
-	catch (IOException ex) {
-	  throw new ESXXException("<?esxx-include?> failed to include document: " +
-				  ex.getMessage(), ex);
-	}
-      }
+    if (href == null) {
+      throw new ESXXException("<?esxx-include?> attribute 'href' " +
+			      "must be specified");
     }
 
-    xsr.close();
+    try {
+      importCode(new URL(baseURL, href));
+    }
+    catch (MalformedURLException ex) {
+      throw new ESXXException("<?esxx-include?> attribute 'href' is invalid: " +
+				  ex.getMessage(), ex);
+    }
+    catch (IOException ex) {
+      throw new ESXXException("<?esxx-include?> failed to include document: " +
+			      ex.getMessage(), ex);
+    }
   }
 
   private void handleHTTPHandler(Element e) {
@@ -1222,9 +1202,6 @@ public class Application
       throw new ESXXException("Failed to find Application.next(): ", ex);
     }
   }
-
-
-  private XMLInputFactory xmlInputFactory;
 
   private ESXX esxx;
   private URI baseURI;
