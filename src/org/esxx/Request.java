@@ -204,7 +204,12 @@ public abstract class Request {
       extends StreamHandler {
       ErrorHandler(OutputStream os, Formatter formatter) {
 	super(os, formatter);
-	setLevel(Level.ALL);
+	try {
+	  setLevel(Level.ALL);
+	}
+	catch (SecurityException ex) {
+	  // Probably a Google App Engine problem
+	}
       }
 
       @Override public void publish(LogRecord record) {
