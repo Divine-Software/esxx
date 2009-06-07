@@ -60,7 +60,6 @@ public class JSRequest
       query   = cx.newObject(scope);
       args    = null;
 
-      mimeHeaders = new MimeHeaders();
       acceptValueOf = new FunctionObject("valueOf", acceptValueOfMethod, accept);
 
       for (String name :  request.getProperties().stringPropertyNames()) {
@@ -73,7 +72,7 @@ public class JSRequest
 	String hdr = esxx.cgiToHTTP(name);
 
 	if (hdr != null) {
-	  // Add real HTTP header to mimeHeaders and this.headers
+	  // Add real HTTP header to this.headers
 	  addHeader(hdr, value);
 
 	  // Decode cookies
@@ -210,7 +209,6 @@ public class JSRequest
     private String soapAction;
     private String contentType;
     private HashMap<String,String> contentTypeParams;
-    private MimeHeaders mimeHeaders;
 
     private Scriptable acceptValueOf;
     static private java.lang.reflect.Method acceptValueOfMethod;
@@ -234,8 +232,6 @@ public class JSRequest
 
 
     private void addHeader(String name, String value) {
-      mimeHeaders.addHeader(name, value);
-
       ScriptableObject.putProperty(headers, name, value);
     }
 
@@ -360,8 +356,19 @@ public class JSRequest
       // TODO: Add a SOAP handler in Parser.java
       if (soapAction != null) {
 	try {
+	  MimeHeaders mime_headers = new MimeHeaders();
+
+	  for (Object k : headers.getIds()) {
+	    if (k instanceof String) {
+	      String name  = (String) k;
+	      String value = Context.toString(ScriptableObject.getProperty(headers, name));
+
+	      mime_headers.addHeader(name, value);
+	    }
+	  }
+
 	  return MessageFactory.newInstance(SOAPConstants.DYNAMIC_SOAP_PROTOCOL)
-	    .createMessage(mimeHeaders, request.getInputStream());
+	    .createMessage(mime_headers, request.getInputStream());
 	}
 	catch (IOException ex) {
 	  throw new ESXXException("Unable to read SOAP message stream: " + ex.getMessage());
