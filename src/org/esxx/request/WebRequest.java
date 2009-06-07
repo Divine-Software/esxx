@@ -55,7 +55,6 @@ public abstract class WebRequest
     String message  = ex.getMessage();
 
     if (ex instanceof ESXXException ||
-	ex instanceof javax.xml.stream.XMLStreamException ||
 	ex instanceof javax.xml.transform.TransformerException) {
       // Don't print stack trace
       ex = null;
