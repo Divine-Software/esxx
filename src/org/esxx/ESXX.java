@@ -842,30 +842,20 @@ public class ESXX {
     return saxonDocumentBuilder;
   }
 
-  private void mxRegister(String type, String name, javax.management.StandardMBean object) {
-    try {
-      javax.management.MBeanServer mbs = 
-	java.lang.management.ManagementFactory.getPlatformMBeanServer();
+  private void mxRegister(String type, String name, javax.management.StandardMBean object) 
+    throws javax.management.JMException {
+    javax.management.MBeanServer mbs = 
+      java.lang.management.ManagementFactory.getPlatformMBeanServer();
 
-      mbs.registerMBean(object, mxObjectName(type, name));
-    }
-    catch (Throwable ex) {
-      // Probably a Google App Engine problem
-      getLogger().logp(Level.WARNING, null, null, "Failed to register MXBean " + name);
-    }
+    mbs.registerMBean(object, mxObjectName(type, name));
   }
 
-  private void mxUnregister(String type, String name) {
-    try {
-      javax.management.MBeanServer mbs = 
-	java.lang.management.ManagementFactory.getPlatformMBeanServer();
+  private void mxUnregister(String type, String name)
+    throws javax.management.JMException {
+    javax.management.MBeanServer mbs = 
+      java.lang.management.ManagementFactory.getPlatformMBeanServer();
     
-      mbs.unregisterMBean(mxObjectName(type, name));
-    }
-    catch (Throwable ex) {
-      // Probably a Google App Engine problem
-      getLogger().logp(Level.WARNING, null, null, "Failed to unregister MXBean " + name);
-    }
+    mbs.unregisterMBean(mxObjectName(type, name));
   }
 
   /** A pattern that matches the characters '"', '\', '?' and '*'. */
@@ -959,7 +949,14 @@ public class ESXX {
       implements LRUCache.LRUListener<String, Application> {
 
       public void entryAdded(String key, Application app) {
-	mxRegister("Application", app.getAppFilename(), app.getJMXBean());
+	try {
+	  mxRegister("Application", app.getAppFilename(), app.getJMXBean());
+	}
+	catch (Throwable ex) {
+	  // Probably a Google App Engine problem
+	  getLogger().logp(Level.WARNING, null, null, 
+			   "Failed to register Application MXBean " + app.getAppFilename());
+	}
 	getLogger().logp(Level.CONFIG, null, null, app + " loaded.");
       }
 
@@ -989,7 +986,14 @@ public class ESXX {
 	  ex.printStackTrace();
 	}
 	finally {
-	  mxUnregister("Application", app.getAppFilename());
+	  try {
+	    mxUnregister("Application", app.getAppFilename());
+	  }
+	  catch (Throwable ex) {
+	    // Probably a Google App Engine problem
+	    getLogger().logp(Level.WARNING, null, null, 
+			     "Failed to unregister Application MXBean " + app.getAppFilename());
+	  }
 
 	  getLogger().logp(Level.CONFIG, null, null, app + " unloaded.");
 	}
@@ -1005,12 +1009,26 @@ public class ESXX {
       implements LRUCache.LRUListener<String, Stylesheet> {
 
       public void entryAdded(String key, Stylesheet xslt) {
-	mxRegister("Stylesheet", xslt.getFilename(), xslt.getJMXBean());
+	try {
+	  mxRegister("Stylesheet", xslt.getFilename(), xslt.getJMXBean());
+	}
+	catch (Throwable ex) {
+	  // Probably a Google App Engine problem
+	  getLogger().logp(Level.WARNING, null, null, 
+			   "Failed to register Stylesheet MXBean " + xslt.getFilename());
+	}
 	getLogger().logp(Level.CONFIG, null, null, xslt + " loaded.");
       }
 
       public void entryRemoved(String key, Stylesheet xslt) {
-	mxUnregister("Stylesheet", xslt.getFilename());
+	try {
+	  mxUnregister("Stylesheet", xslt.getFilename());
+	}
+	catch (Throwable ex) {
+	  // Probably a Google App Engine problem
+	  getLogger().logp(Level.WARNING, null, null, 
+			   "Failed to unregister Stylesheet MXBean " + xslt.getFilename());
+	}
 	getLogger().logp(Level.CONFIG, null, null, xslt + " unloaded.");
       }
     }
