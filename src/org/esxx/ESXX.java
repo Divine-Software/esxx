@@ -842,7 +842,7 @@ public class ESXX {
     return saxonDocumentBuilder;
   }
 
-  private void mxRegister(String type, String name, Object object) {
+  private void mxRegister(String type, String name, javax.management.StandardMBean object) {
     try {
       javax.management.MBeanServer mbs = 
 	java.lang.management.ManagementFactory.getPlatformMBeanServer();
@@ -959,7 +959,7 @@ public class ESXX {
       implements LRUCache.LRUListener<String, Application> {
 
       public void entryAdded(String key, Application app) {
-	mxRegister("Application", app.getAppFilename(), app);
+	mxRegister("Application", app.getAppFilename(), app.getJMXBean());
 	getLogger().logp(Level.CONFIG, null, null, app + " loaded.");
       }
 
@@ -1005,7 +1005,7 @@ public class ESXX {
       implements LRUCache.LRUListener<String, Stylesheet> {
 
       public void entryAdded(String key, Stylesheet xslt) {
-	mxRegister("Stylesheet", xslt.getFilename(), xslt);
+	mxRegister("Stylesheet", xslt.getFilename(), xslt.getJMXBean());
 	getLogger().logp(Level.CONFIG, null, null, xslt + " loaded.");
       }
 

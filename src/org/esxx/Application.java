@@ -50,15 +50,10 @@ import net.sf.saxon.dom.*;
   * will be interpreted.
   */
 
-public class Application
-  extends javax.management.StandardEmitterMBean
-  implements org.esxx.jmx.ApplicationMXBean {
+public class Application {
+
   public Application(Context cx, Request request)
     throws IOException {
-
-    super(org.esxx.jmx.ApplicationMXBean.class, true,
-	  new javax.management.NotificationBroadcasterSupport());
-
     esxx = ESXX.getInstance();
 
     baseURI           = request.getScriptFilename();
@@ -87,6 +82,14 @@ public class Application
 
   public Collection<URI> getExternalURIs() {
     return externalURIs;
+  }
+
+  public synchronized JMXBean getJMXBean() {
+    if (jmxBean == null) {
+      jmxBean = new JMXBean();
+    }
+
+    return jmxBean;
   }
 
   public synchronized Logger getAppLogger() {
@@ -302,7 +305,7 @@ public class Application
 
     HandlerCallback hcb = new HandlerCallback() {
 	public JSResponse execute(JSRequest req)
-	throws Exception {
+	  throws Exception {
 	  JSResponse result;
 	  Object args[] = { req };
 
@@ -485,25 +488,12 @@ public class Application
     this.notify();
   }
 
-  public boolean isDebuggerEnabled() {
-    return debuggerEnabled;
-  }
-
-  public boolean isDebuggerActivated() {
-    return debuggerActivated;
-  }
-
   public String getAppName() {
     return ident;
   }
 
   public String getAppFilename() {
     return baseURI.toString();
-  }
-
-  public synchronized org.esxx.jmx.ApplicationStats getStatistics() {
-    return new org.esxx.jmx.ApplicationStats(invocations, executionTime,
-					     started, new Date(lastAccessed));
   }
 
   public Scriptable getMainDocument() {
@@ -565,10 +555,6 @@ public class Application
 
   public String getExitHandlerFunction() {
     return exitHandler;
-  }
-
-  public void unloadApplication() {
-    esxx.removeCachedApplication(this);
   }
 
   public JSResponse wrapResult(Context cx, JSRequest req, Object result) {
@@ -921,7 +907,7 @@ public class Application
     }
     catch (MalformedURLException ex) {
       throw new ESXXException("<?esxx-include?> attribute 'href' is invalid: " +
-				  ex.getMessage(), ex);
+			      ex.getMessage(), ex);
     }
     catch (IOException ex) {
       throw new ESXXException("<?esxx-include?> failed to include document: " +
@@ -1203,7 +1189,45 @@ public class Application
     }
   }
 
+  private class JMXBean 
+    extends javax.management.StandardEmitterMBean
+    implements org.esxx.jmx.ApplicationMXBean {
+
+    public JMXBean() {
+      super(org.esxx.jmx.ApplicationMXBean.class, true,
+	    new javax.management.NotificationBroadcasterSupport());
+    }
+
+    public String getAppName() {
+      return Application.this.getAppName();
+    }
+
+    public String getAppFilename() {
+      return Application.this.getAppFilename();
+    }
+
+    public boolean isDebuggerEnabled() {
+      return debuggerEnabled;
+    }
+
+    public boolean isDebuggerActivated() {
+      return debuggerActivated;
+    }
+
+    public void unloadApplication() {
+      esxx.removeCachedApplication(Application.this);
+    }
+
+    public org.esxx.jmx.ApplicationStats getStatistics() {
+      synchronized (Application.this) {
+	return new org.esxx.jmx.ApplicationStats(invocations, executionTime,
+						 started, new Date(lastAccessed));
+      }
+    }
+  }
+
   private ESXX esxx;
+  private JMXBean jmxBean;
   private URI baseURI;
   private URL baseURL;
   private HashSet<URI> externalURIs = new HashSet<URI>();

@@ -30,15 +30,9 @@ import net.sf.saxon.s9api.*;
 import org.esxx.ESXX;
 import org.esxx.util.URIResolver;
 
-public class Stylesheet 
-  extends javax.management.StandardEmitterMBean
-  implements org.esxx.jmx.StylesheetMXBean {
+public class Stylesheet {
   public Stylesheet(final URI uri) 
     throws IOException {
-
-    super(org.esxx.jmx.StylesheetMXBean.class, true, 
-	  new javax.management.NotificationBroadcasterSupport());
-
     esxx = ESXX.getInstance();
     this.uri = uri;
     started  = new Date();
@@ -57,16 +51,16 @@ public class Stylesheet
 	  public void error(TransformerException ex)
 	    throws TransformerException {
 	    cause[0] = ex;
-// 	    esxx.getLogger().logp(Level.SEVERE, uri.toString(), null,
-// 				  ex.getMessageAndLocation(), ex);
+	    // 	    esxx.getLogger().logp(Level.SEVERE, uri.toString(), null,
+	    // 				  ex.getMessageAndLocation(), ex);
 	    throw ex;
 	  }
 
 	  public void fatalError(TransformerException ex)
 	    throws TransformerException {
 	    cause[0] = ex;
-// 	    esxx.getLogger().logp(Level.SEVERE, uri.toString(), null,
-// 				  ex.getMessage(), ex);
+	    // 	    esxx.getLogger().logp(Level.SEVERE, uri.toString(), null,
+	    // 				  ex.getMessage(), ex);
 	    throw ex;
 	  }
 
@@ -112,7 +106,7 @@ public class Stylesheet
     }
   }
 
-  @Override public String getFilename() {
+  public String getFilename() {
     return uri.toString();
   }
 
@@ -129,25 +123,52 @@ public class Stylesheet
     }
   }
 
-  @Override public synchronized org.esxx.jmx.ApplicationStats getStatistics() {
-    return new org.esxx.jmx.ApplicationStats(invocations, executionTime, 
-					     started, new Date(lastAccessed));
-  }
-
 
   public Collection<URI> getExternalURIs() {
     return externalURIs;
   }
 
-  @Override public void unloadStylesheet() {
-    esxx.removeCachedStylesheet(this);
-  }
 
   @Override public String toString() {
     return "[" + this.getClass().getName() + ": " + uri + "]";
   }
 
+  public synchronized JMXBean getJMXBean() {
+    if (jmxBean == null) {
+      jmxBean = new JMXBean();
+    }
+
+    return jmxBean;
+  }
+
+
+  private class JMXBean 
+    extends javax.management.StandardEmitterMBean
+    implements org.esxx.jmx.StylesheetMXBean {
+
+    public JMXBean() {
+      super(org.esxx.jmx.ApplicationMXBean.class, true,
+	    new javax.management.NotificationBroadcasterSupport());
+    }
+
+    public String getFilename() {
+      return Stylesheet.this.getFilename();
+    }
+
+    public void unloadStylesheet() {
+      esxx.removeCachedStylesheet(Stylesheet.this);
+    }
+
+    public org.esxx.jmx.ApplicationStats getStatistics() {
+      synchronized (Stylesheet.this) {
+	return new org.esxx.jmx.ApplicationStats(invocations, executionTime, 
+						 started, new Date(lastAccessed));
+      }
+    }
+  }
+
   private ESXX esxx;
+  private JMXBean jmxBean;
   private URI uri;
   private XsltExecutable xslt;
   private HashSet<URI> externalURIs = new HashSet<URI>();
