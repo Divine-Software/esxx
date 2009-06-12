@@ -42,11 +42,11 @@ public class JDBCHandler
 	queryCache = new QueryCache(10, 2 * 60000, 1000, 1 * 60000);
 
 	// Purge connections peridically
-	ESXX.getInstance().addPeriodicJob(new ESXX.PeriodicJob() {
+	ESXX.getInstance().getExecutor().scheduleWithFixedDelay(new Runnable() {
 	    @Override public void run() {
 	      queryCache.purgeConnections();
 	    }
-	  });
+	  }, 10, 10, java.util.concurrent.TimeUnit.SECONDS);
       }
     }
   }

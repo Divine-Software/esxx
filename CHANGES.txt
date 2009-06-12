@@ -8,6 +8,15 @@
 	* Various minor changes to get ESXX run in Googles App Engine
 	simulator.
 
+	* Now uses a ScheduledExecutorService instead of custom
+	threads and Timers. Set esxx.worker_threads to -1 for an
+	unbounded thread pool, or a fixed number to specifiy the
+	maximum number of worker threads to use.
+
+	* Implemented a Googles App Engine compatible, single-threaded
+	ScheduledExecutorService. Enable by setting
+	esxx.worker_threads to 0.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
@@ -66,7 +75,7 @@
 	MIME types, not just text/plain.
 
 	* esxx.include now takes a secondary argument, scope, which
-	can be used to specify in what scope the included file should 
+	can be used to specify in what scope the included file should
 	be evaluated in.  If unspecified, the global scope is used
 	just like before.
 
@@ -75,7 +84,7 @@
 
 	* esxx.global is now available, and refers to the global
 	scope.
-	
+
 	* The HTTP protocol handler now simply throws an ESXX.Response
 	object if the HTTP status in load(), save(), append() or
 	remove() is not 2xx.
@@ -107,7 +116,7 @@
 	* Added a "javaURI" property to the URI class.
 
 	* Added include files "json2.js" (from json.org) and
-	"esxx/harmony.js", which adds a few useful functions from 
+	"esxx/harmony.js", which adds a few useful functions from
 	the current ECMAScript 3.1 proposal.
 
 	* Removed setLevel() from the Logger class in favour of a
@@ -159,7 +168,7 @@
 	* Embedded H2 updated to 1.1.102, 2008-10-24.
 
 	* The stylesheets are now independent from the applications
-	and may be viewed and unloaded via JMX. It's also possible to 
+	and may be viewed and unloaded via JMX. It's also possible to
 	view runtime statistics of individual stylesheets.
 
 	* Added support for running multiple ESXX instances via init

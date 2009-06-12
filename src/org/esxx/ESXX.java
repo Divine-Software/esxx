@@ -25,7 +25,6 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -35,10 +34,10 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.activation.FileTypeMap;
 import javax.activation.MimetypesFileTypeMap;
-import javax.swing.event.EventListenerList;
 import org.esxx.cache.*;
 import org.esxx.saxon.*;
 import org.esxx.util.SingleThreadedExecutor;
+import org.esxx.util.ThreadSafeExecutor;
 import org.esxx.util.SyslogHandler;
 import org.esxx.util.URIResolver;
 import org.mozilla.javascript.Context;
@@ -163,20 +162,15 @@ public class ESXX {
 
       int worker_threads = Integer.parseInt(settings.getProperty("esxx.worker_threads", "-1"));
 
-      if (worker_threads == -1) {
-	// Use an unbounded thread pool
-	executorService = Executors.newCachedThreadPool(tf);
+       if (worker_threads == -1) {
+	 // Use an unbounded thread pool
+	 executorService = new ThreadSafeExecutor(tf);
       }
       else if (worker_threads == 0) {
 	executorService = new SingleThreadedExecutor();
       }
       else {
-	// When using a bounded thread pool, SynchronousQueue and
-	// CallerRunsPolicy must be used in order to avoid deadlock
-	executorService = new ThreadPoolExecutor(worker_threads, worker_threads,
-						 0L, TimeUnit.MILLISECONDS,
-						 new SynchronousQueue<Runnable>(),
-						 tf, new ThreadPoolExecutor.CallerRunsPolicy());
+	executorService = new ThreadSafeExecutor(worker_threads, tf);
       }
 
       workloadSet = new PriorityBlockingQueue<Workload>(16, new Comparator<Workload>() {
@@ -185,44 +179,13 @@ public class ESXX {
 	  }
 	});
 
-      try {
-	listenerList = new EventListenerList();
+      // Add periodic Workload cancellation (if not single-threaded)
+      if (worker_threads != 0) {
+	executorService.scheduleAtFixedRate(new WorkloadCancellator(), 1, 1, TimeUnit.SECONDS);
       }
-      catch (Throwable t) {
-	// Probably a Google App Engine problem
-      }
-
-      if (worker_threads != 0 && listenerList != null) {
-	// Set up periodic events, run at most once a second
-	executorService.submit(new Runnable() {
-	    @Override public void run() {
-	    try {
-	      while (!executorService.isShutdown()) {
-		Thread.sleep(1000);
-		
-		for (PeriodicJob j : listenerList.getListeners(PeriodicJob.class)) {
-		  try {
-		    j.run();
-		  }
-		  catch (Exception ex) {
-		    ex.printStackTrace();
-		  }
-		}
-	      }
-	    }
-	    catch (InterruptedException ex) {
-	      // Preserve status and exit
-	      Thread.currentThread().interrupt();
-	    }
-	  }
-	});
-      }
-
-      // Add periodic Worklock cancellation
-      addPeriodicJob(new WorkloadCancellator());
 
       // Add periodic check to expunge applications and xslt stylesheets
-      addPeriodicJob(new CacheFilter());
+      executorService.scheduleWithFixedDelay(new CacheFilter(), 1, 1, TimeUnit.SECONDS);
 
 //       org.mozilla.javascript.tools.debugger.Main main = 
 // 	new org.mozilla.javascript.tools.debugger.Main("ESXX Debugger");
@@ -318,16 +281,9 @@ public class ESXX {
       return logger;
     }
 
-    public void addPeriodicJob(PeriodicJob job) {
-      if (listenerList != null) {
-	listenerList.add(PeriodicJob.class, job);
-      }
-    }
-
-    public void removePeriodicJob(PeriodicJob job) {
-      if (listenerList != null) {
-	listenerList.remove(PeriodicJob.class, job);
-      }
+    /** Return the ScheduledExecutorService used to execute jobs. */
+    public ScheduledExecutorService getExecutor() {
+      return executorService;
     }
 
     /** A pattern that matches '!esxx-rsrc=' followed by a string of valid characters 
@@ -1040,7 +996,7 @@ public class ESXX {
      */
 
     private class CacheFilter
-      implements PeriodicJob {
+      implements Runnable {
       @Override public void run() {
 	applicationCache.filterEntries(new LRUCache.EntryFilter<String, Application>() {
 	    public boolean isStale(String key, Application app, long created) {
@@ -1180,7 +1136,7 @@ public class ESXX {
     }
 
     private class WorkloadCancellator 
-      implements PeriodicJob {
+      implements Runnable {
       @Override public void run() {
 	long now = System.currentTimeMillis();
 
@@ -1230,11 +1186,6 @@ public class ESXX {
       public Future<Object> future;
       public long expires;
       public Collection<File> tempFiles = new ArrayList<File>();
-    }
-
-    public interface PeriodicJob
-      extends EventListener {
-      public void run();
     }
 
     public interface ResponseHandler {
@@ -1292,9 +1243,8 @@ public class ESXX {
     private DocumentBuilder saxonDocumentBuilder;
 
     private ContextFactory contextFactory;
-    private ExecutorService executorService;
+    private ScheduledExecutorService executorService;
     private PriorityBlockingQueue<Workload> workloadSet;
-    private EventListenerList listenerList;
     private Logger logger;
   
     private Thread shutdownHook;
