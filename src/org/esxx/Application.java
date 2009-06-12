@@ -24,6 +24,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -450,9 +452,11 @@ public class Application {
   }
 
   public synchronized void terminate(long timeout) {
-    if (timer != null) {
-      // Cancel all timers
-      timer.cancel();
+    // Cancel all timers
+    for (TimerHandler th : timerHandlers) {
+      if (th.future != null) {
+	th.future.cancel(false);
+      }
     }
 
     while (enterCount != 0) {
@@ -788,30 +792,26 @@ public class Application {
 
   private void startTimers() {
     // Start timers, if any
-    if (!timerHandlers.isEmpty()) {
-      timer = new Timer(getAppName() + " timer thread");
+    for (final TimerHandler th : timerHandlers) {
+      th.future = esxx.getExecutor().scheduleAtFixedRate(new Runnable() {
+	  @Override public void run() {
+	    esxx.addContextAction(null, new ContextAction() {
+		@Override public Object run(Context cx) {
+		  try{
+		    Object[] args = { new Date() };
 
-      for (final TimerHandler th : timerHandlers) {
-	timer.scheduleAtFixedRate(new TimerTask() {
-	    @Override public void run() {
-	      esxx.addContextAction(null, new ContextAction() {
-		  @Override public Object run(Context cx) {
-		    try{
-		      Object[] args = { new Date(scheduledExecutionTime()) };
-
-		      return JS.callJSMethod(th.handler, args,
-					     getAppName() + " timer",
-					     cx, applicationScope);
-		    }
-		    catch (Exception ex) {
-		      ex.printStackTrace();
-		      return null;
-		    }
+		    return JS.callJSMethod(th.handler, args,
+					   getAppName() + " timer",
+					   cx, applicationScope);
 		  }
-		}, (int) (th.period * 2) /* Timeout */);
-	    }
-	  }, th.delay, th.period);
-      }
+		  catch (Exception ex) {
+		    ex.printStackTrace();
+		    return null;
+		  }
+		}
+	      }, (int) (th.period * 2) /* Timeout */);
+	  }
+	}, th.delay, th.period, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -1092,6 +1092,7 @@ public class Application {
     public long delay;
     public long period;
     public String handler;
+    public ScheduledFuture<?> future;
   }
 
   private static class FilterRule {
@@ -1271,7 +1272,6 @@ public class Application {
 
   private List<FilterRule> filters = new LinkedList<FilterRule>();
 
-  private Timer timer;
   private Collection<TimerHandler> timerHandlers = new LinkedList<TimerHandler>();
 
   private static java.util.logging.Formatter logFormatter;
