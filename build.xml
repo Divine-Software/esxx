@@ -29,7 +29,7 @@
   </target>
 
   <target name="compile" depends="init" description="compile everything">
-    <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" 
+    <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath"
            debug="true" deprecation="true" target="1.6">
 <!--      <compilerarg value="-Xlint"/>-->
     </javac>
@@ -53,19 +53,19 @@
   </target>
 
   <target name="jee-compile" depends="jar" description="compile jee">
-    <javac srcdir="${jee.dir}" destdir="${jeebuild.dir}" 
+    <javac srcdir="${jee.dir}" destdir="${jeebuild.dir}"
            debug="true" deprecation="true" target="1.6">
       <classpath>
 	<pathelement path="${build.dir}/${ant.project.name}.jar" />
 	<fileset dir="${lib.dir}" includes="**/*.jar"/>
-	<pathelement path="${jee.dir}/servlet-api-2.5.jar" /> 
+	<fileset dir="${jee.dir}/lib" includes="**/*.jar" />
      </classpath>
       <compilerarg value="-Xlint"/>
     </javac>
   </target>
 
   <target name="jee-war" depends="jee-compile,jar" description="generate a servlet">
-    <war destfile="${build.dir}/${ant.project.name}.war" 
+    <war destfile="${build.dir}/${ant.project.name}.war"
 	 webxml="${jee.dir}/web.xml"
 	 filesetmanifest="merge">
       <webinf file="${jee.dir}/appengine-web.xml"/>
@@ -119,7 +119,7 @@
     <fail message="This target requires a 'test' property. Example: -Dtest=xml" unless="test"/>
     <echo message="Running tests/${test}.esxx ..." level="info"/>
     <java classname="org.esxx.Main" classpathref="classpath" fork="true">
-      <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" /> 
+      <jvmarg value="-Djdbc.drivers=org.postgresql.Driver" />
       <arg value="--cgi" />
       <arg value="--method" />
       <arg value="GET" />

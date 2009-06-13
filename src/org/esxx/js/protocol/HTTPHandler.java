@@ -51,7 +51,6 @@ public class HTTPHandler
   public HTTPHandler(JSURI jsuri)
     throws URISyntaxException {
     super(jsuri);
-    new java.net.Socket(); // Make this constructor fail in Google App Engine
   }
 
   @Override
@@ -230,6 +229,10 @@ public class HTTPHandler
     }
 
     return connectionManager;
+  }
+
+  public static synchronized void setConnectionManager(ClientConnectionManager c) {
+    connectionManager = c;
   }
 
   private synchronized HttpClient getHttpClient() {

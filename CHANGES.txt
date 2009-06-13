@@ -17,6 +17,10 @@
 	ScheduledExecutorService. Enable by setting
 	esxx.worker_threads to 0.
 
+	* Implemented a HttpClient ConnectionManager that can be used
+	in Google App Engine. Yay! Full HTTP support, including
+	cookies and HTTP Authentication, on GAE!
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

@@ -27,6 +27,7 @@ import javax.servlet.http.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import org.esxx.js.protocol.GAEConnectionManager;
 import org.esxx.request.ServletRequest;
 import org.esxx.request.WebRequest;
 import org.esxx.util.IO;
@@ -72,6 +73,14 @@ public class ESXXServlet extends HttpServlet {
       root     = new File(resolvePath(getInitParameter("http-root"))).getCanonicalPath();
       root_uri = new File(root).toURI();
       esxx     = ESXX.initInstance(p, this);
+
+      // If running on Google App Engine, install a supported HTTP connection manager
+      try {
+	org.esxx.js.protocol.HTTPHandler.setConnectionManager(new GAEConnectionManager());
+      }
+      catch (Exception ex) {
+	ex.printStackTrace();
+      }
     }
     catch (Exception ex) {
       throw new ServletException("ESXXServlet.init() failed: " + ex.getMessage(), ex);
