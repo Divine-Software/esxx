@@ -65,23 +65,27 @@
   </target>
 
   <target name="jee-war" depends="jee-compile,jar" description="generate a servlet">
-    <war destfile="${build.dir}/${ant.project.name}.war"
+    <war destfile="${build.dir}/${ant.project.name}-jee.war"
+	 webxml="${jee.dir}/web.xml"
+	 filesetmanifest="merge">
+      <classes dir="${jeebuild.dir}"/>
+      <lib file="${build.dir}/${ant.project.name}.jar"/>
+      <lib dir="${lib.dir}" excludes="one-jar* exec-jar* mail.jar jfast.jar"/>
+      <zipfileset prefix="examples" dir="examples" excludes="*~"/>
+      <zipfileset prefix="share" dir="share" excludes="*~"/>
+      <zipfileset file="jee/build.xml"/>
+    </war>
+  </target>
+
+  <target name="gae-war" depends="jee-compile,jar" description="generate a servlet">
+    <war destfile="${build.dir}/${ant.project.name}-gae.war"
 	 webxml="${jee.dir}/web.xml"
 	 filesetmanifest="merge">
       <webinf file="${jee.dir}/appengine-web.xml"/>
       <classes dir="${jeebuild.dir}"/>
       <lib file="${build.dir}/${ant.project.name}.jar"/>
-      <lib dir="${lib.dir}">
-	<exclude name="one-jar*"/>
-      </lib>
-      <lib dir="${jee.dir}/lib"/>
-
-<!--
-      <zipfileset src="${lib.dir}/h2.jar"
-		  fullpath="META-INF/services/java.sql.Driver"
-		  includes="META-INF/services/java.sql.Driver"/>
--->
-
+      <lib dir="${lib.dir}" excludes="one-jar* exec-jar* mail.jar jfast.jar"/>
+      <lib file="${jee.dir}/lib/xerces-j2-2.9.0.jar"/>
       <zipfileset prefix="examples" dir="examples" excludes="*~"/>
       <zipfileset prefix="share" dir="share" excludes="*~"/>
       <zipfileset file="jee/build.xml"/>
