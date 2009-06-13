@@ -1068,7 +1068,7 @@ public class ESXX {
 	      // Provide a better mapping for primitive types on this context
 	      WrapFactory wf = new WrapFactory() {
 		  @Override public Object wrap(Context cx, Scriptable scope, 
-					       Object obj, Class<?> static_type) {
+					       Object obj, Class static_type) {
 		    if (obj instanceof char[]) {
 		      return new String((char[]) obj);
 		    }
