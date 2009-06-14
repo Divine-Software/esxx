@@ -11,7 +11,7 @@
     <war destfile="esxx.war" 
 	 webxml="${web.dir}/web.xml"
 	 filesetmanifest="merge">
-      <webinf file="${web.dir}/appengine-web.xml"/>
+      <webinf dir="${web.dir}/" includes="*.xml" excludes="web.xml"/>
       <classes dir="${classes.dir}"/>
       <lib dir="${lib.dir}"/>
       <zipfileset file="build.xml"/>
