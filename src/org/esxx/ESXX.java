@@ -22,6 +22,7 @@ import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -998,9 +999,11 @@ public class ESXX {
     private class CacheFilter
       implements Runnable {
       @Override public void run() {
+	System.err.println("cachefilter");
 	applicationCache.filterEntries(new LRUCache.EntryFilter<String, Application>() {
 	    public boolean isStale(String key, Application app, long created) {
 	      for (URI uri : app.getExternalURIs()) {
+		//		System.err.println("Resource " + uri + " was created on " + new java.util.Date(created));
 		if (getLastModified(uri) > created) {
 		  return true;
 		}
@@ -1030,10 +1033,18 @@ public class ESXX {
 	  uc = uri.toURL().openConnection();
 	  uc.setDoInput(true);
 	  uc.setDoOutput(false);
-	  uc.setUseCaches(true);
+	  uc.setUseCaches(false);
 	  uc.setConnectTimeout(3000);
 	  uc.setReadTimeout(3000);
-	  uc.connect();
+	  if (uc instanceof HttpURLConnection) {
+	    HttpURLConnection huc = (HttpURLConnection) uc;
+	    huc.setRequestMethod("HEAD");
+	    uc.getInputStream();
+	  }
+	  else {
+	    uc.connect();
+	  }
+	  //	  System.err.println("Resource " + uri + " was last modified on " + new java.util.Date(uc.getLastModified()));
 	  return uc.getLastModified();
 	}
 	catch (IOException ex) {
