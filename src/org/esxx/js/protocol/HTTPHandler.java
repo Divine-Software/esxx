@@ -27,6 +27,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.security.cert.X509Certificate;
+import net.oauth.client.httpclient4.OAuthSchemeFactory;
 import org.apache.http.*;
 import org.apache.http.auth.*;
 import org.apache.http.client.*;
@@ -40,6 +41,8 @@ import org.apache.http.entity.*;
 import org.apache.http.impl.client.*;
 import org.apache.http.impl.conn.tsccm.*;
 import org.apache.http.params.*;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.client.protocol.ClientContext;
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
 import org.esxx.Response;
@@ -274,9 +277,27 @@ public class HTTPHandler
 	});
 
       httpClient.setCookieStore(new CookieJar(jsuri));
+
+      httpClient.getAuthSchemes().register(OAuthSchemeFactory.SCHEME_NAME,
+					   new OAuthSchemeFactory());
     }
 
     return httpClient;
+  }
+
+  private synchronized BasicHttpContext getHttpContext() {
+    if (httpContext == null) {
+      httpContext = new BasicHttpContext();
+      httpContext.setAttribute(ClientContext.AUTH_SCHEME_PREF,
+			       Arrays.asList(new String[] {
+				   "oauth",
+				   "ntlm",
+				   "digest",
+				   "basic"
+				 }));
+    }
+
+    return httpContext;
   }
 
   private static class Result {
@@ -298,7 +319,7 @@ public class HTTPHandler
 	}
       }, jsuri.getURI());
 
-    HttpResponse response = getHttpClient().execute(msg);
+    HttpResponse response = getHttpClient().execute(msg, getHttpContext());
     HttpEntity   entity   = response.getEntity();
 
     if (params == null) {
@@ -366,4 +387,5 @@ public class HTTPHandler
   private static HttpParams httpParams;
   private static ClientConnectionManager connectionManager;
   private DefaultHttpClient httpClient;
+  private BasicHttpContext httpContext;
 }

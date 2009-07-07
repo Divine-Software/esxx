@@ -21,6 +21,8 @@
 	in Google App Engine. Yay! Full HTTP support, including
 	cookies and HTTP Authentication, on GAE!
 
+	* Added support for the OAuth HTTP authentication scheme.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
