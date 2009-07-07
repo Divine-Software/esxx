@@ -97,11 +97,9 @@ public class MAILTOHandler
       }
 
       if (recipients.isEmpty()) {
-	System.out.println("Sending");
 	Transport.send(msg);
       }
       else {
-	System.out.println("Sending to " + recipients);
 	Transport.send(msg, recipients.toArray(new InternetAddress[] {}));
       }
     }
