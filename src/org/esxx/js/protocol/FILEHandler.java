@@ -151,6 +151,9 @@ public class FILEHandler
       element = document.createElementNS(null, "file");
       XML.addChild(element, "length", Long.toString(f.length()));
     }
+    else {
+      element = document.createElementNS(null, "object");
+    }
 
     element.setAttributeNS(null, "uri", f.toURI().toString());
 

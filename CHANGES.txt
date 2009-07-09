@@ -23,6 +23,9 @@
 
 	* Added support for the OAuth HTTP authentication scheme.
 
+	* Unknown disk objects are now marked as "object" in directory
+	listings.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
