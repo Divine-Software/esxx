@@ -123,8 +123,17 @@ public class JSURI
 
       StringUtil.ParamResolver resolver = new StringUtil.ParamResolver() {
 	  public String resolveParam(String param) {
+	    Object obj;
+
 	    try {
-	      String value = Context.toString(final_params.get(param, final_params));
+	      obj = final_params.get(Integer.parseInt(param), final_params);
+	    }
+	    catch (NumberFormatException ex) {
+	      obj = final_params.get(param, final_params);
+	    }
+
+	    try {
+	      String value = Context.toString(obj);
 	      return StringUtil.encodeURI(value, false /* == encodeURIComponent() */);
 	    }
 	    catch (URISyntaxException ex) {

@@ -26,6 +26,10 @@
 	* Unknown disk objects are now marked as "object" in directory
 	listings.
 
+	* When referencing arguments using the {name} syntax in URIs
+	and SQL queries, name may now be a number referring to an
+	Array or XMLList member.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
