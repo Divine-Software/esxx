@@ -32,7 +32,6 @@ public class ESXXFunctionLibrary
 
   public boolean isAvailable(StructuredQName function_name,
 			     int             arity) {
-    System.err.println("Checking for " + function_name + " with " + arity + " arguments.");
     return function_name.getNamespaceURI().startsWith("javascript:");
   }
 

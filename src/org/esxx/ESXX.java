@@ -999,7 +999,6 @@ public class ESXX {
     private class CacheFilter
       implements Runnable {
       @Override public void run() {
-	System.err.println("cachefilter");
 	applicationCache.filterEntries(new LRUCache.EntryFilter<String, Application>() {
 	    public boolean isStale(String key, Application app, long created) {
 	      for (URI uri : app.getExternalURIs()) {
