@@ -2,8 +2,9 @@
 
 JAVA=java
 JVMARGS=
-ESXX_PATH=
+ESXX_PATH="@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@:@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@/site"
 ARGS=("$@")
+LIBS=$(echo @SHARE_INSTALL_PREFIX@/@PROJECT_NAME@/{lib,site/lib}/*.jar | tr ' ' '|')
 
 
 if [ ! -z "${JAVA_HOME}" ]; then
@@ -15,5 +16,7 @@ if [ -f @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@-js ]; then
 fi
 
 
-${JAVA} ${JVMARGS} -Desxx.app.include_path="${ESXX_PATH}" \
+${JAVA} ${JVMARGS} \
+    -Desxx.app.include_path="${ESXX_PATH}" \
+    -Done-jar.class.path=${LIBS} \
     -jar @SBIN_INSTALL_DIR@/@PROJECT_NAME@.jar --script -- "${ARGS[@]}"

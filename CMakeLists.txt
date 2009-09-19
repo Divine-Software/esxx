@@ -92,7 +92,7 @@ ADD_CUSTOM_TARGET (dist ALL COMMAND
 		          -Dbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build
 		          -Ddist.dir=${CMAKE_CURRENT_BINARY_DIR}/dist
 			  -Dversion=${CPACK_PACKAGE_VERSION}
-			  clean dist)
+			  clean jar)
 ADD_CUSTOM_TARGET (antclean COMMAND
 		   ${ANT} -buildfile ${CMAKE_CURRENT_SOURCE_DIR}/build.xml
 		          -Dbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build
@@ -100,21 +100,70 @@ ADD_CUSTOM_TARGET (antclean COMMAND
 			  -Dversion=${CPACK_PACKAGE_VERSION}
 		    	   clean)
 
-IF (UNIX AND NOT WIN32)
+
+IF (WIN32)
+  SET (DOC_DIR ${CMAKE_INSTALL_PREFIX}/)
+  SET (SHARE_DIR ${CMAKE_INSTALL_PREFIX}/share)
+ELSEIF (UNIX)
+  SET (DOC_DIR ${SHARE_INSTALL_PREFIX}/doc/${PROJECT_NAME})
+  SET (SHARE_DIR ${SHARE_INSTALL_PREFIX}/${PROJECT_NAME})
+ENDIF (WIN32)
+
+# Install utility files
+INSTALL (DIRECTORY share/
+	   DESTINATION ${SHARE_DIR}/
+	   PATTERN ".svn" EXCLUDE)
+
+# Install examples
+INSTALL (DIRECTORY examples
+	   DESTINATION ${DOC_DIR}/
+	   PATTERN .svn EXCLUDE
+	   PATTERN examples/*.js 
+	   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+	   	       GROUP_EXECUTE GROUP_READ
+		       WORLD_EXECUTE WORLD_READ)
+
+# Install licences, changelog and readme files
+INSTALL (FILES CHANGES.txt
+	  	 LICENSE.txt
+	  	 LICENSE.APL2
+	         LICENSE.BSD
+	         LICENSE.GPL-3
+	         LICENSE.HtmlCleaner
+	         LICENSE.JavaMail
+		 LICENSE.MPL-1.0
+		 LICENSE.MPL-1.1
+		 README
+	   DESTINATION ${DOC_DIR}/)
+
+IF (WIN32)
+  INSTALL (PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/package/start-http.bat
+                    ${CMAKE_CURRENT_SOURCE_DIR}/package/start-fastcgi.bat
+                    ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx.bat
+                    ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx-js.bat
+           DESTINATION ${CMAKE_INSTALL_PREFIX})
+ELSEIF (UNIX)
   CONFIGURE_FILE(package/version.in
 		 ${CMAKE_CURRENT_BINARY_DIR}/package/version 
 		 ESCAPE_QUOTES @ONLY)
 
   # Create and install binaries
-  CONFIGURE_FILE(package/javawrapper.in ${CMAKE_CURRENT_BINARY_DIR}/@PROJECT_NAME@ @ONLY)
-  CONFIGURE_FILE(package/jswrapper.in ${CMAKE_CURRENT_BINARY_DIR}/@PROJECT_NAME@-js @ONLY)
+  CONFIGURE_FILE(package/javawrapper.in ${CMAKE_CURRENT_BINARY_DIR}/esxx @ONLY)
+  CONFIGURE_FILE(package/jswrapper.in ${CMAKE_CURRENT_BINARY_DIR}/esxx-js @ONLY)
 
-  INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-js
+  INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/esxx
+           DESTINATION ${SBIN_INSTALL_DIR})
+
+  INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/esxx-js
            DESTINATION ${BIN_INSTALL_DIR})
 
-  INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}
-	  	    ${CMAKE_CURRENT_BINARY_DIR}/dist/esxx.jar 
-           DESTINATION ${SBIN_INSTALL_DIR})
+  INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/build/esxx-small.jar 
+           DESTINATION ${SBIN_INSTALL_DIR}
+	   RENAME esxx.jar)
+
+  FILE (GLOB jars lib/core/*.jar lib/exe/*.jar)
+  INSTALL (FILES ${jars}
+	   DESTINATION ${SHARE_DIR}/lib/)
 
   # Create and install init scripts
   IF (CMAKE_HOST_APPLE)
@@ -131,71 +180,36 @@ IF (UNIX AND NOT WIN32)
 
     INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/svc-method
              DESTINATION /lib/svc/method
-	     RENAME @PROJECT_NAME@)
+	     RENAME esxx)
 
     INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/svc-manifest.xml
              DESTINATION /var/svc/manifest/network
-	     RENAME @PROJECT_NAME@.xml)
+	     RENAME esxx.xml)
 
   ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     CONFIGURE_FILE(package/initscript-esxx.in 
-                   ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@ @ONLY)
+                   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx @ONLY)
     CONFIGURE_FILE(package/initscript-binfmt.in 
-                   ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@-binfmt @ONLY)
+                   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-binfmt @ONLY)
 
-    INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@
-		      ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@-binfmt
+    INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/esxx
+		      ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-binfmt
              DESTINATION ${SYSCONF_INSTALL_DIR}/init.d)
   ENDIF (CMAKE_HOST_APPLE)
 
   # Create and install config file
   IF (CMAKE_HOST_APPLE)
-    CONFIGURE_FILE(package/config.osx.in ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
+    CONFIGURE_FILE(package/config.osx.in ${CMAKE_CURRENT_BINARY_DIR}/package/esxx.conf @ONLY)
   ELSE (CMAKE_HOST_APPLE)
     CONFIGURE_FILE(package/config.in 
-		   ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf @ONLY)
+		   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx.conf @ONLY)
   ENDIF (CMAKE_HOST_APPLE)
 
-  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf
+  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/esxx.conf
 	   DESTINATION ${SYSCONF_INSTALL_DIR}/${CONFDIR}
-	   RENAME @PROJECT_NAME@)
+	   RENAME esxx)
 
-  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/@PROJECT_NAME@.conf
+  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/esxx.conf
 	   DESTINATION ${SYSCONF_INSTALL_DIR}/${CONFDIR}
-	   RENAME @PROJECT_NAME@-js)
-
-  # Install utility files
-  INSTALL (DIRECTORY share/
-	   DESTINATION ${SHARE_INSTALL_PREFIX}/${PROJECT_NAME}/
-	   PATTERN ".svn" EXCLUDE)
-
-  # Install examples
-  INSTALL (DIRECTORY examples
-	   DESTINATION ${SHARE_INSTALL_PREFIX}/doc/${PROJECT_NAME}/
-	   PATTERN .svn EXCLUDE
-	   PATTERN examples/*.js 
-	   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-	   	       GROUP_EXECUTE GROUP_READ
-		       WORLD_EXECUTE WORLD_READ)
-
-  # Install licences, changelog and readme files
-  INSTALL (FILES CHANGES.txt
-	  	 LICENSE.txt
-	  	 LICENSE.APL2
-	         LICENSE.BSD
-	         LICENSE.GPL-3
-	         LICENSE.HtmlCleaner
-	         LICENSE.JavaMail
-		 LICENSE.MPL-1.0
-		 LICENSE.MPL-1.1
-		 README
-	   DESTINATION ${SHARE_INSTALL_PREFIX}/doc/${PROJECT_NAME}/)
-ELSEIF (WIN32)
-  INSTALL (PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/package/start-http.bat
-                    ${CMAKE_CURRENT_SOURCE_DIR}/package/start-fastcgi.bat
-                    ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx.bat
-                    ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx-js.bat
-           DESTINATION ${CMAKE_INSTALL_PREFIX})
-  INSTALL (DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/dist/
-	       DESTINATION ${CMAKE_INSTALL_PREFIX})
-ENDIF (UNIX AND NOT WIN32)
+	   RENAME esxx-js)
+ENDIF (WIN32)

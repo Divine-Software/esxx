@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 
 <project name="esxx" default="compile">
-  <import file="lib/exec-jar.xml"/>
+  <taskdef name="one-jar" classname="com.simontuffs.onejar.ant.OneJarTask" 
+           classpath="lib/one-jar-ant-task-0.96.jar" onerror="report"/>
+
+
   <description>esxx build file</description>
 
   <property name="src.dir"     location="src"/>
@@ -45,21 +48,28 @@
   </target>
 
   <target name="jar" depends="compile" description="generate all main jar files" >
-    <jar jarfile="${build.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+    <jar jarfile="${build.dir}/main.jar" basedir="${classes.dir}">
       <manifest>
         <attribute name="Main-Class" value="org.esxx.Main"/>
       </manifest>
     </jar>
+
+    <one-jar destfile="${build.dir}/${ant.project.name}-small.jar">
+      <main jar="${build.dir}/main.jar"/>
+    </one-jar>
+
+    <one-jar destfile="${build.dir}/${ant.project.name}.jar">
+      <main jar="${build.dir}/main.jar"/>
+      <lib>
+        <fileset dir="${lib.dir}/core" includes="*.jar" />
+        <fileset dir="${lib.dir}/exe" includes="*.jar" />
+      </lib>
+    </one-jar>
   </target>
 
-  <target name="jee-compile" depends="jar" description="compile jee">
-    <javac srcdir="${jee.dir}" destdir="${jeebuild.dir}"
+  <target name="jee-compile" depends="compile" description="compile jee">
+    <javac srcdir="${jee.dir}" destdir="${jeebuild.dir}" classpathref="classpath"
            debug="true" deprecation="true" target="1.6">
-      <classpath>
-	<pathelement path="${build.dir}/${ant.project.name}.jar" />
-	<fileset dir="${lib.dir}" includes="**/*.jar"/>
-	<fileset dir="${jee.dir}/lib" includes="**/*.jar" />
-     </classpath>
       <compilerarg value="-Xlint"/>
     </javac>
   </target>
@@ -69,9 +79,9 @@
 	 webxml="${jee.dir}/web.xml"
 	 filesetmanifest="merge">
       <classes dir="${jeebuild.dir}"/>
-      <lib file="${build.dir}/${ant.project.name}.jar"/>
-      <lib dir="${lib.dir}" excludes="one-jar* exec-jar* mail.jar jfast.jar"/>
-      <lib dir="${jee.dir}/lib/jee" includes="**/*.jar"/>
+      <lib file="${build.dir}/main.jar"/>
+      <lib dir="${lib.dir}/core" includes="*.jar"/>
+      <lib dir="${lib.dir}/jee" includes="*.jar"/>
       <zipfileset prefix="examples" dir="examples" excludes="*~"/>
       <zipfileset prefix="share" dir="share" excludes="*~"/>
       <zipfileset file="jee/build.xml"/>
@@ -84,15 +94,16 @@
 	 filesetmanifest="merge">
       <webinf file="${jee.dir}/appengine-web.xml"/>
       <classes dir="${jeebuild.dir}"/>
-      <lib file="${build.dir}/${ant.project.name}.jar"/>
-      <lib dir="${lib.dir}" excludes="one-jar* exec-jar* mail.jar jfast.jar"/>
-      <lib dir="${jee.dir}/lib/gae" includes="**/*.jar"/>
+      <lib file="${build.dir}/main.jar"/>
+      <lib dir="${lib.dir}/core" includes="*.jar"/>
+      <lib dir="${lib.dir}/gae" includes="*.jar"/>
       <zipfileset prefix="examples" dir="examples" excludes="*~"/>
       <zipfileset prefix="share" dir="share" excludes="*~"/>
       <zipfileset file="jee/build.xml"/>
     </war>
   </target>
 
+<!--
   <target name="dist" depends="jar" description="generate the distribution" >
     <delete dir="${dist.dir}"/>
     <mkdir dir="${dist.dir}"/>
@@ -110,10 +121,11 @@
       <fileset dir="share" excludes="*~"/>
     </copy>
 
-    <exec-jar in="${build.dir}/${ant.project.name}.jar" out="${dist.dir}/${ant.project.name}.jar"/>
-<!--    <copy file="${build.dir}/${ant.project.name}.war" tofile="${dist.dir}/${ant.project.name}.war"/> -->
+    <copy todir="${dist.dir}">
+      <fileset dir="${build.dir}" includes="esxx.jar"/>
+    </copy>
   </target>
-
+-->
 
   <target name="clean" description="clean up" >
     <delete dir="${build.dir}"/>
