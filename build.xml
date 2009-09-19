@@ -13,7 +13,6 @@
   <property name="classes.dir" location="${build.dir}/classes"/>
   <property name="jeebuild.dir" location="${build.dir}/jee"/>
   <property name="lib.dir"     location="lib"/>
-  <property name="dist.dir"    location="dist"/>
 
   <property name="version" value="src"/>
 
@@ -103,33 +102,8 @@
     </war>
   </target>
 
-<!--
-  <target name="dist" depends="jar" description="generate the distribution" >
-    <delete dir="${dist.dir}"/>
-    <mkdir dir="${dist.dir}"/>
-    <copy todir="${dist.dir}">
-      <fileset dir="" includes="LICENSE*,README,CHANGES.txt"/>
-    </copy>
-
-    <mkdir dir="${dist.dir}/examples"/>
-    <copy todir="${dist.dir}/examples">
-      <fileset dir="examples" excludes="*~"/>
-    </copy>
-
-    <mkdir dir="${dist.dir}/share"/>
-    <copy todir="${dist.dir}/share">
-      <fileset dir="share" excludes="*~"/>
-    </copy>
-
-    <copy todir="${dist.dir}">
-      <fileset dir="${build.dir}" includes="esxx.jar"/>
-    </copy>
-  </target>
--->
-
   <target name="clean" description="clean up" >
     <delete dir="${build.dir}"/>
-    <delete dir="${dist.dir}"/>
   </target>
 
   <target name="test" depends="compile">

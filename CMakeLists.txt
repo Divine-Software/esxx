@@ -44,9 +44,9 @@ ELSEIF (CMAKE_HOST_APPLE)
   SET (CONFDIR defaults)
   SET (CPACK_GENERATOR TGZ PackageMaker)
   CONFIGURE_FILE(package/packagemaker-descr.plist.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/package/packagemaker-descr.plist @ONLY)
+		 ${CMAKE_CURRENT_BINARY_DIR}/package/packagemaker-descr.plist @ONLY)
   CONFIGURE_FILE(package/packagemaker-info.plist.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/package/packagemaker-info.plist @ONLY)
+		 ${CMAKE_CURRENT_BINARY_DIR}/package/packagemaker-info.plist @ONLY)
 ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "SunOS")
   SET (CONFDIR default)
   SET (CPACK_GENERATOR TGZ)
@@ -65,7 +65,7 @@ ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     SET (CPACK_RPM_USER_BINARY_SPECFILE "${CMAKE_CURRENT_SOURCE_DIR}/package/esxx.spec.in")
 
     CONFIGURE_FILE(package/esxx.spec.in
-                   ${CMAKE_CURRENT_BINARY_DIR}/esxx.spec @ONLY)
+		   ${CMAKE_CURRENT_BINARY_DIR}/esxx.spec @ONLY)
   ELSEIF (DPKG)
     # Debian-style package
     SET (CONFDIR default)
@@ -73,9 +73,9 @@ ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 #    SET (CPACK_DEBIAN_PACKAGE_ARCHITECTURE all)
 #    SET (CPACK_DEBIAN_PACKAGE_SECTION web)
     CONFIGURE_FILE(debian/control.in 
-                   ${CMAKE_CURRENT_SOURCE_DIR}/debian/control @ONLY)
+		   ${CMAKE_CURRENT_SOURCE_DIR}/debian/control @ONLY)
     CONFIGURE_FILE(debian/changelog.in 
-                   ${CMAKE_CURRENT_SOURCE_DIR}/debian/changelog @ONLY)
+		   ${CMAKE_CURRENT_SOURCE_DIR}/debian/changelog @ONLY)
   ENDIF (RPM AND NOT DPKG)
 ELSE (CMAKE_HOST_WIN32)
   # Generic package if unknown system
@@ -89,16 +89,14 @@ INCLUDE (CPack)
 # Build using ANT
 ADD_CUSTOM_TARGET (dist ALL COMMAND 
 		   ${ANT} -buildfile ${CMAKE_CURRENT_SOURCE_DIR}/build.xml 
-		          -Dbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build
-		          -Ddist.dir=${CMAKE_CURRENT_BINARY_DIR}/dist
+			  -Dbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build
 			  -Dversion=${CPACK_PACKAGE_VERSION}
 			  clean jar)
 ADD_CUSTOM_TARGET (antclean COMMAND
 		   ${ANT} -buildfile ${CMAKE_CURRENT_SOURCE_DIR}/build.xml
-		          -Dbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build
-		          -Ddist.dir=${CMAKE_CURRENT_BINARY_DIR}/dist
+			  -Dbuild.dir=${CMAKE_CURRENT_BINARY_DIR}/build
 			  -Dversion=${CPACK_PACKAGE_VERSION}
-		    	   clean)
+			   clean)
 
 
 IF (WIN32)
@@ -120,17 +118,17 @@ INSTALL (DIRECTORY examples
 	   PATTERN .svn EXCLUDE
 	   PATTERN examples/*.js 
 	   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-	   	       GROUP_EXECUTE GROUP_READ
+		       GROUP_EXECUTE GROUP_READ
 		       WORLD_EXECUTE WORLD_READ)
 
 # Install licences, changelog and readme files
 INSTALL (FILES CHANGES.txt
-	  	 LICENSE.txt
-	  	 LICENSE.APL2
-	         LICENSE.BSD
-	         LICENSE.GPL-3
-	         LICENSE.HtmlCleaner
-	         LICENSE.JavaMail
+		 LICENSE.txt
+		 LICENSE.APL2
+		 LICENSE.BSD
+		 LICENSE.GPL-3
+		 LICENSE.HtmlCleaner
+		 LICENSE.JavaMail
 		 LICENSE.MPL-1.0
 		 LICENSE.MPL-1.1
 		 README
@@ -138,10 +136,10 @@ INSTALL (FILES CHANGES.txt
 
 IF (WIN32)
   INSTALL (PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/package/start-http.bat
-                    ${CMAKE_CURRENT_SOURCE_DIR}/package/start-fastcgi.bat
-                    ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx.bat
-                    ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx-js.bat
-           DESTINATION ${CMAKE_INSTALL_PREFIX})
+		    ${CMAKE_CURRENT_SOURCE_DIR}/package/start-fastcgi.bat
+		    ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx.bat
+		    ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx-js.bat
+	   DESTINATION ${CMAKE_INSTALL_PREFIX})
 ELSEIF (UNIX)
   CONFIGURE_FILE(package/version.in
 		 ${CMAKE_CURRENT_BINARY_DIR}/package/version 
@@ -152,13 +150,13 @@ ELSEIF (UNIX)
   CONFIGURE_FILE(package/jswrapper.in ${CMAKE_CURRENT_BINARY_DIR}/esxx-js @ONLY)
 
   INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/esxx
-           DESTINATION ${SBIN_INSTALL_DIR})
+	   DESTINATION ${SBIN_INSTALL_DIR})
 
   INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/esxx-js
-           DESTINATION ${BIN_INSTALL_DIR})
+	   DESTINATION ${BIN_INSTALL_DIR})
 
   INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/build/esxx-small.jar 
-           DESTINATION ${SBIN_INSTALL_DIR}
+	   DESTINATION ${SBIN_INSTALL_DIR}
 	   RENAME esxx.jar)
 
   FILE (GLOB jars lib/core/*.jar lib/exe/*.jar)
@@ -168,33 +166,33 @@ ELSEIF (UNIX)
   # Create and install init scripts
   IF (CMAKE_HOST_APPLE)
     CONFIGURE_FILE(package/org.esxx.ESXX.plist.in 
-                   ${CMAKE_CURRENT_BINARY_DIR}/package/org.esxx.ESXX.plist @ONLY)
+		   ${CMAKE_CURRENT_BINARY_DIR}/package/org.esxx.ESXX.plist @ONLY)
 
     INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/org.esxx.ESXX.plist
-             DESTINATION ${CMAKE_INSTALL_DIR}/Library/LaunchDaemons)
+	     DESTINATION ${CMAKE_INSTALL_DIR}/Library/LaunchDaemons)
   ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "SunOS")
     CONFIGURE_FILE(package/svc-method.in
-                   ${CMAKE_CURRENT_BINARY_DIR}/package/svc-method @ONLY)
+		   ${CMAKE_CURRENT_BINARY_DIR}/package/svc-method @ONLY)
     CONFIGURE_FILE(package/svc-manifest.xml.in
-                   ${CMAKE_CURRENT_BINARY_DIR}/package/svc-manifest.xml @ONLY)
+		   ${CMAKE_CURRENT_BINARY_DIR}/package/svc-manifest.xml @ONLY)
 
     INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/svc-method
-             DESTINATION /lib/svc/method
+	     DESTINATION /lib/svc/method
 	     RENAME esxx)
 
     INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/svc-manifest.xml
-             DESTINATION /var/svc/manifest/network
+	     DESTINATION /var/svc/manifest/network
 	     RENAME esxx.xml)
 
   ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     CONFIGURE_FILE(package/initscript-esxx.in 
-                   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx @ONLY)
+		   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx @ONLY)
     CONFIGURE_FILE(package/initscript-binfmt.in 
-                   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-binfmt @ONLY)
+		   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-binfmt @ONLY)
 
     INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/esxx
 		      ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-binfmt
-             DESTINATION ${SYSCONF_INSTALL_DIR}/init.d)
+	     DESTINATION ${SYSCONF_INSTALL_DIR}/init.d)
   ENDIF (CMAKE_HOST_APPLE)
 
   # Create and install config file
