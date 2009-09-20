@@ -71,6 +71,35 @@ public class FCGIRequest
     }
   }
 
+  private static URI createURL(Properties headers)
+    throws IOException {
+    ESXX esxx = ESXX.getInstance();
+    File file;
+
+    if (esxx.isHandlerMode(headers.getProperty("SERVER_SOFTWARE"))) {
+      String pt = headers.getProperty("PATH_TRANSLATED");
+      
+      if (pt == null) {
+	throw new IOException("PATH_TRANSLATED not set; try --no-handler mode instead");
+      }
+
+      file = new File(headers.getProperty("PATH_TRANSLATED"));
+
+      while (file != null && !file.exists()) {
+	file = file.getParentFile();
+      }
+
+      if (file.isDirectory()) {
+	throw new IOException("Unable to find a file in path "
+			      + headers.getProperty("PATH_TRANSLATED"));
+      }
+    }
+    else {
+      file = new File(headers.getProperty("SCRIPT_FILENAME"));
+    }
+
+    return file.toURI();
+  }
 
   public static void runServer(int fastcgi_port)
     throws IOException {
