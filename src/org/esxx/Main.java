@@ -124,8 +124,6 @@ public class Main {
 
 	ScriptRequest sr = new ScriptRequest();
 	sr.initRequest(file.toURI(), script);
-	sr.enableDebugger(cmd.hasOption('d'));
-	sr.activateDebugger(cmd.hasOption('D'));
 	ESXX.Workload wl = esxx.addRequest(sr, sr, -1 /* no timeout for scripts */);
 
 	try {

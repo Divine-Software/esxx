@@ -62,8 +62,6 @@ public class Application {
     baseURL           = baseURI.toURL();
     workingDirectory  = request.getWD().toURL();
     ident             = baseURL.getPath().replaceAll("^.*/", "").replaceAll("\\.[^.]*", "");
-    debuggerEnabled   = request.isDebuggerEnabled();
-    debuggerActivated = request.isDebuggerActivated();
     started           = new Date();
 
     loadMainFile();

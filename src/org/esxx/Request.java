@@ -106,22 +106,6 @@ public abstract class Request {
       }
     }
 
-    public void enableDebugger(boolean enabled) {
-      debuggerEnabled = enabled;
-    }
-
-    public void activateDebugger(boolean activated) {
-      debuggerActivated = activated;
-    }
-
-    public boolean isDebuggerEnabled() {
-      return debuggerEnabled;
-    }
-
-    public boolean isDebuggerActivated() {
-      return debuggerActivated;
-    }
-
     public String getRequestMethod() {
       return requestMethod;
     }
@@ -231,6 +215,4 @@ public abstract class Request {
     private OutputStream error;
     private Writer errorWriter;
     private Properties properties;
-    private boolean debuggerEnabled;
-    private boolean debuggerActivated;
 };
