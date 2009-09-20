@@ -49,14 +49,11 @@ public class Main {
 							 "this <port>")));
     mode_opt.addOption(new Option("H", "http",    true, ("Listen for HTTP requests on " +
 							 "this <port>")));
-    mode_opt.addOption(new Option("c", "cgi",    false, "Force CGI mode."));
     mode_opt.addOption(new Option("s", "script", false, "Force script mode."));
     mode_opt.addOption(new Option(null,"db-console", false, "Open H2's database console."));
 
     opt.addOptionGroup(mode_opt);
     opt.addOption("n", "no-handler",      true,  "Requests are direct, without extra handler");
-    opt.addOption("m", "method",          true,  "Override CGI request method");
-    opt.addOption("f", "file",            true,  "Override CGI request file");
     opt.addOption("r", "http-root",       true,  "Set HTTP root directory or file");
 //     opt.addOption("d", "enable-debugger", false, "Enable esxx.debug()");
 //     opt.addOption("D", "start-debugger",  false, "Start debugger");
@@ -66,14 +63,8 @@ public class Main {
       CommandLineParser parser = new GnuParser();
       CommandLine cmd = parser.parse(opt, args, false);
 
-      if (!cmd.hasOption('c') &&
-	  (cmd.hasOption('m') || cmd.hasOption('f'))) {
-	throw new ParseException("--method and --file can only be specified in --cgi mode");
-      }
-
       int fastcgi_port = -1;
       int    http_port = -1;
-      Properties   cgi = null;
       String[]  script = null;
 
       if (cmd.hasOption('?')) {
@@ -86,9 +77,6 @@ public class Main {
       else if (cmd.hasOption('H')) {
 	http_port = Integer.parseInt(cmd.getOptionValue('H'));
       }
-      else if (cmd.hasOption('c')) {
-	cgi = new Properties();
-      }
       else if (cmd.hasOption('s')) {
 	script = cmd.getArgs();
       }
@@ -97,16 +85,11 @@ public class Main {
 	return;
       }
       else {
-	// Guess execution mode by looking at FCGI_PORT and
-	// REQUEST_METHOD environment variables.
+	// Guess execution mode by looking at FCGI_PORT 
 	String fcgi_port  = System.getenv("FCGI_PORT");
-	String req_method = System.getenv("REQUEST_METHOD");
 
 	if (fcgi_port != null) {
 	  fastcgi_port = Integer.parseInt(fcgi_port);
-	}
-	else if (req_method != null) {
-	  cgi = new Properties();
 	}
 	else {
 	  // Default mode is to execute a JS script
@@ -135,38 +118,6 @@ public class Main {
       }
       else if (http_port != -1) {
 	HTTPRequest.runServer(http_port, cmd.getOptionValue('r', ""));
-      }
-      else if (cgi != null) {
-	cgi.putAll(System.getenv());
-
-	if (cmd.hasOption('m')) {
-	  cgi.setProperty("REQUEST_METHOD", cmd.getOptionValue('m'));
-	}
-
-	if (cmd.hasOption('f')) {
-	  File file = new File(cmd.getOptionValue('f'));
-
-	  cgi.setProperty("PATH_TRANSLATED", file.getAbsolutePath());
-	}
-
-	if (cgi.getProperty("REQUEST_METHOD") == null) {
-	  usage(opt, "REQUEST_METHOD not set", 10);
-	}
-
-	if (cgi.getProperty("PATH_TRANSLATED") == null) {
-	  usage(opt, "PATH_TRANSLATED not set", 10);
-	}
-
-	CGIRequest cr = new CGIRequest();
-	cr.initRequest(cgi);
-	ESXX.Workload wl = esxx.addRequest(cr, cr, 0);
-
-	try {
-	  System.exit((Integer) wl.future.get());
-	}
-	catch (java.util.concurrent.CancellationException ex) {
-	  System.exit(5);
-	}
       }
       else if (script != null && script.length != 0) {
 	File file = new File(script[0]);

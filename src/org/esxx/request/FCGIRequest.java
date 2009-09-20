@@ -21,13 +21,14 @@ package org.esxx.request;
 import java.io.*;
 import org.bumblescript.jfast.*;
 import org.esxx.*;
+import org.esxx.util.IO;
 import org.mozilla.javascript.*;
 
 public class FCGIRequest
-  extends CGIRequest {
+  extends WebRequest {
 
   public FCGIRequest(JFastRequest jfast) {
-    super(new ByteArrayInputStream(jfast.data), jfast.out, System.err);
+    super(new ByteArrayInputStream(jfast.data), System.err);
     jFast = jfast;
   }
 
@@ -36,15 +37,35 @@ public class FCGIRequest
     super.initRequest(createURL(jFast.properties), null, jFast.properties);
   }
 
-  @Override public void initRequest(java.util.Properties cgi) {
-    throw new UnsupportedOperationException("FCGIRequest.initRequest(Properties) not available.");
-  }
-
-
   @Override public Integer handleResponse(Response response)
     throws Exception {
     try {
-      return super.handleResponse(response);
+      // Output HTTP headers
+      final PrintWriter out = new PrintWriter(IO.createWriter(jFast.out, "US-ASCII"));
+
+      out.println("Status: " + response.getStatus());
+      out.println("Content-Type: " + response.getContentType(true));
+
+      if (response.isBuffered()) {
+	out.println("Content-Length: " + response.getContentLength());
+      }
+
+      response.enumerateHeaders(new Response.HeaderEnumerator() {
+	  public void header(String name, String value) {
+	    out.println(name + ": " + value);
+	  }
+	});
+
+      out.println();
+      out.flush();
+
+      response.writeResult(jFast.out);
+
+      getErrorWriter().flush();
+      getDebugWriter().flush();
+      jFast.out.flush();
+
+      return 0;
     }
     finally {
       jFast.end();

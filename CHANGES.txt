@@ -30,6 +30,13 @@
 	and SQL queries, name may now be a number referring to an
 	Array or XMLList member.
 
+	* Packaging reorganization: For RPM/DEB/IPS/OSX packages, keep
+	required JARs in the filesystem instead of embedding inside
+	esxx.jar. This makes startup faster. Also, allow users to add
+	their own JARs as /usr/share/esxx/site/lib/*.jar.
+
+	* Removed CGI support.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
