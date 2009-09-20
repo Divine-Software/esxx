@@ -38,10 +38,7 @@ public class ScriptRequest
 
   public Integer handleResponse(Response response)
     throws Exception {
-    // Output debug stream to stderr first
-    System.err.print(getDebugWriter().toString());
-
-    // Then write result
+    // Write result
     response.writeResult(System.out);
 
     try {

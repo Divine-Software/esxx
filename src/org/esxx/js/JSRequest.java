@@ -386,7 +386,7 @@ public class JSRequest
 	  return esxx.parseStream(contentType, contentTypeParams, request.getInputStream(), 
 				  request.getScriptFilename(),
 				  null,
-				  new java.io.PrintWriter(request.getDebugWriter()),
+				  new java.io.PrintWriter(request.getErrorWriter()),
 				  Context.getCurrentContext(), this);
 	}
 	catch (Exception ex) {

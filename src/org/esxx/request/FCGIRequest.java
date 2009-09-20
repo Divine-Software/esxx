@@ -62,7 +62,6 @@ public class FCGIRequest
       response.writeResult(jFast.out);
 
       getErrorWriter().flush();
-      getDebugWriter().flush();
       jFast.out.flush();
 
       return 0;

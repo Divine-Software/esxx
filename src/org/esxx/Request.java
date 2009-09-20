@@ -28,7 +28,6 @@ import org.esxx.util.TrivialFormatter;
 public abstract class Request {
     public Request(InputStream in, OutputStream error) {
       this.in         = in;
-      this.debug      = new StringWriter();
       this.error      = error;
       this.errorWriter = new OutputStreamWriter(error);
     }
@@ -142,10 +141,6 @@ public abstract class Request {
       return in;
     }
 
-    public StringWriter getDebugWriter() {
-      return debug;
-    }
-
     public Writer getErrorWriter() {
       return errorWriter;
     }
@@ -211,7 +206,6 @@ public abstract class Request {
     private URI workingDirectory;
     private String[] args;
     private InputStream in;
-    private StringWriter debug;
     private OutputStream error;
     private Writer errorWriter;
     private Properties properties;
