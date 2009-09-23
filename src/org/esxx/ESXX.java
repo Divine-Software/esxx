@@ -301,7 +301,7 @@ public class ESXX {
 	  InputStream rsrc = openCachedURI(new URI("esxx-rsrc:" + embedded));
 
 	  if (rsrc == null) {
-	    throw new ESXXException("Embedded resource '" + embedded + "' not found");
+	    throw new ESXXException(404, "Embedded resource '" + embedded + "' not found");
 	  }
 	  else {
 	    java.util.TreeMap<String, String> hdr = new java.util.TreeMap<String, String>();
