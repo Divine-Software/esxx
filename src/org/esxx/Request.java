@@ -32,77 +32,24 @@ public abstract class Request {
       this.errorWriter = new OutputStreamWriter(error);
     }
 
-    protected void initRequest(URI script_filename, String[] command_line, Properties properties)
-      throws IOException {
-      scriptFilename  = script_filename;
-      this.args       = command_line != null ? command_line : new String[] {};
-      this.properties = properties;
-
-      workingDirectory = new File("").toURI();
-
-      requestMethod = properties.getProperty("REQUEST_METHOD");
-
-      String protocol = properties.getProperty("HTTPS", "off").equals("on") ? "https" : "http";
-      String hostname = properties.getProperty("HTTP_HOST", "localhost");
-      String querystr = properties.getProperty("QUERY_STRING", "");
-
-      String path_translated;
-      String request_uri;
-
-      if (ESXX.getInstance().isHandlerMode(properties.getProperty("SERVER_SOFTWARE"))) {
-	path_translated = properties.getProperty("PATH_TRANSLATED", scriptFilename.getPath());
-      }
-      else {
-	path_translated = properties.getProperty("SCRIPT_FILENAME") 
-	  + properties.getProperty("PATH_INFO");
-      }
-
-      request_uri = properties.getProperty("REQUEST_URI");
-
-      try {
-	if (request_uri != null) {
-	  request_uri = StringUtil.decodeURI(request_uri, false);
-	}
-      }
-      catch (java.net.URISyntaxException ex) {
-	throw new IOException("Failed to decode URI: " + ex.getMessage(), ex);
-      }
-
-      if (request_uri == null) {
-	// Fall back to PATH_INFO (it might work too)
-	request_uri = properties.getProperty("PATH_INFO", "");
-      }
-
-      try {
-	URI pt_uri = new URI("file", null, path_translated, null).normalize();
-	
-	pathInfo = script_filename.relativize(pt_uri).toString();
-	request_uri = new URI(request_uri).normalize().getPath();
-
-	if (request_uri.endsWith(pathInfo)) {
-	  scriptName = request_uri.substring(0, request_uri.length() - pathInfo.length());
-
-	  if (!scriptName.endsWith("/")) {
-	    // Always terminate scriptname with a slash to make it easy
-	    // to resolve subresources.
-	    scriptName = scriptName + "/";
-	  }
-
-	  // Create the absolute URI version of scriptName
-	  scriptURI = new URI(protocol, hostname, scriptName, null, null);
-	}
-
-	// Create the absolute URI version of request_uri
-	requestURI = new URI(protocol, hostname, request_uri, 
-			     (querystr.length() == 0 ? null : querystr), null);
-
-	// pathInfo always begins with a slash
-	pathInfo = "/" + pathInfo;
-      } 
-      catch (java.net.URISyntaxException ex) {
-	ex.printStackTrace();
-	throw new IOException("Failed to construct Request: " + ex.getMessage(), ex);
-      }
+    protected void initRequest(String request_method,
+			       URI request_uri,
+			       URI script_uri,
+			       String path_info,
+			       URI script_filename,
+			       String[] command_line,
+			       URI working_directory,
+			       Properties cgi_env,
+			       Response quick_response) {
+      requestMethod    = request_method;
+      requestURI       = request_uri;
+      scriptURI        = script_uri;
+      pathInfo         = path_info;
+      scriptFilename   = script_filename;
+      commandLine      = command_line;
+      workingDirectory = working_directory;
+      cgiEnvironment   = cgi_env;
+      quickResponse    = quick_response;
     }
 
     public String getRequestMethod() {
@@ -122,7 +69,7 @@ public abstract class Request {
     }
 
     public String getScriptName() {
-      return scriptName;
+      return scriptURI != null ? scriptURI.getPath() : null;
     }
 
     public String getPathInfo() {
@@ -134,7 +81,7 @@ public abstract class Request {
     }
 
     public String[] getCommandLine() {
-      return args;
+      return commandLine;
     }
 
     public InputStream getInputStream() {
@@ -146,7 +93,11 @@ public abstract class Request {
     }
 
     public Properties getProperties() {
-      return properties;
+      return cgiEnvironment;
+    }
+
+    public Response getQuickResponse() {
+      return quickResponse;
     }
 
     public synchronized Logger getReqLogger() {
@@ -197,16 +148,18 @@ public abstract class Request {
       }
     }
 
+    private InputStream in;
+    private OutputStream error;
+    private Writer errorWriter;
+
     private String requestMethod;
     private URI requestURI;
     private URI scriptURI;
     private URI scriptFilename;
     private String scriptName;
     private String pathInfo;
+    private String[] commandLine;
     private URI workingDirectory;
-    private String[] args;
-    private InputStream in;
-    private OutputStream error;
-    private Writer errorWriter;
-    private Properties properties;
+    private Properties cgiEnvironment;
+    private Response quickResponse;
 };

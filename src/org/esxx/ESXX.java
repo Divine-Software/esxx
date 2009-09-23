@@ -287,40 +287,6 @@ public class ESXX {
       return executorService;
     }
 
-    /** A pattern that matches '!esxx-rsrc=' followed by a string of valid characters 
-	and dot. (Slash is not valid.) */
-    private static java.util.regex.Pattern esxxResource = 
-      java.util.regex.Pattern.compile("^!esxx-rsrc=[a-zA-Z0-9.]+$");
-
-    public Response getEmbeddedResource(String qs) 
-      throws IOException {
-      if (qs != null && esxxResource.matcher(qs).matches()) {
-	String embedded = qs.substring(11);
-
-	try {
-	  InputStream rsrc = openCachedURI(new URI("esxx-rsrc:" + embedded));
-
-	  if (rsrc == null) {
-	    throw new ESXXException(404, "Embedded resource '" + embedded + "' not found");
-	  }
-	  else {
-	    java.util.TreeMap<String, String> hdr = new java.util.TreeMap<String, String>();
-	    hdr.put("Cache-Control", "max-age=3600");
-
-	    return new Response(200, fileTypeMap.getContentType(embedded),
-				rsrc, hdr);
-	  }
-	}
-	catch (java.net.URISyntaxException ex) {
-	  throw new ESXXException("Failed to create URI for embedded resource '" 
-				  + embedded + "'", ex);
-	}
-      }
-      else {
-	return null;
-      }
-    }
-
     /** Adds a Request to the work queue.
      *
      *  Once the request has been executed, Request.finished will be
@@ -336,7 +302,7 @@ public class ESXX {
       return addContextAction(null, new ContextAction() {
 	  public Object run(Context cx) {
 	    try {
-	      Response response = getEmbeddedResource(request.getRequestURI().getQuery());
+	      Response response = request.getQuickResponse();
 
 	      if (response == null) {
 		response = new Worker(ESXX.this).handleRequest(cx, request);

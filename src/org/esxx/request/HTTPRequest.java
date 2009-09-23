@@ -36,15 +36,45 @@ public class HTTPRequest
   extends WebRequest {
 
   public HTTPRequest(HttpExchange he) {
-      super(he.getRequestBody(), System.err);
+    super(he.getRequestBody(), System.err);
     httpExchange = he;
   }
 
-  public void initRequest(URI root_uri, File canonical_script_file)
-    throws IOException, URISyntaxException {
-    super.initRequest(canonical_script_file.toURI(), 
-		      null,
-		      createCGIEnvironment(httpExchange, root_uri, canonical_script_file));
+  public void initRequest(URI fs_root_uri, URI path_translated)
+    throws URISyntaxException {
+
+    URI helper_uri = new URI("http", httpExchange.getRequestHeaders().getFirst("Host"), 
+			     "/", null, null);
+
+    URI full_request_uri = new URI(helper_uri.getScheme()
+				   + "://" + helper_uri.getRawAuthority() 
+				   + httpExchange.getRequestURI().getRawPath()
+				   + (httpExchange.getRequestURI().getRawQuery() != null ?
+				      "?"  + httpExchange.getRequestURI().getRawQuery() : ""));
+
+    InetSocketAddress local = httpExchange.getLocalAddress();
+    String local_host = local.getAddress().toString().replaceFirst("[^/]*/", "");
+    int    local_port = local.getPort();
+
+    InetSocketAddress remote = httpExchange.getRemoteAddress();
+    String remote_host = local.getAddress().toString().replaceFirst("[^/]*/", "");
+    int    remote_port = local.getPort();
+
+    Properties p = createCGIEnvironment(httpExchange.getRequestMethod(), 
+					httpExchange.getProtocol(),
+					full_request_uri,
+					path_translated,
+					local_host, local_port,
+					remote_host, remote_port,
+					fs_root_uri);
+
+    // Add request headers
+    for (Map.Entry<String, List<String>> e : httpExchange.getRequestHeaders().entrySet()) {
+      p.setProperty(ESXX.httpToCGI(e.getKey()), e.getValue().get(0));
+    }
+
+    super.initRequest(httpExchange.getRequestMethod(), full_request_uri, path_translated,
+		      p, fs_root_uri);
   }
 
   public Integer handleResponse(Response response)
@@ -96,50 +126,16 @@ public class HTTPRequest
   }
 
 
-  private static Properties createCGIEnvironment(HttpExchange he,
-						 URI root_uri,
-						 File canonical_script_file)
-    throws java.net.URISyntaxException {
-
-    URI helper_uri = new URI("http", he.getRequestHeaders().getFirst("Host"), "/", null, null);
-    URI full_request_uri = new URI(helper_uri.getScheme()
-				   + "://" + helper_uri.getRawAuthority() 
-				   + he.getRequestURI().getRawPath()
-				   + (he.getRequestURI().getRawQuery() != null ?
-				      "?"  + he.getRequestURI().getRawQuery() : ""));
-
-    InetSocketAddress local = he.getLocalAddress();
-    String local_host = local.getAddress().toString().replaceFirst("[^/]*/", "");
-    int    local_port = local.getPort();
-
-    InetSocketAddress remote = he.getRemoteAddress();
-    String remote_host = local.getAddress().toString().replaceFirst("[^/]*/", "");
-    int    remote_port = local.getPort();
-
-    Properties p = createCGIEnvironment(he.getRequestMethod(), he.getProtocol(),
-					full_request_uri,
-					local_host, local_port,
-					remote_host, remote_port,
-					"/", root_uri, canonical_script_file);
-
-    // Add request headers
-    for (Map.Entry<String, List<String>> e : he.getRequestHeaders().entrySet()) {
-      p.setProperty(ESXX.httpToCGI(e.getKey()), e.getValue().get(0));
-    }
-
-    return p;
-  }
-
   public static void runServer(int http_port, String fs_root)
     throws IOException, java.net.URISyntaxException {
     final ESXX    esxx = ESXX.getInstance();
-    final String  root = new File(fs_root).getCanonicalPath();
+    final String  root = new File(fs_root).getAbsolutePath();
     final URI root_uri = new File(root).toURI();
 
     HttpServer  hs = HttpServer.create(new InetSocketAddress(http_port), 0);
     hs.createContext("/", new HttpHandler() {
 	public void handle(HttpExchange he)
-	  throws IOException {
+	{
 	  String req_uri_raw = he.getRequestURI().getRawPath();
 	  String req_uri     = he.getRequestURI().getPath();
 
@@ -147,44 +143,19 @@ public class HTTPRequest
 
 	  try {
 	    URI path_translated = root_uri.resolve(req_uri_raw.substring(1));
-	    File app_file = hr.handleWebServerRequest(path_translated, 
-						      req_uri, 
-						      he.getRequestURI().getQuery(), 
-						      root);
-
-	    if (app_file != null) {
-	      hr.initRequest(root_uri, app_file);
-	      esxx.addRequest(hr, hr, 0);
-	      he = null;
-	    }
+	    hr.initRequest(root_uri, path_translated);
+	    esxx.addRequest(hr, hr, 0);
+	    he = null;
 	  }
 	  catch (Exception ex) {
-	    int    code;
-	    String subtitle;
-	    String message;
-
-	    if (ex instanceof FileNotFoundException) {
-	      code     = 404;
-	      subtitle = "Not Found";
-	      message  = "The requested resource '" + req_uri + "' could not be found: "
-		+ ex.getMessage();
-	      ex = null;
-	    }
-	    else {
-	      code     = 500;
-	      subtitle = "Internal Server Error";
-	      message  = "The requested resource '" + req_uri + "' failed: " + ex.getMessage();
-	    }
-
-	    hr.reportInternalError(code, "ESXX Server Error", subtitle, message, ex);
+	    hr.reportInternalError(500, "ESXX Server Error", "HTTP Error",  ex.getMessage(), ex);
+	    he = null;
 	  }
 	  finally {
-	    try { 
+	    if (he != null) { 
 	      // Make sure he is always closed when the request ends
-	      if (he != null) { 
-		he.close();
-	      }
-	    } catch (Exception ex) {}
+	      try { he.close(); } catch (Exception ex) {}
+	    }
 	  }
 	}
       });

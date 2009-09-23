@@ -42,93 +42,96 @@ public abstract class WebRequest
     super(in, err);
   }
 
-  @Override public URI getWD() {
-    URI main = super.getScriptFilename();
+  protected void initRequest(String request_method, URI request_uri, URI path_translated,
+			     Properties cgi_env, URI fs_root_uri) {
+    URI      script_uri        = null;
+    String   path_info         = null;
+    URI      script_filename   = null;
+    URI      working_directory = null;
+    Response quick_response    = null;
 
-    return new File(main).getParentFile().toURI();
+    try {
+      quick_response = getEmbeddedResource(request_uri.getQuery());
+
+      if (quick_response == null) {
+	request_uri     = request_uri.normalize();
+	path_translated = path_translated.normalize();
+	fs_root_uri     = fs_root_uri.normalize();
+
+	File script_file = new File(path_translated);
+
+	if (!script_file.isAbsolute()) {
+	  throw new IllegalArgumentException(path_translated + " is not an absolute path");
+	}
+
+	if (!path_translated.toString().startsWith(fs_root_uri.toString())) {
+	  getReqLogger().warning("Document " + path_translated 
+				 + " from request URI " + request_uri 
+				 + " is outside root path " + fs_root_uri);
+	  throw new FileNotFoundException("Document is outside root path");
+	}
+
+	while (!script_file.exists()) {
+	  script_file = script_file.getParentFile();
+	}
+
+	if (script_file.isDirectory()) {
+	  quick_response = getFileListingResponse(request_uri.toString(), script_file);
+	}
+	else if (!ESXX.fileTypeMap.getContentType(script_file).equals("application/x-esxx+xml")) {
+	  quick_response = new Response(200, ESXX.fileTypeMap.getContentType(script_file),
+					new FileInputStream(script_file), null);
+	}
+	else {
+	  working_directory = script_file.getParentFile().toURI();
+	  script_filename   = script_file.toURI();
+	  path_info         = script_filename.relativize(path_translated).getRawPath();
+
+	  String req_path    = request_uri.getRawPath();
+	  String script_name = null;
+
+	  if (req_path.endsWith(path_info)) {
+	    script_name = req_path.substring(0, req_path.length() - path_info.length());
+
+	    // Create the URI version of script_name, and terminate it
+	    // with a slash to make it easy to resolve subresources.
+	    script_uri = request_uri.resolve(script_name + "/").normalize();
+	  }
+
+	  if (!path_info.startsWith("/")) {
+	    // path_info should always begin with a slash.
+	    path_info = "/" + path_info;
+	  }
+
+	  // Decode path_info
+	  path_info = URI.create(path_info).getPath();
+
+	  // Complete CGI environment (using native OS file paths)
+	  completeProperty(cgi_env, "PATH_TRANSLATED", new File(path_translated).toString());
+	  completeProperty(cgi_env, "PATH_INFO",       path_info);
+	  completeProperty(cgi_env, "SCRIPT_FILENAME", script_file.toString());
+	  completeProperty(cgi_env, "SCRIPT_NAME",     script_name);
+	}
+      }
+    }
+    catch (Exception ex) {
+      quick_response = createErrorResponse(ex);
+    }
+
+    super.initRequest(request_method, request_uri, script_uri, path_info,
+		      script_filename, null, working_directory, cgi_env,
+		      quick_response);
   }
 
   public Integer handleError(Throwable ex) {
-    int    code     = ex instanceof ESXXException ? ((ESXXException) ex).getStatus() : 500;
-    String title    = "ESXX Server Error";
-    String subtitle = "Unhandled exception: " + ex.getClass().getSimpleName();
-    String message  = ex.getMessage();
-
-    if (ex instanceof ESXXException ||
-	ex instanceof javax.xml.transform.TransformerException) {
-      // Don't print stack trace
-      ex = null;
+    try {
+      return handleResponse(createErrorResponse(ex));
     }
-
-    return reportInternalError(code, title, subtitle, message, ex);
-  }
-
-  public File handleWebServerRequest(URI path_translated,
-				     String request_uri,
-				     String query_string,
-				     String canonical_root) 
-    throws Exception {
-    File app_file = null;
-    Response resp = ESXX.getInstance().getEmbeddedResource(query_string);
-
-    if (resp == null) {
-      File canonical_file = new File(path_translated).getCanonicalFile();
-
-      if (!canonical_file.getPath().startsWith(canonical_root)) {
-	// Deny access to files outside the root
-	throw new FileNotFoundException("Document is outside root");
-      }
-      else {
-	if (canonical_file.exists()) {
-	  if (canonical_file.isDirectory()) {
-	    displayFileListing(request_uri, canonical_file);
-	  }
-	  else {
-	    if (ESXX.fileTypeMap.getContentType(canonical_file).equals("application/x-esxx+xml")) {
-	      app_file = canonical_file;
-	    }
-	    else {
-	      resp = new Response(200, ESXX.fileTypeMap.getContentType(canonical_file),
-				  new FileInputStream(canonical_file), null);
-	    }
-	  }
-	}
-	else {
-	  // Find a file that do exists
-	  app_file = canonical_file;
-	  while (app_file != null && !app_file.exists()) {
-	    app_file = app_file.getParentFile();
-	  }
-
-	  if (app_file == null || app_file.isDirectory()) {
-	    throw new FileNotFoundException("Not Found");
-	  }
-
-	  if (!ESXX.fileTypeMap.getContentType(app_file).equals("application/x-esxx+xml")) {
-	    throw new FileNotFoundException("Only ESXX files are directories");
-	  }
-	}
-      }
+    catch (Exception ex2) {
+      // Hmm
+      ex2.printStackTrace();
+      return 20;
     }
-
-    if (resp != null) {
-      handleResponse(resp);
-      return null;
-    }
-    else {
-      return app_file;
-    }
-  }
-
-  public Integer displayFileListing(String req_uri, File dir)
-    throws Exception {
-    Document doc = org.esxx.js.protocol.FILEHandler.createDirectoryListing(dir);
-    doc.getDocumentElement().setAttributeNS(null, "requestURI", req_uri);
-
-    ByteArrayOutputStream os = new ByteArrayOutputStream();
-    String ct = renderHTML(doc, os);
-
-    return handleResponse(new Response(200, ct, os, null));
   }
 
   public Integer reportInternalError(int code, 
@@ -136,6 +139,129 @@ public abstract class WebRequest
 				     String subtitle, 
 				     String message, 
 				     Throwable ex) {
+    try {
+      return handleResponse(createErrorResponse(code, title, subtitle, message, ex));
+    }
+    catch (Exception ex2) {
+      // Hmm
+      ex2.printStackTrace();
+      return 20;
+    }
+  }
+
+
+  protected static URI getPathTranslated(URI    full_request_uri,
+					 URI    root_uri,
+					 String context_path) {
+    
+    String raw_path = full_request_uri.getRawPath();
+
+    if (raw_path.startsWith(context_path)) {
+      raw_path = raw_path.substring(context_path.length());
+    }
+    else {
+      throw new IllegalArgumentException("Path part of " + full_request_uri + " must begin with " 
+					 + context_path);
+    }
+
+    if (raw_path.charAt(0) == '/') {
+      throw new IllegalArgumentException("Context path " + context_path + " should end with '/'");
+    }
+
+    return root_uri.resolve(raw_path);
+  }
+
+  protected Properties createCGIEnvironment(String request_method, String protocol,
+					    URI full_request_uri,
+					    URI path_translated,
+					    String local_host, int local_port,
+					    String remote_host, int remote_port,
+					    URI root_uri) {
+    Properties p = new Properties();
+    String query = full_request_uri.getRawQuery();
+
+    if (query == null) {
+      query = "";
+    }
+
+    if (local_host == null) {
+      // Probably a Google App Engine problem
+      local_host = "0.0.0.0";
+    }
+
+    p.setProperty("GATEWAY_INTERFACE", "CGI/1.1");
+    p.setProperty("SERVER_SOFTWARE",   "ESXX/1.0");
+    p.setProperty("DOCUMENT_ROOT",     root_uri.getPath());
+
+    p.setProperty("REQUEST_METHOD",    request_method);
+    p.setProperty("SERVER_NAME",       full_request_uri.getHost());
+    p.setProperty("REQUEST_URI",       full_request_uri.getPath());
+    p.setProperty("QUERY_STRING",      query);
+    p.setProperty("SERVER_PROTOCOL",   protocol);
+
+    p.setProperty("REMOTE_ADDR",       remote_host);
+    p.setProperty("REMOTE_PORT",       "" + remote_port);
+
+    p.setProperty("SERVER_ADDR",       local_host);
+    p.setProperty("SERVER_PORT",       "" + local_port);
+
+    return p;
+  }
+
+  /** A pattern that matches '!esxx-rsrc=' followed by a string of valid characters 
+      and dot. (Slash is not valid.) */
+  private static java.util.regex.Pattern esxxResource = 
+    java.util.regex.Pattern.compile("^!esxx-rsrc=[a-zA-Z0-9.]+$");
+
+  private Response getEmbeddedResource(String qs)
+    throws IOException {
+    if (qs != null && esxxResource.matcher(qs).matches()) {
+      String embedded = qs.substring(11);
+
+      InputStream rsrc = ESXX.getInstance().openCachedURI(URI.create("esxx-rsrc:" + embedded));
+
+      if (rsrc == null) {
+	throw new ESXXException(404, "Embedded resource '" + embedded + "' not found");
+      }
+      else {
+	java.util.TreeMap<String, String> hdr = new java.util.TreeMap<String, String>();
+	hdr.put("Cache-Control", "max-age=3600");
+
+	return new Response(200, ESXX.fileTypeMap.getContentType(embedded),
+			    rsrc, hdr);
+      }
+    }
+    else {
+      return null;
+    }
+  }
+
+  private Response createErrorResponse(Throwable ex) {
+    int    code     = ex instanceof ESXXException ? ((ESXXException) ex).getStatus() : 500;
+    String title    = "ESXX Server Error";
+    String subtitle = "Unhandled exception: " + ex.getClass().getSimpleName();
+    String message  = ex.getMessage();
+
+    if (ex instanceof FileNotFoundException) {
+      code     = 404;
+      subtitle = "Not Found";
+    }
+    
+    if (ex instanceof ESXXException ||
+	ex instanceof FileNotFoundException ||
+	ex instanceof javax.xml.transform.TransformerException) {
+      // Don't print stack trace
+      ex = null;
+    }
+
+    return createErrorResponse(code, title, subtitle, message, ex);
+  }
+
+  private Response createErrorResponse(int code, 
+				       String title, 
+				       String subtitle, 
+				       String message, 
+				       Throwable ex) {
     ESXX    esxx = ESXX.getInstance();
     Document doc = esxx.createDocument("error");
     Element root = doc.getDocumentElement();
@@ -161,79 +287,21 @@ public abstract class WebRequest
     ByteArrayOutputStream os = new ByteArrayOutputStream();
     String ct = renderHTML(doc, os);
 
-    try {
-      return handleResponse(new Response(code, ct, os, null));
-    }
-    catch (Exception ex2) {
-      // Hmm
-      ex2.printStackTrace();
-      return 20;
-    }
+    return new Response(code, ct, os, null);
   }
 
+  private Response getFileListingResponse(String req_uri, File dir)
+    throws Exception {
+    Document doc = org.esxx.js.protocol.FILEHandler.createDirectoryListing(dir);
+    doc.getDocumentElement().setAttributeNS(null, "requestURI", req_uri);
 
-  protected static Properties createCGIEnvironment(String request_method, String protocol,
-						   URI full_request_uri, 
-						   String local_host, int local_port,
-						   String remote_host, int remote_port,
-						   String context_path,
-						   URI root_uri, 
-						   File absolute_script_file)
-    throws java.net.URISyntaxException {
-    Properties p = new Properties();
-    String query = full_request_uri.getRawQuery();
+    ByteArrayOutputStream os = new ByteArrayOutputStream();
+    String ct = renderHTML(doc, os);
 
-    if (query == null) {
-      query = "";
-    }
-    
-    String raw_path = full_request_uri.normalize().getRawPath();
-
-    if (raw_path.startsWith(context_path)) {
-      raw_path = raw_path.substring(context_path.length());
-    }
-    else {
-      throw new IllegalArgumentException("Path part of " + full_request_uri + " must begin with " 
-					 + context_path);
-    }
-
-    if (raw_path.charAt(0) == '/') {
-      throw new IllegalArgumentException("Context path " + context_path + " should end with '/'");
-    }
-
-    if (local_host == null) {
-      // Probably a Google App Engine problem
-      local_host = "0.0.0.0";
-    }
-
-    URI script_filename = absolute_script_file.toURI();
-    URI path_translated = root_uri.resolve(raw_path);
-
-    p.setProperty("GATEWAY_INTERFACE", "CGI/1.1");
-    p.setProperty("SERVER_SOFTWARE",   "ESXX/1.0");
-    p.setProperty("DOCUMENT_ROOT",     root_uri.getPath());
-
-    p.setProperty("REQUEST_METHOD",    request_method);
-    p.setProperty("SERVER_NAME",       full_request_uri.getHost());
-    p.setProperty("REQUEST_URI",       full_request_uri.getPath());
-    p.setProperty("QUERY_STRING",      query);
-    p.setProperty("SERVER_PROTOCOL",   protocol);
-
-    p.setProperty("REMOTE_ADDR",       remote_host);
-    p.setProperty("REMOTE_PORT",       "" + remote_port);
-
-    p.setProperty("SERVER_ADDR",       local_host);
-    p.setProperty("SERVER_PORT",       "" + local_port);
-
-    p.setProperty("PATH_TRANSLATED",   path_translated.getPath());
-    p.setProperty("PATH_INFO",         "/" + script_filename.relativize(path_translated).getPath());
-    p.setProperty("SCRIPT_FILENAME",   script_filename.getPath());
-    p.setProperty("SCRIPT_NAME",       context_path + root_uri.relativize(script_filename).getPath());
-
-    return p;
+    return new Response(200, ct, os, null);
   }
 
-  public static String renderHTML(Document doc, OutputStream dst) {
+  private String renderHTML(Document doc, OutputStream dst) {
     try {
       ESXX       esxx = ESXX.getInstance();
       Stylesheet xslt = esxx.getCachedStylesheet(new URI("esxx-rsrc:esxx.xslt"));
@@ -274,5 +342,9 @@ public abstract class WebRequest
       ex.printStackTrace(new PrintWriter(dst));
       return "text/plain";
     }
+  }
+
+  private void completeProperty(Properties p, String name, String value) {
+    p.setProperty(name, p.getProperty(name, value));
   }
 }

@@ -19,9 +19,13 @@
 package org.esxx.request;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Properties;
 import org.bumblescript.jfast.*;
 import org.esxx.*;
 import org.esxx.util.IO;
+import org.esxx.util.StringUtil;
 import org.mozilla.javascript.*;
 
 public class FCGIRequest
@@ -33,8 +37,42 @@ public class FCGIRequest
   }
 
   public void initRequest()
-    throws IOException {
-    super.initRequest(createURL(jFast.properties), null, jFast.properties);
+    throws URISyntaxException {
+    String   request_method    = jFast.properties.getProperty("REQUEST_METHOD");;
+    URI      request_uri;
+    URI      path_translated;
+    URI      working_directory = null;
+
+    String scheme   = jFast.properties.getProperty("HTTPS", "off").equals("on") ? "https" : "http";
+    String hostname = jFast.properties.getProperty("HTTP_HOST", "localhost");
+    String path     = jFast.properties.getProperty("REQUEST_URI");
+    String query    = jFast.properties.getProperty("QUERY_STRING");
+
+    if (path == null) {
+      // Fall back to PATH_INFO (it might work too)
+      path = StringUtil.encodeURI(jFast.properties.getProperty("PATH_INFO", ""), false);
+    }
+
+    request_uri = new URI(scheme + "://" + StringUtil.encodeURI(hostname, true)
+			  + path + (query != null ? "?" + query : null));
+
+    String pt_path = null;
+
+    if (ESXX.getInstance().isHandlerMode(jFast.properties.getProperty("SERVER_SOFTWARE"))) {
+      pt_path = jFast.properties.getProperty("PATH_TRANSLATED");
+    }
+
+    if (pt_path == null) {
+      // If not handler mode, or PATH_TRANSLATED missing, use
+      // SCRIPT_FILENAME + PATH_INFO instead
+      pt_path = (jFast.properties.getProperty("SCRIPT_FILENAME") 
+		 + jFast.properties.getProperty("PATH_INFO"));
+    }
+
+    path_translated = new URI("file", null, pt_path, null);
+
+    initRequest(request_method, request_uri, path_translated,
+		jFast.properties, URI.create("file:/"));
   }
 
   @Override public Integer handleResponse(Response response)
@@ -71,36 +109,6 @@ public class FCGIRequest
     }
   }
 
-  private static URI createURL(Properties headers)
-    throws IOException {
-    ESXX esxx = ESXX.getInstance();
-    File file;
-
-    if (esxx.isHandlerMode(headers.getProperty("SERVER_SOFTWARE"))) {
-      String pt = headers.getProperty("PATH_TRANSLATED");
-      
-      if (pt == null) {
-	throw new IOException("PATH_TRANSLATED not set; try --no-handler mode instead");
-      }
-
-      file = new File(headers.getProperty("PATH_TRANSLATED"));
-
-      while (file != null && !file.exists()) {
-	file = file.getParentFile();
-      }
-
-      if (file.isDirectory()) {
-	throw new IOException("Unable to find a file in path "
-			      + headers.getProperty("PATH_TRANSLATED"));
-      }
-    }
-    else {
-      file = new File(headers.getProperty("SCRIPT_FILENAME"));
-    }
-
-    return file.toURI();
-  }
-
   public static void runServer(int fastcgi_port)
     throws IOException {
     ESXX  esxx  = ESXX.getInstance();
@@ -118,9 +126,16 @@ public class FCGIRequest
 	try {
 	  fr.initRequest();
 	  esxx.addRequest(fr, fr, 0);
+	  req = null;
 	}
-	catch (IOException ex) {
+	catch (Exception ex) {
 	  fr.reportInternalError(500, "ESXX Server Error", "FastCGI Error", ex.getMessage(), ex);
+	  req = null;
+	}
+	finally {
+	  if (req != null) {
+	    try { req.end(); } catch (Exception ex) {}
+	  }
 	}
       }
       catch (JFastException ex) {

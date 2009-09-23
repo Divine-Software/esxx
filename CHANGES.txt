@@ -35,7 +35,8 @@
 	esxx.jar. This makes startup faster. Also, allow users to add
 	their own JARs as /usr/share/esxx/site/lib/*.jar.
 
-	* Removed CGI support.
+	* Removed CGI support. Rewrote and simplified the request
+	handling.
 
 0.9.20090521
 	* Added the XKCD example from the Wiki.

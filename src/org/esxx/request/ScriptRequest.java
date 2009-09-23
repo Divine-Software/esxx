@@ -33,7 +33,9 @@ public class ScriptRequest
 
   public void initRequest(java.net.URI app_file, String[] cmdline)
     throws IOException {
-    super.initRequest(app_file, cmdline, new java.util.Properties());
+    initRequest(null, null, null, null,
+		app_file, cmdline, new java.io.File("").toURI(), new java.util.Properties(),
+		null);
   }
 
   public Integer handleResponse(Response response)
