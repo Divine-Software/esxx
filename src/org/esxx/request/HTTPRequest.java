@@ -26,11 +26,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.esxx.*;
-import org.esxx.util.IO;
-import org.esxx.util.XML;
-import org.mozilla.javascript.*;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 public class HTTPRequest
   extends WebRequest {
@@ -57,8 +52,8 @@ public class HTTPRequest
     int    local_port = local.getPort();
 
     InetSocketAddress remote = httpExchange.getRemoteAddress();
-    String remote_host = local.getAddress().toString().replaceFirst("[^/]*/", "");
-    int    remote_port = local.getPort();
+    String remote_host = remote.getAddress().toString().replaceFirst("[^/]*/", "");
+    int    remote_port = remote.getPort();
 
     Properties p = createCGIEnvironment(httpExchange.getRequestMethod(), 
 					httpExchange.getProtocol(),
@@ -137,7 +132,6 @@ public class HTTPRequest
 	public void handle(HttpExchange he)
 	{
 	  String req_uri_raw = he.getRequestURI().getRawPath();
-	  String req_uri     = he.getRequestURI().getPath();
 
 	  HTTPRequest hr = new HTTPRequest(he);
 

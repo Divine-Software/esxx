@@ -2,19 +2,23 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/commons-cli.jar"/>
-	<classpathentry kind="lib" path="lib/commons-codec.jar"/>
-	<classpathentry kind="lib" path="lib/commons-logging.jar"/>
-	<classpathentry kind="lib" path="lib/h2.jar"/>
-	<classpathentry kind="lib" path="lib/htmlcleaner.jar"/>
-	<classpathentry kind="lib" path="lib/httpclient.jar"/>
-	<classpathentry kind="lib" path="lib/httpcore.jar"/>
-	<classpathentry kind="lib" path="lib/jfast.jar"/>
-	<classpathentry kind="lib" path="lib/js.jar"/>
-	<classpathentry kind="lib" path="lib/mail.jar"/>
 	<classpathentry kind="lib" path="lib/one-jar-ant-task-0.96.jar"/>
-	<classpathentry kind="lib" path="lib/saxon9.jar"/>
-	<classpathentry kind="lib" path="lib/saxon9-dom.jar"/>
-	<classpathentry kind="lib" path="lib/saxon9-s9api.jar"/>
+	<classpathentry kind="lib" path="lib/servlet-api-2.5.jar"/>
+	<classpathentry kind="lib" path="lib/core/commons-codec.jar"/>
+	<classpathentry kind="lib" path="lib/core/commons-logging.jar"/>
+	<classpathentry kind="lib" path="lib/core/h2.jar"/>
+	<classpathentry kind="lib" path="lib/core/htmlcleaner.jar"/>
+	<classpathentry kind="lib" path="lib/core/httpclient.jar"/>
+	<classpathentry kind="lib" path="lib/core/httpcore.jar"/>
+	<classpathentry kind="lib" path="lib/core/js.jar"/>
+	<classpathentry kind="lib" path="lib/core/oauth-httpclient4.jar"/>
+	<classpathentry kind="lib" path="lib/core/oauth.jar"/>
+	<classpathentry kind="lib" path="lib/core/saxon9-dom.jar"/>
+	<classpathentry kind="lib" path="lib/core/saxon9-s9api.jar"/>
+	<classpathentry kind="lib" path="lib/core/saxon9.jar"/>
+	<classpathentry kind="lib" path="lib/exe/commons-cli.jar"/>
+	<classpathentry kind="lib" path="lib/exe/jfast.jar"/>
+	<classpathentry kind="lib" path="lib/exe/mail.jar"/>
+	<classpathentry kind="lib" path="lib/gae/appengine-api-1.0-sdk-1.2.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

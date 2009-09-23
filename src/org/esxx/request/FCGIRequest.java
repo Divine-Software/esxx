@@ -21,12 +21,10 @@ package org.esxx.request;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Properties;
 import org.bumblescript.jfast.*;
 import org.esxx.*;
 import org.esxx.util.IO;
 import org.esxx.util.StringUtil;
-import org.mozilla.javascript.*;
 
 public class FCGIRequest
   extends WebRequest {
@@ -41,7 +39,6 @@ public class FCGIRequest
     String   request_method    = jFast.properties.getProperty("REQUEST_METHOD");;
     URI      request_uri;
     URI      path_translated;
-    URI      working_directory = null;
 
     String scheme   = jFast.properties.getProperty("HTTPS", "off").equals("on") ? "https" : "http";
     String hostname = jFast.properties.getProperty("HTTP_HOST", "localhost");

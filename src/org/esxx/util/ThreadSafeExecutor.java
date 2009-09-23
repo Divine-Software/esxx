@@ -20,9 +20,6 @@ package org.esxx.util;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.AbstractCollection;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.concurrent.*;
 
 public class ThreadSafeExecutor

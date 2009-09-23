@@ -19,7 +19,6 @@
 package org.esxx;
 
 import java.io.*;
-import java.util.Properties;
 import org.apache.commons.cli.*;
 import org.esxx.request.*;
 

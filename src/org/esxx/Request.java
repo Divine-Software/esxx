@@ -22,7 +22,6 @@ import java.io.*;
 import java.net.URI;
 import java.util.Properties;
 import java.util.logging.*;
-import org.esxx.util.StringUtil;
 import org.esxx.util.TrivialFormatter;
 
 public abstract class Request {
@@ -156,7 +155,6 @@ public abstract class Request {
     private URI requestURI;
     private URI scriptURI;
     private URI scriptFilename;
-    private String scriptName;
     private String pathInfo;
     private String[] commandLine;
     private URI workingDirectory;

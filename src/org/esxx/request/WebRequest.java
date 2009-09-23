@@ -22,7 +22,6 @@ import java.io.*;
 import java.net.*;
 import java.util.Properties;
 import org.esxx.*;
-import org.esxx.util.IO;
 import org.esxx.util.JS;
 import org.esxx.util.XML;
 import org.mozilla.javascript.*;
