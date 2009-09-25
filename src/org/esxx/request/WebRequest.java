@@ -190,7 +190,7 @@ public abstract class WebRequest
 
     p.setProperty("GATEWAY_INTERFACE", "CGI/1.1");
     p.setProperty("SERVER_SOFTWARE",   "ESXX/1.0");
-    p.setProperty("DOCUMENT_ROOT",     root_uri.getPath());
+    p.setProperty("DOCUMENT_ROOT",     new File(root_uri).toString());
 
     p.setProperty("REQUEST_METHOD",    request_method);
     p.setProperty("SERVER_NAME",       full_request_uri.getHost());
