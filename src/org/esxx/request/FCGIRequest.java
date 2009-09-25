@@ -43,7 +43,7 @@ public class FCGIRequest
     String scheme   = jFast.properties.getProperty("HTTPS", "off").equals("on") ? "https" : "http";
     String hostname = jFast.properties.getProperty("HTTP_HOST", "localhost");
     String path     = jFast.properties.getProperty("REQUEST_URI");
-    String query    = jFast.properties.getProperty("QUERY_STRING");
+    String query    = jFast.properties.getProperty("QUERY_STRING", "");
 
     if (path == null) {
       // Fall back to PATH_INFO (it might work too)
@@ -51,7 +51,7 @@ public class FCGIRequest
     }
 
     request_uri = new URI(scheme + "://" + StringUtil.encodeURI(hostname, true)
-			  + path + (query != null ? "?" + query : null));
+			  + path + (query.isEmpty() ? "" : "?" + query));
 
     String pt_path = null;
 
