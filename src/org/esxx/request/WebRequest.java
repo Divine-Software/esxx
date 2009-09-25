@@ -23,6 +23,7 @@ import java.net.*;
 import java.util.Properties;
 import org.esxx.*;
 import org.esxx.util.JS;
+import org.esxx.util.StringUtil;
 import org.esxx.util.XML;
 import org.mozilla.javascript.*;
 
@@ -82,15 +83,16 @@ public abstract class WebRequest
 					new FileInputStream(script_file), null);
 	}
 	else {
-	  working_directory = script_file.getParentFile().toURI();
-	  script_filename   = script_file.toURI();
-	  path_info         = script_filename.relativize(path_translated).getRawPath();
-
-	  String req_path    = request_uri.getRawPath();
+	  working_directory  = script_file.getParentFile().toURI();
+	  script_filename    = script_file.toURI();
+	  path_info          = script_filename.relativize(path_translated).getRawPath();
+	  path_info          = StringUtil.decodeURI(path_info, false);
+	  String req_path    = StringUtil.decodeURI(request_uri.getRawPath(), false);
 	  String script_name = null;
 
 	  if (req_path.endsWith(path_info)) {
 	    script_name = req_path.substring(0, req_path.length() - path_info.length());
+	    script_name = StringUtil.encodeURI(script_name, true);
 
 	    // Create the URI version of script_name, and terminate it
 	    // with a slash to make it easy to resolve subresources.
@@ -101,9 +103,6 @@ public abstract class WebRequest
 	    // path_info should always begin with a slash.
 	    path_info = "/" + path_info;
 	  }
-
-	  // Decode path_info
-	  path_info = URI.create(path_info).getPath();
 
 	  // Complete CGI environment (using native OS file paths)
 	  completeProperty(cgi_env, "PATH_TRANSLATED", new File(path_translated).toString());
