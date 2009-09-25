@@ -43,7 +43,7 @@ public abstract class WebRequest
   }
 
   protected void initRequest(String request_method, URI request_uri, URI path_translated,
-			     Properties cgi_env, URI fs_root_uri) {
+			     Properties cgi_env, URI fs_root_uri, boolean update_env) {
     URI      script_uri        = null;
     String   path_info         = null;
     URI      script_filename   = null;
@@ -105,10 +105,12 @@ public abstract class WebRequest
 	  }
 
 	  // Complete CGI environment (using native OS file paths)
-	  completeProperty(cgi_env, "PATH_TRANSLATED", new File(path_translated).toString());
-	  completeProperty(cgi_env, "PATH_INFO",       path_info);
-	  completeProperty(cgi_env, "SCRIPT_FILENAME", script_file.toString());
-	  completeProperty(cgi_env, "SCRIPT_NAME",     script_name);
+	  if (update_env) {
+	    cgi_env.setProperty("PATH_TRANSLATED", new File(path_translated).toString());
+	    cgi_env.setProperty("PATH_INFO",       path_info);
+	    cgi_env.setProperty("SCRIPT_FILENAME", script_file.toString());
+	    cgi_env.setProperty("SCRIPT_NAME",     script_name);
+	  }
 	}
       }
     }
@@ -193,7 +195,7 @@ public abstract class WebRequest
 
     p.setProperty("REQUEST_METHOD",    request_method);
     p.setProperty("SERVER_NAME",       full_request_uri.getHost());
-    p.setProperty("REQUEST_URI",       full_request_uri.getPath());
+    p.setProperty("REQUEST_URI",       full_request_uri.getRawPath());
     p.setProperty("QUERY_STRING",      query);
     p.setProperty("SERVER_PROTOCOL",   protocol);
 
@@ -340,9 +342,5 @@ public abstract class WebRequest
       ex.printStackTrace(new PrintWriter(dst));
       return "text/plain";
     }
-  }
-
-  private void completeProperty(Properties p, String name, String value) {
-    p.setProperty(name, p.getProperty(name, value));
   }
 }

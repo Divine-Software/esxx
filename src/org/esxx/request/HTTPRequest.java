@@ -69,7 +69,7 @@ public class HTTPRequest
     }
 
     super.initRequest(httpExchange.getRequestMethod(), full_request_uri, path_translated,
-		      p, fs_root_uri);
+		      p, fs_root_uri, true);
   }
 
   public Integer handleResponse(Response response)

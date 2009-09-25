@@ -69,7 +69,7 @@ public class FCGIRequest
     path_translated = new URI("file", null, pt_path, null);
 
     initRequest(request_method, request_uri, path_translated,
-		jFast.properties, URI.create("file:/"));
+		jFast.properties, URI.create("file:/"), false);
   }
 
   @Override public Integer handleResponse(Response response)
