@@ -42,11 +42,33 @@ public class ServletRequest
   }
 
 
-  public void initRequest(URI root_uri, File canonical_script_file)
-    throws IOException, URISyntaxException {
-    super.initRequest(canonical_script_file.toURI(),
-		      null,
-		      createCGIEnvironment(sreq, root_uri, canonical_script_file));
+  public void initRequest(URI fs_root_uri, URI path_translated) {
+    StringBuffer request_url  = sreq.getRequestURL();
+    String       query_string = sreq.getQueryString();
+
+    if (query_string != null) {
+      request_url.append('?');
+      request_url.append(query_string);
+    }
+
+    URI full_request_uri = URI.create(request_url.toString());
+			       
+    Properties p = createCGIEnvironment(sreq.getMethod(), 
+					sreq.getProtocol(), 
+					full_request_uri,
+					path_translated,
+					sreq.getLocalAddr(), sreq.getLocalPort(),
+					sreq.getRemoteAddr(), sreq.getRemotePort(),
+					fs_root_uri);
+
+    // Add request headers
+    for (Enumeration e = sreq.getHeaderNames(); e.hasMoreElements(); ) {
+      String h = (String) e.nextElement();
+      p.setProperty(ESXX.httpToCGI(h), sreq.getHeader(h));
+    }
+
+    super.initRequest(sreq.getMethod(), full_request_uri, path_translated,
+		      p, fs_root_uri, true);
   }
 
   public Integer handleResponse(Response response)
@@ -98,36 +120,6 @@ public class ServletRequest
     }else{
       sres.addHeader("Content-Length", Long.toString(length));
     }  
-  }
-
-  private static Properties createCGIEnvironment(HttpServletRequest sreq,
-						 URI root_uri, 
-						 File canonical_script_file) 
-    throws URISyntaxException {
-
-    URI full_request_uri = new URI(sreq.getScheme(),
-				   null,
-				   sreq.getServerName(),
-				   sreq.getServerPort(),
-				   sreq.getRequestURI(),
-				   sreq.getQueryString(),
-				   null);
-			       
-    Properties p = createCGIEnvironment(sreq.getMethod(), sreq.getProtocol(), 
-					full_request_uri,
-					sreq.getLocalAddr(), sreq.getLocalPort(),
-					sreq.getRemoteAddr(), sreq.getRemotePort(),
-					sreq.getContextPath() + "/",
-					root_uri, canonical_script_file);
-
-    // Add request headers
-
-    for (Enumeration e = sreq.getHeaderNames(); e.hasMoreElements(); ) {
-      String h = (String) e.nextElement();
-      p.setProperty(ESXX.httpToCGI(h), sreq.getHeader(h));
-    }
-
-    return p;
   }
 
   private HttpServletRequest sreq;
