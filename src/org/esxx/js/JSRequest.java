@@ -385,7 +385,7 @@ public class JSRequest
 	  try { request.getInputStream().close(); } catch (Exception ex) {}
 	}
       }
-      else if (contentType != null) {
+      else if (contentType != null && contentLength > 0) {
 	try {
 	  ESXX esxx = ESXX.getInstance();
 	  return esxx.parseStream(contentType, contentTypeParams, request.getInputStream(), 
