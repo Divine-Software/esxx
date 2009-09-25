@@ -277,22 +277,34 @@ public abstract class WebRequest
     Document doc = esxx.createDocument("error");
     Element root = doc.getDocumentElement();
 
-    XML.addChild(root, "title",    title);
-    XML.addChild(root, "subtitle", subtitle);
-    XML.addChild(root, "message",  message);
+    String stacktrace = null;
 
     if (ex != null) {
-      ex.printStackTrace(new PrintWriter(getErrorWriter()));
-
       if (ex instanceof RhinoException) {
-	XML.addChild(root, "stacktrace", 
-		     ((RhinoException) ex).getScriptStackTrace(new JS.JSFilenameFilter()));
+	RhinoException re = (RhinoException) ex;
+	stacktrace = re.getScriptStackTrace(new JS.JSFilenameFilter());
+
+	message = message + " [" + re.sourceName() + ", line " + re.lineNumber()
+	  + ", column " + re.columnNumber() + ": " + re.lineSource() + "]";
       }
       else {
 	StringWriter sw = new StringWriter();
-	ex.printStackTrace(new PrintWriter(sw));
-	XML.addChild(root, "stacktrace", sw.toString());
+	PrintWriter  pw = new PrintWriter(sw);
+	ex.printStackTrace(pw);
+	pw.flush();
+	stacktrace = sw.toString();
       }
+    }
+
+    // Log all unhandled error responses
+    getReqLogger().log(java.util.logging.Level.WARNING, message, ex);
+
+    XML.addChild(root, "title",    title);
+    XML.addChild(root, "subtitle", subtitle);
+    XML.addChild(root, "message",  message);
+    
+    if (stacktrace != null) {
+      XML.addChild(root, "stacktrace", stacktrace);
     }
 
     ByteArrayOutputStream os = new ByteArrayOutputStream();
