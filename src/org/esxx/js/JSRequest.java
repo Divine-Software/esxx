@@ -100,7 +100,7 @@ public class JSRequest
 	}
       }
 
-      logger  = (JSLogger) JSESXX.newObject(cx, scope, "Logger", new Object[] { 
+      logger  = JSESXX.newObject(cx, scope, "Logger", new Object[] { 
 	  request, request.getScriptName() });
     }
 

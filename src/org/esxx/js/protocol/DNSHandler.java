@@ -108,7 +108,7 @@ public class DNSHandler
     try {
       for (NamingEnumeration<Binding> ne = ctx.listBindings(uri.toString());
 	   ne.hasMore(); ) {
-	Binding b = (Binding) ne.next();
+	Binding b = ne.next();
 
 	URI sub_uri = new URI(uri.getScheme(), 
 			      uri.getAuthority(),

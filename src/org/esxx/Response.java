@@ -150,6 +150,7 @@ public class Response  {
 	  javax.mail.Message msg = xmtpp.convertMessage(new StringReader(xml));
 	  object = new ByteArrayOutputStream();
 	  msg.writeTo(new FilterOutputStream((OutputStream) object) {
+	      @Override
 	      public void write(int b)
 		throws IOException {
 		if (b == '\r') {

@@ -18,17 +18,12 @@
 
 package org.esxx.request;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Enumeration;
 import java.util.Properties;
 import javax.servlet.http.*;
 import org.esxx.*;
-import org.mozilla.javascript.Context;
 
 public class ServletRequest
   extends WebRequest {

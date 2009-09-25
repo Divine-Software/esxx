@@ -222,7 +222,7 @@ class Worker {
       return new XdmAtomicValue((URI) o);
     }
     else if (o instanceof Node) {
-      return esxx.getSaxonDocumentBuilder().wrap((Node) o);
+      return esxx.getSaxonDocumentBuilder().wrap(o);
     }
     else {
       return new XdmAtomicValue(Context.toString(o));

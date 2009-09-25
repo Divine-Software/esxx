@@ -146,6 +146,7 @@ public class HTTPHandler
 	  return method;
 	}
 
+	@Override
 	public URI getURI() {
 	  return jsuri.getURI();
 	}

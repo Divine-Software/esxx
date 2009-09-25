@@ -28,6 +28,7 @@ public class TrivialFormatter
     includeLevel = include_level;
   }
 
+  @Override
   public synchronized String format(LogRecord record) {
     StringBuffer sb = new StringBuffer();
 

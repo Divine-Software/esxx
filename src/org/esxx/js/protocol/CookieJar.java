@@ -261,7 +261,7 @@ class CookieJar
       Object[] ip = new Object[ports.length];
 
       for (int i = 0 ; i < ports.length; ++i) {
-	ip[i] = (Integer) i;
+	ip[i] = i;
       }
 
       js.put(name, js, cx.newArray(jsuri, ip));
