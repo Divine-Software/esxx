@@ -175,6 +175,10 @@ public class JSRequest
       return contentType;
     }
 
+    public long jsGet_contentLength() {
+      return contentLength;
+    }
+
     public synchronized Object jsGet_message() {
       if (message == null) {
 	// Now parse the POST/PUT/etc. message
@@ -208,6 +212,7 @@ public class JSRequest
 
     private String soapAction;
     private String contentType;
+    private long contentLength = -1;
     private HashMap<String,String> contentTypeParams;
 
     private Scriptable acceptValueOf;
@@ -342,7 +347,7 @@ public class JSRequest
 	  contentType       = ESXX.parseMIMEType(value, contentTypeParams);
 	}
 	else if (name.equals("Content-Length")) {
-	  Long.parseLong(value);
+	  contentLength = Long.parseLong(value);
 	}
 	else {
 	  throw new ESXXException(501, "Unsupported Content header: " + name);

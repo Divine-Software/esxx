@@ -38,6 +38,8 @@
 	* Removed CGI support. Rewrote and simplified the request
 	handling.
 
+	* The JS request object now includes a contentLength field.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
