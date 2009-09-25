@@ -24,7 +24,6 @@ import org.apache.http.conn.*;
 import org.apache.http.params.*;
 import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.scheme.*;
-import org.apache.http.impl.conn.*;
 
 public class GAEConnectionManager
   implements ClientConnectionManager {

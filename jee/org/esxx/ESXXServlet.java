@@ -24,18 +24,13 @@ import java.util.Enumeration;
 import java.util.Properties;
 import javax.servlet.*;
 import javax.servlet.http.*;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
 import org.esxx.js.protocol.GAEConnectionManager;
 import org.esxx.request.ServletRequest;
-import org.esxx.request.WebRequest;
-import org.esxx.util.IO;
-import org.esxx.util.XML;
 
 
 /** An HttpServlet that executes ESXX applications. */
 public class ESXXServlet extends HttpServlet {
+  @Override
   public void init()
     throws ServletException {
     try {
@@ -86,11 +81,13 @@ public class ESXXServlet extends HttpServlet {
     }
   }
 
+  @Override
   public void destroy() {
     esxx = null;
     ESXX.destroyInstance();
   }
 
+  @Override
   protected void service(HttpServletRequest sreq, HttpServletResponse sres)
     throws ServletException, IOException {
     ServletRequest sr = new ServletRequest(sreq, sres);
