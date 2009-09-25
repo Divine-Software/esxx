@@ -76,7 +76,7 @@ public abstract class WebRequest
 	}
 
 	if (script_file.isDirectory()) {
-	  quick_response = getFileListingResponse(request_uri.toString(), script_file);
+	  quick_response = getFileListingResponse(request_uri.getPath(), script_file);
 	}
 	else if (!ESXX.fileTypeMap.getContentType(script_file).equals("application/x-esxx+xml")) {
 	  quick_response = new Response(200, ESXX.fileTypeMap.getContentType(script_file),
