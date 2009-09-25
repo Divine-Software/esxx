@@ -71,14 +71,25 @@ public abstract class WebRequest
 	  throw new FileNotFoundException("Document is outside root path");
 	}
 
+	boolean iterated = false;
+
 	while (!script_file.exists()) {
 	  script_file = script_file.getParentFile();
+	  iterated = true;
 	}
 
 	if (script_file.isDirectory()) {
+	  if (iterated) {
+	    throw new FileNotFoundException("Resource '" + path_translated + "' not found.");
+	  }
+
 	  quick_response = getFileListingResponse(request_uri.getPath(), script_file);
 	}
 	else if (!ESXX.fileTypeMap.getContentType(script_file).equals("application/x-esxx+xml")) {
+	  if (iterated) {
+	    throw new FileNotFoundException("Only .esxx files can have a trailing path.");
+	  }
+
 	  quick_response = new Response(200, ESXX.fileTypeMap.getContentType(script_file),
 					new FileInputStream(script_file), null);
 	}
