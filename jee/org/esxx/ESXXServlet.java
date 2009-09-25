@@ -30,6 +30,8 @@ import org.esxx.request.ServletRequest;
 
 /** An HttpServlet that executes ESXX applications. */
 public class ESXXServlet extends HttpServlet {
+  private static final long serialVersionUID = -6042154377037338687L;
+
   @Override
   public void init()
     throws ServletException {
