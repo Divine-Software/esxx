@@ -106,7 +106,7 @@ public class FCGIRequest
     }
   }
 
-  public static void runServer(int fastcgi_port)
+  public static void runServer(int fastcgi_port) 
     throws IOException {
     ESXX  esxx  = ESXX.getInstance();
     JFast jfast = new JFast(fastcgi_port);
@@ -116,27 +116,41 @@ public class FCGIRequest
 
     while (true) {
       try {
-	JFastRequest req = jfast.acceptRequest();
-	FCGIRequest fr = new FCGIRequest(req);
+	while (true) {
+	  try {
+	    JFastRequest req = jfast.acceptRequest();
+	    FCGIRequest fr = new FCGIRequest(req);
 
-	// Fire and forget
-	try {
-	  fr.initRequest();
-	  esxx.addRequest(fr, fr, 0);
-	  req = null;
-	}
-	catch (Exception ex) {
-	  fr.reportInternalError(500, "ESXX Server Error", "FastCGI Error", ex.getMessage(), ex);
-	  req = null;
-	}
-	finally {
-	  if (req != null) {
-	    try { req.end(); } catch (Exception ex) {}
+	    // Fire and forget
+	    try {
+	      fr.initRequest();
+	      esxx.addRequest(fr, fr, 0);
+	      req = null;
+	    }
+	    catch (Exception ex) {
+	      fr.reportInternalError(500, 
+				     "ESXX Server Error", "FastCGI Error", 
+				     ex.getMessage(), ex);
+	      req = null;
+	    }
+	    finally {
+	      if (req != null) {
+		try { req.end(); } catch (Exception ex) {}
+	      }
+	    }
+	  }
+	  catch (JFastException ex) {
+	    esxx.getLogger().log(java.util.logging.Level.WARNING,
+				 "Failed to process JFast request", ex);
 	  }
 	}
       }
-      catch (JFastException ex) {
-	ex.printStackTrace();
+      catch (IOException ex) {
+	esxx.getLogger().log(java.util.logging.Level.SEVERE,
+			     "Failed to handle JFast request", ex);
+	// Re-bind
+	jfast.close();
+	jfast = new JFast(fastcgi_port);
       }
     }
   }
