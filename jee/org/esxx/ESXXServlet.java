@@ -70,9 +70,8 @@ public class ESXXServlet extends HttpServlet {
 	}
       }
 
-      root     = new File(resolvePath(getInitParameter("http-root"))).getCanonicalPath();
-      root_uri = new File(root).toURI();
-      esxx     = ESXX.initInstance(p, this);
+      fs_root_uri = new File(resolvePath(getInitParameter("http-root"))).getAbsoluteFile().toURI();
+      esxx        = ESXX.initInstance(p, this);
 
       // If running on Google App Engine, install a supported HTTP connection manager
       try {
@@ -87,50 +86,25 @@ public class ESXXServlet extends HttpServlet {
     }
   }
 
-
   public void destroy() {
     esxx = null;
     ESXX.destroyInstance();
   }
-
 
   protected void service(HttpServletRequest sreq, HttpServletResponse sres)
     throws ServletException, IOException {
     ServletRequest sr = new ServletRequest(sreq, sres);
 
     try {
-      File app_file = sr.handleWebServerRequest(root_uri.resolve(sreq.getServletPath().substring(1)),
-						sreq.getRequestURI(),
-						sreq.getQueryString(),
-						root);
-
-      if (app_file != null) {
-	sr.initRequest(root_uri, app_file);
-	ESXX.Workload wl = esxx.addRequest(sr, sr, 0);
-	sres = null;
-	wl.future.get(); // Wait for request to complete
-      }
+      URI path_translated = fs_root_uri.resolve(sreq.getPathInfo());
+      sr.initRequest(fs_root_uri, path_translated);
+      ESXX.Workload wl = esxx.addRequest(sr, sr, 0);
+      sres = null;
+      wl.future.get(); // Wait for request to complete
     }
     catch (Exception ex) {
-      int    code;
-      String subtitle;
-      String message;
-
-      if (ex instanceof FileNotFoundException) {
-	code     = 404;
-	subtitle = "Not Found";
-	message  = "The requested resource '" + sreq.getRequestURI() + "' could not be found: "
-	  + ex.getMessage();
-	ex = null;
-      }
-      else {
-	code     = 500;
-	subtitle = "Internal Server Error";
-	message  = "The requested resource '" + sreq.getRequestURI() + "' failed: " 
-	  + ex.getMessage();
-      }
-
-      sr.reportInternalError(code, "ESXX Server Error", subtitle, message, ex);
+      sr.reportInternalError(500, "ESXX Server Error", "Servlet Error",  ex.getMessage(), ex);
+      sres = null;
     }
     finally {
       if (sres != null) {
@@ -151,7 +125,6 @@ public class ESXXServlet extends HttpServlet {
     }
   }
 
-  private String root;
-  private URI root_uri;
+  private URI fs_root_uri;
   private ESXX esxx;
 }
