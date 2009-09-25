@@ -96,8 +96,21 @@ public class ESXXServlet extends HttpServlet {
     ServletRequest sr = new ServletRequest(sreq, sres);
 
     try {
-      URI path_translated = fs_root_uri.resolve(sreq.getPathInfo());
-      sr.initRequest(fs_root_uri, path_translated);
+      // Prefer getRequestURI(), but use getServletPath() as a fall-back
+      String path    = sreq.getRequestURI();
+      String context = sreq.getContextPath();
+      int offset     = context.length();
+
+      if (! path.startsWith(context)) {
+	path = org.esxx.util.StringUtil.encodeURI(sreq.getServletPath(), true);
+	offset  = 0;
+      }
+
+      while (offset < path.length() && path.charAt(offset) == '/') {
+	++offset;
+      }
+
+      sr.initRequest(fs_root_uri, fs_root_uri.resolve(path.substring(offset)));
       ESXX.Workload wl = esxx.addRequest(sr, sr, 0);
       sres = null;
       wl.future.get(); // Wait for request to complete
