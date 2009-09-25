@@ -147,7 +147,7 @@ public class Stylesheet {
     implements org.esxx.jmx.StylesheetMXBean {
 
     public JMXBean() {
-      super(org.esxx.jmx.ApplicationMXBean.class, true,
+      super(org.esxx.jmx.StylesheetMXBean.class, true,
 	    new javax.management.NotificationBroadcasterSupport());
     }
 
