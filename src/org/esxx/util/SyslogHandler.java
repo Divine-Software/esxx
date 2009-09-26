@@ -77,7 +77,9 @@ public class SyslogHandler
     }
 
     try {
-      syslog.syslog(priority, message);
+      if (syslog != null) {
+	syslog.syslog(priority, message);
+      }
     }
     catch (Exception ex) {
       reportError(null, ex, ErrorManager.WRITE_FAILURE);
