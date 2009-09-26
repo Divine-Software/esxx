@@ -142,6 +142,9 @@ public class ThreadSafeExecutor
 	  catch (InterruptedException ex) {
 	    Thread.currentThread().interrupt();
 	  }
+	  catch (RejectedExecutionException ex) {
+	    // Just exit
+	  }
 	}
       });
   }
