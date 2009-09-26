@@ -132,4 +132,11 @@
       <arg value="7777" />
     </java>
   </target>
+
+  <target name="ajp" depends="compile">
+    <java classname="org.esxx.Main" classpathref="classpath" fork="true">
+      <arg value="--ajp" />
+      <arg value="7655" />
+    </java>
+  </target>
 </project>

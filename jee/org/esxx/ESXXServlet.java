@@ -67,8 +67,8 @@ public class ESXXServlet extends HttpServlet {
 	}
       }
 
-      fs_root_uri = new File(resolvePath(getInitParameter("http-root"))).getAbsoluteFile().toURI();
-      esxx        = ESXX.initInstance(p, this);
+      fsRootURI = new File(resolvePath(getInitParameter("http-root"))).getAbsoluteFile().toURI();
+      esxx      = ESXX.initInstance(p, this);
 
       // If running on Google App Engine, install a supported HTTP connection manager
       try {
@@ -92,37 +92,7 @@ public class ESXXServlet extends HttpServlet {
   @Override
   protected void service(HttpServletRequest sreq, HttpServletResponse sres)
     throws ServletException, IOException {
-    ServletRequest sr = new ServletRequest(sreq, sres);
-
-    try {
-      // Prefer getRequestURI(), but use getServletPath() as a fall-back
-      String path    = sreq.getRequestURI();
-      String context = sreq.getContextPath();
-      int offset     = context.length();
-
-      if (! path.startsWith(context)) {
-	path = org.esxx.util.StringUtil.encodeURI(sreq.getServletPath(), true);
-	offset  = 0;
-      }
-
-      while (offset < path.length() && path.charAt(offset) == '/') {
-	++offset;
-      }
-
-      sr.initRequest(fs_root_uri, fs_root_uri.resolve(path.substring(offset)));
-      ESXX.Workload wl = esxx.addRequest(sr, sr, 0);
-      sres = null;
-      wl.future.get(); // Wait for request to complete
-    }
-    catch (Exception ex) {
-      sr.reportInternalError(500, "ESXX Server Error", "Servlet Error",  ex.getMessage(), ex);
-      sres = null;
-    }
-    finally {
-      if (sres != null) {
-	sres.flushBuffer();
-      }
-    }
+    ServletRequest.handleServletRequest(sreq, sres, fsRootURI, "Servlet Error");
   }
 
   private String resolvePath(String path) {
@@ -137,6 +107,6 @@ public class ESXXServlet extends HttpServlet {
     }
   }
 
-  private URI fs_root_uri;
+  private URI fsRootURI;
   private ESXX esxx;
 }

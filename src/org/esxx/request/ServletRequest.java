@@ -108,13 +108,58 @@ public class ServletRequest
     }
   }
 
-
-  public static void setContentLength(HttpServletResponse sres, long length) {
+  private static void setContentLength(HttpServletResponse sres, long length) {
     if(length <= Integer.MAX_VALUE){
       sres.setContentLength((int) length);
     }else{
       sres.addHeader("Content-Length", Long.toString(length));
     }  
+  }
+
+
+  public static void handleServletRequest(HttpServletRequest  sreq,
+					  HttpServletResponse sres,
+					  URI                 root_uri,
+					  String              error_subtitle)
+    throws IOException {
+    ServletRequest sr = new ServletRequest(sreq, sres);
+
+    try {
+      // Prefer getRequestURI(), but use getServletPath() as a fall-back
+      String path    = sreq.getRequestURI();
+      String context = sreq.getContextPath() != null ? sreq.getContextPath() : "/";
+      int offset     = context.length();
+
+      System.out.println("PATH: " + path);
+      System.out.println("CONTEXT: " + context);
+      System.out.println("ROOT: " + root_uri);
+
+      if (! path.startsWith(context)) {
+	path = org.esxx.util.StringUtil.encodeURI(sreq.getServletPath(), true);
+	offset = 0;
+      }
+
+      while (offset < path.length() && path.charAt(offset) == '/') {
+	++offset;
+      }
+
+      System.out.println("NEW PATH: " + path.substring(offset));
+      System.out.println("PATH_TRANSLATED: " + root_uri.resolve(path.substring(offset)));
+
+      sr.initRequest(root_uri, root_uri.resolve(path.substring(offset)));
+      ESXX.Workload wl = ESXX.getInstance().addRequest(sr, sr, 0);
+      sres = null;
+      wl.future.get(); // Wait for request to complete
+    }
+    catch (Exception ex) {
+      sr.reportInternalError(500, "ESXX Server Error", error_subtitle,  ex.getMessage(), ex);
+      sres = null;
+    }
+    finally {
+      if (sres != null) {
+	sres.flushBuffer();
+      }
+    }
   }
 
   private HttpServletRequest sreq;

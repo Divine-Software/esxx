@@ -40,6 +40,14 @@
 
 	* The JS request object now includes a contentLength field.
 
+	* Switched HTTP implementation from Sun's semi-official
+	com.sun.net.httpserver to Jetty 7 (RC6). ESXX got larger, but
+	more compatible with other JVM implementations.
+
+	* Added AJP/1.3 support. ESXX can now be used with
+	mod_jk/mod_proxy_ajp as an alternative to FastCGI or HTTP
+	(courtesy of Jetty).
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

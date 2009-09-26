@@ -19,6 +19,7 @@
 package org.esxx;
 
 import java.io.*;
+import java.net.URI;
 import org.apache.commons.cli.*;
 import org.esxx.request.*;
 
@@ -46,13 +47,15 @@ public class Main {
     // (Remember: -u/--user, -p/--pidfile and -j/jvmargs are used by the wrapper script)
     mode_opt.addOption(new Option("b", "bind",    true, ("Listen for FastCGI requests on " +
 							 "this <port>")));
+    mode_opt.addOption(new Option("A", "ajp",     true, ("Listen for AJP13 requests on " +
+							 "this <port>")));
     mode_opt.addOption(new Option("H", "http",    true, ("Listen for HTTP requests on " +
 							 "this <port>")));
     mode_opt.addOption(new Option("s", "script", false, "Force script mode."));
     mode_opt.addOption(new Option(null,"db-console", false, "Open H2's database console."));
 
     opt.addOptionGroup(mode_opt);
-    opt.addOption("n", "no-handler",      true,  "Requests are direct, without extra handler");
+    opt.addOption("n", "no-handler",      true,  "FCGI requests are direct, without extra handler");
     opt.addOption("r", "http-root",       true,  "Set HTTP root directory or file");
 //     opt.addOption("d", "enable-debugger", false, "Enable esxx.debug()");
 //     opt.addOption("D", "start-debugger",  false, "Start debugger");
@@ -63,6 +66,7 @@ public class Main {
       CommandLine cmd = parser.parse(opt, args, false);
 
       int fastcgi_port = -1;
+      int     ajp_port = -1;
       int    http_port = -1;
       String[]  script = null;
 
@@ -72,6 +76,9 @@ public class Main {
 
       if (cmd.hasOption('b')) {
 	fastcgi_port = Integer.parseInt(cmd.getOptionValue('b'));
+      }
+      else if (cmd.hasOption('A')) {
+	ajp_port = Integer.parseInt(cmd.getOptionValue('A'));
       }
       else if (cmd.hasOption('H')) {
 	http_port = Integer.parseInt(cmd.getOptionValue('H'));
@@ -115,8 +122,13 @@ public class Main {
       if (fastcgi_port != -1) {
 	FCGIRequest.runServer(fastcgi_port);
       }
+      else if (ajp_port != -1) {
+	Jetty.runJettyServer(-1, ajp_port, URI.create("file:/"));
+      }
       else if (http_port != -1) {
-	HTTPRequest.runServer(http_port, cmd.getOptionValue('r', ""));
+	URI fs_root_uri = new File(cmd.getOptionValue('r', "")).getAbsoluteFile().toURI();
+
+	Jetty.runJettyServer(http_port, -1, fs_root_uri);
       }
       else if (script != null && script.length != 0) {
 	File file = new File(script[0]);
