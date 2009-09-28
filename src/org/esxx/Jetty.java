@@ -18,7 +18,6 @@
 
 package org.esxx;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import javax.servlet.ServletException;
@@ -32,7 +31,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.JavaUtilLog;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.thread.ExecutorThreadPool;;
+import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.esxx.request.ServletRequest;
 
 public abstract class Jetty {
