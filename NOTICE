@@ -29,3 +29,6 @@ Poskanzer, Syslog, licensed under the BSD license.
 This product includes software developed by Thomas Mueller: H2
 (http://www.h2database.com/), licensed under the H2 License, version
 1.0 (MPL-1.1 with trivial modifications).
+
+This product includes software developed by Mort Bay Consulting Pty Ltd,
+Jetty, licensed under the Apache License, version 2.0.
