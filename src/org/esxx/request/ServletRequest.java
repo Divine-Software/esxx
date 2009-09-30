@@ -36,7 +36,6 @@ public class ServletRequest
     this.sres = sres;
   }
 
-
   public void initRequest(URI fs_root_uri, URI path_translated) {
     StringBuffer request_url  = sreq.getRequestURL();
     String       query_string = sreq.getQueryString();
@@ -130,10 +129,6 @@ public class ServletRequest
       String context = sreq.getContextPath() != null ? sreq.getContextPath() : "/";
       int offset     = context.length();
 
-      System.out.println("PATH: " + path);
-      System.out.println("CONTEXT: " + context);
-      System.out.println("ROOT: " + root_uri);
-
       if (! path.startsWith(context)) {
 	path = org.esxx.util.StringUtil.encodeURI(sreq.getServletPath(), true);
 	offset = 0;
@@ -142,9 +137,6 @@ public class ServletRequest
       while (offset < path.length() && path.charAt(offset) == '/') {
 	++offset;
       }
-
-      System.out.println("NEW PATH: " + path.substring(offset));
-      System.out.println("PATH_TRANSLATED: " + root_uri.resolve(path.substring(offset)));
 
       sr.initRequest(root_uri, root_uri.resolve(path.substring(offset)));
       ESXX.Workload wl = ESXX.getInstance().addRequest(sr, sr, 0);
