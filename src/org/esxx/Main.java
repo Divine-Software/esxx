@@ -56,7 +56,7 @@ public class Main {
 
     opt.addOptionGroup(mode_opt);
     opt.addOption("n", "no-handler",      true,  "FCGI requests are direct, without extra handler");
-    opt.addOption("r", "http-root",       true,  "Set HTTP root directory or file");
+    opt.addOption("r", "http-root",       true,  "Set AJP/FCGI/HTTP root directory (or file)");
 //     opt.addOption("d", "enable-debugger", false, "Enable esxx.debug()");
 //     opt.addOption("D", "start-debugger",  false, "Start debugger");
     opt.addOption("?", "help",            false, "Show help");
@@ -119,15 +119,21 @@ public class Main {
 // 									   Long.MAX_VALUE, 
 // 									   Long.MAX_VALUE));
 
+      // Default is to serve the current directory
+      URI fs_root_uri = new File(cmd.getOptionValue('r', "")).getAbsoluteFile().toURI();
+
+      if (fastcgi_port != -1 && !cmd.hasOption('r')) {
+	// If not provided in FastCGI mode, use ${PATH_TRANSLATED}
+	fs_root_uri = null;
+      }
+
       if (fastcgi_port != -1) {
-	FCGIRequest.runServer(fastcgi_port);
+	FCGIRequest.runServer(fastcgi_port, fs_root_uri);
       }
       else if (ajp_port != -1) {
-	Jetty.runJettyServer(-1, ajp_port, URI.create("file:/"));
+	Jetty.runJettyServer(-1, ajp_port, fs_root_uri);
       }
       else if (http_port != -1) {
-	URI fs_root_uri = new File(cmd.getOptionValue('r', "")).getAbsoluteFile().toURI();
-
 	Jetty.runJettyServer(http_port, -1, fs_root_uri);
       }
       else if (script != null && script.length != 0) {

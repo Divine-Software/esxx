@@ -48,6 +48,11 @@
 	mod_jk/mod_proxy_ajp as an alternative to FastCGI or HTTP
 	(courtesy of Jetty).
 
+	* The -r/--http-root command line parameter now applies to 
+	both AJP/HTTP and FCGI modes. In FCGI mode, it means that only
+	${REQUEST_URI} will be used by ESXX -- ${PATH_TRANSLATED}/
+	${SCRIPT_FILENAME} are ignored if this flag is supplied.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

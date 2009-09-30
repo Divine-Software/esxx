@@ -118,7 +118,7 @@ public class ServletRequest
 
   public static void handleServletRequest(HttpServletRequest  sreq,
 					  HttpServletResponse sres,
-					  URI                 root_uri,
+					  URI                 fs_root_uri,
 					  String              error_subtitle)
     throws IOException {
     ServletRequest sr = new ServletRequest(sreq, sres);
@@ -127,18 +127,13 @@ public class ServletRequest
       // Prefer getRequestURI(), but use getServletPath() as a fall-back
       String path    = sreq.getRequestURI();
       String context = sreq.getContextPath() != null ? sreq.getContextPath() : "/";
-      int offset     = context.length();
 
       if (! path.startsWith(context)) {
 	path = org.esxx.util.StringUtil.encodeURI(sreq.getServletPath(), true);
-	offset = 0;
+	context = "/";
       }
 
-      while (offset < path.length() && path.charAt(offset) == '/') {
-	++offset;
-      }
-
-      sr.initRequest(root_uri, root_uri.resolve(path.substring(offset)));
+      sr.initRequest(fs_root_uri, getPathTranslated(fs_root_uri, path, context));
       ESXX.Workload wl = ESXX.getInstance().addRequest(sr, sr, 0);
       sres = null;
       wl.future.get(); // Wait for request to complete

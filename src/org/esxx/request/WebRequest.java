@@ -160,26 +160,20 @@ public abstract class WebRequest
     }
   }
 
-
-  protected static URI getPathTranslated(URI    full_request_uri,
-					 URI    root_uri,
+  protected static URI getPathTranslated(URI    fs_root_uri,
+					 String raw_request_path,
 					 String context_path) {
-    
-    String raw_path = full_request_uri.getRawPath();
-
-    if (raw_path.startsWith(context_path)) {
-      raw_path = raw_path.substring(context_path.length());
-    }
-    else {
-      throw new IllegalArgumentException("Path part of " + full_request_uri + " must begin with " 
-					 + context_path);
+    if (!raw_request_path.startsWith(context_path)) {
+      throw new IllegalArgumentException(raw_request_path + " must begin with " + context_path);
     }
 
-    if (raw_path.charAt(0) == '/') {
-      throw new IllegalArgumentException("Context path " + context_path + " should end with '/'");
+    int offset = context_path.length();
+
+    while (offset < raw_request_path.length() && raw_request_path.charAt(offset) == '/') {
+	++offset; // Trim leading slashes
     }
 
-    return root_uri.resolve(raw_path);
+    return fs_root_uri.resolve(raw_request_path.substring(offset));
   }
 
   protected Properties createCGIEnvironment(String request_method, String protocol,

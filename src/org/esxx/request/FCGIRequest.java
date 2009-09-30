@@ -34,7 +34,7 @@ public class FCGIRequest
     jFast = jfast;
   }
 
-  public void initRequest()
+  public void initRequest(URI fs_root_uri)
     throws URISyntaxException {
     String   request_method    = jFast.properties.getProperty("REQUEST_METHOD");;
     URI      request_uri;
@@ -53,23 +53,29 @@ public class FCGIRequest
     request_uri = new URI(scheme + "://" + StringUtil.encodeURI(hostname, true)
 			  + path + (query.isEmpty() ? "" : "?" + query));
 
-    String pt_path = null;
-
-    if (ESXX.getInstance().isHandlerMode(jFast.properties.getProperty("SERVER_SOFTWARE"))) {
-      pt_path = jFast.properties.getProperty("PATH_TRANSLATED");
+    if (fs_root_uri == null) {
+      String pt_path = null;
+  
+      if (ESXX.getInstance().isHandlerMode(jFast.properties.getProperty("SERVER_SOFTWARE"))) {
+        pt_path = jFast.properties.getProperty("PATH_TRANSLATED");
+      }
+  
+      if (pt_path == null) {
+        // If not handler mode, or PATH_TRANSLATED missing, use
+        // SCRIPT_FILENAME + PATH_INFO instead
+        pt_path = (jFast.properties.getProperty("SCRIPT_FILENAME") 
+  		 + jFast.properties.getProperty("PATH_INFO"));
+      }
+  
+      path_translated = new URI("file", null, pt_path, null);
+      fs_root_uri = URI.create("file:/");
     }
-
-    if (pt_path == null) {
-      // If not handler mode, or PATH_TRANSLATED missing, use
-      // SCRIPT_FILENAME + PATH_INFO instead
-      pt_path = (jFast.properties.getProperty("SCRIPT_FILENAME") 
-		 + jFast.properties.getProperty("PATH_INFO"));
+    else {
+      path_translated = getPathTranslated(fs_root_uri, path, "/");
     }
-
-    path_translated = new URI("file", null, pt_path, null);
 
     initRequest(request_method, request_uri, path_translated,
-		jFast.properties, URI.create("file:/"), false);
+		jFast.properties, fs_root_uri, false);
   }
 
   @Override public Integer handleResponse(Response response)
@@ -106,7 +112,7 @@ public class FCGIRequest
     }
   }
 
-  public static void runServer(int fastcgi_port) 
+  public static void runServer(int fastcgi_port, URI fs_root_uri) 
     throws IOException {
     ESXX  esxx  = ESXX.getInstance();
     JFast jfast = new JFast(fastcgi_port);
@@ -123,7 +129,7 @@ public class FCGIRequest
 
 	    // Fire and forget
 	    try {
-	      fr.initRequest();
+	      fr.initRequest(fs_root_uri);
 	      esxx.addRequest(fr, fr, 0);
 	      req = null;
 	    }
