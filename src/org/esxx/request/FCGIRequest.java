@@ -45,7 +45,14 @@ public class FCGIRequest
     String path     = jFast.properties.getProperty("REQUEST_URI");
     String query    = jFast.properties.getProperty("QUERY_STRING", "");
 
-    if (path == null) {
+    if (path != null) {
+      int q = path.indexOf('?');
+
+      if (q != -1) {
+	path = path.substring(0, q); // Nuke, query string, if present
+      }
+    }
+    else {
       // Fall back to PATH_INFO (it might work too)
       path = StringUtil.encodeURI(jFast.properties.getProperty("PATH_INFO", ""), false);
     }
