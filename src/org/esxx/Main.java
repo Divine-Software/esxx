@@ -41,6 +41,12 @@ public class Main {
   }
 
   public static void main(String[] args) {
+    // (Try to) Load embedded H2 database JDBC driver into memory
+    try {
+      Class.forName("org.h2.Driver");
+    }
+    catch (ClassNotFoundException ex) {}
+
     Options opt = new Options();
     OptionGroup mode_opt = new OptionGroup();
 
