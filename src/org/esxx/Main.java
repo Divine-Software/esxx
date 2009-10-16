@@ -45,7 +45,7 @@ public class Main {
     try {
       Class.forName("org.h2.Driver");
     }
-    catch (ClassNotFoundException ex) {}
+    catch (ClassNotFoundException ignored) {}
 
     Options opt = new Options();
     OptionGroup mode_opt = new OptionGroup();

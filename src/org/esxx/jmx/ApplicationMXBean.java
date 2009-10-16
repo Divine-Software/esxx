@@ -27,4 +27,4 @@ public interface ApplicationMXBean {
 
   public ApplicationStats getStatistics();
   public void unloadApplication();
-};
+}

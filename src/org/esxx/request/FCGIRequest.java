@@ -36,7 +36,7 @@ public class FCGIRequest
 
   public void initRequest(URI fs_root_uri)
     throws URISyntaxException {
-    String   request_method    = jFast.properties.getProperty("REQUEST_METHOD");;
+    String   request_method    = jFast.properties.getProperty("REQUEST_METHOD");
     URI      request_uri;
     URI      path_translated;
 
@@ -148,7 +148,7 @@ public class FCGIRequest
 	    }
 	    finally {
 	      if (req != null) {
-		try { req.end(); } catch (Exception ex) {}
+		try { req.end(); } catch (Exception ignored) {}
 	      }
 	    }
 	  }

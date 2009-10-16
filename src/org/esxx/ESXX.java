@@ -544,7 +544,7 @@ public class ESXX {
      *
      *  @return A W3C DOM Document.
      *
-     *  @throws SAXException On parser errors.
+     *  @throws org.xml.sax.SAXException On parser errors.
      *
      *  @throws IOException On I/O errors.
      */
@@ -1017,7 +1017,7 @@ public class ESXX {
 	}
 	finally {
 	  if (uc != null) {
-	    try { uc.getInputStream().close(); } catch (IOException ex) {}
+	    try { uc.getInputStream().close(); } catch (IOException ignored) {}
 	  }
 	}
       }
@@ -1148,7 +1148,7 @@ public class ESXX {
 
       public void close() {
 	for (File temp : tempFiles) {
-	  try { temp.delete(); } catch (Exception ex) {}
+	  try { temp.delete(); } catch (Exception ignored) {}
 	}
 	tempFiles.clear();
       }
@@ -1200,7 +1200,7 @@ public class ESXX {
       }
     }
 
-    private Pattern noHandlerMode = Pattern.compile("");;
+    private Pattern noHandlerMode = Pattern.compile("");
 
     private int defaultTimeout;
     private URI[] includePath;
@@ -1224,4 +1224,4 @@ public class ESXX {
     private Logger logger;
   
     private Thread shutdownHook;
-};
+}

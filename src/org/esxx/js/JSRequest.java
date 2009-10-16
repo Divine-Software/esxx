@@ -382,7 +382,7 @@ public class JSRequest
 	  throw new ESXXException("Invalid SOAP message: " + ex.getMessage());
 	}
 	finally {
-	  try { request.getInputStream().close(); } catch (Exception ex) {}
+	  try { request.getInputStream().close(); } catch (Exception ignored) {}
 	}
       }
       else if (contentType != null && contentLength > 0) {
@@ -398,7 +398,7 @@ public class JSRequest
 	  throw new ESXXException("Unable to parse request entity: " + ex.getMessage(), ex);
 	}
 	finally {
-	  try { request.getInputStream().close(); } catch (Exception ex) {}
+	  try { request.getInputStream().close(); } catch (Exception ignored) {}
 	}
       }
       else {

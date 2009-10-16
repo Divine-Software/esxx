@@ -198,7 +198,7 @@ public abstract class CacheBase {
 	static final long serialVersionUID = 8565024717836226408L;
     }
 
-    private LRUMap cachedURLs = new LRUMap();
+    private final LRUMap cachedURLs = new LRUMap();
 
     private int maxEntries;
     private long maxSize;

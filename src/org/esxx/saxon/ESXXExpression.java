@@ -128,13 +128,11 @@ public class ESXXExpression
 
     // Rhino depends on this method
     @Override public Object setUserData(String key, Object data, UserDataHandler handler) {
-      Object old = data;
-
       this.key = key;
       this.data = data;
       this.handler = handler;
 
-      return old;
+      return data;
     }
 
     // Rhino depends on this method

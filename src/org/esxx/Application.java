@@ -213,7 +213,7 @@ public class Application {
       // RPC style SOAP handler
 
       org.w3c.dom.Node    soap_header = null;
-      org.w3c.dom.Element soap_body   = null;
+      org.w3c.dom.Element soap_body;
 
       try {
 	soap_header = message.getSOAPHeader();
@@ -337,9 +337,7 @@ public class Application {
     JSResponse result;
     Object[] js_cmdline = new Object[cmdline.length];
 
-    for (int i = 0; i < cmdline.length; ++i) {
-      js_cmdline[i] = cmdline[i];
-    }
+    System.arraycopy(cmdline, 0, js_cmdline, 0, cmdline.length);
 
     req.setArgs(cx.newArray(applicationScope, js_cmdline));
     
@@ -1058,11 +1056,11 @@ public class Application {
     public String source;
     public Script code;
     public boolean hasExecuted;
-  };
+  }
 
   private static class TLS {
     HashMap<Object, JSLRUCache> caches = new HashMap<Object, JSLRUCache>();
-  };
+  }
 
   private class TimerHandler {
     TimerHandler(String delay, String period, String handler) {
@@ -1273,4 +1271,4 @@ public class Application {
   private Collection<TimerHandler> timerHandlers = new LinkedList<TimerHandler>();
 
   private static java.util.logging.Formatter logFormatter;
-};
+}

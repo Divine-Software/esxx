@@ -413,7 +413,7 @@ public class JSURI
 	@SuppressWarnings("unused") java.net.URL url = uri.toURL(); // Throws if the is no protocol handler for this URL
 	res = getProtocolHandler(key, "org.esxx.js.protocol.URLHandler");
       }
-      catch (java.net.MalformedURLException ex) {}
+      catch (java.net.MalformedURLException ignored) {}
     }
 
     if (res == null) {

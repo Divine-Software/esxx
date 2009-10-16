@@ -175,11 +175,11 @@ public class LRUCache<K, V> {
 
   /** Unconditionally inserts a value into the cache.
    *
-   *  @param key    The key
-   *  @param value  A ValueFactory
-   *  @param age    The maximum number of milliseconds to keep the value
-   *                in the cache. If 0, the cache's global maximum age
-   *                is used.
+   *  @param key     The key
+   *  @param factory A ValueFactory
+   *  @param age     The maximum number of milliseconds to keep the value
+   *                 in the cache. If 0, the cache's global maximum age
+   *                 is used.
    *
    *  @result The value that was replaced, or null if there were no
    *  previous value in the cache.
@@ -526,12 +526,12 @@ public class LRUCache<K, V> {
     V value;
   }
 
-  private LRUMap map;
+  private final LRUMap map;
 
   private int maxEntries;
   private long maxAge;
 
-  private LinkedList<LRUListener<K, V>> entryListeners = new LinkedList<LRUListener<K, V>>();
+  private final LinkedList<LRUListener<K, V>> entryListeners = new LinkedList<LRUListener<K, V>>();
 
   static final long serialVersionUID = 8565024717836226408L;
 }

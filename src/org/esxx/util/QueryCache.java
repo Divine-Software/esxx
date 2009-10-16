@@ -152,7 +152,7 @@ public class QueryCache {
   private long connectionTimeout;
   private int maxQueries;
   private long queryTimeout;
-  private HashMap<ConnectionKey, ConnectionPool> connectionPools;
+  private final HashMap<ConnectionKey, ConnectionPool> connectionPools;
 
 
   private class ConnectionKey {
@@ -191,7 +191,7 @@ public class QueryCache {
 
     public PooledConnection getConnection() 
       throws SQLException {
-      PooledConnection res = null;
+      PooledConnection res;
 
       synchronized (connections) {
 	do {
@@ -258,7 +258,7 @@ public class QueryCache {
 
     private URI uri;
     private Properties props;
-    private ArrayDeque<PooledConnection> connections;
+    private final ArrayDeque<PooledConnection> connections;
     private int numConnections;
   }
 

@@ -23,4 +23,4 @@ public interface StylesheetMXBean {
 
   public ApplicationStats getStatistics();
   public void unloadStylesheet();
-};
+}

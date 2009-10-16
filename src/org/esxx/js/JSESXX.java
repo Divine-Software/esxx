@@ -112,15 +112,13 @@ public class JSESXX
 
     public static boolean jsFunction_wait(Context cx, Scriptable thisObj,
 					  Object[] args, Function funcObj) {
-      Object   object = null;
-      Function   func = null;
-      long timeout_ms = 0;
-
       if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
 	throw Context.reportRuntimeError("Required argument missing.");
       }
 
-      object = args[0];
+      Object object = args[0];
+      Function   func = null;
+      long timeout_ms = 0;
 
       if (args.length >= 2) {
 	if (!(args[1] instanceof Number)) {
@@ -175,7 +173,7 @@ public class JSESXX
 
     public static void jsFunction_include(Context cx, Scriptable thisObj,
 					  Object[] args, Function funcObj)
-      throws java.net.MalformedURLException, IOException {
+      throws IOException {
       ESXX        esxx = ESXX.getInstance();
       JSESXX   js_esxx = (JSESXX) thisObj;
       Scriptable scope = ScriptableObject.getTopLevelScope(thisObj);
@@ -207,9 +205,7 @@ public class JSESXX
 
 	  is  = esxx.openCachedURL(uri.toURL());
 	}
-	catch (IOException ex) {
-	  
-	}
+	catch (IOException ignored) {}
 
 	if (is == null) {
 	  // Failed to resolve URL relative the current file's

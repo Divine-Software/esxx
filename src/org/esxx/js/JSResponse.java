@@ -45,8 +45,8 @@ public class JSResponse
 				     java.lang.Object[] args,
 				     Function ctorObj,
 				     boolean inNewExpr) {
-    int status           = 0;
-    Scriptable headers   = null;
+    int status;
+    Scriptable headers;
     Object result        = null;
     String content_type  = null;
 

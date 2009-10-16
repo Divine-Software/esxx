@@ -67,7 +67,7 @@ public class AttrChangeHelper {
         
         public synchronized void end() {
             
-            Object newValue = null;
+            Object newValue;
             try {
 
                 // for mxbeans - this will translate into the

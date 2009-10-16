@@ -33,7 +33,7 @@ public class TrivialFormatter
     StringBuffer sb = new StringBuffer();
 
     if (includeLevel) {
-      sb.append("[" + record.getLevel() + "] ");
+      sb.append("[").append(record.getLevel()).append("] ");
     }
 
     if (record.getSourceClassName() != null) {      

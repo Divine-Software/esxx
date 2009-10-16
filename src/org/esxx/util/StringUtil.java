@@ -89,7 +89,7 @@ public abstract class StringUtil {
 	int key      = (Integer) o;
 	String value = Context.toString(values.get(key, values));
 
-	sb.append(key + "=");
+	sb.append(key).append("=");
 	sb.append(URLEncoder.encode(value, cs));
       }
     }

@@ -160,4 +160,4 @@ public abstract class Request {
     private URI workingDirectory;
     private Properties cgiEnvironment;
     private Response quickResponse;
-};
+}

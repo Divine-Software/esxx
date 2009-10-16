@@ -155,7 +155,7 @@ public class MIMEParser {
 	    content_type = new ContentType(unquoted);
 	    ct = unquoted;
 	  }
-	  catch (ParseException ex2) {}
+	  catch (ParseException ignored) {}
 	}
 
 	if (content_type == null) {
@@ -175,7 +175,7 @@ public class MIMEParser {
 	part.setHeader("Content-Type", ct);
       }
 
-      int    part_type = 0;
+      int    part_type;
       Object content   = part.getContent();
 
       String base_type = content_type.getBaseType().toLowerCase();

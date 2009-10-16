@@ -49,7 +49,7 @@ class Worker {
       // 							      app.getAppName());
       //     }
 
-      JSResponse result = null;
+      JSResponse result;
 
       // Create a Request object
       JSRequest jsreq = (JSRequest) JSESXX.newObject(cx, global, "Request", 

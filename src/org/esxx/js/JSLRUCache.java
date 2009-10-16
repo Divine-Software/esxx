@@ -42,7 +42,7 @@ public class JSLRUCache
 	}
 
 	public void entryRemoved(String key, Object value) {
-	  Function destructor = null;
+	  Function destructor;
 
 	  synchronized (destructors) {
 	    // The value stored, not the key, is associated with the
@@ -152,5 +152,5 @@ public class JSLRUCache
   }
 
   private LRUCache<String, Object> cache;
-  private HashMap<Object, Function> destructors = new HashMap<Object, Function>();
+  private final HashMap<Object, Function> destructors = new HashMap<Object, Function>();
 }

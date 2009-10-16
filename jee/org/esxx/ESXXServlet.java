@@ -40,7 +40,7 @@ public class ESXXServlet extends HttpServlet {
       try {
 	Class.forName("org.h2.Driver");
       }
-      catch (ClassNotFoundException ex) {}
+      catch (ClassNotFoundException ignored) {}
 
       Properties p = new Properties(System.getProperties());
 

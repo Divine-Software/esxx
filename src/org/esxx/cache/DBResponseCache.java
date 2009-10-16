@@ -245,8 +245,8 @@ public class DBResponseCache
 	}
       }
       finally {
-	if (s != null) try { s.close(); } catch (Exception ex) {}
-	try { connection.close(); } catch (Exception ex) {}
+	if (s != null) try { s.close(); } catch (Exception ignored) {}
+	try { connection.close(); } catch (Exception ignored) {}
       }
     }
     catch (SQLException ex) {
@@ -293,7 +293,7 @@ public class DBResponseCache
 	getLogger().warning("WebCache BodyInserter failed: " + ex.getMessage());
       }
       finally {
-	if (connection != null) try { connection.close(); } catch (Exception ex) {}
+	if (connection != null) try { connection.close(); } catch (Exception ignored) {}
       }
     }
 

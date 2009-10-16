@@ -41,7 +41,7 @@ public class URIResolver
 
   public void closeAllStreams() {
     for (InputStream is : openedStreams) {
-      try { is.close(); } catch (IOException ex) {}
+      try { is.close(); } catch (IOException ignored) {}
     }
   }
 

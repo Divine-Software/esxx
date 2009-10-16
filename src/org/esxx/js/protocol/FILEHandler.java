@@ -142,7 +142,7 @@ public class FILEHandler
   }
 
   public static Element createDirectoryEntry(Document document, File f) {
-    Element element = null;
+    Element element;
 
     if (f.isDirectory()) {
       element = document.createElementNS(null, "directory");

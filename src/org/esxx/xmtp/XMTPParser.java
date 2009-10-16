@@ -215,7 +215,7 @@ public class XMTPParser {
 	    }
 	    else if (name.equals("Date")) {
 	      String value = convertPlainHeader(xr);
-	      Date   date = null;
+	      Date   date;
 
 	      try {
 		date = MIMEParser.ATOM_DATEFORMAT.parse(value);
@@ -304,7 +304,7 @@ public class XMTPParser {
 	// the XML document, which is somewhat ugly-looking.
 	ByteArrayOutputStream bo = new ByteArrayOutputStream(4096);
 	DOMResult             dr = null;
-	XMLEventWriter        ew = null;
+	XMLEventWriter        ew;
 	XMLEventReader        er = XMLInputFactory.newInstance().createXMLEventReader(xr);
 
 	javax.xml.stream.events.XMLEvent peek = er.peek();
@@ -352,11 +352,10 @@ public class XMTPParser {
 
 	er.close();
 	ew.flush();
-	er = null;
 
 	if (base_type.equals("text/x-html+xml")) {
 	  try {
-	    // Convert XHTML to HTML -- transfrom DOM node using HTML rules
+	    // Convert XHTML to HTML -- transform DOM node using HTML rules
 	    TransformerFactory tf = TransformerFactory.newInstance();
 	    tf.setFeature(javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING, true);
 
@@ -373,7 +372,7 @@ public class XMTPParser {
 		node = node.getNextSibling();
 
 		if (node == null) {
-		    throw new XMLStreamException("Unable to transfrom 'text/x-html+xml' into 'text/xml': "
+		    throw new XMLStreamException("Unable to transform 'text/x-html+xml' into 'text/xml': "
 						 + "Missing HTML node.");
 		}
 	    }
@@ -381,7 +380,7 @@ public class XMTPParser {
 	    tr.transform(new DOMSource(node), new StreamResult(bo));
 	  }
 	  catch (TransformerException ex) {
-	    throw new XMLStreamException("Unable to transfrom 'text/x-html+xml' into 'text/xml': "
+	    throw new XMLStreamException("Unable to transform 'text/x-html+xml' into 'text/xml': "
 					 + ex.getMessage(), ex);
 	  }
 
@@ -526,8 +525,10 @@ public class XMTPParser {
 	}
 
 	@Override
-	public void finalize() {
+	public void finalize()
+	  throws Throwable {
 	  tempFile.delete();
+	  super.finalize();
 	}
 
 	public String getContentType() {
