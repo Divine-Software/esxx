@@ -31,7 +31,7 @@
       <!-- Disables the use of worker threads, in order to make this servlet compatible
 	   with Google App Engine.
 
-	   Note that setting this propery to 0 also makes the JavaScript
+	   Note that setting this property to 0 also makes the JavaScript
 	   methods ESXX.map() and ESXX.parallel() single-threaded!
 
 	   For a real servlet container, you should set this property

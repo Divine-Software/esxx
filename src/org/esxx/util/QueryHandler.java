@@ -28,7 +28,7 @@ public interface QueryHandler {
    *
    *  Once this method has been called, the transaction will be
    *  committed (unless this method throws an exception, in which
-   *  case the tranaction will be rolled back.
+   *  case the transaction will be rolled back.
    *
    *  @throw SQLException Any exception thrown will trigger a rollback.
    */

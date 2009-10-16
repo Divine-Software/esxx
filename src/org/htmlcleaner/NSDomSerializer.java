@@ -44,9 +44,7 @@ public class NSDomSerializer {
 
     private void createSubnodes(Document document, Element element, List tagChildren) {
         if (tagChildren != null) {
-            Iterator it = tagChildren.iterator();
-            while (it.hasNext()) {
-                Object item = it.next();
+            for (Object item : tagChildren) {
                 if (item instanceof CommentToken) {
                     CommentToken commentToken = (CommentToken) item;
                     Comment comment = document.createComment( commentToken.getContent() );
@@ -67,9 +65,8 @@ public class NSDomSerializer {
 		    String elemNS = getNS(element, elemName);
                     Element subelement = document.createElementNS(elemNS, elemName );
                     Map attributes =  subTagNode.getAttributes();
-                    Iterator entryIterator = attributes.entrySet().iterator();
-                    while (entryIterator.hasNext()) {
-                        Map.Entry entry = (Map.Entry) entryIterator.next();
+                    for (Object e : attributes.entrySet()) {
+                        Map.Entry entry = (Map.Entry) e;
                         String attrName = (String) entry.getKey();
 			String attrNS = getNS(subelement, attrName);
                         String attrValue = (String) entry.getValue();
