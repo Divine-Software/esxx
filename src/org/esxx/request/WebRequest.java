@@ -356,7 +356,9 @@ public abstract class WebRequest
     }
     catch (Exception ex) {
       // This should never happen
-      ex.printStackTrace(new PrintWriter(dst));
+      PrintWriter pw = new PrintWriter(dst);
+      ex.printStackTrace(pw);
+      pw.close();
       return "text/plain";
     }
   }
