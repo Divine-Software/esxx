@@ -132,7 +132,7 @@ public class ThreadSafeExecutor
 	@Override public void run() {
 	  try {
 	    while (!isShutdown()) {
-	      TSFuture delayed = delayQueue.poll(1, TimeUnit.SECONDS);
+	      TSFuture<?> delayed = delayQueue.poll(1, TimeUnit.SECONDS);
 
 	      if (delayed != null) {
 		execute(delayed);
@@ -149,5 +149,5 @@ public class ThreadSafeExecutor
       });
   }
 
-  private DelayQueue<TSFuture> delayQueue = new DelayQueue<TSFuture>();
+  private DelayQueue<TSFuture<?>> delayQueue = new DelayQueue<TSFuture<?>>();
 }

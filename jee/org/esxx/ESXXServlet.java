@@ -45,7 +45,7 @@ public class ESXXServlet extends HttpServlet {
       Properties p = new Properties(System.getProperties());
 
       // Copy esxx.* servlet init parameters to p
-      for (Enumeration e = getInitParameterNames(); e.hasMoreElements(); ) {
+      for (Enumeration<?> e = getInitParameterNames(); e.hasMoreElements(); ) {
 	String name  = (String) e.nextElement();
 	String value = getInitParameter(name);
 
@@ -66,9 +66,10 @@ public class ESXXServlet extends HttpServlet {
 	  p.setProperty(name, value);
 	}
       }
-
+      
       fsRootURI = new File(resolvePath(getInitParameter("http-root"))).getAbsoluteFile().toURI();
-      esxx      = ESXX.initInstance(p, this);
+
+      ESXX.initInstance(p, this);
 
       // If running on Google App Engine, install a supported HTTP connection manager
       try {
@@ -85,7 +86,6 @@ public class ESXXServlet extends HttpServlet {
 
   @Override
   public void destroy() {
-    esxx = null;
     ESXX.destroyInstance();
   }
 
@@ -108,5 +108,4 @@ public class ESXXServlet extends HttpServlet {
   }
 
   private URI fsRootURI;
-  private ESXX esxx;
 }

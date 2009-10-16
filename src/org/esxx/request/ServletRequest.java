@@ -55,7 +55,7 @@ public class ServletRequest
 					fs_root_uri);
 
     // Add request headers
-    for (Enumeration e = sreq.getHeaderNames(); e.hasMoreElements(); ) {
+    for (Enumeration<?> e = sreq.getHeaderNames(); e.hasMoreElements(); ) {
       String h = (String) e.nextElement();
       p.setProperty(ESXX.httpToCGI(h), sreq.getHeader(h));
     }

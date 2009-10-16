@@ -97,7 +97,7 @@ public class ESXXExpression
       }
     }
 
-    if (value instanceof Collection) {
+    if (value instanceof Collection<?>) {
       value = ((Collection<?>) value).toArray();
     }
 
@@ -136,7 +136,7 @@ public class ESXXExpression
     }
 
     // Rhino depends on this method
-    public Object getUserData() {
+    @SuppressWarnings("unused") public Object getUserData() {
       return data;
     }
 
