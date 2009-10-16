@@ -50,7 +50,6 @@ public class ServletRequest
     Properties p = createCGIEnvironment(sreq.getMethod(), 
 					sreq.getProtocol(), 
 					full_request_uri,
-					path_translated,
 					sreq.getLocalAddr(), sreq.getLocalPort(),
 					sreq.getRemoteAddr(), sreq.getRemotePort(),
 					fs_root_uri);

@@ -48,7 +48,7 @@ public abstract class WebRequest
     String   path_info         = null;
     URI      script_filename   = null;
     URI      working_directory = null;
-    Response quick_response    = null;
+    Response quick_response;
 
     try {
       quick_response = getEmbeddedResource(request_uri.getQuery());
@@ -178,7 +178,6 @@ public abstract class WebRequest
 
   protected Properties createCGIEnvironment(String request_method, String protocol,
 					    URI full_request_uri,
-					    URI path_translated,
 					    String local_host, int local_port,
 					    String remote_host, int remote_port,
 					    URI root_uri) {
