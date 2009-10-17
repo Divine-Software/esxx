@@ -89,7 +89,19 @@ class Worker {
       response.unwrapResult();
 
       if (response.getResult() instanceof Node) {
-	handleTransformation(request, response, result, app, cx, global);
+	try {
+	  handleTransformation(request, response, result, app, cx, global);
+	}
+	catch (Exception ex) {
+	  // Invoke error handler on XSLT errors as well
+	  response = app.executeErrorHandler(cx, jsreq, ex).getResponse();
+
+	  response.unwrapResult();
+
+	  if (response.getResult() instanceof Node) {
+	    handleTransformation(request, response, result, app, cx, global);
+	  }
+	}
       }
 
       // Return response

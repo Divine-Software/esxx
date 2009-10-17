@@ -53,6 +53,9 @@
 	${REQUEST_URI} will be used by ESXX -- ${PATH_TRANSLATED}/
 	${SCRIPT_FILENAME} are ignored if this flag is supplied.
 
+	* The error handler is now also executed if the XSLT
+	transformation fails.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
