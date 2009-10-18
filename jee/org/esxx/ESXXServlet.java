@@ -67,7 +67,7 @@ public class ESXXServlet extends HttpServlet {
 	}
       }
       
-      fsRootURI = ESXX.createRootURI(resolvePath(getInitParameter("http-root")));
+      fsRootURI = ESXX.createFSRootURI(resolvePath(getInitParameter("http-root")));
 
       ESXX.initInstance(p, this);
 
