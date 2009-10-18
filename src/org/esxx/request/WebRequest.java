@@ -102,7 +102,14 @@ public abstract class WebRequest
 	  String script_name = null;
 
 	  if (req_path.endsWith(path_info)) {
-	    script_name = req_path.substring(0, req_path.length() - path_info.length());
+	    int length = req_path.length() - path_info.length();
+
+	    // Make sure script_name does not end with a slash
+	    while (length > 0 && req_path.charAt(length - 1) == '/') {
+	      --length;
+	    }
+
+	    script_name = req_path.substring(0, length);
 	    script_name = StringUtil.encodeURI(script_name, true);
 
 	    // Create the URI version of script_name, and terminate it

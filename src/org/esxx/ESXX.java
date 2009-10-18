@@ -1024,6 +1024,27 @@ public class ESXX {
     }
 
 
+    /** Prepare a file path to be used as a root URI
+     *
+     *  This function makes the path absolute and ensures that it
+     *  ends with a slash.
+     *
+     *  @param  fs_root A native file system path
+     *  @return An absolute file URI than ends with a slash
+     */
+
+    public static URI createFSRootURI(String fs_root) {
+      URI fs_root_uri = new File(fs_root).getAbsoluteFile().toURI();
+
+      String fs_root_uri_str = fs_root_uri.toString();
+
+      if (!fs_root_uri_str.endsWith("/")) {
+	fs_root_uri = URI.create(fs_root_uri_str + "/");
+      }
+
+      return fs_root_uri;
+    }
+
     /** This is ESXX ContextFactory, which makes sure all Rhino
      *  Context objects are set up with the desired properties and
      *  features.

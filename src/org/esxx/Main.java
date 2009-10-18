@@ -126,7 +126,7 @@ public class Main {
 // 									   Long.MAX_VALUE));
 
       // Default is to serve the current directory
-      URI fs_root_uri = new File(cmd.getOptionValue('r', "")).getAbsoluteFile().toURI();
+      URI fs_root_uri = ESXX.createFSRootURI(cmd.getOptionValue('r', ""));
 
       if (fastcgi_port != -1 && !cmd.hasOption('r')) {
 	// If not provided in FastCGI mode, use ${PATH_TRANSLATED}
