@@ -44,7 +44,7 @@ public class NSDomSerializer {
 
     private void createSubnodes(Document document, Element element, List tagChildren) {
         if (tagChildren != null) {
-            for (Object item : tagChildren) {
+	    for (Object item : tagChildren) {
                 if (item instanceof CommentToken) {
                     CommentToken commentToken = (CommentToken) item;
                     Comment comment = document.createComment( commentToken.getContent() );
@@ -55,6 +55,11 @@ public class NSDomSerializer {
                     String content = contentToken.getContent();
                     boolean specialCase = props.isUseCdataForScriptAndStyle() &&
                                           ("script".equalsIgnoreCase(nodeName) || "style".equalsIgnoreCase(nodeName));
+
+		    // Some characters simply cannot occur in an
+		    // XML document, encoded or not. Remove them.
+		    content = nonXMLChars.matcher((String) content).replaceAll("");
+
                     if (escapeXml && !specialCase) {
                         content = Utils.escapeXml(content, props, true);
                     }
@@ -65,15 +70,24 @@ public class NSDomSerializer {
 		    String elemNS = getNS(element, elemName);
                     Element subelement = document.createElementNS(elemNS, elemName );
                     Map attributes =  subTagNode.getAttributes();
-                    for (Object e : attributes.entrySet()) {
-                        Map.Entry entry = (Map.Entry) e;
+		    for (Object e : attributes.entrySet()) {
+			Map.Entry entry = (Map.Entry) e;
                         String attrName = (String) entry.getKey();
 			String attrNS = getNS(subelement, attrName);
                         String attrValue = (String) entry.getValue();
+			
+			// Some characters simply cannot occur in an
+			// XML document, encoded or not. Remove them.
+			attrValue = nonXMLChars.matcher(attrValue).replaceAll("");
+
                         if (escapeXml) {
                             attrValue = Utils.escapeXml(attrValue, props, true);
                         }
-                        subelement.setAttributeNS(attrNS, attrName, attrValue);
+
+			if (!attrName.equals("xmlns") &&
+			    !attrName.startsWith("xmlns:")) {
+			  subelement.setAttributeNS(attrNS, attrName, attrValue);
+			}
                     }
 
                     // recursively create subnodes
@@ -102,4 +116,8 @@ public class NSDomSerializer {
 
 	return elemNS;
     }
+
+    // XML 1.0 Characters looks kind of like this
+    private java.util.regex.Pattern nonXMLChars = 
+      java.util.regex.Pattern.compile("[^\t\n\r\\x20-\uD7FF\uE000-\uFFFD]");
 }
