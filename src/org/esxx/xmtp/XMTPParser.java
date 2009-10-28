@@ -262,18 +262,25 @@ public class XMTPParser {
 	params.set(xr.getAttributeLocalName(i), xr.getAttributeValue(i), "UTF-8");
       }
 
-      return convertPlainHeader(xr);
+      return xr.getElementText();
     }
 
     protected String convertPlainHeader(XMLStreamReader xr)
       throws XMLStreamException {
-      return xr.getElementText();
+      String value = xr.getElementText();
+      try {
+	return MimeUtility.encodeText(value);
+      }
+      catch (UnsupportedEncodingException ex) {
+	// Return raw value as-is
+	return value;
+      }
     }
 
     protected Address[] convertAddressHeader(XMLStreamReader xr)
       throws XMLStreamException {
       try {
-	String value = convertPlainHeader(xr);
+	String value = xr.getElementText();
 
 	return InternetAddress.parse(value);
       }

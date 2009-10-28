@@ -162,14 +162,17 @@ public class MIMEParser {
 	  // Try with just the first word or without params
 	  ct = ct.replaceAll("[\\s;].*", "");
 
-	  if ("".equals(ct)) {
-	    ct = "application/octet-stream"; // Give up
-	  }
-	  else if (ct.matches("(text|plain)")) {
+	  if (ct.matches("(text|plain)")) {
 	    ct = "text/plain";
 	  }
 
-	  content_type = new ContentType(ct);
+	  try {
+	    content_type = new ContentType(ct);
+	  }
+	  catch (ParseException ex2) {
+	    ct = "application/octet-stream"; // Give up
+	    content_type = new ContentType(ct);
+	  }
 	}
 
 	part.setHeader("Content-Type", ct);
@@ -179,7 +182,12 @@ public class MIMEParser {
       Object content   = part.getContent();
 
       String base_type = content_type.getBaseType().toLowerCase();
+      String charset   = content_type.getParameter("charset");
       InputStream content_stream = null;
+
+      if (charset == null) {
+	charset = "US-ASCII"; // or US-ASCII?
+      }
 
       if (content instanceof String) {
 	if (base_type.endsWith("/xml") || base_type.endsWith("+xml")) {
@@ -227,8 +235,7 @@ public class MIMEParser {
       switch (part_type) {
         case STRING_PART: {
 	  if (content_stream != null) {
-	    InputStreamReader isr = new InputStreamReader(content_stream, 
-							  content_type.getParameter("charset"));
+	    InputStreamReader isr = new InputStreamReader(content_stream, charset);
 	    StringWriter sw = new StringWriter();
 	    char[] buf = new char[4096];
 	    int len;
@@ -241,8 +248,7 @@ public class MIMEParser {
 	  }
 
 	  // Nuke all obviously illegal characters
-	  String value = nonPrintableChars.matcher((String) content).replaceAll("");
-
+	  String value = nonXMLChars.matcher((String) content).replaceAll("");
 	  convertTextPart(body, value);
 	  break;
 	}
@@ -287,7 +293,7 @@ public class MIMEParser {
 	  hp.setOmitDoctypeDeclaration(true); // Or we get an XML parser error :-(
 
 	  if (content_stream != null) {
-	    tn = hc.clean(content_stream, content_type.getParameter("charset"));
+	    tn = hc.clean(content_stream, charset);
 	  }
 	  else {
 	    tn = hc.clean((String) content);
@@ -520,7 +526,9 @@ public class MIMEParser {
 	}
       }
 
-      e.setTextContent(sb.toString());
+      // Nuke all obviously illegal characters
+      String value = nonXMLChars.matcher(sb.toString()).replaceAll("");
+      e.setTextContent(value);
       element.appendChild(e);
     }
 
@@ -588,11 +596,12 @@ public class MIMEParser {
       return new String(chars);
     }
 
-    private java.util.regex.Pattern controlChars = 
-	java.util.regex.Pattern.compile("\\p{Cntrl}");
+    // private java.util.regex.Pattern controlChars = 
+    // 	java.util.regex.Pattern.compile("\\p{Cntrl}");
 
-    private java.util.regex.Pattern nonPrintableChars = // Cntrl - Space
-      java.util.regex.Pattern.compile("[\\x00-\\x1F\\x7F&&[^ \\t\\n\\x0B\\f\\r]]");
+    // XML 1.0 Characters looks kind of like this
+    private java.util.regex.Pattern nonXMLChars = 
+      java.util.regex.Pattern.compile("[^\t\n\r\\x20-\uD7FF\uE000-\uFFFD]");
 
     private String decodeMIMEValue(String value) {
       if (value != null) {
@@ -605,7 +614,7 @@ public class MIMEParser {
       }
 
       // Nuke all obviously illegal characters
-      value = controlChars.matcher(value).replaceAll("");
+      value = nonXMLChars.matcher(value).replaceAll("");
 
       return value;
     }
