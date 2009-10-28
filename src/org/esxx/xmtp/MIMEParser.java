@@ -20,6 +20,7 @@ package org.esxx.xmtp;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.*;
 import javax.mail.*;
 import javax.mail.internet.*;
 import org.htmlcleaner.CleanerProperties;
@@ -32,9 +33,13 @@ import org.w3c.dom.bootstrap.*;
 
 public class MIMEParser {
     public MIMEParser(boolean xmtp, boolean use_ns,
-		      boolean process_html, boolean add_preamble)
+		      boolean process_html, boolean strip_js, boolean add_preamble)
       throws MessagingException, IOException,
       ClassNotFoundException, InstantiationException, IllegalAccessException {
+
+      if (strip_js && !process_html) {
+	throw new IllegalArgumentException("If 'strip_js' is true, 'process_html' must be too");
+      }
 
       // Make "mail.mime.decodeparameters" true if unspecified. Note
       // that this property is a System property and not a
@@ -48,6 +53,7 @@ public class MIMEParser {
 
       this.xmtpMode    = xmtp;
       this.procHTML    = process_html;
+      this.stripJS     = strip_js;
       this.addPreamble = add_preamble;
 
       if (use_ns) {
@@ -303,7 +309,13 @@ public class MIMEParser {
 	  replaceContentTypeElement(element, "text/x-html+xml");
 	  
 	  try {
-	    convertDOMPart(body, new NSDomSerializer(hp, true).createDOM(tn));
+	    Document doc = new NSDomSerializer(hp, true).createDOM(tn);
+	    
+	    if (stripJS) {
+	      stripJS(doc.getDocumentElement());
+	    }
+
+	    convertDOMPart(body, doc);
 	  }
 	  catch (javax.xml.parsers.ParserConfigurationException ex) {
 	    ex.printStackTrace();
@@ -642,6 +654,98 @@ public class MIMEParser {
       }
     }
 
+    private Pattern forbiddenURL 
+      = Pattern.compile("(about|javascript|livescript|mocha|vbscript):");
+    
+
+    private List<Node> nodeReferences(NodeList nl) {
+      // Convert NodeList into something that doesn't change when
+      // nodes are removed from the document
+      ArrayList<Node> list = new ArrayList<Node>(nl.getLength());
+
+      for (int i = 0; i < nl.getLength(); ++i) {
+    	list.add(nl.item(i));
+      }
+      
+      return list;
+    }
+
+    private List<Node> nodeReferences(NamedNodeMap nl) {
+      // Convert NodeList into something that doesn't change when
+      // nodes are removed from the document
+      ArrayList<Node> list = new ArrayList<Node>(nl.getLength());
+
+      for (int i = 0; i < nl.getLength(); ++i) {
+    	list.add(nl.item(i));
+      }
+
+      return list;
+    }
+
+    private String nodeName(Node n) {
+      String name = n.getLocalName();
+
+      if (name == null) {
+	name = n.getNodeName();
+      }
+
+      return name;
+    }
+
+    private void stripJS(Element elem) {
+      String name = nodeName(elem);
+
+      if ("script".equalsIgnoreCase(name)) {
+	// All script tags goes -- obviously
+	elem.getParentNode().removeChild(elem);
+	return;
+      }
+      else if ("style".equalsIgnoreCase(name)) {
+	Matcher m = forbiddenURL.matcher(elem.getTextContent());
+	if (m.find()) {
+	  // If a inline-CSS contains a suspicious URL, nuke them!
+	  elem.setTextContent(m.replaceAll("X-NUKED:"));
+	}
+      }
+
+      attr: for (Node n : nodeReferences(elem.getAttributes())) {
+	Attr attr = (Attr) n;
+
+	name = nodeName(attr).toLowerCase();
+
+	String value = attr.getValue().trim().toLowerCase();
+
+	if (name.startsWith("on")) {
+	  // All attributes that begins with 'on' are assumed to be
+	  // script handlers and will be removed
+	  elem.removeAttributeNode(attr);
+	  continue attr;
+	}
+	else if (name.equals("type") &&
+		 (value.indexOf("javascript") != -1 ||
+		  value.indexOf("vbscript") != -1)) {
+	  // Elements with a type attribute that contains the word
+	  // 'javascript' will also be removed (handles <style
+	  // type='text/javascript>{code}</style>)
+	  elem.getParentNode().removeChild(elem);
+	  break attr;
+	}
+
+	Matcher m = forbiddenURL.matcher(value);
+
+	if (m.find()) {
+	  attr.setValue(m.replaceAll("X-NUKED:"));
+	}
+      }
+
+      // Process all children
+      for (Node n : nodeReferences(elem.getChildNodes())) {
+	if (n.getNodeType() == Node.ELEMENT_NODE) {
+	  stripJS((Element) n);
+	}
+      }
+    }
+
     private static boolean isNameStartChar(char ch) {
       return (Character.isLetter(ch) || ch == '_');
     }
@@ -665,6 +769,7 @@ public class MIMEParser {
     private MimeMessage message;
     private boolean xmtpMode;
     private boolean procHTML;
+    private boolean stripJS;
     private boolean addPreamble;
 
     protected String documentNS;

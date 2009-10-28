@@ -404,24 +404,29 @@ class Parsers {
       boolean xmtp;
       boolean ns;
       boolean html;
+      boolean js;
 
       String fmt = mime_params.get("x-format");
       String prc = mime_params.get("x-process-html");
+      String sjs = mime_params.get("x-strip-js");
 
       if (fmt == null || fmt.equals("esxx")) {
 	xmtp = false;
 	ns   = false;
 	html = true;
+	js   = false;
       }
       else if (fmt.equals("xmtp")) {
 	xmtp = true;
 	ns   = true;
 	html = false;
+	js   = false;
       }
       else if (fmt.equals("xios")) {
 	xmtp = false;
 	ns   = true;
 	html = true;
+	js   = false;
       }
       else {
 	throw new IOException("No support for param 'x-format=" + fmt + "'");
@@ -440,8 +445,26 @@ class Parsers {
 	throw new IOException("Invalid value in param 'x-process-html=" + prc + "'");
       }
 
+
+      if (sjs == null) {
+	// Leave js as-is
+      }
+      else if (sjs.equals("true")) {
+	js = true;
+      }
+      else if (sjs.equals("false")) {
+	js = false;
+      }
+      else {
+	throw new IOException("Invalid value in param 'x-strip-js=" + sjs + "'");
+      }
+
+      if (js) {
+	html = true;
+      }
+
       try {
-	org.esxx.xmtp.MIMEParser p = new org.esxx.xmtp.MIMEParser(xmtp, ns, html, true);
+	org.esxx.xmtp.MIMEParser p = new org.esxx.xmtp.MIMEParser(xmtp, ns, html, js, true);
 	p.convertMessage(is);
 	Document result = p.getDocument();
 	return ESXX.domToE4X(result, cx, scope);
