@@ -113,12 +113,6 @@ public class ESXX {
 	throw new ESXXException("Illegal esxx.app.include_path value: " + ex.getMessage(), ex);
       }
 
-      memoryCache = new MemoryCache(
-	this,
-	Integer.parseInt(p.getProperty("esxx.cache.max_entries", "1024")),
-	Long.parseLong(p.getProperty("esxx.cache.max_size", "16")) * 1024 * 1024,
-	(long) (Double.parseDouble(p.getProperty("esxx.cache.max_age", "3600")) * 1000));
-
       applicationCache = new LRUCache<String, Application>(
 	Integer.parseInt(p.getProperty("esxx.cache.apps.max_entries", "1024")),
 	(long) (Double.parseDouble(p.getProperty("esxx.cache.apps.max_age", "3600")) * 1000));
@@ -603,11 +597,6 @@ public class ESXX {
       }
     }
 
-    public InputStream openCachedURL(URL url, String[] content_type)
-      throws IOException {
-      return memoryCache.openCachedURL(url, content_type);
-    }
-
     public InputStream openCachedURI(URI uri) 
       throws IOException {
 
@@ -621,12 +610,14 @@ public class ESXX {
 	return rsrc;
       }
 
-      return memoryCache.openCachedURL(uri.toURL(), null);
-    }
 
-    public InputStream openCachedURL(URL url)
-      throws IOException {
-      return memoryCache.openCachedURL(url, null);
+      URLConnection uc = uri.toURL().openConnection();
+
+      uc.setDoInput(true);
+      uc.setDoOutput(false);
+      uc.connect();
+
+      return uc.getInputStream();
     }
 
     public File createTempFile(Context cx) 
@@ -1223,7 +1214,6 @@ public class ESXX {
     private boolean addShutdownHook;
     private URI[] includePath;
 
-    private MemoryCache memoryCache;
     private LRUCache<String, Application> applicationCache;
     private LRUCache<String, Stylesheet> stylesheetCache;
 

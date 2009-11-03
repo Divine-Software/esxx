@@ -60,7 +60,7 @@ public class Application {
 
     baseURI           = request.getScriptFilename();
     baseURL           = baseURI.toURL();
-    workingDirectory  = request.getWD().toURL();
+    workingDirectory  = request.getWD();
     ident             = baseURL.getPath().replaceAll("^.*/", "").replaceAll("\\.[^.]*", "");
     started           = new Date();
 
@@ -175,16 +175,16 @@ public class Application {
 
 
   public synchronized void importAndExecute(Context cx, Scriptable scope, JSESXX js_esxx,
-					    URL url, InputStream is)
+					    URI uri, InputStream is)
     throws IOException {
-    Code c = importCode(url, is);
+    Code c = importCode(uri, is);
 
     if (c.code == null) {
-      c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
+      c.code = cx.compileString(c.source, c.uri.toString(), c.line, null);
     }
 
     if (!c.hasExecuted) {
-      JSURI old_uri = js_esxx.setLocation(cx, scope, c.url);
+      JSURI old_uri = js_esxx.setLocation(cx, scope, c.uri);
       c.code.exec(cx, scope);
       js_esxx.setLocation(old_uri);
       c.hasExecuted = true;
@@ -509,7 +509,7 @@ public class Application {
     return mainURI;
   }
 
-  public URL getWD() {
+  public URI getWD() {
     return workingDirectory;
   }
 
@@ -583,7 +583,7 @@ public class Application {
   private void loadMainFile()
     throws IOException {
     boolean is_handled = false;
-    InputStream is = esxx.openCachedURL(baseURL);
+    InputStream is = esxx.openCachedURI(baseURI);
 
     externalURIs.add(baseURI);
 
@@ -599,7 +599,7 @@ public class Application {
 	is.read() == '!') {
       // Skip shebang
       while (is.read() != '\n') {}
-      importCode(baseURL, is);
+      importCode(baseURI, is);
 
       is_handled = true;
     }
@@ -616,7 +616,7 @@ public class Application {
 	else if (!Character.isWhitespace(c)) {
 	  // Any other character except blanks triggers direct JS-mode
 	  is.reset();
-	  importCode(baseURL, is);
+	  importCode(baseURI, is);
 
 	  is_handled = true;
 	  break;
@@ -666,7 +666,7 @@ public class Application {
 	    n.getParentNode().removeChild(n);
 	  }
 	  else if (name.equals("esxx")) {
-	    addCode(baseURL, 0, n.getNodeValue());
+	    addCode(baseURI, 0, n.getNodeValue());
 	    n.getParentNode().removeChild(n);
 	  }
 	}
@@ -757,12 +757,12 @@ public class Application {
     xsltMatcher.compile();
 
     for (Code c : codeList.values()) {
-      c.code = cx.compileString(c.source, c.url.toString(), c.line, null);
+      c.code = cx.compileString(c.source, c.uri.toString(), c.line, null);
     }
 
     // Create JS versions of the document, it's URI and the include path
     mainDocument = ESXX.domToE4X(xml, cx, applicationScope);
-    mainURI = (JSURI) cx.newObject(applicationScope, "URI", new Object[] { baseURL });
+    mainURI = (JSURI) cx.newObject(applicationScope, "URI", new Object[] { baseURI });
     URI[] include_path = esxx.getIncludePath();
 
     includePath = cx.newArray(applicationScope, include_path.length);
@@ -777,7 +777,7 @@ public class Application {
     if (!hasExecuted) {
       for (Code c : codeList.values().toArray(new Code[0])) {
 	if (!c.hasExecuted) {
-	  JSURI old_uri = jsESXX.setLocation(cx, applicationScope, c.url);
+	  JSURI old_uri = jsESXX.setLocation(cx, applicationScope, c.uri);
 	  c.code.exec(cx, applicationScope);
 	  jsESXX.setLocation(old_uri);
 	  c.hasExecuted = true;
@@ -813,50 +813,41 @@ public class Application {
   }
 
 
-  private Code importCode(URL url)
+  private Code importCode(URI uri)
     throws IOException {
-    InputStream is = esxx.openCachedURL(url);
+    InputStream is = esxx.openCachedURI(uri);
 
     try {
-      return importCode(url, is);
+      return importCode(uri, is);
     }
     finally {
       is.close();
     }
   }
 
-  private Code importCode(URL url, InputStream is)
+  private Code importCode(URI uri, InputStream is)
     throws IOException {
-    try {
-      String key = url.toURI().normalize().toString();
-      Code     c = codeList.get(key);
 
-      if (c == null) {
-	ByteArrayOutputStream os = new ByteArrayOutputStream();
+    String key = uri.normalize().toString();
+    Code     c = codeList.get(key);
 
-	IO.copyStream(is, os);
-	c = addCode(url, 1, os.toString());
-      }
+    if (c == null) {
+      ByteArrayOutputStream os = new ByteArrayOutputStream();
 
-      return c;
+      IO.copyStream(is, os);
+      c = addCode(uri, 1, os.toString());
     }
-    catch (URISyntaxException ex) {
-      throw new IOException("Unable to include " + url + ": " + ex.getMessage(), ex);
-    }
+
+    return c;
   }
 
-  private Code addCode(URL url, int line, String data)
+  private Code addCode(URI uri, int line, String data)
     throws IOException {
-    try {
-      Code c = new Code(url, line, data);
-      codeList.put(url.toURI().normalize().toString(), c);
-      externalURIs.add(url.toURI());
+    Code c = new Code(uri, line, data);
+    codeList.put(uri.normalize().toString(), c);
+    externalURIs.add(uri);
 
-      return c;
-    }
-    catch (URISyntaxException ex) {
-      throw new IOException("Unable to include " + url + ": " + ex.getMessage(), ex);
-    }
+    return c;
   }
 
 
@@ -879,9 +870,9 @@ public class Application {
     }
 
     try {
-      xsltMatcher.addRequestPattern("", "", new URL(baseURL, href).toString());
+      xsltMatcher.addRequestPattern("", "", baseURI.resolve(new URI(href)).toString());
     }
-    catch (MalformedURLException ex) {
+    catch (URISyntaxException ex) {
       throw new ESXXException("<?esxx-stylesheet?> attribute 'href' is invalid: " +
 			      ex.getMessage());
     }
@@ -900,9 +891,9 @@ public class Application {
     }
 
     try {
-      importCode(new URL(baseURL, href));
+      importCode(baseURI.resolve(new URI(href)));
     }
-    catch (MalformedURLException ex) {
+    catch (URISyntaxException ex) {
       throw new ESXXException("<?esxx-include?> attribute 'href' is invalid: " +
 			      ex.getMessage(), ex);
     }
@@ -1013,9 +1004,9 @@ public class Application {
     }
 
     try {
-      xsltMatcher.addRequestPattern(media_type, uri, new URL(baseURL, href).toString());
+      xsltMatcher.addRequestPattern(media_type, uri, baseURI.resolve(new URI(href)).toString());
     }
-    catch (MalformedURLException ex) {
+    catch (URISyntaxException ex) {
       throw new ESXXException("<stylesheet> attribute 'href' is invalid: " +
 			      ex.getMessage());
     }
@@ -1040,8 +1031,8 @@ public class Application {
   }
 
   private static class Code {
-    public Code(URL u, int l, String s) {
-      url = u;
+    public Code(URI u, int l, String s) {
+      uri = u;
       line = l;
       source = s;
       code = null;
@@ -1049,10 +1040,10 @@ public class Application {
     }
 
     @Override public String toString() {
-      return url.toString() + "::" + line + ": " + code;
+      return uri.toString() + "::" + line + ": " + code;
     }
 
-    public URL url;
+    public URI uri;
     public int line;
     public String source;
     public Script code;
@@ -1229,7 +1220,7 @@ public class Application {
   private URI baseURI;
   private URL baseURL;
   private HashSet<URI> externalURIs = new HashSet<URI>();
-  private URL workingDirectory;
+  private URI workingDirectory;
 
   private String ident;
   private Logger logger;

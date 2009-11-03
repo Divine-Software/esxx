@@ -46,9 +46,9 @@ public class JSESXX
       this.location = null;
     }
 
-    public JSURI setLocation(Context cx, Scriptable scope, URL url) {
+    public JSURI setLocation(Context cx, Scriptable scope, URI uri) {
       JSURI old_location = location;
-      location = (JSURI) cx.newObject(scope, "URI", new Object[] { url });
+      location = (JSURI) cx.newObject(scope, "URI", new Object[] { uri });
       return old_location;
     }
 
@@ -188,7 +188,7 @@ public class JSESXX
 
       if (args[0] instanceof JSURI) {
 	uri = ((JSURI) args[0]).getURI();
-	is  = esxx.openCachedURL(uri.toURL());
+	is  = esxx.openCachedURI(uri);
       }
       else {
 	String file = Context.toString(args[0]);
@@ -203,7 +203,7 @@ public class JSESXX
 	    uri = js_esxx.wd.getURI().resolve(file);
 	  }
 
-	  is  = esxx.openCachedURL(uri.toURL());
+	  is  = esxx.openCachedURI(uri);
 	}
 	catch (IOException ignored) {}
 
@@ -216,7 +216,7 @@ public class JSESXX
 	  for (Object path : paths_to_try) {
 	    try {
 	      uri = ((JSURI) path).getURI().resolve(file);
-	      is  = esxx.openCachedURL(uri.toURL());
+	      is  = esxx.openCachedURI(uri);
 	      // On success, break
 	      break;
 	    }
@@ -232,7 +232,7 @@ public class JSESXX
       }
 
       try {
-	app.importAndExecute(cx, scope, js_esxx, uri.toURL(), is);
+	app.importAndExecute(cx, scope, js_esxx, uri, is);
       }
       finally {
 	is.close();

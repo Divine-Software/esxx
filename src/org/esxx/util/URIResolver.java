@@ -99,7 +99,7 @@ public class URIResolver
 
   private InputStream getIS(URI uri) 
     throws IOException {
-    InputStream is = esxx.openCachedURL(uri.toURL());
+    InputStream is = esxx.openCachedURI(uri);
 
     if (logVisited != null) {
       // Log visited URIs if successfully opened

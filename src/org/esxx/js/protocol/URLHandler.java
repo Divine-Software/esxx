@@ -21,6 +21,7 @@ package org.esxx.js.protocol;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.HashMap;
 import org.esxx.*;
 import org.esxx.js.*;
@@ -37,17 +38,23 @@ public class URLHandler
   public Object load(Context cx, Scriptable thisObj,
 		     String type, HashMap<String,String> params)
     throws Exception {
-    ESXX      esxx = ESXX.getInstance();
-    URL        url = jsuri.getURI().toURL();
-    String[]    ct = { null };
-    InputStream is = esxx.openCachedURL(url, ct);
+    ESXX        esxx = ESXX.getInstance();
+    URL          url = jsuri.getURI().toURL();
+    URLConnection uc = url.openConnection();
+
+    uc.setDoInput(true);
+    uc.setDoOutput(false);
+    uc.connect();
+
+    String      ct = uc.getContentType();
+    InputStream is = uc.getInputStream();
 
     if (type == null) {
-      if (ct[0] != null) {
-	type = ESXX.parseMIMEType(ct[0], params);
+      if (ct != null) {
+	type = ESXX.parseMIMEType(ct, params);
       }
       else {
-	type = "text/xml";
+	type = "application/octet-stream";
       }
     }
 
