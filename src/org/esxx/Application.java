@@ -447,7 +447,7 @@ public class Application {
     return true;
   }
 
-  public synchronized void terminate(long timeout) {
+  public synchronized boolean terminate(long timeout) {
     // Cancel all timers
     for (TimerHandler th : timerHandlers) {
       if (th.future != null) {
@@ -455,21 +455,22 @@ public class Application {
       }
     }
 
-    while (enterCount != 0) {
-      try {
-	this.wait(timeout);
-      }
-      catch (InterruptedException ex) {
-	// Preserve status and, since enterCount != 0, thow TimeOut
-	Thread.currentThread().interrupt();
-      }
+    // Prevent new requests from enter()-ing
+    terminated = true;
 
-      if (enterCount != 0) {
-	throw new ESXXException.TimeOut();
+    try {
+      while (enterCount > 0 && timeout > 0) {
+	long t = Math.min(100, timeout);
+	timeout -= t;
+	this.wait(t);
       }
-
-      terminated = true;
     }
+    catch (InterruptedException ex) {
+      // Preserve status
+      Thread.currentThread().interrupt();
+    }
+
+    return enterCount == 0;
   }
 
   public synchronized void exit(long start_time) {
