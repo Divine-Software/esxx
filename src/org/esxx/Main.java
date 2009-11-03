@@ -20,6 +20,7 @@ package org.esxx;
 
 import java.io.*;
 import java.net.URI;
+import java.util.Properties;
 import org.apache.commons.cli.*;
 import org.esxx.request.*;
 
@@ -110,9 +111,14 @@ public class Main {
       }
 
       if (script != null) {
+	Properties p   = System.getProperties();
+	String forever = Long.toString(3600 * 24 * 365 * 10 /* 10 years */);
+
 	// "Never" unload Applications in script mode
-	System.getProperties().setProperty("esxx.cache.apps.max_age", 
-					   Long.toString(3600 * 24 * 365 * 10 /* 10 years */));
+	p.setProperty("esxx.cache.apps.max_age", forever);
+
+	// Kill process immediately on Ctrl-C
+	p.setProperty("esxx.app.clean_shutdown", "false");
       }
 
       ESXX esxx = ESXX.initInstance(System.getProperties(), null);

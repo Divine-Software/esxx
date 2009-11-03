@@ -73,7 +73,7 @@ public class ESXX {
     }
 
     public static void destroyInstance() {
-      if (esxx != null) {
+      if (esxx != null && esxx.shutdownHook != null) {
 	Runtime.getRuntime().removeShutdownHook(esxx.shutdownHook);
 	esxx.terminate();
 	esxx = null;
@@ -97,11 +97,12 @@ public class ESXX {
       settings = p;
       hostObject = h;
 
-      defaultTimeout = (int) (Double.parseDouble(settings.getProperty("esxx.app.timeout", "60")) 
+      defaultTimeout = (int) (Double.parseDouble(p.getProperty("esxx.app.timeout", "60")) 
 			      * 1000);
+      addShutdownHook = Boolean.parseBoolean(p.getProperty("esxx.app.clean_shutdown", "true"));
 
       try {
-	String[] path = settings.getProperty("esxx.app.include_path", "").split(File.pathSeparator);
+	String[] path = p.getProperty("esxx.app.include_path", "").split(File.pathSeparator);
 	includePath = new URI[path.length];
 
 	for (int i = 0; i < path.length; ++i) {
@@ -114,19 +115,19 @@ public class ESXX {
 
       memoryCache = new MemoryCache(
 	this,
-	Integer.parseInt(settings.getProperty("esxx.cache.max_entries", "1024")),
-	Long.parseLong(settings.getProperty("esxx.cache.max_size", "16")) * 1024 * 1024,
-	(long) (Double.parseDouble(settings.getProperty("esxx.cache.max_age", "3600")) * 1000));
+	Integer.parseInt(p.getProperty("esxx.cache.max_entries", "1024")),
+	Long.parseLong(p.getProperty("esxx.cache.max_size", "16")) * 1024 * 1024,
+	(long) (Double.parseDouble(p.getProperty("esxx.cache.max_age", "3600")) * 1000));
 
       applicationCache = new LRUCache<String, Application>(
-	Integer.parseInt(settings.getProperty("esxx.cache.apps.max_entries", "1024")),
-	(long) (Double.parseDouble(settings.getProperty("esxx.cache.apps.max_age", "3600")) * 1000));
+	Integer.parseInt(p.getProperty("esxx.cache.apps.max_entries", "1024")),
+	(long) (Double.parseDouble(p.getProperty("esxx.cache.apps.max_age", "3600")) * 1000));
 
       applicationCache.addListener(new ApplicationCacheListener());
 
       stylesheetCache = new LRUCache<String, Stylesheet>(
-	Integer.parseInt(settings.getProperty("esxx.cache.xslt.max_entries", "1024")),
-	(long) (Double.parseDouble(settings.getProperty("esxx.cache.xslt.max_age", "3600")) * 1000));
+	Integer.parseInt(p.getProperty("esxx.cache.xslt.max_entries", "1024")),
+	(long) (Double.parseDouble(p.getProperty("esxx.cache.xslt.max_age", "3600")) * 1000));
 
       stylesheetCache.addListener(new StylesheetCacheListener());
 
@@ -161,7 +162,7 @@ public class ESXX {
 	  }
 	};
 
-      int worker_threads = Integer.parseInt(settings.getProperty("esxx.worker_threads", "-1"));
+      int worker_threads = Integer.parseInt(p.getProperty("esxx.worker_threads", "-1"));
 
        if (worker_threads == -1) {
 	 // Use an unbounded thread pool
@@ -196,29 +197,33 @@ public class ESXX {
 //       main.setSize(800, 600);
 //       main.setVisible(true);
 
-      try {
-	// Terminate all apps when the JVM exits
-	shutdownHook = new Thread() {
-	    public void run() {
-	      terminate();
-	    }
-	  };
+      if (addShutdownHook) {
+	try {
+	  // Terminate all apps when the JVM exits
+	  shutdownHook = new Thread() {
+	      public void run() {
+		terminate();
+	      }
+	    };
 
-	Runtime.getRuntime().addShutdownHook(shutdownHook);
-      }
-      catch(Exception ex) {
-	getLogger().logp(Level.WARNING, null, null, "Failed to add shutdown hook");
+	  Runtime.getRuntime().addShutdownHook(shutdownHook);
+	}
+	catch(Exception ex) {
+	  getLogger().logp(Level.WARNING, null, null, "Failed to add shutdown hook");
+	}
       }
     }
 
 
     /** Terminate all apps and shut down worker threads */
     private void terminate() {
-      Workload w;
+      // Workload w;
 
-      while ((w = workloadSet.poll()) != null) {
-	w.future.cancel(true);
-      }
+      // while ((w = workloadSet.poll()) != null) {
+      // 	if (w.interruptable) {
+      // 	  w.future.cancel(true /* may interrupt */);
+      // 	}
+      // }
 
       applicationCache.clear();
       stylesheetCache.clear();
@@ -317,17 +322,8 @@ public class ESXX {
 	}, timeout);
     }
 
-    public Workload addJSFunction(Context old_cx, final Scriptable scope, final Function func,
-				  final Object[] args, int timeout) {
-      return addContextAction(old_cx, new ContextAction() {
-	  public Object run(Context cx) {
-	    return func.call(cx, scope, scope, args);
-	  }
-
-	}, timeout);
-    }
-
-    public Workload addContextAction(Context old_cx, final ContextAction ca, int timeout) {
+    public Workload addContextAction(Context old_cx, final ContextAction ca, 
+				     int timeout) {
       long expires;
 
       if (timeout == -1) {
@@ -853,7 +849,7 @@ public class ESXX {
 	  pool.shutdownNow(); // Cancel currently executing tasks
 	  // Wait a while for tasks to respond to being cancelled
 	  if (!pool.awaitTermination(60, TimeUnit.SECONDS))
-	    System.err.println("Pool did not terminate");
+	    getLogger().logp(Level.SEVERE, null, null, "Pool did not terminate");
 	}
       } catch (InterruptedException ie) {
 	// (Re-)Cancel if current thread also interrupted
@@ -896,7 +892,7 @@ public class ESXX {
 	      app.clearPLS();
 	      return null;
 	    }
-	  }, -1 /* no timeout */);
+	  }, defaultTimeout);
 
 	try {
 	  workload.future.get();
@@ -1119,7 +1115,7 @@ public class ESXX {
 
       @Override public void observeInstructionCount(Context cx, int instruction_count) {
 	Workload workload = (Workload) cx.getThreadLocal(Workload.class);
-	
+
 	if (workload == null) {
 	  return;
 	}
@@ -1224,6 +1220,7 @@ public class ESXX {
     private Pattern noHandlerMode = Pattern.compile("");
 
     private int defaultTimeout;
+    private boolean addShutdownHook;
     private URI[] includePath;
 
     private MemoryCache memoryCache;
