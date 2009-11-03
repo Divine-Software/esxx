@@ -46,6 +46,13 @@
   <xsl:template match="/error">
     <xsl:variable name="view">
       <view>
+	<comment xml:space="preserve">
+<xsl:value-of select="title" />: <xsl:value-of select="subtitle" />
+
+<xsl:value-of select="message" />
+
+<xsl:if test="stacktrace/text()"><xsl:value-of select="stacktrace"/></xsl:if></comment>
+
 	<post title="{title}" date="{current-dateTime()}">
 	  <h3><xsl:value-of select="subtitle" /></h3>
 	  <p><xsl:value-of select="message" /></p>
@@ -176,6 +183,10 @@
   </xsl:template>
 
   <xsl:template match="x:view">
+    <xsl:if test="x:comment">
+      <xsl:comment><xsl:value-of select="x:comment" /></xsl:comment>
+    </xsl:if>
+
     <html>
       <head>
 	<title>ESXX &#8212; <xsl:value-of select="x:post/@title" /></title>
@@ -207,7 +218,7 @@
 		  <input type="submit" name="sa" value="Search" class="button"/>
 		</fieldset>
 	      </form>
-	      <script><![CDATA[
+	      <script type="text/javascript"><![CDATA[
 (function() {
   var f = document.getElementById("cse-search-box");
   if (f) if (f.q) {
