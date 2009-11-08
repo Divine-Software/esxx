@@ -336,11 +336,13 @@ public class HTTPHandler
 	if (type == null) {
 	  Header hdr = entity.getContentType();
 	  type = hdr == null ? "application/octet-stream" : hdr.getValue();
+
+	  result.contentType = type;
+	  type = ESXX.parseMIMEType(type, params);
 	}
-
-	result.contentType = type;
-
-	type = ESXX.parseMIMEType(type, params);
+	else {
+	  result.contentType = ESXX.combineMIMEType(type, params);
+	}
 
 	ESXX   esxx    = ESXX.getInstance();
 	//	JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
