@@ -21,6 +21,7 @@ package org.esxx.js.protocol;
 import java.net.URISyntaxException;
 import java.sql.*;
 import java.util.Properties;
+import java.util.HashMap;
 import org.esxx.*;
 import org.esxx.js.JSURI;
 import org.esxx.util.QueryCache;
@@ -138,7 +139,16 @@ public class JDBCHandler
 	      }
 
 	      for (int i = 0; i < count; ++i) {
-		XML.addChild(row, names[i], rs.getString(i + 1));
+		String value  = rs.getString(i + 1);
+		Element child = XML.addChild(row, names[i], value);
+
+		int type = rmd.getColumnType(i + 1);
+
+		if (value == null) {
+		  type = Types.NULL;
+		}
+
+		child.setAttributeNS(null, "type", typeToString.get(type));
 	      }
 
 	      root.appendChild(row);
@@ -166,4 +176,45 @@ public class JDBCHandler
 
 
   private static QueryCache queryCache;
+
+  private static HashMap<Integer, String> typeToString = new HashMap<Integer, String>();
+
+  static {
+    typeToString.put(Types.ARRAY,         "array");
+    typeToString.put(Types.BIGINT,        "bigint");
+    typeToString.put(Types.BINARY,        "binary");
+    typeToString.put(Types.BIT,           "bit");
+    typeToString.put(Types.BLOB,          "blob");
+    typeToString.put(Types.BOOLEAN,       "boolean");
+    typeToString.put(Types.CHAR,          "char");
+    typeToString.put(Types.CLOB,          "clob");
+    typeToString.put(Types.DATALINK,      "datalink");
+    typeToString.put(Types.DATE,          "date");
+    typeToString.put(Types.DECIMAL,       "decimal");
+    typeToString.put(Types.DISTINCT,      "distinct");
+    typeToString.put(Types.DOUBLE,        "double");
+    typeToString.put(Types.FLOAT,         "float");
+    typeToString.put(Types.INTEGER,       "integer");
+    typeToString.put(Types.JAVA_OBJECT,   "javaobject");
+    typeToString.put(Types.LONGNVARCHAR,  "longnvarchar");
+    typeToString.put(Types.LONGVARBINARY, "longvarbinary");
+    typeToString.put(Types.LONGVARCHAR,   "longvarchar");
+    typeToString.put(Types.NCHAR,         "nchar");
+    typeToString.put(Types.NCLOB,         "nclob");
+    typeToString.put(Types.NULL,          "null");
+    typeToString.put(Types.NUMERIC,       "numeric");
+    typeToString.put(Types.NVARCHAR,      "nvarchar");
+    typeToString.put(Types.OTHER,         "other");
+    typeToString.put(Types.REAL,          "real");
+    typeToString.put(Types.REF,           "ref");
+    typeToString.put(Types.ROWID,         "rowid");
+    typeToString.put(Types.SMALLINT,      "smallint");
+    typeToString.put(Types.SQLXML,        "sqlxml");
+    typeToString.put(Types.STRUCT,        "struct");
+    typeToString.put(Types.TIME,          "time");
+    typeToString.put(Types.TIMESTAMP,     "timestamp");
+    typeToString.put(Types.TINYINT,       "tinyint");
+    typeToString.put(Types.VARBINARY,     "varbinary");
+    typeToString.put(Types.VARCHAR,       "varchar");
+  }
 }
