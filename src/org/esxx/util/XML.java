@@ -22,11 +22,16 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 public abstract class XML {
-  public static void addChild(Element element, String name, String value) {
+  public static Element addChild(Element element, String name, String value) {
     Document document = element.getOwnerDocument();
 
     Element e = document.createElementNS(null, name);
-    e.appendChild(document.createTextNode(value));
+
+    if (value != null) {
+      e.appendChild(document.createTextNode(value));
+    }
+
     element.appendChild(e);
+    return e;
   }
 }
