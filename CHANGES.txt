@@ -56,6 +56,19 @@
 	* The error handler is now also executed if the XSLT
 	transformation fails.
 
+	* The message/rfc822 parser now accepts param x-strip-js to
+	remove scripts from embedded HTML.
+
+	* Error responses now include a plain-text version as a
+	comment at the top. Useful if you're reading the error message
+	in an HTTP analyzer.
+
+	* Bug fix: Content-Type override did not work for http: and
+	https: protocols.
+
+	* SQL query responses now include a type attribute, which also
+	indicates NULL results.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
