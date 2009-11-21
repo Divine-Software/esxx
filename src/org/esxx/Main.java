@@ -59,6 +59,7 @@ public class Main {
     mode_opt.addOption(new Option("H", "http",    true, ("Listen for HTTP requests on " +
 							 "this <port>")));
     mode_opt.addOption(new Option("s", "script", false, "Force script mode."));
+    mode_opt.addOption(new Option("S", "shell",  false, "Enter ESXX shell mode."));
     mode_opt.addOption(new Option(null,"db-console", false, "Open H2's database console."));
 
     opt.addOptionGroup(mode_opt);
@@ -72,10 +73,11 @@ public class Main {
       CommandLineParser parser = new GnuParser();
       CommandLine cmd = parser.parse(opt, args, false);
 
-      int fastcgi_port = -1;
-      int     ajp_port = -1;
-      int    http_port = -1;
-      String[]  script = null;
+      int fastcgi_port  = -1;
+      int     ajp_port  = -1;
+      int    http_port  = -1;
+      boolean run_shell = false;
+      String[]  script  = null;
 
       if (cmd.hasOption('?')) {
 	usage(opt, null, 0);
@@ -92,6 +94,9 @@ public class Main {
       }
       else if (cmd.hasOption('s')) {
 	script = cmd.getArgs();
+      }
+      else if (cmd.hasOption('S')) {
+	run_shell= true;
       }
       else if (cmd.hasOption("db-console")) {
 	org.h2.tools.Console.main(cmd.getArgs());
@@ -147,6 +152,19 @@ public class Main {
       }
       else if (http_port != -1) {
 	Jetty.runJettyServer(http_port, -1, fs_root_uri);
+      }
+      else if (run_shell) {
+	ShellRequest sr = new ShellRequest();
+	sr.initRequest();
+
+	ESXX.Workload wl = esxx.addRequest(sr, sr, -1 /* no timeout for the shell */);
+
+	try {
+	  System.exit((Integer) wl.future.get());
+	}
+	catch (java.util.concurrent.CancellationException ex) {
+	  System.exit(5);
+	}	
       }
       else if (script != null && script.length != 0) {
 	File file = new File(script[0]);

@@ -146,9 +146,101 @@ public abstract class JS {
     }
   }
 
+  public static void printObject(Context cx, Scriptable scope, Object object) {
+    if (object instanceof RhinoException) {
+      RhinoException ex = (RhinoException) object;
+
+      do {
+	System.out.println("-> " + ex.getClass().getSimpleName() + " from " 
+			   + ex.sourceName() + ", line " + ex.lineNumber()
+			   + ", column " + ex.columnNumber()
+			   + (ex.lineSource() != null ?
+			      ", near " + ex.lineSource() : "")
+			   + ":");
+
+	if (object instanceof JavaScriptException) {
+	  object = ((JavaScriptException) object).getValue();
+	}
+	else if (object instanceof WrappedException) {
+	  object = ((WrappedException) object).getWrappedException();
+	}
+	else {
+	  object = ex.details();
+	}
+      }
+      while (object instanceof JavaScriptException || object instanceof WrappedException);
+    }
+
+    while (object instanceof Wrapper) {
+      System.out.println("-> " + object.getClass().getSimpleName() + ":");
+      object = ((Wrapper) object).unwrap();
+    }
+
+    if (object instanceof Throwable) {
+      System.out.println("-> " + object.getClass().getSimpleName() + ":");
+      object = ((Throwable) object).getMessage();
+    }
+
+    if (object instanceof String) {
+      System.out.println("-> `" + object + "́");
+    }
+    else if (object instanceof Number || object instanceof Boolean) {
+      System.out.println("-> " + object);
+    }
+    else if (object == Context.getUndefinedValue()) {
+      System.out.println("-> undefined");
+    }
+    else if (object instanceof Scriptable) {
+      Scriptable thiz = (Scriptable) object;
+
+      System.out.println("-> JavaScript " + thiz.getClassName() + ":");
+
+      Object to_source = ScriptableObject.getProperty(thiz, "toSource");
+
+      if (to_source == Scriptable.NOT_FOUND) {
+	to_source = ScriptableObject.getProperty(thiz, "toXMLString"); // Fallback for XMLList
+      }
+
+      if (to_source == Scriptable.NOT_FOUND) {
+	to_source = ScriptableObject.getProperty(thiz, "toString");
+      }
+
+      if (to_source instanceof Function) {
+	Function ts = (Function) to_source;
+
+	try {
+	  System.out.println("-> " 
+			     + ts.call(cx, scope, thiz, Context.emptyArgs).toString().trim());
+	}
+	catch (Exception ignored) {
+	  printPlainObject(object);
+	}
+      }
+      else if (object instanceof Function) {
+	System.out.println("-> " + cx.decompileFunction((Function) object, 3).trim());
+      }
+      else {
+	printPlainObject(object);
+      }
+    }
+    else {
+      printPlainObject(object);
+    }
+  }
+
+  private static void printPlainObject(Object object) {
+    try {
+      if (object.getClass().getMethod("toString").getDeclaringClass() != Object.class) {
+	System.out.println("-> " + JS.toString(object) + ":");
+      }
+    }
+    catch (Exception ignored) {}
+
+    System.out.println("-> " + object);
+  }
 
   public static String toString(Object o) {
-    return o.getClass().getSimpleName() + "@" + Integer.toHexString(o.hashCode());
+    return o.getClass().getName() + "@" + Integer.toHexString(o.hashCode());
   }
 
   public static class JSFilenameFilter

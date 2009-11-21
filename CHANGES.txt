@@ -69,6 +69,9 @@
 	* SQL query responses now include a type attribute, which also
 	indicates NULL results.
 
+	* Added a --shell command line parameter, which starts the
+	ESXX Shell.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
