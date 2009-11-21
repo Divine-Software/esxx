@@ -59,9 +59,9 @@ public class Application {
     esxx = ESXX.getInstance();
 
     baseURI           = request.getScriptFilename();
-    baseURL           = baseURI.toURL();
     workingDirectory  = request.getWD();
-    ident             = baseURL.getPath().replaceAll("^.*/", "").replaceAll("\\.[^.]*", "");
+    ident             = (baseURI.getSchemeSpecificPart()
+			 .replaceAll("^.*/", "").replaceAll("\\.[^.]*", ""));
     started           = new Date();
 
     loadMainFile();
@@ -69,7 +69,7 @@ public class Application {
   }
 
   @Override public String toString() {
-    return "[" + this.getClass().getName() + ": " + baseURL + "]";
+    return "[" + this.getClass().getName() + ": " + baseURI + "]";
   }
 
   public JSGlobal getJSGlobal() {
@@ -1193,7 +1193,6 @@ public class Application {
   private ESXX esxx;
   private JMXBean jmxBean;
   private URI baseURI;
-  private URL baseURL;
   private HashSet<URI> externalURIs = new HashSet<URI>();
   private URI workingDirectory;
 
