@@ -29,13 +29,32 @@ public class ScriptRequest
 
   public ScriptRequest() {
     super(System.in, System.err);
+
+    scriptHandler = new Handler() {
+	public Object handleRequest(Context cx, Request req, Application app)
+	  throws Exception {
+//	    Object[] js_cmdline = new Object[cmdline.length];
+
+//	    System.arraycopy(cmdline, 0, js_cmdline, 0, cmdline.length);
+
+	    return JS.callJSMethod("main", commandLine, //js_cmdline, 
+				   "Program entry" , 
+				   cx, app.getJSGlobal());
+	}
+      };
+
   }
 
   public void initRequest(java.net.URI app_file, String[] cmdline)
     throws IOException {
+    commandLine = cmdline;
     initRequest(null, null, null, null,
-		app_file, cmdline, new java.io.File("").toURI(), new java.util.Properties(),
+		app_file, new java.io.File("").toURI(), new java.util.Properties(),
 		null);
+  }
+
+  public Handler getHandler() {
+    return scriptHandler;
   }
 
   public Integer handleResponse(Response response)
@@ -90,4 +109,7 @@ public class ScriptRequest
       return 20;
     }
   }
+
+  private Handler scriptHandler;
+  private String[] commandLine;
 }

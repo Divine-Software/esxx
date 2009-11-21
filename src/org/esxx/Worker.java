@@ -56,8 +56,8 @@ class Worker {
 						     new Object[] { request });
 
       try {
-	if (request instanceof org.esxx.request.ScriptRequest) {
-	  result = app.executeMain(cx, jsreq, request.getCommandLine());
+	if (request.getHandler() != null) {
+	  result = app.wrapResult(cx, request.getHandler().handleRequest(cx, request, app));
 	}
 	else if (app.hasHandlers()) {
 	  // Execute the SOAP or HTTP handler (if available)
@@ -76,7 +76,7 @@ class Worker {
 	else {
 	  // No handlers; the document is the result
 
-	  result = app.wrapResult(cx, jsreq, app.getMainDocument());
+	  result = app.wrapResult(cx, app.getMainDocument());
 	}
       }
       catch (Exception ex) {

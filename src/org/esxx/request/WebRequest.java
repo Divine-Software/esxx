@@ -137,7 +137,7 @@ public abstract class WebRequest
     }
 
     super.initRequest(request_method, request_uri, script_uri, path_info,
-		      script_filename, null, working_directory, cgi_env,
+		      script_filename, working_directory, cgi_env,
 		      quick_response);
   }
 

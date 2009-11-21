@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.Properties;
 import java.util.logging.*;
 import org.esxx.util.TrivialFormatter;
+import org.mozilla.javascript.Context;
 
 public abstract class Request {
     public Request(InputStream in, OutputStream error) {
@@ -36,7 +37,6 @@ public abstract class Request {
 			       URI script_uri,
 			       String path_info,
 			       URI script_filename,
-			       String[] command_line,
 			       URI working_directory,
 			       Properties cgi_env,
 			       Response quick_response) {
@@ -45,7 +45,6 @@ public abstract class Request {
       scriptURI        = script_uri;
       pathInfo         = path_info;
       scriptFilename   = script_filename;
-      commandLine      = command_line;
       workingDirectory = working_directory;
       cgiEnvironment   = cgi_env;
       quickResponse    = quick_response;
@@ -79,10 +78,6 @@ public abstract class Request {
       return workingDirectory;
     }
 
-    public String[] getCommandLine() {
-      return commandLine;
-    }
-
     public InputStream getInputStream() {
       return in;
     }
@@ -97,6 +92,10 @@ public abstract class Request {
 
     public Response getQuickResponse() {
       return quickResponse;
+    }
+
+    public Handler getHandler() {
+      return null;
     }
 
     public synchronized Logger getReqLogger() {
@@ -123,6 +122,11 @@ public abstract class Request {
       else {
 	return "";
       }
+    }
+
+    public interface Handler {
+      public Object handleRequest(Context cx, Request req, Application app)
+	throws Exception;
     }
 
     private Logger logger;
@@ -156,7 +160,6 @@ public abstract class Request {
     private URI scriptURI;
     private URI scriptFilename;
     private String pathInfo;
-    private String[] commandLine;
     private URI workingDirectory;
     private Properties cgiEnvironment;
     private Response quickResponse;

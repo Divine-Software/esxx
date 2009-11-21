@@ -94,7 +94,7 @@ public class Application {
 
   public synchronized Logger getAppLogger() {
     if (logger == null) {
-      logger = Logger.getLogger(Application.class.getName() + "." + ident);
+      logger = Logger.getLogger(Application.class.getName() + "." + getAppName());
 
       if (logger.getHandlers().length == 0) {
 	try {
@@ -237,7 +237,7 @@ public class Application {
 
 	// Don't wrap result yet, but do check for null/undefined
 	if (result == null || result == Context.getUndefinedValue()) {
-	  throw new ESXXException("No result from '" + req.jsGet_scriptName() + "'");
+	  throw new ESXXException("No result from '" + getAppName() + "'");
 	}
       }
       catch (Exception ex) {
@@ -287,7 +287,7 @@ public class Application {
       result = ESXX.domToE4X(message.getSOAPPart(), cx, applicationScope);
     }
 
-    return wrapResult(cx, req, result);
+    return wrapResult(cx, result);
   }
 
   public JSResponse executeHTTPMethod(final Context cx, final JSRequest req,
@@ -310,10 +310,9 @@ public class Application {
 	  Object args[] = { req };
 
 	  try {
-	    result = wrapResult(cx, req, 
-				JS.callJSMethod(match.handler, args, 
-						"'" + request_method + "' handler",
-						cx, applicationScope));
+	    result = wrapResult(cx, JS.callJSMethod(match.handler, args, 
+						    "'" + request_method + "' handler",
+						    cx, applicationScope));
 	  }
 	  catch (Exception ex) {
 	    result = executeErrorHandler(cx, req, ex);
@@ -329,29 +328,6 @@ public class Application {
     else {
       return hcb.execute(req);
     }
-  }
-
-  public JSResponse executeMain(Context cx, JSRequest req,
-				String[] cmdline)
-    throws Exception {
-    JSResponse result;
-    Object[] js_cmdline = new Object[cmdline.length];
-
-    System.arraycopy(cmdline, 0, js_cmdline, 0, cmdline.length);
-
-    req.setArgs(cx.newArray(applicationScope, js_cmdline));
-    
-    try {
-      result = wrapResult(cx, req, 
-			  JS.callJSMethod("main", js_cmdline, 
-					  "Program entry" , 
-					  cx, applicationScope));
-    }
-    catch (Exception ex) {
-      result = executeErrorHandler(cx, req, ex);
-    }
-
-    return result;
   }
 
   public void executeExitHandler(Context cx) {
@@ -415,7 +391,7 @@ public class Application {
       }
     }
 
-    return wrapResult(cx, req, result);
+    return wrapResult(cx, result);
   }
 
   public JSResponse executeFilter(Context cx, JSRequest req, Function next, String filter)
@@ -424,10 +400,9 @@ public class Application {
     Object args[] = { req, next };
 
     try {
-      result = wrapResult(cx, req,
-			  JS.callJSMethod(filter, args, 
-					  "'" + filter + "' filter", 
-					  cx, applicationScope));
+      result = wrapResult(cx, JS.callJSMethod(filter, args, 
+					      "'" + filter + "' filter", 
+					      cx, applicationScope));
     }
     catch (Exception ex) {
       result = executeErrorHandler(cx, req, ex);
@@ -558,9 +533,9 @@ public class Application {
     return exitHandler;
   }
 
-  public JSResponse wrapResult(Context cx, JSRequest req, Object result) {
+  public JSResponse wrapResult(Context cx, Object result) {
     if (result == null || result == Context.getUndefinedValue()) {
-      throw new ESXXException("No result from '" + req.jsGet_scriptName() + "'");
+      throw new ESXXException("No result from '" + getAppName() + "'");
     }
     else if (result instanceof JSResponse) {
       return (JSResponse) result;
