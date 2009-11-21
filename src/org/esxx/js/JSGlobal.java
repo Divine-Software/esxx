@@ -34,6 +34,10 @@ public class JSGlobal
     ScriptableObject.defineClass(this, JSURI.class);
   }
 
+  @Override public String getClassName() {
+    return "ESXX.Global"; // This is the only place where the "ESXX" prefix is ok
+  }
+
   public JSESXX createJSESXX(Context cx, Application app) {
     Object js_esxx = get("esxx", this);
 
