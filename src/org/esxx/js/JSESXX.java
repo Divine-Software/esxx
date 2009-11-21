@@ -360,7 +360,7 @@ public class JSESXX
     }
 
     public synchronized JSLogger jsGet_log() {
-      if (logger == null) {
+      if (logger == null && app != null) {
 	Context cx = Context.getCurrentContext();
 	logger = (JSLogger) newObject(cx, this, "Logger", new Object[] { app, app.getAppName() });
       }
