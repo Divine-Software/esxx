@@ -58,8 +58,13 @@ public class ShellRequest
     final ConsoleReader reader = new ConsoleReader();
     final StringBuilder sb     = new StringBuilder();
     
-    System.out.println("Welcome to the ESXX Shell. Enter JavaScript statements at the prompt.");
-    System.out.println("Use Escape to cancel current statement and Control-D to exit.");
+    reader.addCompletor(new PropertyCompletor(app.getJSGlobal()));
+    reader.setAutoprintThreshhold(150);
+    reader.setUsePagination(true);
+
+    System.out.println("Welcome to the ESXX Shell!");
+    System.out.println("Enter JavaScript statements at the prompt. Tab completion is supported.");
+    System.out.println("Use Escape to cancel the current statement and Control-D to exit.");
 
     reader.addTriggeredAction((char) 27, new ActionListener() {
 	public void actionPerformed(ActionEvent e) {
@@ -115,6 +120,120 @@ public class ShellRequest
 
     JS.printObject(cx, scope, result);
   }
+
+  private class PropertyCompletor
+    implements Completor {
+    public PropertyCompletor(Scriptable scope) {
+      this.scope = scope;
+    }
+
+    public int complete(String buffer, int cursor, List candidates) {
+      int begin = cursor;
+      int trail = -1;
+
+      // Cut anything after the cursor
+      buffer = buffer.substring(0, cursor);
+
+      while (begin > 0) {
+	char c = buffer.charAt(begin - 1);
+
+	if (c == '.') {
+	  if (trail == -1) {
+	    trail = begin - 1;
+	  }
+	}
+	else if (!Character.isJavaIdentifierPart(c)) {
+	  break;
+	}
+
+	--begin;
+      }
+
+      String prefix  = null;
+      String postfix = null;
+
+      if (trail != -1) {
+	prefix  = buffer.substring(begin, trail);
+	postfix = buffer.substring(trail + 1);
+	cursor  = trail + 1;
+      }
+      else {
+	postfix = buffer.substring(begin);
+	cursor  = begin;
+      }
+
+      //      System.out.println("Looking for '" + postfix + "' in '" + prefix + "'");
+
+      Scriptable base = JS.evaluateObjectExpr(prefix, scope);
+
+      if (base != null) {
+	Set<Object> members = getAllMembers(base);
+
+	if (base == scope) {
+	  // Add JS keywords in global scope
+	  members.addAll(reserved);
+	}
+
+	for (Object o : members) {
+	  String name = Context.toString(o);
+	  if (name.startsWith(postfix)) {
+	    candidates.add(name);
+	  }
+	}
+
+	if (candidates.size() == 1 && postfix.equals(candidates.get(0))) {
+	  candidates.clear();
+
+	  Object member = ScriptableObject.getProperty(base, postfix);
+
+	  if (member == Scriptable.NOT_FOUND ||
+	      !(member instanceof Scriptable) ||
+	      getAllMembers((Scriptable) member).isEmpty()) {
+	    candidates.add(postfix + " ");
+	  }
+	  else if (member instanceof Scriptable) {
+	    candidates.add(postfix + ".");
+	  }
+	}
+      }
+
+
+      return cursor;
+    }
+
+    Scriptable scope;
+  }
+
+  private Set<Object> getAllMembers(Scriptable scope) {
+    Set<Object> members = new HashSet<Object>();
+
+    while (scope != null) {
+      if (scope instanceof DebuggableObject) {
+	members.addAll(Arrays.asList(((DebuggableObject) scope).getAllIds()));
+      }
+      else {
+	members.addAll(Arrays.asList(scope.getIds()));
+      }
+
+      scope = scope.getPrototype();
+    }
+
+    return members;
+  }
+
+  private static List reserved = Arrays.asList(new String[]{
+      // JS reserved
+      "break", "case", "catch", "continue", "default", "delete", "do", 
+      "else", "finally", "for", "function", "if", "in", "instanceof", 
+      "new", "return", "switch", "this", "throw", "try", "typeof", 
+      "var", "void", "while", "with",
+
+      // Special
+      "false", "true", "null", "undefined",
+
+      // Mozilla
+      "const"
+    });
 
   private Handler scriptHandler;
   private String[] commandLine;

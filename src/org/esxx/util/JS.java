@@ -25,6 +25,26 @@ import org.esxx.ESXXException;
 import org.mozilla.javascript.*;
 
 public abstract class JS {
+  public static Scriptable evaluateObjectExpr(String object_expr, Scriptable scope) {
+    Scriptable object = scope;
+
+    if (object_expr != null) {
+      String path[] = dotPattern.split(object_expr, 0);
+
+      for (String p : path) {
+	Object o = ScriptableObject.getProperty(object, p);
+
+	if (o == Scriptable.NOT_FOUND || !(o instanceof Scriptable)) {
+	  return null;
+	}
+
+	object = (Scriptable) o;
+      }
+    }
+
+    return object;
+  }
+
   public static Object callJSMethod(String expr,
 				    Object[] args, String identifier,
 				    Context cx, Scriptable scope) {
@@ -45,36 +65,14 @@ public abstract class JS {
     return callJSMethod(object, method, args, identifier, cx, scope);
   }
 
-  private static Pattern dotPattern = Pattern.compile("\\.");
-  
   public static Object callJSMethod(String object_expr, String method,
 				    Object[] args, String identifier,
 				    Context cx, Scriptable scope) {
-    Scriptable object = scope;
-    String     function_name;
+    Scriptable object = evaluateObjectExpr(object_expr, scope);
+    String     function_name = object == scope ? method : object_expr + "." + method;
 
-    if (object_expr == null) {
-      function_name = method;
-    }
-    else {
-      function_name = object_expr + "." + method;
-
-      String path[] = dotPattern.split(object_expr, 0);
-
-      for (String p : path) {
-	Object o = ScriptableObject.getProperty(object, p);
-
-	if (o == Scriptable.NOT_FOUND) {
-	  throw new ESXXException(identifier + " component " + p + " not found in " + object_expr);
-	}
-
-	if (!(o instanceof Scriptable)) {
-	  throw new ESXXException(identifier + " component " + p + " in " + object_expr 
-				  + " is not of required type");
-	}
-
-	object = (Scriptable) o;
-      }
+    if (object == null) {
+      throw new ESXXException(object_expr + " cannot be evalualted.");
     }
 
     Object m = ScriptableObject.getProperty(object, method);
@@ -250,4 +248,6 @@ public abstract class JS {
       return !is_java;
     }
   }
+
+  private static Pattern dotPattern = Pattern.compile("\\.");
 }
