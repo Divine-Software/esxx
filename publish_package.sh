@@ -1,22 +1,38 @@
 #!/bin/bash
 
-RPM_SRV=martin@blom.org
-RPM_DIR=/opt/Media/esxx.org/repos/rpm/
-
-DEB_SRV=martin@blom.org
-DEB_DIR=/opt/Media/esxx.org/repos/deb/
-
-IPS_SRV=lcs@192.168.1.102
-IPS_RPO=http://localhost:10001
-
 set -e
 
-if [ $# -ne 1 ]; then
-    echo "Usage: $0 <package>"
+if [ $# -ne 2 ]; then
+    echo "Usage: $0 <package> <test|release>"
     exit 10
 fi
 
 pkg_file=$1
+pkg_mode=$2
+
+RPM_SRV=martin@blom.org
+DEB_SRV=martin@blom.org
+IPS_SRV=lcs@192.168.1.102
+
+case ${pkg_mode} in
+    test)
+	RPM_DIR=/opt/Media/esxx.org/repos/rpm-testing/
+	DEB_DIR=/opt/Media/esxx.org/repos/deb-testing/
+	IPS_RPO=http://localhost:10010
+	;;
+
+    release)
+	RPM_DIR=/opt/Media/esxx.org/repos/rpm/
+	DEB_DIR=/opt/Media/esxx.org/repos/deb/
+	IPS_RPO=http://localhost:10011
+	;;
+
+    *)
+	echo "Unsupported mode: ${pkg_mode}"
+	exit 20
+	;;
+esac
+	
 
 case ${pkg_file} in
     *.dmg)
@@ -43,17 +59,19 @@ case ${pkg_file} in
 	;;
 esac
 
-case $(uname) in 
-    SunOS|Linux)
-	ncftpput ftp.berlios.de incoming/ ${pkg_file}
-	;;
+if [ "${pkg_mode}" = "release" ]; then
+    case $(uname) in 
+	SunOS|Linux)
+	    ncftpput ftp.berlios.de incoming/ ${pkg_file}
+	    ;;
 
-    Darwin)
-	ftp -u ftp://ftp.berlios.de/incoming/ ${pkg_file}
-	;;
+	Darwin)
+	    ftp -u ftp://ftp.berlios.de/incoming/ ${pkg_file}
+	    ;;
 
-    *)
-	echo "Unsupported system: $(uname)"
-	exit 20
-	;;
-esac
+	*)
+	    echo "Unsupported system: $(uname)"
+	    exit 20
+	    ;;
+    esac
+fi
