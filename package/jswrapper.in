@@ -1,7 +1,7 @@
 #!/bin/bash
 
 JAVA=java
-JVMARGS=
+JVMARGS="-client"
 ESXX_PATH="@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@:@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@/site"
 ARGS=("$@")
 LIBS=$(echo @SHARE_INSTALL_PREFIX@/@PROJECT_NAME@/{lib,site/lib}/*.jar | tr ' ' '|')

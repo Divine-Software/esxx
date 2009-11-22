@@ -72,6 +72,12 @@
 	* Added a --shell command line parameter, which starts the
 	ESXX Shell.
 
+	* The esxx-js shell wrapper now uses the client Java VM by
+	default, for faster startup times. (You could also try to
+	generate the shared class dump using the command 
+	"java -client -Xshare:dump", which might improve things
+	even more.)
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
