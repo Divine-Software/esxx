@@ -32,6 +32,7 @@ public class JSGlobal
 
     ScriptableObject.defineClass(this, JSESXX.class);
     ScriptableObject.defineClass(this, JSURI.class);
+    this.delete(getClassName());
   }
 
   @Override public String getClassName() {
