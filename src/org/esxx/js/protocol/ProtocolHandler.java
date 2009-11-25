@@ -63,39 +63,5 @@ public class ProtocolHandler {
 				       "' does not support query().");
     }
 
-    protected static Object evalProperty(Context cx, Scriptable obj, String key) {
-      Object rc;
-
-      if (obj == null || key == null) {
-	throw Context.reportRuntimeError("Can't find property " + key + " in " + obj);
-      }
-
-      Object obj_key;
-
-      try {
-	obj_key = Integer.parseInt(key);
-	key = null;
-      }
-      catch (NumberFormatException ex) {
-	obj_key = key;
-      }
-
-      if (obj instanceof org.mozilla.javascript.xml.XMLObject) {
-	rc = Context.toString(((org.mozilla.javascript.xml.XMLObject) obj).ecmaGet(cx, obj_key));
-      }
-      else if (key != null) {
-	rc = ScriptableObject.getProperty(obj, key);
-      }
-      else {
-	rc = ScriptableObject.getProperty(obj, (Integer) obj_key);
-      }
-
-      if (rc == Scriptable.NOT_FOUND) {
-	throw Context.reportRuntimeError("Can't find property " + key + " in " + obj);
-      }
-
-      return rc;
-    }
-
     protected JSURI jsuri;
 }

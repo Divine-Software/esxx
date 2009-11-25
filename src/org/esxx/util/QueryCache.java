@@ -22,12 +22,15 @@ import java.net.URI;
 import java.sql.*;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Properties;
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
 import org.esxx.cache.LRUCache;
 import org.esxx.util.StringUtil;
+
+import org.mozilla.javascript.Scriptable;
 
 /** An easy-to-use SQL query cache and connection pool. */
 
@@ -56,7 +59,7 @@ public class QueryCache {
 	public void execute(PooledConnection pc) 
 	  throws SQLException {
 	  
-	  Query q = pc.getQuery(query);
+	  Query q = pc.getQuery(query, qh);
 	  q.bindParams(qh);
 	  q.execute(qh);
 	}
@@ -292,16 +295,19 @@ public class QueryCache {
       return connection;
     }
 
-    public Query getQuery(final String query) 
+    public Query getQuery(String query, final QueryHandler qh)
       throws SQLException {
       // "Touch" connection
       expires = System.currentTimeMillis() + connectionTimeout;
 
       try {
-	return queryCache.add(query, new LRUCache.ValueFactory<String, Query>() {
+	final List<Query.Param> params = new ArrayList<Query.Param>();
+	final String parsed_query = Query.parseQuery(query, params, qh);
+
+	return queryCache.add(parsed_query, new LRUCache.ValueFactory<String, Query>() {
 	    public Query create(String key, long expires)
 	      throws SQLException {
-	      return new Query(query, connection);
+	      return new Query(parsed_query, params, connection);
 	    }
 	  }, 0);
       }
@@ -345,24 +351,18 @@ public class QueryCache {
 
 
   private static class Query {
-    public Query(String unparsed_query, Connection db)
+    public Query(String parsed_query, List<Param> parsed_params, Connection db)
       throws SQLException {
 
-      params = new ArrayList<String>();
-      String query = StringUtil.format(unparsed_query, new StringUtil.ParamResolver() {
-	  public String resolveParam(String param) {
-	    params.add(param);
-	    return "?";
-	  }
-	});
+      params = parsed_params;
 
       try {
-	sql = db.prepareCall(query);
+	sql = db.prepareCall(parsed_query);
 	pmd = sql.getParameterMetaData();
       }
       catch (SQLException ex) {
 	throw new SQLException("JDBC failed to prepare ESXX-parsed SQL statement: " +
-			       query + ": " + ex.getMessage());
+			       parsed_query + ": " + ex.getMessage());
       }
 
       if (pmd.getParameterCount() != params.size()) {
@@ -375,8 +375,8 @@ public class QueryCache {
       throws SQLException {
       int p = 1;
 
-      for (String param : params) {
-	sql.setObject(p, qh.resolveParam(param));
+      for (Param param : params) {
+	sql.setObject(p, qh.resolveParam(param.name, param.child));
 	++p;
       }
     }
@@ -428,7 +428,52 @@ public class QueryCache {
       }
     }
 
-    private ArrayList<String> params;
+    public static String parseQuery(String unparsed_query, final List<Param> query_params,
+				    final QueryHandler qh) {
+      query_params.clear();
+
+      return StringUtil.format(unparsed_query, new StringUtil.ParamResolver() {
+	  public String resolveParam(String param) {
+	    Object obj = qh.resolveParam(param, null);
+
+	    if (obj instanceof Scriptable) {
+	      // Expand Scriptable to a comma-separated list of ?s
+	      StringBuilder sb = null;
+
+	      for (Object child : ((Scriptable) obj).getIds()) {
+		query_params.add(new Param(param, child));
+
+		if (sb == null) {
+		  sb = new StringBuilder();
+		}
+		else {
+		  sb.append(',');
+		}
+
+		sb.append('?');
+	      }
+
+	      return sb.toString();
+	    }
+	    else {
+	      query_params.add(new Param(param, null));
+	      return "?";
+	    }
+	  }
+	});
+    }
+
+    public static class Param {
+      Param(String n, Object c) {
+	name  = n;
+	child = c;
+      }
+
+      String name;
+      Object child;
+    };
+
+    private List<Param> params;
     private CallableStatement sql;
     private ParameterMetaData pmd;
   }

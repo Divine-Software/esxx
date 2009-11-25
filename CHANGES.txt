@@ -78,6 +78,11 @@
 	"java -client -Xshare:dump", which might improve things
 	even more.)
 
+	* The SQL query builder now supports JS objects as parameters,
+	in which case all enumberable properties will be added as a
+	comma-separeted list. Very useful for queries like 
+	"SELECT ... WHERE IN (param)".
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

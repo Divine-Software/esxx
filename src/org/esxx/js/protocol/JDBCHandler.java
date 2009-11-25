@@ -111,9 +111,19 @@ public class JDBCHandler
 	    final_result[0] = final_function.call(cx, thiz, thiz, Context.emptyArgs);
 	  }
 
-	  public Object resolveParam(String param) 
-	    throws SQLException {
-	    return ProtocolHandler.evalProperty(cx, final_params, param);
+	  public Object resolveParam(String param, Object child) {
+	    Object obj = ScriptRuntime.getObjectElem(final_params, param, cx);
+
+	    if (child != null) {
+	      if (obj instanceof Scriptable) {
+		obj = ScriptRuntime.getObjectElem((Scriptable) obj, child, cx);
+	      }
+	      else {
+		throw new ESXXException("Unsuppored property object: " + obj);
+	      }
+	    }
+
+	    return obj;
 	  }
 
 	  public void handleResult(int set, int uc, ResultSet rs) 

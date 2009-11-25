@@ -42,15 +42,14 @@ public interface QueryHandler {
    *  named {...} parameter in the SQL query.
    *
    *  @param param  The name of the parameter to be resolved.
+   *  @param child  The name of a property in the param, or null to
+   *  return the param itself.
    *
    *  @return  An Object suitable as value in PreparedStatement.setObject().
    *
-   *  @throw SQLException May be thrown, and will be propagated back
-   *  from executeQuery()
    */
 
-  public Object resolveParam(String param)
-    throws SQLException;
+  public Object resolveParam(String param, Object child);
 
   /** Transform SQL result.
    *
