@@ -21,10 +21,11 @@ package org.esxx.request;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.sql.*;
 import java.awt.event.*;
 import jline.*;
 import org.esxx.*;
-import org.esxx.util.JS;
+import org.esxx.util.*;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.debug.DebuggableObject;
 
@@ -64,7 +65,7 @@ public class ShellRequest
 
     System.out.println("Welcome to the ESXX Shell!");
     System.out.println("Enter JavaScript statements at the prompt. Tab completion is supported.");
-    System.out.println("Use Escape to cancel the current statement and Control-D to exit.");
+    System.out.println("Use Escape to cancel the current statement and Control-D \\q to quit.");
 
     reader.addTriggeredAction((char) 27, new ActionListener() {
 	public void actionPerformed(ActionEvent e) {
@@ -75,8 +76,9 @@ public class ShellRequest
       });
 
     int line_counter = 1;
+    boolean quit = false;
 
-    while (true) {
+    while (!quit) {
       String prompt = line_counter == 1 ? "esxx> " : (line_counter + "> ");
       String line   = reader.readLine(prompt);
 
@@ -92,6 +94,26 @@ public class ShellRequest
       String statement = sb.toString().trim();
 
       if (statement.length() == 0) {
+	line_counter = 1;
+      }
+      else if (statement.charAt(0) == '\\') {
+	char cmd = statement.length() >= 2 ? statement.charAt(1) : '\0';
+
+	switch (cmd) {
+	  case 'h':
+	    displayHelp(reader, statement.substring(2));
+	    break;
+	
+	  case 'q':
+	    quit = true;
+	    break;
+
+	  default:
+	    System.out.println("Unknown command");
+	    break;
+	}
+
+	sb.setLength(0);
 	line_counter = 1;
       }
       else if (cx.stringIsCompilableUnit(statement)) {
@@ -120,6 +142,98 @@ public class ShellRequest
 
     JS.printObject(cx, scope, result);
   }
+
+  private synchronized void displayHelp(ConsoleReader reader, String args) 
+    throws IOException {
+    ESXX esxx = ESXX.getInstance();
+
+    if (helpDB == null) {
+      helpDB = File.createTempFile(getClass().getName(), "zip");
+      helpDB.deleteOnExit();
+
+      IO.copyStream(esxx.openCachedURI(URI.create("esxx-rsrc:esxx-help.zip")), 
+		    new FileOutputStream(helpDB));
+
+      helpURI = URI.create("jdbc:h2:zip:" + helpDB + "/mdc;DB_CLOSE_DELAY=-1");
+    }
+
+    if (helpQuery == null) {
+      helpQuery = new QueryCache(1, 60000, 10, 60000);
+    }
+
+//     String[] terms = args.split(" ");
+
+//     ArrayList<Integer> docs = new ArrayList<Integer>();
+
+//     helpQuery.executeQuery(helpURI, null,
+// 			   "select distinct dw.doc_id "
+// 			   + "from words w "
+// 			   + "inner join doc_words dw on dw.word_id = w.id "
+// 			   + "where w.word = {} "
+// 			   + "order by doc_id",
+// 			   new QueryHandler() {
+// 			     public void handleTransaction() {}
+
+// 			     public Object resolveParam(String param, Object child) {
+// 			       if (param == "0"
+// 			     }
+// 			   });
+
+// 			   );
+    
+
+  }
+
+  static private File helpDB;
+  static private QueryCache helpQuery;
+  static private URI helpURI;
+  
+  static private class MapQueryHandler 
+    implements QueryHandler {
+    
+    public MapQueryHandler(Map<String, Object> p) {
+      this.params = p;
+    }
+
+    public List<Map<String, Object>> getResult() {
+      return result;
+    }
+
+    public void handleTransaction() 
+      throws SQLException {
+      throw new SQLException("MapQueryHandler does not support transactions");
+    }
+    
+    public Object resolveParam(String param, Object child) {
+      Object o = params.get(param);
+
+      if (child != null) {
+	if (o instanceof Map) {
+	  o = ((Map) o).get(child);
+	}
+	else {
+	  throw new UnsupportedOperationException("Param properties must implement Map");
+	}
+      }
+
+      return o;
+    }
+
+    public void handleResult(int set, int update_count, ResultSet rs) 
+      throws SQLException {
+      if (set != 0) {
+	throw new UnsupportedOperationException("Multiple result sets not supported");
+      }
+
+      if (result == null) {
+	result = new ArrayList<Map<String, Object>>();
+      }
+    }
+
+    private Map<String, Object> params;
+    private List<Map<String, Object>> result;
+  }
+
 
   private class PropertyCompletor
     implements Completor {
