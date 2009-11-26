@@ -45,7 +45,7 @@ public class ShellRequest
     if (scriptHandler == null) {
       scriptHandler = new Handler() {
 	  @Override public Object handleRequest(Context cx, Request req, Application app)
-	    throws IOException {
+	    throws IOException, SQLException {
 	    return runShell(cx, app);
 	  }
 	};
@@ -55,23 +55,23 @@ public class ShellRequest
   }
 
   private Object runShell(Context cx, Application app)
-    throws IOException {
-    final ConsoleReader reader = new ConsoleReader();
+    throws IOException, SQLException {
+    final ConsoleReader console = new ConsoleReader();
     final StringBuilder sb     = new StringBuilder();
     
-    reader.addCompletor(new PropertyCompletor(app.getJSGlobal()));
-    reader.setAutoprintThreshhold(150);
-    reader.setUsePagination(true);
+    console.addCompletor(new PropertyCompletor(app.getJSGlobal()));
+    console.setAutoprintThreshhold(150);
+    console.setUsePagination(true);
 
     System.out.println("Welcome to the ESXX Shell!");
     System.out.println("Enter JavaScript statements at the prompt. Tab completion is supported.");
     System.out.println("Use Escape to cancel the current statement and Control-D \\q to quit.");
 
-    reader.addTriggeredAction((char) 27, new ActionListener() {
+    console.addTriggeredAction((char) 27, new ActionListener() {
 	public void actionPerformed(ActionEvent e) {
 	  // Clear current command and exit from readLine
 	  sb.setLength(0);
-	  reader.exitReadLine(true);
+	  console.exitReadLine(true);
 	}
       });
 
@@ -80,10 +80,10 @@ public class ShellRequest
 
     while (!quit) {
       String prompt = line_counter == 1 ? "esxx> " : (line_counter + "> ");
-      String line   = reader.readLine(prompt);
+      String line   = console.readLine(prompt);
 
       if (line == null) {
-	System.out.println();
+	console.printNewline();
 	break;
       }
 
@@ -100,17 +100,18 @@ public class ShellRequest
 	char cmd = statement.length() >= 2 ? statement.charAt(1) : '\0';
 
 	switch (cmd) {
-	  case 'h':
-	    displayHelp(reader, statement.substring(2));
-	    break;
+	case 'h':
+	  displayHelp(console, statement.substring(2));
+	  break;
 	
-	  case 'q':
-	    quit = true;
-	    break;
+	case 'q':
+	  quit = true;
+	  break;
 
-	  default:
-	    System.out.println("Unknown command");
-	    break;
+	default:
+	  System.out.println("Unknown command");
+	  console.beep();
+	  break;
 	}
 
 	sb.setLength(0);
@@ -143,95 +144,170 @@ public class ShellRequest
     JS.printObject(cx, scope, result);
   }
 
-  private synchronized void displayHelp(ConsoleReader reader, String args) 
-    throws IOException {
+  private synchronized void displayHelp(ConsoleReader console, String args) 
+    throws IOException, SQLException {
     ESXX esxx = ESXX.getInstance();
 
     if (helpDB == null) {
-      helpDB = File.createTempFile(getClass().getName(), "zip");
+      helpDB = File.createTempFile(getClass().getName(), ".zip");
       helpDB.deleteOnExit();
 
       IO.copyStream(esxx.openCachedURI(URI.create("esxx-rsrc:esxx-help.zip")), 
 		    new FileOutputStream(helpDB));
 
-      helpURI = URI.create("jdbc:h2:zip:" + helpDB + "/mdc;DB_CLOSE_DELAY=-1");
+      helpURI = URI.create("jdbc:h2:zip:" + helpDB + "!/mdc;DB_CLOSE_DELAY=-1");
     }
 
     if (helpQuery == null) {
       helpQuery = new QueryCache(1, 60000, 10, 60000);
     }
 
-//     String[] terms = args.split(" ");
+    String[] terms = args.split(" ");
 
-//     ArrayList<Integer> docs = new ArrayList<Integer>();
-
-//     helpQuery.executeQuery(helpURI, null,
-// 			   "select distinct dw.doc_id "
-// 			   + "from words w "
-// 			   + "inner join doc_words dw on dw.word_id = w.id "
-// 			   + "where w.word = {} "
-// 			   + "order by doc_id",
-// 			   new QueryHandler() {
-// 			     public void handleTransaction() {}
-
-// 			     public Object resolveParam(String param, Object child) {
-// 			       if (param == "0"
-// 			     }
-// 			   });
-
-// 			   );
+    ArrayList<Integer> final_docs = null;
     
+    for (String term : terms) {
+      if (!term.isEmpty()) {
+	term = term.toLowerCase();
 
+	ArrayQueryHandler qh = new ArrayQueryHandler(new String[] { term });
+
+	helpQuery.executeQuery(helpURI, null,
+			       "select distinct dw.doc_id "
+			       + "from words w "
+			       + "inner join doc_words dw on dw.word_id = w.id "
+			       + "where w.word = {0} "
+			       + "order by doc_id",
+			       qh);
+
+	ArrayList<Integer> docs = qh.<Integer>getColumn(0);
+
+	if (final_docs == null) {
+	  final_docs = docs;
+	}
+	else {
+	  final_docs.retainAll(docs);
+	}
+      }
+    }
+
+    if (final_docs.size() == 0) {
+      System.out.println("No documents matched the given terms.");
+    }
+    else if (final_docs.size() > 1) {
+      ArrayQueryHandler qh = new ArrayQueryHandler(new Object[] { final_docs });
+
+      helpQuery.executeQuery(helpURI, null,
+			     "select concat(section, '.', title)"
+			     + " from docs"
+			     + " where id in ({0})",
+			     qh);
+      
+      System.out.println("The following documents matched the given terms."
+			 + " Please be more specific.");
+      console.printColumns(qh.<String>getColumn(0));
+    }
+    else {
+      ArrayQueryHandler qh = new ArrayQueryHandler(new Object[] { final_docs.get(0) });
+
+      helpQuery.executeQuery(helpURI, null,
+			     "select utf8tostring(expand(text))"
+			     + " from docs"
+			     + " where id = {0}",
+			     qh);
+      console.printString((String) qh.getResult().get(0)[0]);
+      console.printNewline();
+    }
   }
 
   static private File helpDB;
   static private QueryCache helpQuery;
   static private URI helpURI;
   
-  static private class MapQueryHandler 
+  static private class ArrayQueryHandler 
     implements QueryHandler {
     
-    public MapQueryHandler(Map<String, Object> p) {
+    public ArrayQueryHandler(Object[] p) {
       this.params = p;
     }
 
-    public List<Map<String, Object>> getResult() {
+    public ArrayList<Object[]> getResult() {
       return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> ArrayList<T> getColumn(int col) {
+      ArrayList<T> res = new ArrayList<T>(result.size());
+
+      for (int i = 0; i < result.size(); ++i) {
+	res.add((T) result.get(i)[col]);
+      }
+
+      return res;
+    }
+
+    public void clear() {
+      result = null;
     }
 
     public void handleTransaction() 
       throws SQLException {
-      throw new SQLException("MapQueryHandler does not support transactions");
+      throw new SQLException("ArrayQueryHandler does not support transactions");
     }
     
-    public Object resolveParam(String param, Object child) {
-      Object o = params.get(param);
+    public int getParamLength(String param) {
+      Object obj = params[Integer.parseInt(param)];
+      int    len = 1;
 
-      if (child != null) {
-	if (o instanceof Map) {
-	  o = ((Map) o).get(child);
-	}
-	else {
-	  throw new UnsupportedOperationException("Param properties must implement Map");
+      if (obj instanceof Iterable) {
+	Iterator i = ((Iterable) obj).iterator();
+
+	for (len = 0; i.hasNext(); i.next()) {
+	  ++len;
 	}
       }
 
-      return o;
+      return len;
+    }
+
+    public void resolveParam(String param, int length, Collection<Object> result) {
+      Object obj = params[Integer.parseInt(param)];
+
+      if (obj instanceof Iterable) {
+	for (Object o : ((Iterable) obj)) {
+	  result.add(o);
+	}
+      }
+      else {
+	result.add(obj);
+      }
     }
 
     public void handleResult(int set, int update_count, ResultSet rs) 
       throws SQLException {
-      if (set != 0) {
-	throw new UnsupportedOperationException("Multiple result sets not supported");
+
+      if (set != 1) {
+	throw new UnsupportedOperationException("ArrayQueryHandler does not support "
+						+ "multiple result sets");
       }
 
       if (result == null) {
-	result = new ArrayList<Map<String, Object>>();
+	result = new ArrayList<Object[]>();
+      }
+
+      while (rs.next()) {
+	Object[] row = new Object[rs.getMetaData().getColumnCount()];
+	
+	for (int i = 0; i < row.length; ++i) {
+	  row[i] = rs.getObject(i + 1);
+	}
+
+	result.add(row);
       }
     }
 
-    private Map<String, Object> params;
-    private List<Map<String, Object>> result;
+    private Object[] params;
+    private ArrayList<Object[]> result;
   }
 
 
@@ -241,7 +317,8 @@ public class ShellRequest
       this.scope = scope;
     }
 
-    public int complete(String buffer, int cursor, List candidates) {
+    @SuppressWarnings(value = "unchecked")
+      public int complete(String buffer, int cursor, List candidates) {
       int begin = cursor;
       int trail = -1;
 
@@ -275,8 +352,6 @@ public class ShellRequest
 	postfix = buffer.substring(begin);
 	cursor  = begin;
       }
-
-      //      System.out.println("Looking for '" + postfix + "' in '" + prefix + "'");
 
       Scriptable base = JS.evaluateObjectExpr(prefix, scope);
 
@@ -335,7 +410,7 @@ public class ShellRequest
     return members;
   }
 
-  private static List reserved = Arrays.asList(new String[]{
+  private static List<String> reserved = Arrays.asList(new String[]{
       // JS reserved
       "break", "case", "catch", "continue", "default", "delete", "do", 
       "else", "finally", "for", "function", "if", "in", "instanceof", 
