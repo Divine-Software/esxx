@@ -83,6 +83,8 @@
 	comma-separeted list. Very useful for queries like 
 	"SELECT ... WHERE IN (param)".
 
+	* Updated the JSON classes to version 2009-09-11.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

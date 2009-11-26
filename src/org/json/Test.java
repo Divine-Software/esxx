@@ -10,7 +10,7 @@ import java.io.StringWriter;
  * It is just a casual test tool.
  */
 public class Test {
-
+	
     /**
      * Entry point.
      * @param args
@@ -69,18 +69,62 @@ public class Test {
             }
         }      
         
+
     	Obj obj = new Obj("A beany object", 42, true);
         
         try {     
             j = XML.toJSONObject("<![CDATA[This is a collection of test patterns and examples for org.json.]]>  Ignore the stuff past the end.  ");
             System.out.println(j.toString());
-                    	
+
+            s = "{     \"list of lists\" : [         [1, 2, 3],         [4, 5, 6],     ] }";
+            j = new JSONObject(s);
+            System.out.println(j.toString(4));
+            System.out.println(XML.toString(j));
+                    
+            s = "<recipe name=\"bread\" prep_time=\"5 mins\" cook_time=\"3 hours\"> <title>Basic bread</title> <ingredient amount=\"8\" unit=\"dL\">Flour</ingredient> <ingredient amount=\"10\" unit=\"grams\">Yeast</ingredient> <ingredient amount=\"4\" unit=\"dL\" state=\"warm\">Water</ingredient> <ingredient amount=\"1\" unit=\"teaspoon\">Salt</ingredient> <instructions> <step>Mix all ingredients together.</step> <step>Knead thoroughly.</step> <step>Cover with a cloth, and leave for one hour in warm room.</step> <step>Knead again.</step> <step>Place in a bread baking tin.</step> <step>Cover with a cloth, and leave for one hour in warm room.</step> <step>Bake in the oven at 180(degrees)C for 30 minutes.</step> </instructions> </recipe> ";
+            j = XML.toJSONObject(s);
+            System.out.println(j.toString(4));
+            System.out.println();
+            
+            j = JSONML.toJSONObject(s);
+            System.out.println(j.toString());
+            System.out.println(JSONML.toString(j));
+            System.out.println();
+            
+            a = JSONML.toJSONArray(s);
+            System.out.println(a.toString(4));
+            System.out.println(JSONML.toString(a));
+            System.out.println();
+            
+            s = "<div id=\"demo\" class=\"JSONML\"><p>JSONML is a transformation between <b>JSON</b> and <b>XML</b> that preserves ordering of document features.</p><p>JSONML can work with JSON arrays or JSON objects.</p><p>Three<br/>little<br/>words</p></div>";
+            j = JSONML.toJSONObject(s);
+            System.out.println(j.toString(4));
+            System.out.println(JSONML.toString(j));
+            System.out.println();
+            
+            a = JSONML.toJSONArray(s);
+            System.out.println(a.toString(4));
+            System.out.println(JSONML.toString(a));
+            System.out.println();
+            
+            s = "<person created=\"2006-11-11T19:23\" modified=\"2006-12-31T23:59\">\n <firstName>Robert</firstName>\n <lastName>Smith</lastName>\n <address type=\"home\">\n <street>12345 Sixth Ave</street>\n <city>Anytown</city>\n <state>CA</state>\n <postalCode>98765-4321</postalCode>\n </address>\n </person>";
+            j = XML.toJSONObject(s);
+            System.out.println(j.toString(4));
+            
             j = new JSONObject(obj);
             System.out.println(j.toString());
+            
+            s = "{ \"entity\": { \"imageURL\": \"\", \"name\": \"IXXXXXXXXXXXXX\", \"id\": 12336, \"ratingCount\": null, \"averageRating\": null } }";
+            j = new JSONObject(s);
+            System.out.println(j.toString(2));
 
             jj = new JSONStringer();
             s = jj
 	            .object()
+	                .key("single")
+	                .value("MARIE HAA'S")
+	                .key("Johnny")
+	                .value("MARIE HAA\\'S")
 	                .key("foo")
 	                .value("bar")
 	                .key("baz")
@@ -160,7 +204,7 @@ public class Test {
             System.out.println("");
 
             j = new JSONObject(
-                "/*comment*/{foo: [true, false,9876543210,    0.0, 1.00000001,  1.000000000001, 1.00000000000000001," +
+                "{foo: [true, false,9876543210,    0.0, 1.00000001,  1.000000000001, 1.00000000000000001," +
                 " .00000000000000001, 2.00, 0.1, 2e100, -32,[],{}, \"string\"], " +
                 "  to   : null, op : 'Good'," +
                 "ten:10} postfix comment");
@@ -209,7 +253,7 @@ public class Test {
             System.out.println(JSONML.toString(ja));
             System.out.println("");
             
-            s = "<xml do='0'>uno<a re='1' mi='2'>dos<b fa='3'/>tres<c></c>quatro</a>cinqo<d>seis<e/></d></xml>";
+            s = "<xml do='0'>uno<a re='1' mi='2'>dos<b fa='3'/>tres<c>true</c>quatro</a>cinqo<d>seis<e/></d></xml>";
             ja = JSONML.toJSONArray(s);
             System.out.println(ja.toString(4));
             System.out.println(JSONML.toString(ja));
@@ -321,10 +365,14 @@ public class Test {
             System.out.println(j.toString());
             System.out.println("");
 
-            a = CDL.toJSONArray("No quotes, 'Single Quotes', \"Double Quotes\"\n1,'2',\"3\"\n,'It is \"good,\"', \"It works.\"\n\n");
+            a = CDL.toJSONArray("Comma delimited list test, '\"Strip\"Quotes', 'quote, comma', No quotes, 'Single Quotes', \"Double Quotes\"\n1,'2',\"3\"\n,'It is \"good,\"', \"It works.\"\n\n");
 
-            System.out.println(CDL.toString(a));
+            s = CDL.toString(a);
+            System.out.println(s);
             System.out.println("");
+            System.out.println(a.toString(4));
+            System.out.println("");
+            a = CDL.toJSONArray(s);
             System.out.println(a.toString(4));
             System.out.println("");
 
@@ -334,7 +382,7 @@ public class Test {
             System.out.println(XML.toString(a));
             System.out.println("");
 
-            j = new JSONObject("{ fun => with non-standard forms ; forgiving => This package can be used to parse formats that are similar to but not stricting conforming to JSON; why=To make it easier to migrate existing data to JSON,one = [[1.00]]; uno=[[{1=>1}]];'+':+6e66 ;pluses=+++;empty = '' , 'double':0.666,true: TRUE, false: FALSE, null=NULL;[true] = [[!,@;*]]; string=>  o. k. ; # comment\r oct=0666; hex=0x666; dec=666; o=0999; noh=0x0x}");
+            j = new JSONObject("{ fun => with non-standard forms ; forgiving => This package can be used to parse formats that are similar to but not stricting conforming to JSON; why=To make it easier to migrate existing data to JSON,one = [[1.00]]; uno=[[{1=>1}]];'+':+6e66 ;pluses=+++;empty = '' , 'double':0.666,true: TRUE, false: FALSE, null=NULL;[true] = [[!,@;*]]; string=>  o. k. ; \r oct=0666; hex=0x666; dec=666; o=0999; noh=0x0x}");
             System.out.println(j.toString(4));
             System.out.println("");
             if (j.getBoolean("true") && !j.getBoolean("false")) {
@@ -408,6 +456,10 @@ public class Test {
             System.out.println(j.toString(4));
             System.out.println(XML.toString(j));
             
+            a = JSONML.toJSONArray(s);
+            System.out.println(a.toString(4));
+            System.out.println(JSONML.toString(a));
+            
             Collection c = null;
             Map m = null;
             
@@ -444,6 +496,12 @@ public class Test {
             System.out.println(ja.toString(4));
             System.out.println(JSONML.toString(ja));
             System.out.println("");
+            
+            s = "<Root><MsgType type=\"node\"><BatchType type=\"string\">111111111111111</BatchType></MsgType></Root>";
+            j = JSONML.toJSONObject(s);
+            System.out.println(j);
+            ja = JSONML.toJSONArray(s);
+            System.out.println(ja);
           
             
             System.out.println("\nTesting Exceptions: ");
@@ -546,6 +604,30 @@ public class Test {
             	System.out.println(e);
             }
 
+            System.out.print("Exception: ");
+            try {            	
+                s = "{\"koda\": true, \"koda\": true}";
+                j = new JSONObject(s);
+                System.out.println(j.toString(4));
+            } catch (Exception e) {
+            	System.out.println(e);
+            }
+
+            System.out.print("Exception: ");
+            try {            	
+                jj = new JSONStringer();
+                s = jj
+    	            .object()
+    	                .key("bosanda")
+    	                .value("MARIE HAA'S")
+    	                .key("bosanda")
+    	                .value("MARIE HAA\\'S")
+    	            .endObject()
+    	            .toString();
+                System.out.println(j.toString(4));
+            } catch (Exception e) {
+            	System.out.println(e);
+            }
         } catch (Exception e) {
             System.out.println(e.toString());
         }
