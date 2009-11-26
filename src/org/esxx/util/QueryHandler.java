@@ -18,6 +18,7 @@
 
 package org.esxx.util;
 
+import java.util.Collection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -36,20 +37,29 @@ public interface QueryHandler {
   public void handleTransaction()
     throws SQLException;
 
+  /** Return the length of a named parameter.
+   *
+   *  If the given parameter is an array or some other collection,
+   *  this method should return the number of members. For plain
+   *  objects, it should return 1.
+   */
+
+  public int getParamLength(String param);
+
   /** Resolve a named parameter.
    *
    *  This method will be called by executeQuery() to resolve a
    *  named {...} parameter in the SQL query.
    *
-   *  @param param  The name of the parameter to be resolved.
-   *  @param child  The name of a property in the param, or null to
-   *  return the param itself.
-   *
-   *  @return  An Object suitable as value in PreparedStatement.setObject().
+   *  @param param   The name of the parameter to be resolved.
+   *  @param length  The expected length (as it was reported in
+   *                 #getParamLength().
+   *  @param result  The params should be appended to this Collection,
+   *                 as objects suitable as value in PreparedStatement.setObject().
    *
    */
 
-  public Object resolveParam(String param, Object child);
+  public void resolveParam(String param, int length, Collection<Object> result);
 
   /** Transform SQL result.
    *

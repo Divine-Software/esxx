@@ -58,9 +58,17 @@ public class QueryCache {
     withConnection(uri, props, new ConnectionCallback() {
 	public void execute(PooledConnection pc) 
 	  throws SQLException {
-	  
-	  Query q = pc.getQuery(query, qh);
-	  q.bindParams(qh);
+
+	  List<Query.Param> params = new ArrayList<Query.Param>(32);
+	  String parsed_query      = Query.parseQuery(query, params, qh);
+	  int total_param_length   = 0;
+
+	  for (Query.Param p : params) {
+	    total_param_length += p.length;
+	  }
+
+	  Query q = pc.getQuery(parsed_query, total_param_length);
+	  q.bindParams(params, total_param_length, qh);
 	  q.execute(qh);
 	}
       });
@@ -101,9 +109,15 @@ public class QueryCache {
       throws SQLException;
   }
 
+  private static Properties nullProperties = new Properties();
+
   private void withConnection(URI uri, Properties props, ConnectionCallback cb) 
     throws SQLException {
     ConnectionPool cp;
+
+    if (props == null) {
+      props = nullProperties;
+    }
 
     synchronized (connectionPools) {
       ConnectionKey key = new ConnectionKey(uri, props);
@@ -295,19 +309,16 @@ public class QueryCache {
       return connection;
     }
 
-    public Query getQuery(String query, final QueryHandler qh)
+    public Query getQuery(final String parsed_query, final int total_param_length)
       throws SQLException {
       // "Touch" connection
       expires = System.currentTimeMillis() + connectionTimeout;
 
       try {
-	final List<Query.Param> params = new ArrayList<Query.Param>();
-	final String parsed_query = Query.parseQuery(query, params, qh);
-
 	return queryCache.add(parsed_query, new LRUCache.ValueFactory<String, Query>() {
 	    public Query create(String key, long expires)
 	      throws SQLException {
-	      return new Query(parsed_query, params, connection);
+	      return new Query(parsed_query, total_param_length, connection);
 	    }
 	  }, 0);
       }
@@ -349,12 +360,9 @@ public class QueryCache {
     private LRUCache<String, Query> queryCache;
   }
 
-
   private static class Query {
-    public Query(String parsed_query, List<Param> parsed_params, Connection db)
+    public Query(String parsed_query, int total_param_length, Connection db)
       throws SQLException {
-
-      params = parsed_params;
 
       try {
 	sql = db.prepareCall(parsed_query);
@@ -365,18 +373,23 @@ public class QueryCache {
 			       parsed_query + ": " + ex.getMessage());
       }
 
-      if (pmd.getParameterCount() != params.size()) {
+      if (pmd.getParameterCount() != total_param_length) {
 	throw new SQLException("JDBC and ESXX report different " +
 			       "number of arguments in SQL query");
       }
     }
 
-    public void bindParams(QueryHandler qh) 
+    public void bindParams(List<Param> params, int total_params_length, QueryHandler qh) 
       throws SQLException {
-      int p = 1;
+      ArrayList<Object> objects = new ArrayList<Object>(total_params_length);
 
       for (Param param : params) {
-	sql.setObject(p, qh.resolveParam(param.name, param.child));
+	qh.resolveParam(param.name, param.length, objects);
+      }
+
+      int p = 1;
+      for (Object o : objects) {
+	sql.setObject(p, o);
 	++p;
       }
     }
@@ -428,52 +441,43 @@ public class QueryCache {
       }
     }
 
-    public static String parseQuery(String unparsed_query, final List<Param> query_params,
+    public static String parseQuery(String unparsed_query, 
+				    final List<Param> query_params,
 				    final QueryHandler qh) {
       query_params.clear();
 
       return StringUtil.format(unparsed_query, new StringUtil.ParamResolver() {
-	  public String resolveParam(String param) {
-	    Object obj = qh.resolveParam(param, null);
+	  public String resolveParam(String name) {
+	    Param      param = new Param(name, qh.getParamLength(name));
+	    StringBuilder sb = null;
 
-	    if (obj instanceof Scriptable) {
-	      // Expand Scriptable to a comma-separated list of ?s
-	      StringBuilder sb = null;
-
-	      for (Object child : ((Scriptable) obj).getIds()) {
-		query_params.add(new Param(param, child));
-
-		if (sb == null) {
-		  sb = new StringBuilder();
-		}
-		else {
-		  sb.append(',');
-		}
-
-		sb.append('?');
+	    for (int i = 0; i < param.length; ++i) {
+	      if (sb == null) {
+		sb = new StringBuilder();
+	      }
+	      else {
+		sb.append(',');
 	      }
 
-	      return sb.toString();
+	      sb.append('?');
 	    }
-	    else {
-	      query_params.add(new Param(param, null));
-	      return "?";
-	    }
+	  
+	    query_params.add(param);
+	    return sb.toString();
 	  }
 	});
     }
 
     public static class Param {
-      Param(String n, Object c) {
-	name  = n;
-	child = c;
+      Param(String n, int l) {
+	name   = n;
+	length = l;
       }
 
       String name;
-      Object child;
+      int length;
     };
 
-    private List<Param> params;
     private CallableStatement sql;
     private ParameterMetaData pmd;
   }

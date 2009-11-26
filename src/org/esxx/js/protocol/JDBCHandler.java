@@ -20,6 +20,8 @@ package org.esxx.js.protocol;
 
 import java.net.URISyntaxException;
 import java.sql.*;
+import java.util.Iterator;
+import java.util.Collection;
 import java.util.Properties;
 import java.util.HashMap;
 import org.esxx.*;
@@ -111,19 +113,42 @@ public class JDBCHandler
 	    final_result[0] = final_function.call(cx, thiz, thiz, Context.emptyArgs);
 	  }
 
-	  public Object resolveParam(String param, Object child) {
+	  public int getParamLength(String param) {
 	    Object obj = ScriptRuntime.getObjectElem(final_params, param, cx);
+	    int    len = 1;
 
-	    if (child != null) {
-	      if (obj instanceof Scriptable) {
-		obj = ScriptRuntime.getObjectElem((Scriptable) obj, child, cx);
-	      }
-	      else {
-		throw new ESXXException("Unsuppored property object: " + obj);
+	    if (obj instanceof Iterable) {
+	      Iterator i = ((Iterable) obj).iterator();
+
+	      for (len = 0; i.hasNext(); i.next()) {
+		++len;
 	      }
 	    }
+	    else if (obj instanceof Scriptable) {
+	      len = ((Scriptable) obj).getIds().length;
+	    }
 
-	    return obj;
+	    return len;
+	  }
+
+	  public void resolveParam(String param, int length, Collection<Object> result) {
+	    Object obj = ScriptRuntime.getObjectElem(final_params, param, cx);
+
+	    if (obj instanceof Iterable) {
+	      for (Object o : ((Iterable) obj)) {
+		result.add(o);
+	      }
+	    }
+	    else if (obj instanceof Scriptable) {
+	      Scriptable jsobj = (Scriptable) obj;
+
+	      for (Object id : jsobj.getIds()) {
+		result.add(ScriptRuntime.getObjectElem(jsobj, id, cx));
+	      }
+	    }
+	    else {
+	      result.add(obj);
+	    }
 	  }
 
 	  public void handleResult(int set, int uc, ResultSet rs) 
