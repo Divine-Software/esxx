@@ -31,9 +31,13 @@
   </target>
 
   <target name="compile" depends="init" description="compile everything">
+    <!-- Don't use -Xlint on the json code -->
+    <javac srcdir="${src.dir}/org/json" destdir="${classes.dir}" classpathref="classpath"
+           debug="true" deprecation="true" target="1.6">
+    </javac>
     <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath"
            debug="true" deprecation="true" target="1.6">
-<!--      <compilerarg value="-Xlint"/>-->
+      <compilerarg value="-Xlint"/>
     </javac>
     <copy todir="${classes.dir}/rsrc">
       <fileset dir="rsrc" excludes="*~ *.xslt *.css"/>
