@@ -177,7 +177,7 @@ function dump_mdc(url) {
 
   if (breadcrumb.length() > 2 /* Prevent redirects to MDC / Mozilla Developer Center */
       && page..a.(@["class"] == "pageMoved").length() == 0
-      && sect && title && toc.*.length() > 0 && text.*.length() > 0) {
+      && sect && title && /*toc.*.length() > 0 &&*/ text.*.length() > 0) {
     import_html(url, sect, title,
 		<html>
 		  <head>
@@ -227,8 +227,8 @@ function import_html(url, section, title, html) {
 
     let p = java.lang.Runtime.getRuntime().exec(["/bin/sh",
 						 "-c",
-						 //"links -assume-codepage utf8 -dump "
-						 "links -dump "
+						 "links -assume-codepage utf8 -dump "
+						 //"links -dump "
 						 + "mdc.tmp.html > mdc.tmp.txt"]);
     if (p.waitFor() != 0) {
       throw "Failed to convert " + url + " to plain text.";
@@ -247,11 +247,11 @@ function import_html(url, section, title, html) {
 }
 
 function create_index(id, section, title) {
-  let delim = /[^-.a-zA-Z0-9]|\.+/; // Split on non-word chars or '...', but keep '1.5'
-  let path  = section + "." + title;
+  let delim = /[^.a-zA-Z0-9]|(\.{2,})/; // Split on non-word chars or '...', but keep '1.5'
+  let path  = section + " " + title;
   let words = path.split(delim);
 
-  words.push(path);
+  words.push(section + "." + title);
   words.push(section);
   words.push(title);
 
