@@ -180,7 +180,7 @@ public abstract class JS {
     }
 
     if (object instanceof String) {
-      System.out.println("-> `" + object + "́");
+      System.out.println("-> `" + object + "\u00b4");
     }
     else if (object instanceof Number || object instanceof Boolean) {
       System.out.println("-> " + object);
