@@ -25,7 +25,28 @@ public class Shell
       final ConsoleReader console = new ConsoleReader();
       final StringBuilder sb     = new StringBuilder();
     
-      console.addCompletor(new PropertyCompletor(app.getJSGlobal()));
+      console.addCompletor(new Completor() {
+	  public int complete(String buffer, int cursor, List candidates) {
+	    if (buffer.matches("\\s*\\\\h\\s.*" /* Help command */)) {
+	      if (helpCompletor == null) {
+		helpCompletor = new HelpCompletor(Shell.this);
+	      }
+
+	      return helpCompletor.complete(buffer, cursor, candidates);
+	    }
+	    else {
+	      if (propCompletor == null) {
+		propCompletor = new PropertyCompletor(app.getJSGlobal());
+	      }
+	      
+	      return propCompletor.complete(buffer, cursor, candidates);
+	    }
+	  }
+
+	  private Completor helpCompletor = null;
+	  private Completor propCompletor = null;
+	});
+
       console.setAutoprintThreshhold(150);
       console.setUsePagination(true);
 
@@ -115,7 +136,8 @@ public class Shell
   private synchronized void displayHelp(ConsoleReader console, String args) 
     throws IOException, SQLException {
 
-    initHelpDB();
+    QueryCache help = getHelpQuery();
+    URI    help_uri = getHelpURI();
 
     String[] terms = args.split(" ");
 
@@ -127,13 +149,13 @@ public class Shell
 
 	ArrayQueryHandler qh = new ArrayQueryHandler(new String[] { term });
 
-	helpQuery.executeQuery(helpURI, null,
-			       "select distinct dw.doc_id"
-			       + " from words w"
-			       + " inner join doc_words dw on dw.word_id = w.id"
-			       + " where w.word = {0}"
-			       + " order by doc_id",
-			       qh);
+	help.executeQuery(help_uri, null,
+			  "select distinct dw.doc_id"
+			  + " from words w"
+			  + " inner join doc_words dw on dw.word_id = w.id"
+			  + " where w.word = {0}"
+			  + " order by doc_id",
+			  qh);
 
 	ArrayList<Integer> docs = qh.<Integer>getColumn(0);
 
@@ -149,9 +171,9 @@ public class Shell
     if (final_docs == null) {
       ArrayQueryHandler qh = new ArrayQueryHandler(null);
 
-      helpQuery.executeQuery(helpURI, null,
-			     "select id from docs order by id",
-			     qh);
+      help.executeQuery(help_uri, null,
+			"select id from docs order by id",
+			qh);
 
       final_docs = qh.<Integer>getColumn(0);
     }
@@ -162,12 +184,12 @@ public class Shell
     else if (final_docs.size() > 1) {
       ArrayQueryHandler qh = new ArrayQueryHandler(new Object[] { final_docs });
 
-      helpQuery.executeQuery(helpURI, null,
-			     "select concat(section, '.', title) as name"
-			     + " from docs"
-			     + " where id in ({0})"
-			     + " order by name",
-			     qh);
+      help.executeQuery(help_uri, null,
+			"select concat(section, '.', title) as name"
+			+ " from docs"
+			+ " where id in ({0})"
+			+ " order by name",
+			qh);
       
       System.out.println("The following documents matched the given terms."
 			 + " Please be more specific.");
@@ -176,21 +198,29 @@ public class Shell
     else {
       ArrayQueryHandler qh = new ArrayQueryHandler(new Object[] { final_docs.get(0) });
 
-      helpQuery.executeQuery(helpURI, null,
-			     "select utf8tostring(expand(text))"
-			     + " from docs"
-			     + " where id = {0}",
-			     qh);
+      help.executeQuery(help_uri, null,
+			"select utf8tostring(expand(text))"
+			+ " from docs"
+			+ " where id = {0}",
+			qh);
       console.printString((String) qh.getResult().get(0)[0]);
       console.printNewline();
     }
   }
 
-  private synchronized void initHelpDB()
-    throws IOException {
-    ESXX esxx = ESXX.getInstance();
+  synchronized QueryCache getHelpQuery() {
+    if (helpQuery == null) {
+      helpQuery = new QueryCache(1, 60000, 10, 60000);
+    }
 
+    return helpQuery;
+  }
+
+  synchronized URI getHelpURI() 
+    throws IOException {
     if (helpDB == null) {
+      ESXX esxx = ESXX.getInstance();
+
       helpDB = File.createTempFile(getClass().getName(), ".zip");
       helpDB.deleteOnExit();
 
@@ -200,10 +230,7 @@ public class Shell
       helpURI = URI.create("jdbc:h2:zip:" + helpDB + "!/api;DB_CLOSE_DELAY=-1");
     }
 
-    if (helpQuery == null) {
-      helpQuery = new QueryCache(1, 60000, 10, 60000);
-    }
-
+    return helpURI;
   }
 
   static private File helpDB;

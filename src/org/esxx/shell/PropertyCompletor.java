@@ -31,6 +31,7 @@ import org.mozilla.javascript.debug.DebuggableObject;
 
 public class PropertyCompletor
   implements Completor {
+
   public PropertyCompletor(Scriptable scope) {
     this.scope = scope;
   }
