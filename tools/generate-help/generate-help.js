@@ -46,8 +46,15 @@ function main(prog, cmd, db_files) {
   else if (cmd == "query") {
     rc = query(Array.splice(arguments, 3));
   }
-  else if (cmd == "dump-mdc") {
-    rc = dump_book("https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference", dump_mdc);
+  else if (cmd == "add-mdc") {
+    rc = dump_book("https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference",
+		   "https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference",
+		   dump_mdc);
+  }
+  else if (cmd == "add-berlios") {
+    rc = dump_book("http://openfacts2.berlios.de/wikien/index.php/BerliosProject:ESXX",
+		   "http://openfacts2.berlios.de/wikien/index.php/BerliosProject:ESXX_-_The_runtime",
+		   dump_berlios);
   }
   else {
     err.println("Unknown command: " + cmd);
@@ -57,9 +64,9 @@ function main(prog, cmd, db_files) {
   return rc;
 }
 
-function dump_book(base, dump_page) {
+function dump_book(base, start, dump_page) {
   let visited	 = {};
-  let candidates = [base];
+  let candidates = [start];
 
   while (candidates.length > 0) {
     let link = candidates.shift();
@@ -69,8 +76,9 @@ function dump_book(base, dump_page) {
     if (!visited[link] && link.indexOf(base) == 0) {
       visited[link] = true;
 
+      err.println("Dumping " + link);
       let links = dump_page(link, db);
-
+      //      out.println(links.toSource());
       candidates = candidates.concat(links);
     }
   }
@@ -158,8 +166,6 @@ function query(terms) {
 // Helper functions
 
 function dump_mdc(url) {
-  err.println("Dumping " + url);
-
   let page = new URI(url).load("text/html");
 
   let breadcrumb = page..div.(@["class"] == "hierarchy").ol.li.a.text();
@@ -186,6 +192,33 @@ function dump_mdc(url) {
   return [a.toString() for each (a in text..a.@href)];
 }
 
+function dump_berlios(url) {
+  let page = new URI(url).load("text/html");
+
+  let page_title = page..h1.(@id == "firstHeading").toString();
+  let sect_title = /BerliosProject:([^-]*) - (.*)/.exec(page_title);
+
+  let sect  = sect_title[1];
+  let title = sect_title[2];
+  let text  = page..div.(@id == "bodyContent");
+
+  delete text.table;
+  delete text.div;
+  delete text.*.(@id == "siteSub");
+
+  import_html(url, sect, title,
+	      <html>
+	        <head>
+	          <title>{title}</title>
+	        </head>
+		<body>
+		  {text}
+		</body>
+	      </html>);
+
+  return [new URI(url, a.toString()).valueOf() for each (a in text..a.@href)];
+}
+
 function import_html(url, section, title, html) {
   err.println("Importing " + section + " / " + title);
 
@@ -194,7 +227,8 @@ function import_html(url, section, title, html) {
 
     let p = java.lang.Runtime.getRuntime().exec(["/bin/sh",
 						 "-c",
-						 "links -assume-codepage utf8 -dump "
+						 //"links -assume-codepage utf8 -dump "
+						 "links -dump "
 						 + "mdc.tmp.html > mdc.tmp.txt"]);
     if (p.waitFor() != 0) {
       throw "Failed to convert " + url + " to plain text.";
