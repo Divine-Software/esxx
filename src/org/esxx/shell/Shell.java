@@ -26,25 +26,18 @@ public class Shell
       final StringBuilder sb     = new StringBuilder();
     
       console.addCompletor(new Completor() {
+	  @SuppressWarnings("unchecked")
 	  public int complete(String buffer, int cursor, List candidates) {
 	    if (buffer.matches("\\s*\\\\h\\s.*" /* Help command */)) {
-	      if (helpCompletor == null) {
-		helpCompletor = new HelpCompletor(Shell.this);
-	      }
-
 	      return helpCompletor.complete(buffer, cursor, candidates);
 	    }
 	    else {
-	      if (propCompletor == null) {
-		propCompletor = new PropertyCompletor(app.getJSGlobal());
-	      }
-	      
 	      return propCompletor.complete(buffer, cursor, candidates);
 	    }
 	  }
 
-	  private Completor helpCompletor = null;
-	  private Completor propCompletor = null;
+	  private Completor helpCompletor = new HelpCompletor(Shell.this);
+	  private Completor propCompletor = new PropertyCompletor(app.getJSGlobal());
 	});
 
       console.setAutoprintThreshhold(150);
@@ -233,9 +226,9 @@ public class Shell
     return helpURI;
   }
 
-  static private File helpDB;
-  static private QueryCache helpQuery;
-  static private URI helpURI;
+  private static File helpDB;
+  private static QueryCache helpQuery;
+  private static URI helpURI;
 
   private Context cx;
   private Application app;
