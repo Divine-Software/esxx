@@ -54,7 +54,12 @@ public class JSURI
   }
 
   @Override public Object getDefaultValue(Class<?> typeHint) {
-    return "[object URI: " + jsFunction_valueOf() + "]";
+    if (uri != null) {
+      return uri.toString();
+    }
+    else {
+      return null;
+    }
   }
 
   public URI getURI() {
@@ -207,10 +212,10 @@ public class JSURI
 
   public String jsFunction_valueOf() {
     if (uri != null) {
-      return uri.toString();
+      return uri.toASCIIString();
     }
     else {
-      return "Invalid URI";
+      return null;
     }
   }
 

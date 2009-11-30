@@ -74,16 +74,20 @@
 
 	* The esxx-js shell wrapper now uses the client Java VM by
 	default, for faster startup times. (You could also try to
-	generate the shared class dump using the command 
+	generate the shared class dump using the command
 	"java -client -Xshare:dump", which might improve things
 	even more.)
 
 	* The SQL query builder now supports JS objects as parameters,
 	in which case all enumberable properties will be added as a
-	comma-separeted list. Very useful for queries like 
+	comma-separeted list. Very useful for queries like
 	"SELECT ... WHERE IN (param)".
 
 	* Updated the JSON classes to version 2009-09-11.
+
+	* The URI object's toString() value now returns the URI in Unicode
+	formate (like an IRI). The valueOf() function has been changed to
+	return the strict US-ASCII URI string.
 
 0.9.20090521
 	* Added the XKCD example from the Wiki.
