@@ -2,3 +2,11 @@ MemCache:
 
  * client, URI?
  * internal server?
+
+
+[martin@elsa ~]$ #id,name?one?(id=3)?!order=id,!
+[martin@elsa ~]$ #friends?id,name??(&(id=3)(name!=johan)?!^C
+[martin@elsa ~]$ #friends???(id=3)
+[martin@elsa ~]$ #friends?id,name??(id=3)
+[martin@elsa ~]$ #friends???(id=3) = {id:1, name:'banan'}^C
+[martin@elsa ~]$ new URI(db, "#friends?id,name ").append([1,'johan'])
