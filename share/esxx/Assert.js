@@ -24,7 +24,7 @@ function Assert.Failed(test, reason, comment) {
 
 function Assert.that(arg, comment) {
   if (!arg) {
-    throw new Assert.Failed("Assert.isTrue",
+    throw new Assert.Failed("Assert.that",
 			    arg + " does not evaluate to true",
 			    comment);
   }
