@@ -78,7 +78,7 @@ public class JSLogger
 				FunctionObject constructor,
 				Scriptable prototype) {
     // Create and make the "level" property in the prototype visible
-    ScriptableObject.defineProperty(prototype, "level", "info", ScriptableObject.PERMANENT);
+    ScriptableObject.defineProperty(prototype, "level", "debug", ScriptableObject.PERMANENT);
   }
 
 

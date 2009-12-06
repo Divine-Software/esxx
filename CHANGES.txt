@@ -89,6 +89,8 @@
 	formate (like an IRI). The valueOf() function has been changed to
 	return the strict US-ASCII URI string.
 
+	* Changed the default Logger level to 'debug'.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
