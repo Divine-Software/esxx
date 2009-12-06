@@ -3,12 +3,21 @@ testRunner.add(new TestCase({
   name: "testmod-uri-jdbc",
 
   setUp: function() {
-    this.db = new URI("jdbc:h2:mem:testmod-uri-jdbc");
-    this.db.query("create table test (id identity, string varchar, number int)");
+    java.lang.Class.forName("com.mysql.jdbc.Driver").newInstance();
+
+    this.db = new URI("jdbc:mysql://localhost/esxx_test");
+    this.db.params = [{ name: "user",              value: "esxx_test" },
+		      { name: "password",          value: "esxx_test" },
+		      { name: "allowMultiQueries", value: "true"      }
+		     ];
+
+    this.db.query("drop table if exists test");
+    this.db.query("create table test (id int auto_increment primary key, " +
+				      "string varchar(20), number int)");
   },
 
   tearDown: function() {
-    this.db.query("drop all objects delete files");
+    this.db.query("drop table test");
   },
 
   testQueryInsertJS: function() {
@@ -21,13 +30,14 @@ testRunner.add(new TestCase({
 			      $result: "res", $entry: "ent", $updateCount: "uc" });
 
     Assert.that(one.entry.length() == 1, "INSERT did not generate one single entry")
-    Assert.that(one..identity.length() == 1, "INSERT did not generate one single identity")
+    Assert.that(one..generated_key.length() == 1, "INSERT did not generate one single GENERATED_KEY")
 
     Assert.areEqual(one.@updateCount, 1, "updateCount is not 1");
-    Assert.areEqual(one.entry.identity, 1, "IDENTITY of first INSERT was not 1");
+    Assert.areEqual(one.entry.generated_key, 1, "GENERATED_KEY of first INSERT was not 1");
 
     Assert.areEqual(two.@uc, 2, "uc is not 2");
-    Assert.areEqual(two.ent.identity, 3, "IDENTITY of second INSERT was not 3");
+    Assert.areEqual(two.ent.generated_key[0], 2, "GENERATED_KEY of second INSERT was not 2");
+    Assert.areEqual(two.ent.generated_key[1], 3, "GENERATED_KEY of second INSERT was not 3");
     Assert.areEqual(two.localName(), "res", "result element name is not 'res'");
   },
 
@@ -43,13 +53,14 @@ testRunner.add(new TestCase({
 			    );
 
     Assert.that(one.entry.length() == 1, "INSERT did not generate one single entry")
-    Assert.that(one..identity.length() == 1, "INSERT did not generate one single identity")
+    Assert.that(one..generated_key.length() == 1, "INSERT did not generate one single GENERATED_KEY")
 
     Assert.areEqual(one.@updateCount, 1, "updateCount is not 1");
-    Assert.areEqual(one.entry.identity, 1, "IDENTITY of first INSERT was not 1");
+    Assert.areEqual(one.entry.generated_key, 1, "GENERATED_KEY of first INSERT was not 1");
 
     Assert.areEqual(two.@updateCount, 2, "updateCount is not 2");
-    Assert.areEqual(two.entry.identity, 3, "IDENTITY of second INSERT was not 3");
+    Assert.areEqual(two.entry.generated_key[0], 2, "GENERATED_KEY of second INSERT was not 2");
+    Assert.areEqual(two.entry.generated_key[1], 3, "GENERATED_KEY of second INSERT was not 3");
   },
 
   testQuerySelect: function() {
@@ -67,11 +78,10 @@ testRunner.add(new TestCase({
     Assert.that(two.entry.length() == 1, "SELECT did not return exactly one entry");
     Assert.areEqual(two.entry.string, "two", "SELECT did not return 'two'");
 
-// H2 does not support multiple queries
-//    Assert.that(multi.entry.length() == 3, "SELECT did not return exactly three entries");
-//    Assert.areEqual(multi.entry[0].string, "one", "SELECT #1 did not return 'one'");
-//    Assert.areEqual(multi.entry[1].string, "one", "SELECT #2 did not return 'one'");
-//    Assert.areEqual(multi.entry[2].string, "two", "SELECT #2 did not return 'two'");
+    Assert.that(multi.entry.length() == 3, "Multi-SELECT did not return exactly three entries");
+    Assert.areEqual(multi[0].entry.string, "one", "Multi-SELECT #1 did not return 'one'");
+    Assert.areEqual(multi[1].entry[0].number, 1, "Multi-SELECT #2 did not return 1");
+    Assert.areEqual(multi[1].entry[1].number, 2, "Multi-SELECT #2 did not return 2");
   },
 
   testQueryBatch: function() {
