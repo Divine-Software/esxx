@@ -68,7 +68,11 @@ public class QueryCache {
 	  }
 
 	  Query q = pc.getQuery(parsed_query, total_param_length);
-	  q.bindParams(params, total_param_length, qh);
+
+	  for (int b = 0; b < qh.getBatches(); ++b) {
+	    q.bindParams(b, params, total_param_length, qh);
+	  }
+
 	  q.execute(qh);
 	}
       });
@@ -365,26 +369,25 @@ public class QueryCache {
       throws SQLException {
 
       try {
-	sql = db.prepareCall(parsed_query);
-	pmd = sql.getParameterMetaData();
+	sql = db.prepareStatement(parsed_query, Statement.RETURN_GENERATED_KEYS);
       }
       catch (SQLException ex) {
 	throw new SQLException("JDBC failed to prepare ESXX-parsed SQL statement: " +
 			       parsed_query + ": " + ex.getMessage());
       }
 
-      if (pmd.getParameterCount() != total_param_length) {
+      if (sql.getParameterMetaData().getParameterCount() != total_param_length) {
 	throw new SQLException("JDBC and ESXX report different " +
 			       "number of arguments in SQL query");
       }
     }
 
-    public void bindParams(List<Param> params, int total_params_length, QueryHandler qh) 
+    public void bindParams(int batch, List<Param> params, int total_params_length, QueryHandler qh) 
       throws SQLException {
       ArrayList<Object> objects = new ArrayList<Object>(total_params_length);
 
       for (Param param : params) {
-	qh.resolveParam(param.name, param.length, objects);
+	qh.resolveParam(batch, param.name, param.length, objects);
       }
 
       int p = 1;
@@ -392,13 +395,36 @@ public class QueryCache {
 	sql.setObject(p, o);
 	++p;
       }
+
+      if (qh.getBatches() > 1) {
+	sql.addBatch();
+	sql.clearParameters();
+      }
     }
 
     public void execute(QueryHandler qh)
       throws SQLException {
       try {
-	int set = 1;
-	boolean has_result = sql.execute();
+	int set = 0;
+	boolean has_result = false;
+	int[] update_counts = null;
+
+	if (qh.getBatches() > 1) {
+	  update_counts = sql.executeBatch();
+
+	  for (int i : update_counts) {
+	    if (i < 0) {
+	      // If the driver didn't do it, we do
+	      throw new BatchUpdateException("JDBC driver didn't throw, but I do", update_counts);
+	    }
+	  }
+	}
+	else {
+	  has_result = sql.execute();
+	}
+
+	// I have no idea what to do with update_counts here ...
+
 	int update_count;
       
 	while (true) {
@@ -448,7 +474,7 @@ public class QueryCache {
 
       return StringUtil.format(unparsed_query, new StringUtil.ParamResolver() {
 	  public String resolveParam(String name) {
-	    Param      param = new Param(name, qh.getParamLength(name));
+	    Param      param = new Param(name, qh.getParamLength(0 /* def. batch */, name));
 	    StringBuilder sb = null;
 
 	    for (int i = 0; i < param.length; ++i) {
@@ -478,7 +504,6 @@ public class QueryCache {
       int length;
     };
 
-    private CallableStatement sql;
-    private ParameterMetaData pmd;
+    private PreparedStatement sql;
   }
 }

@@ -56,8 +56,16 @@ public class ArrayQueryHandler
     throws SQLException {
     throw new SQLException("ArrayQueryHandler does not support transactions");
   }
-    
-  public int getParamLength(String param) {
+
+  public int getBatches() {
+    return 1;
+  }
+
+  public int getParamLength(int batch, String param) {
+    if (batch != 0) {
+      throw new IllegalArgumentException("ArrayQueryHandler does not support multiple batches");
+    }
+
     Object obj = params[Integer.parseInt(param)];
     int    len = 1;
 
@@ -72,7 +80,11 @@ public class ArrayQueryHandler
     return len;
   }
 
-  public void resolveParam(String param, int length, Collection<Object> result) {
+  public void resolveParam(int batch, String param, int length, Collection<Object> result) {
+    if (batch != 0) {
+      throw new IllegalArgumentException("ArrayQueryHandler does not support multiple batches");
+    }
+
     Object obj = params[Integer.parseInt(param)];
 
     if (obj instanceof Iterable) {
@@ -88,7 +100,7 @@ public class ArrayQueryHandler
   public void handleResult(int set, int update_count, ResultSet rs) 
     throws SQLException {
 
-    if (set != 1) {
+    if (set != 0) {
       throw new UnsupportedOperationException("ArrayQueryHandler does not support "
 					      + "multiple result sets");
     }

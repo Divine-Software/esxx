@@ -37,20 +37,33 @@ public interface QueryHandler {
   public void handleTransaction()
     throws SQLException;
 
+  /** Return the number of batches.
+   *
+   *  @return How many batches there are (1 means no batches)
+   */
+
+  public int getBatches();
+
   /** Return the length of a named parameter.
    *
    *  If the given parameter is an array or some other collection,
    *  this method should return the number of members. For plain
    *  objects, it should return 1.
+   *
+   *  @param batch  The batch ID (0 is the first batch or no batch)
+   *  @param param  The name of the parameter.
+   *
+   *  @return The length of the parameter (1 for plain params)
    */
 
-  public int getParamLength(String param);
+  public int getParamLength(int batch, String param);
 
   /** Resolve a named parameter.
    *
    *  This method will be called by executeQuery() to resolve a
    *  named {...} parameter in the SQL query.
    *
+   *  @param batch   The batch ID (0 is the first batch or no batch)
    *  @param param   The name of the parameter to be resolved.
    *  @param length  The expected length (as it was reported in
    *                 #getParamLength().
@@ -59,16 +72,16 @@ public interface QueryHandler {
    *
    */
 
-  public void resolveParam(String param, int length, Collection<Object> result);
+  public void resolveParam(int batch, String param, int length, Collection<Object> result);
 
   /** Transform SQL result.
    *
    *  This method transforms the result of an SQL query. It will be
    *  called once for each result set.
    *
-   *  @param set           The result set number, starting at 1.
+   *  @param set           The result set number, starting at 0.
    *  @param update_count  The result of Statement.getUpdateCount();
-   *  @para  result        The result of Statement.getResultSet() or getGeneratedKeys().
+   *  @param result        The result of Statement.getResultSet() or getGeneratedKeys().
    *
    *  @throw SQLException May be thrown, and will be propagated back
    *  from executeQuery().

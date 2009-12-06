@@ -31,6 +31,7 @@ import org.esxx.util.QueryHandler;
 import org.esxx.util.StringUtil;
 import org.esxx.util.XML;
 import org.mozilla.javascript.*;
+import org.mozilla.javascript.xml.XMLObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -54,38 +55,10 @@ public class JDBCHandler
     }
   }
 
-  @Override
-  public Object query(final Context cx, final Scriptable thisObj, Object[] args) {
+  @Override public Object query(Context cx, Scriptable thisObj, Object[] args) {
     try {
-      String     query       = null;
-      Function   function    = null;
-      Scriptable params      = null;
-      String     result_name = "result";
-      String     entry_name  = "entry";
-
       if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
 	throw Context.reportRuntimeError("Missing query argument");
-      }
-
-      if (args[0] instanceof Function) {
-	function = (Function) args[0];
-      }
-      else {
-	query = Context.toString(args[0]);
-      }
-
-      if (args.length >= 2 && args[1] instanceof Scriptable) {
-	Object o;
-
-	params = (Scriptable) args[1];
-	
-	if ((o = params.get("$result", params)) != Scriptable.NOT_FOUND) {
-	  result_name = Context.toString(o);
-	}
-
-	if ((o = params.get("$entry", params)) != Scriptable.NOT_FOUND) {
-	  entry_name = Context.toString(o);
-	}
       }
 
       Properties p = jsuri.getParams(cx, jsuri.getURI());
@@ -96,111 +69,19 @@ public class JDBCHandler
 	p.setProperty("password", Context.toString(a.get("password", a)));
       }
 
-      final Function final_function = function;
-      final Scriptable final_params  = params;
-      final String final_entry_name  = entry_name;
-      final Object[]   final_result = new Object[1];
+      JDBCQueryHandler qh = new JDBCQueryHandler(cx, thisObj, args);
 
-      if (function == null) {
-	ESXX esxx = ESXX.getInstance();
-	final_result[0] =  esxx.createDocument(result_name);
-      }
-
-      QueryHandler qh = new QueryHandler() {
-	  public void handleTransaction()
-	    throws SQLException {
-	    Scriptable thiz = final_function.getParentScope();
-	    final_result[0] = final_function.call(cx, thiz, thiz, Context.emptyArgs);
-	  }
-
-	  public int getParamLength(String param) {
-	    Object obj = ScriptRuntime.getObjectElem(final_params, param, cx);
-	    int    len = 1;
-
-	    if (obj instanceof Iterable) {
-	      Iterator i = ((Iterable) obj).iterator();
-
-	      for (len = 0; i.hasNext(); i.next()) {
-		++len;
-	      }
-	    }
-	    else if (obj instanceof Scriptable) {
-	      len = ((Scriptable) obj).getIds().length;
-	    }
-
-	    return len;
-	  }
-
-	  public void resolveParam(String param, int length, Collection<Object> result) {
-	    Object obj = ScriptRuntime.getObjectElem(final_params, param, cx);
-
-	    if (obj instanceof Iterable) {
-	      for (Object o : ((Iterable) obj)) {
-		result.add(o);
-	      }
-	    }
-	    else if (obj instanceof Scriptable) {
-	      Scriptable jsobj = (Scriptable) obj;
-
-	      for (Object id : jsobj.getIds()) {
-		result.add(ScriptRuntime.getObjectElem(jsobj, id, cx));
-	      }
-	    }
-	    else {
-	      result.add(obj);
-	    }
-	  }
-
-	  public void handleResult(int set, int uc, ResultSet rs) 
-	    throws SQLException {
-	    ResultSetMetaData rmd = rs.getMetaData();
-	    int             count = rmd.getColumnCount();
-	    String[]        names = new String[count];
-	    
-	    for (int i = 0; i < count; ++i) {
-	      names[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i + 1).toLowerCase(), "");
-	    }
-
-	    Document doc = (Document) final_result[0];
-	    Element root = doc.getDocumentElement();
-
-	    while (rs.next()) {
-	      Element row = doc.createElementNS(null, final_entry_name);
-
-	      row.setAttributeNS(null, "resultSet", Integer.toString(set));
-
-	      if (uc != -1) {
-		row.setAttributeNS(null, "updateCount", Integer.toString(uc));
-	      }
-
-	      for (int i = 0; i < count; ++i) {
-		String value  = rs.getString(i + 1);
-		Element child = XML.addChild(row, names[i], value);
-
-		int type = rmd.getColumnType(i + 1);
-
-		if (value == null) {
-		  type = Types.NULL;
-		}
-
-		child.setAttributeNS(null, "type", typeToString.get(type));
-	      }
-
-	      root.appendChild(row);
-	    }
-	  }
-	};
-
-      if (function == null) {
-	queryCache.executeQuery(jsuri.getURI(), p, query, qh);
-	return ESXX.domToE4X((Document) final_result[0], cx, thisObj);
+      if (args[0] instanceof Function) {
+	queryCache.executeTransaction(jsuri.getURI(), p, qh);
       }
       else {
-	queryCache.executeTransaction(jsuri.getURI(), p, qh);
-	return final_result[0];
+	queryCache.executeQuery(jsuri.getURI(), p, Context.toString(args[0]), qh);
       }
+
+      return qh.getResult();
     }
     catch (SQLException ex) {
+      ex.printStackTrace();
       throw Context.reportRuntimeError("SQL query failed: " + ex.getMessage());
     }
     catch (Exception ex) {
@@ -209,6 +90,163 @@ public class JDBCHandler
     return null;
   }
 
+  private static class JDBCQueryHandler 
+    implements QueryHandler {
+
+    public JDBCQueryHandler(Context cx, Scriptable jsthis, Object[] a) {
+      this.cx = cx;
+      jsThis  = jsthis;
+      args    = a;
+      batches = 0;
+
+      for (int i = args.length - 1; i >= 1; --i) {
+	if (args[i] != Context.getUndefinedValue()) {
+	  ++batches;
+	}
+      }
+
+      resultElem      = "result";
+      entryElem       = "entry";
+      updateCountAttr = "updateCount";
+
+      if (batches > 0 && args[1] instanceof Scriptable) {
+	// (Only the first batch, if a Scriptable, may change the element names)
+
+	Scriptable p = (Scriptable) args[1];
+	Object     o;
+
+	if ((o = p.get("$result", p)) != Scriptable.NOT_FOUND) {
+	  resultElem = Context.toString(o);
+	}
+
+	if ((o = p.get("$entry", p)) != Scriptable.NOT_FOUND) {
+	  entryElem = Context.toString(o);
+	}
+
+	if ((o = p.get("$updateCount", p)) != Scriptable.NOT_FOUND) {
+	  updateCountAttr = Context.toString(o);
+	}
+      }
+    }
+
+    public Object getResult() {
+      return queryResult;
+    }
+
+    @Override public void handleTransaction()
+      throws SQLException {
+      Function   func = (Function) args[0];
+      Scriptable thiz = func.getParentScope();
+
+      queryResult = func.call(cx, thiz, thiz, Context.emptyArgs);
+    }
+
+    @Override public int getBatches() {
+      return batches;
+    }
+
+    @Override public int getParamLength(int batch, String param) {
+      Object params = args[1 + batch];
+      Object object = ScriptRuntime.getObjectElem(params, param, cx);
+      int    length;
+
+      if (object instanceof Iterable) {
+	Iterator i = ((Iterable) object).iterator();
+
+	for (length = 0; i.hasNext(); i.next()) {
+	  ++length;
+	}
+      }
+      else if (object instanceof Scriptable) {
+	length = ((Scriptable) object).getIds().length;
+      }
+      else {
+	length = 1;
+      }
+
+      return length;
+    }
+
+    @Override public void resolveParam(int batch, String param, int length, 
+				       Collection<Object> result) {
+      Object params = args[1 + batch];
+      Object object = ScriptRuntime.getObjectElem(params, param, cx);
+
+      if (object instanceof Iterable) {
+	for (Object o : ((Iterable) object)) {
+	  result.add(o);
+	}
+      }
+      else if (object instanceof Scriptable) {
+	Scriptable jsobj = (Scriptable) object;
+
+	for (Object id : jsobj.getIds()) {
+	  Object o = ScriptRuntime.getObjectElem(jsobj, id, cx);
+
+	  if (o instanceof XMLObject) {
+	    o = o.toString();
+	  }
+
+	  result.add(o);
+	}
+      }
+      else {
+	result.add(object);
+      }
+    }
+
+    @Override public void handleResult(int set, int uc, ResultSet rs) 
+      throws SQLException {
+      ResultSetMetaData rmd   = rs.getMetaData();
+      Document          doc   = ESXX.getInstance().createDocument(resultElem);
+      Element           root  = doc.getDocumentElement();
+      String[]          names = new String[rmd.getColumnCount()];
+
+      for (int i = 0; i < names.length; ++i) {
+	names[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i + 1).toLowerCase(), "");
+
+	int type = rmd.getColumnType(i + 1);
+	root.setAttributeNS(null, names[i], typeToString.get(type));
+      }
+
+      if (uc != -1 && !updateCountAttr.isEmpty()) {
+	root.setAttributeNS(null, updateCountAttr, Integer.toString(uc));
+      }
+
+      while (rs.next()) {
+	Element row = doc.createElementNS(null, entryElem);
+
+	for (int i = 0; i < names.length; ++i) {
+	  String value  = rs.getString(i + 1);
+	  Element child = XML.addChild(row, names[i], value);
+
+	  if (value == null) {
+	    child.setAttributeNS(null, "isNull", "true");
+	  }
+	}
+
+	root.appendChild(row);
+      }
+      
+      if (queryResult == null) {
+	queryResult = cx.newObject(jsThis, "XMLList", Context.emptyArgs);
+      }
+
+      queryResult = ((XMLObject) queryResult).addValues(cx, true, ESXX.domToE4X(doc, cx, jsThis));
+    }
+
+    private Context cx;
+    private Scriptable jsThis;
+
+    private Object[] args;
+    private int batches;
+
+    private String resultElem;
+    private String entryElem;
+    private String updateCountAttr;
+
+    private Object queryResult;
+  }
 
   private static QueryCache queryCache;
 
