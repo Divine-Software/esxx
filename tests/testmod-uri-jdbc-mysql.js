@@ -1,4 +1,13 @@
 
+/* For this testcase to work, you must first execute the following
+ * MySQL commands:
+ *
+ * mysql> create database esxx_test;
+ * mysql> grant usage on *.* to esxx_test@localhost identified by 'esxx_test';
+ * mysql> grant all privileges on esxx_test.* to esxx_test@localhost;
+ *
+ */
+
 testRunner.add(new TestCase({
   name: "testmod-uri-jdbc",
 
