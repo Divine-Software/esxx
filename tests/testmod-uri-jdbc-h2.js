@@ -1,6 +1,6 @@
 
 testRunner.add(new TestCase({
-  name: "testmod-uri-jdbc",
+  name: "testmod-uri-jdbc-h2",
 
   setUp: function() {
     this.db = new URI("jdbc:h2:mem:testmod-uri-jdbc");

@@ -1,27 +1,26 @@
 
 /* For this testcase to work, you must first execute the following
- * MySQL commands:
+ * PostgreSQL commands:
  *
- * mysql> create database esxx_test;
- * mysql> grant usage on *.* to esxx_test@localhost identified by 'esxx_test';
- * mysql> grant all privileges on esxx_test.* to esxx_test@localhost;
+ * $ createuser -U postgres --pwprompt --no-createdb --no-createrole --no-superuser esxx_test
+ * (set password to 'esxx_test')
+ * $ createdb -U postgres -O esxx_test esxx_test
  *
  */
 
 testRunner.add(new TestCase({
-  name: "testmod-uri-jdbc",
+  name: "testmod-uri-jdbc-pgsql",
 
   setUp: function() {
-    java.lang.Class.forName("com.mysql.jdbc.Driver").newInstance();
+    java.lang.Class.forName("org.postgresql.Driver");
 
-    this.db = new URI("jdbc:mysql://localhost/esxx_test");
+    this.db = new URI("jdbc:postgresql:esxx_test");
     this.db.params = [{ name: "user",              value: "esxx_test" },
 		      { name: "password",          value: "esxx_test" },
-		      { name: "allowMultiQueries", value: "true"      }
 		     ];
 
     this.db.query("drop table if exists test");
-    this.db.query("create table test (id int auto_increment primary key, " +
+    this.db.query("create table test (id serial primary key, " +
 				      "string varchar(20), number int)");
   },
 
@@ -30,46 +29,51 @@ testRunner.add(new TestCase({
   },
 
   testQueryInsertJS: function() {
-    let one = this.db.query("insert into test (string, number) values ({0}, {1})",
+    let one = this.db.query("insert into test (string, number) values ({0}, {1});" +
+			    "select last_value FROM test_id_seq",
 			    ["one", 1]);
     let two = this.db.query("insert into test values "
-			    + "(default, {s1}, {n1}), (default, {s2}, {n2})",
+			    + "(default, {s1}, {n1}), (default, {s2}, {n2});" +
+			    "select last_value FROM test_id_seq",
 			    { s1: "two", n1: 2,
 			      s2: "three", n2: 3,
 			      $result: "res", $entry: "ent", $updateCount: "uc" });
 
-    Assert.that(one.entry.length() == 1, "INSERT did not generate one single entry")
-    Assert.that(one..generated_key.length() == 1, "INSERT did not generate one single GENERATED_KEY")
+    Assert.that(one.length() == 2, "INSERT/SELECT did not generate one two result sets")
+    Assert.that(one.entry.length() == 1, "INSERT/SELECT did not generate one single entry")
+    Assert.that(one..last_value.length() == 1, "INSERT/SELECT did not generate one single LAST_VALUE")
 
     Assert.areEqual(one.@updateCount, 1, "updateCount is not 1");
-    Assert.areEqual(one.entry.generated_key, 1, "GENERATED_KEY of first INSERT was not 1");
+    Assert.areEqual(one.entry.last_value, 1, "LAST_VALUE of first INSERT/SELECT was not 1");
 
     Assert.areEqual(two.@uc, 2, "uc is not 2");
-    Assert.areEqual(two.ent.generated_key[0], 2, "GENERATED_KEY of second INSERT was not 2");
-    Assert.areEqual(two.ent.generated_key[1], 3, "GENERATED_KEY of second INSERT was not 3");
-    Assert.areEqual(two.localName(), "res", "result element name is not 'res'");
+    Assert.areEqual(two.ent.last_value, 3, "LAST_VALUE of second INSERT/SELECT was not 3");
+    Assert.areEqual(two[0].localName(), "res", "result element #1 name is not 'res'");
+    Assert.areEqual(two[1].localName(), "res", "result element #2 name is not 'res'");
   },
 
   testQueryInsertXML: function() {
-    let one = this.db.query("insert into test (string, number) values ({0}, {1})",
+    let one = this.db.query("insert into test (string, number) values ({0}, {1});" +
+			    "select last_value FROM test_id_seq",
 			    <><e>one</e><e>1</e></>);
     let two = this.db.query("insert into test values "
-			    + "(default, {s1}, {n1}), (default, {s2}, {n2})",
+			    + "(default, {s1}, {n1}), (default, {s2}, {n2});" +
+			    "select last_value FROM test_id_seq",
 			    <elem>
 			    <s1>two</s1>   <n1>2</n1>
 			    <s2>three</s2> <n2>3</n2>
 			    </elem>
 			    );
 
-    Assert.that(one.entry.length() == 1, "INSERT did not generate one single entry")
-    Assert.that(one..generated_key.length() == 1, "INSERT did not generate one single GENERATED_KEY")
+    Assert.that(one.length() == 2, "INSERT/SELECT did not generate one two result sets")
+    Assert.that(one.entry.length() == 1, "INSERT/SELECT did not generate one single entry")
+    Assert.that(one..last_value.length() == 1, "INSERT/SELECT did not generate one single LAST_VALUE")
 
     Assert.areEqual(one.@updateCount, 1, "updateCount is not 1");
-    Assert.areEqual(one.entry.generated_key, 1, "GENERATED_KEY of first INSERT was not 1");
+    Assert.areEqual(one.entry.last_value, 1, "LAST_VALUE of first INSERT/SELECT was not 1");
 
     Assert.areEqual(two.@updateCount, 2, "updateCount is not 2");
-    Assert.areEqual(two.entry.generated_key[0], 2, "GENERATED_KEY of second INSERT was not 2");
-    Assert.areEqual(two.entry.generated_key[1], 3, "GENERATED_KEY of second INSERT was not 3");
+    Assert.areEqual(two.entry.last_value, 3, "LAST_VALUE of second INSERT/SELECT was not 3");
   },
 
   testQuerySelect: function() {

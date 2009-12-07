@@ -9,7 +9,7 @@
  */
 
 testRunner.add(new TestCase({
-  name: "testmod-uri-jdbc",
+  name: "testmod-uri-jdbc-mysql",
 
   setUp: function() {
     java.lang.Class.forName("com.mysql.jdbc.Driver").newInstance();
