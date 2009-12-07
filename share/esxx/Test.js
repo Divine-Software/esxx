@@ -45,8 +45,15 @@ function TestRunner.prototype.run() {
   let out = java.lang.System.out;
   let err = java.lang.System.err;
 
+  let rc = true;
+
+  let testcases = 0;
+  let tc_passed = 0;
+
   function run_tc(tc) {
     out.println("Running testcase " + tc.name + ":")
+
+    ++testcases;
 
     let tests  = 0;
     let passed = 0;
@@ -88,23 +95,36 @@ function TestRunner.prototype.run() {
 
     out.println(passed + " out of " + tests + " tests passed for testcase " + tc.name);
 
-    return tests === passed;
+    if (tests === passed) {
+      ++tc_passed;
+      return true;
+    }
+    else {
+      rc = false;
+      return false;
+    }
   }
-
-  let rc = true;
 
   for (let i in this.tests) {
     if (this.tests[i] instanceof TestCase) {
-      rc = run_tc(this.tests[i]) && rc;
+      run_tc(this.tests[i]);
     }
     else if (this.tests[i] instanceof TestSuite) {
+      out.println("Running testsuite " + this.tests[i].name + ":")
+
       let tcs = this.tests[i].getTestCases();
+      let trc = true;
       
       for (let t in tcs) {
-	rc = run_tc(tcs[t]) && rc;
+	trc = trc && run_tc(tcs[t]);
       }
+
+      out.println("Testsuite " + this.tests[i].name + (trc ? " PASSED" : " FAILED"));
     }
   }
+
+  out.println("TestRunner " + (tc_passed === testcases ? "PASSED: " : " FAILED: ")
+	      + tc_passed + " out of " + testcases + " testcases passed");
 
   return rc ? 0 : 10;
 }
