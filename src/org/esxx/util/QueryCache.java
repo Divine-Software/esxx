@@ -30,6 +30,9 @@ import org.esxx.ESXXException;
 import org.esxx.cache.LRUCache;
 import org.esxx.util.StringUtil;
 
+import org.h2.value.DataType;
+import org.h2.value.Value;
+
 import org.mozilla.javascript.Scriptable;
 
 /** An easy-to-use SQL query cache and connection pool. */
@@ -369,16 +372,31 @@ public class QueryCache {
       throws SQLException {
 
       try {
-	sql = db.prepareStatement(parsed_query, Statement.RETURN_GENERATED_KEYS);
+	boolean gen = db.getMetaData().supportsGetGeneratedKeys();
+
+	sql = db.prepareStatement(parsed_query, (gen ? Statement.RETURN_GENERATED_KEYS
+						 : Statement.NO_GENERATED_KEYS));
+	pmd = sql.getParameterMetaData();
       }
       catch (SQLException ex) {
 	throw new SQLException("JDBC failed to prepare ESXX-parsed SQL statement: " +
 			       parsed_query + ": " + ex.getMessage());
       }
 
-      if (sql.getParameterMetaData().getParameterCount() != total_param_length) {
+      if (pmd.getParameterCount() != total_param_length) {
 	throw new SQLException("JDBC and ESXX report different " +
 			       "number of arguments in SQL query");
+      }
+
+      try {
+	paramTypes = new int[total_param_length +1];
+
+	for (int i = 1; i < paramTypes.length; ++i) {
+	  paramTypes[i] = DataType.convertSQLTypeToValueType(pmd.getParameterType(i));
+	}
+      }
+      catch (Exception ex) {
+	paramTypes = null;
       }
     }
 
@@ -391,7 +409,17 @@ public class QueryCache {
       }
 
       int p = 1;
+
       for (Object o : objects) {
+	if (paramTypes != null) {
+	  try { // Why reinvent the wheel?
+	    o = DataType.convertToValue(null /* session */, o, paramTypes[p]).convertTo(paramTypes[p]).getObject(); 
+	  }
+	  catch (Exception ignored) {
+	    paramTypes = null; // Don't try again
+	  }
+	}
+
 	sql.setObject(p, o);
 	++p;
       }
@@ -505,5 +533,7 @@ public class QueryCache {
     };
 
     private PreparedStatement sql;
+    private ParameterMetaData pmd;
+    private int[] paramTypes;
   }
 }
