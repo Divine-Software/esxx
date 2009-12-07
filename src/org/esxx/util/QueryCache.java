@@ -371,10 +371,11 @@ public class QueryCache {
     public Query(String parsed_query, int total_param_length, Connection db)
       throws SQLException {
 
-      try {
-	boolean gen = db.getMetaData().supportsGetGeneratedKeys();
+      generatedKeys = db.getMetaData().supportsGetGeneratedKeys();
 
-	sql = db.prepareStatement(parsed_query, (gen ? Statement.RETURN_GENERATED_KEYS
+      try {
+	sql = db.prepareStatement(parsed_query, (generatedKeys
+						 ? Statement.RETURN_GENERATED_KEYS
 						 : Statement.NO_GENERATED_KEYS));
 	pmd = sql.getParameterMetaData();
       }
@@ -469,7 +470,7 @@ public class QueryCache {
 	      break;
 	    }
 
-	    result = sql.getGeneratedKeys();
+	    result = generatedKeys ? sql.getGeneratedKeys() : null;
 	  }
 
 	  qh.handleResult(set, update_count, result);
@@ -534,6 +535,7 @@ public class QueryCache {
 
     private PreparedStatement sql;
     private ParameterMetaData pmd;
+    private boolean generatedKeys;
     private int[] paramTypes;
   }
 }

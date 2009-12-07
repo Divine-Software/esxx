@@ -81,7 +81,8 @@ public interface QueryHandler {
    *
    *  @param set           The result set number, starting at 0.
    *  @param update_count  The result of Statement.getUpdateCount();
-   *  @param result        The result of Statement.getResultSet() or getGeneratedKeys().
+   *  @param result        The result of Statement.getResultSet() or getGeneratedKeys(). 
+   *                       May be null.
    *
    *  @throw SQLException May be thrown, and will be propagated back
    *  from executeQuery().

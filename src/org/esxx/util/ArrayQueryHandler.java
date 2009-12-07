@@ -109,7 +109,7 @@ public class ArrayQueryHandler
       result = new ArrayList<Object[]>();
     }
 
-    while (rs.next()) {
+    while (rs != null && rs.next()) {
       Object[] row = new Object[rs.getMetaData().getColumnCount()];
 	
       for (int i = 0; i < row.length; ++i) {

@@ -197,23 +197,27 @@ public class JDBCHandler
 
     @Override public void handleResult(int set, int uc, ResultSet rs) 
       throws SQLException {
-      ResultSetMetaData rmd   = rs.getMetaData();
       Document          doc   = ESXX.getInstance().createDocument(resultElem);
       Element           root  = doc.getDocumentElement();
-      String[]          names = new String[rmd.getColumnCount()];
+      String[]          names = null;
 
-      for (int i = 0; i < names.length; ++i) {
-	names[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i + 1).toLowerCase(), "");
+      if (rs != null) {
+	ResultSetMetaData rmd = rs.getMetaData();
+	names = new String[rmd.getColumnCount()];
 
-	int type = rmd.getColumnType(i + 1);
-	root.setAttributeNS(null, names[i], typeToString.get(type));
+	for (int i = 0; i < names.length; ++i) {
+	  names[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i + 1).toLowerCase(), "");
+
+	  int type = rmd.getColumnType(i + 1);
+	  root.setAttributeNS(null, names[i], typeToString.get(type));
+	}
       }
 
       if (uc != -1 && !updateCountAttr.isEmpty()) {
 	root.setAttributeNS(null, updateCountAttr, Integer.toString(uc));
       }
 
-      while (rs.next()) {
+      while (rs != null && rs.next()) {
 	Element row = doc.createElementNS(null, entryElem);
 
 	for (int i = 0; i < names.length; ++i) {
