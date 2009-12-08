@@ -2,9 +2,9 @@
 /* For this testcase to work, you must first execute the following
  * PostgreSQL commands:
  *
- * $ createuser -U postgres --pwprompt --no-createdb --no-createrole --no-superuser esxx_test
+ * $ createuser --no-createdb --no-createrole --no-superuser esxx_test
  * (set password to 'esxx_test')
- * $ createdb -U postgres -O esxx_test esxx_test
+ * $ createdb -O esxx_test esxx_test
  *
  */
 
@@ -97,11 +97,11 @@ testRunner.add(new TestCase({
     Assert.areEqual(multi[1].entry[1].number, 2, "Multi-SELECT #2 did not return 2");
   },
 
-  testQueryBatch: function() {
-    let res = this.db.query("insert into test (string, number) values ({0}, {1})",
-			    { 0:"one", 1: 1}, ["two", 2],
-			    <><e>three</e><e>3</e></>);
+//  testQueryBatch: function() {
+//    let res = this.db.query("insert into test (string, number) values ({0}, {1})",
+//			    { 0:"one", 1: 1}, ["two", 2],
+//			    <><e>three</e><e>3</e></>);
 //    esxx.log.debug(res);
-  }
+//  }
 
 }));
