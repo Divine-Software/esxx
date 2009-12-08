@@ -374,10 +374,23 @@ public class QueryCache {
       generatedKeys = db.getMetaData().supportsGetGeneratedKeys();
 
       try {
-	sql = db.prepareStatement(parsed_query, (generatedKeys
-						 ? Statement.RETURN_GENERATED_KEYS
-						 : Statement.NO_GENERATED_KEYS));
-	pmd = sql.getParameterMetaData();
+	try {
+	  sql = db.prepareStatement(parsed_query, (generatedKeys
+						   ? Statement.RETURN_GENERATED_KEYS
+						   : Statement.NO_GENERATED_KEYS));
+	  pmd = sql.getParameterMetaData();
+	}
+	catch (SQLException ignored) {
+	  // PostgreSQL (and probably others) only accepts
+	  // RETURN_GENERATED_KEYS for INSERTs, so try again. Since
+	  // we're caching, preparing the query twice is ... acceptable.
+
+	  generatedKeys = false;
+
+	  sql = db.prepareStatement(parsed_query, Statement.NO_GENERATED_KEYS);
+	  pmd = sql.getParameterMetaData();
+	}
+
       }
       catch (SQLException ex) {
 	throw new SQLException("JDBC failed to prepare ESXX-parsed SQL statement: " +
