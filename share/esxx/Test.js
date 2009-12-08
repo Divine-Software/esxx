@@ -94,6 +94,7 @@ function TestRunner.prototype.run() {
     }
 
     out.println(passed + " out of " + tests + " tests passed for testcase " + tc.name);
+    out.println("");
 
     if (tests === passed) {
       ++tc_passed;
