@@ -203,13 +203,40 @@ public class JDBCHandler
 
       if (rs != null) {
 	ResultSetMetaData rmd = rs.getMetaData();
-	names = new String[rmd.getColumnCount()];
+	names = new String[rmd.getColumnCount() + 1];
 
-	for (int i = 0; i < names.length; ++i) {
-	  names[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i + 1).toLowerCase(), "");
+	for (int i = 1; i < names.length; ++i) {
+	  names[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i).toLowerCase(), "");
 
-	  int type = rmd.getColumnType(i + 1);
-	  root.setAttributeNS(null, names[i], typeToString.get(type));
+	  String name = rmd.getColumnName(i);
+	  name = addPart(rmd.getTableName(i), name);
+	  name = addPart(rmd.getSchemaName(i), name);
+	  name = addPart(rmd.getCatalogName(i), name);
+
+	  String type = typeToString.get(rmd.getColumnType(i));
+	  char[] flag = { 'a', 'c', 'f', 'm', 'n', 's', 'w' };
+
+	  if (rmd.isAutoIncrement(i)) flag[0] = 'A';
+	  if (rmd.isCaseSensitive(i)) flag[1] = 'C';
+	  if (rmd.isSearchable(i))    flag[2] = 'F';
+	  if (rmd.isCurrency(i))      flag[3] = 'M';
+	  if (rmd.isSigned(i))        flag[5] = 'S';
+
+	  switch (rmd.isNullable(i)) {
+	    case ResultSetMetaData.columnNullable:
+	      flag[4] = 'N';
+	      break;
+
+	    case ResultSetMetaData.columnNullableUnknown:
+	      flag[4] = '?';
+	      break;
+	  }
+
+	  if (rmd.isDefinitelyWritable(i)) flag[6] = 'W';
+	  else if (rmd.isWritable(i))      flag[6] = '?';
+
+	  root.setAttributeNS(null, names[i], name + ":" + type + ":" + new String(flag)
+			      + ":" + rmd.getPrecision(i) + "." + rmd.getScale(i));
 	}
       }
 
@@ -220,8 +247,8 @@ public class JDBCHandler
       while (rs != null && rs.next()) {
 	Element row = doc.createElementNS(null, entryElem);
 
-	for (int i = 0; i < names.length; ++i) {
-	  String value  = rs.getString(i + 1);
+	for (int i = 1; i < names.length; ++i) {
+	  String value  = rs.getString(i);
 	  Element child = XML.addChild(row, names[i], value);
 
 	  if (value == null) {
@@ -237,6 +264,15 @@ public class JDBCHandler
       }
 
       queryResult = ((XMLObject) queryResult).addValues(cx, true, ESXX.domToE4X(doc, cx, jsThis));
+    }
+
+    private static String addPart(String part_name, String name) {
+      if (part_name != null && !part_name.isEmpty()) {
+	return part_name + "." + name;
+      }
+      else {
+	return name;
+      }
     }
 
     private Context cx;
