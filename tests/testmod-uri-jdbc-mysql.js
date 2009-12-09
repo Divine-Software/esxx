@@ -111,8 +111,6 @@ testRunner.add(new TestCase({
       });
     }, "string", "Transaction did not throw a string");
 
-    esxx.log.debug(db.query("select * from test"));
-
     Assert.areEqual(db.query("select count(*) as cnt from test").entry.cnt, 0,
 		    "Transaction #1 did not roll back");
 
