@@ -155,10 +155,17 @@ function Assert.fnThrows(fn, type, comment) {
 				comment);
       }
     }
-    else if (type) {
+    else if (type instanceof Object) {
       if (!(ex instanceof type)) {
 	throw new Assert.Failed("Assert.throws",
 				fn + " did not throw an instance of " + type,
+				comment);
+      }
+    }
+    else {
+      if (typeof ex != type) {
+	throw new Assert.Failed("Assert.throws",
+				fn + " did not throw an type of '" + type + "'",
 				comment);
       }
     }
