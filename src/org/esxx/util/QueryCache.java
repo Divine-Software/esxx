@@ -143,9 +143,10 @@ public class QueryCache {
     PerThreadConnection ptc = perThreadConnection.get();
 
     if (ptc.refCounter == 0) {
-      ++ptc.refCounter;
       ptc.pooledConnection = cp.getConnection();
     }
+
+    ++ptc.refCounter;
 
     try {
       cb.execute(ptc.pooledConnection);
@@ -163,6 +164,10 @@ public class QueryCache {
   private static class PerThreadConnection {
     long refCounter;
     PooledConnection pooledConnection;
+
+    public String toString() {
+      return "[" + getClass() + " " + refCounter + ", " + pooledConnection + "]";
+    }
   }
 
   private static final ThreadLocal<PerThreadConnection> perThreadConnection = 
@@ -360,6 +365,10 @@ public class QueryCache {
 					   "Failed to close pooled connection: " + ex.getMessage(),
 					   ex);
       }
+    }
+
+    public String toString() {
+      return "[" + getClass() + ": " + expires + ", " + connection + ", " + queryCache + "]";
     }
 
     private long expires;
