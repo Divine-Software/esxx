@@ -93,7 +93,8 @@ function TestRunner.prototype.run() {
       }
     }
 
-    out.println(passed + " out of " + tests + " tests passed for testcase " + tc.name);
+    out.println(passed + " out of " + tests + " tests ("
+		+ (100 * passed / tests) + "%) passed for testcase " + tc.name);
     out.println("");
 
     if (tests === passed) {
@@ -124,8 +125,9 @@ function TestRunner.prototype.run() {
     }
   }
 
-  out.println("TestRunner " + (tc_passed === testcases ? "PASSED: " : " FAILED: ")
-	      + tc_passed + " out of " + testcases + " testcases passed");
+  out.println("TestRunner " + (tc_passed === testcases ? "PASSED: " : "FAILED: ")
+	      + tc_passed + " out of " + testcases + " testcases ("
+	      + (100 * tc_passed / testcases) + "%) passed");
 
   return rc ? 0 : 10;
 }
