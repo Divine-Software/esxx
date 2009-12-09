@@ -84,10 +84,6 @@ public class JDBCHandler
       ex.printStackTrace();
       throw Context.reportRuntimeError("SQL query failed: " + ex.getMessage());
     }
-    catch (Exception ex) {
-      ex.printStackTrace();
-    }
-    return null;
   }
 
   private static class JDBCQueryHandler 
@@ -105,8 +101,8 @@ public class JDBCHandler
 	}
       }
 
-      resultElem      = "result";
-      entryElem       = "entry";
+      resultElem = "result";
+      entryElem  = "entry";
 
       if (batches > 0 && args[1] instanceof Scriptable) {
 	// (Only the first batch, if a Scriptable, may change the element names)
