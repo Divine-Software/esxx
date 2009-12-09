@@ -71,6 +71,35 @@ testRunner.add(new TestCase({
 			    { 0:"one", 1: 1}, ["two", 2],
 			    <><e>three</e><e>3</e></>);
 //    esxx.log.debug(res);
-  }
+  },
 
+  testTransaction: function() {
+    let db = this.db;
+
+    Assert.fnThrows(function() {
+      db.query(function() {
+	db.query("insert into test values (default, 'one', 1)");
+	throw "Transaction rolled back";
+      });
+    }, "string", "Transaction did not throw a string");
+
+    Assert.areEqual(db.query("select count(*) as cnt from test").entry.cnt, 0,
+		    "Transaction #1 did not roll back");
+
+    db.query(function() {
+      db.query("insert into test values (default, 'one', 1)");
+      db.query("insert into test values (default, 'two', 2)");
+    });
+
+    Assert.areEqual(db.query("select count(*) as cnt from test").entry.cnt, 2,
+		    "Transaction #2 did not insert two row");
+  },
+
+  testMetaData: function() {
+    this.db.query("insert into test values (default, 'one', 1)");
+
+    let res = this.db.query("select * from test");
+
+    Assert.areEqual(res.@types, "bigint,varchar,integer", "Query returned incorrect types");
+  }
 }));

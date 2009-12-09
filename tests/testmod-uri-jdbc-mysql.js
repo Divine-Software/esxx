@@ -21,8 +21,9 @@ testRunner.add(new TestCase({
 		     ];
 
     this.db.query("drop table if exists test");
-    this.db.query("create table test (id int auto_increment primary key, " +
-				      "string varchar(20), number int)");
+    this.db.query("create table test (id bigint auto_increment primary key, " +
+				      "string varchar(20), number int)" +
+		  "engine=innodb default charset=utf8");
   },
 
   tearDown: function() {
@@ -98,6 +99,38 @@ testRunner.add(new TestCase({
 			    { 0:"one", 1: 1}, ["two", 2],
 			    <><e>three</e><e>3</e></>);
 //    esxx.log.debug(res);
+  },
+
+  testTransaction: function() {
+    let db = this.db;
+
+    Assert.fnThrows(function() {
+      db.query(function() {
+	db.query("insert into test values (default, 'one', 1)");
+	throw "Transaction rolled back";
+      });
+    }, "string", "Transaction did not throw a string");
+
+    esxx.log.debug(db.query("select * from test"));
+
+    Assert.areEqual(db.query("select count(*) as cnt from test").entry.cnt, 0,
+		    "Transaction #1 did not roll back");
+
+    db.query(function() {
+      db.query("insert into test values (default, 'one', 1)");
+      db.query("insert into test values (default, 'two', 2)");
+    });
+
+    Assert.areEqual(db.query("select count(*) as cnt from test").entry.cnt, 2,
+		    "Transaction #2 did not insert two row");
+  },
+
+  testMetaData: function() {
+    this.db.query("insert into test values (default, 'one', 1)");
+
+    let res = this.db.query("select * from test");
+
+    Assert.areEqual(res.@types, "bigint,varchar,integer", "Query returned incorrect types");
   }
 
 }));
