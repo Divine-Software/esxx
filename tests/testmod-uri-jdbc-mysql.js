@@ -36,7 +36,7 @@ testRunner.add(new TestCase({
 			    + "(default, {s1}, {n1}), (default, {s2}, {n2})",
 			    { s1: "two", n1: 2,
 			      s2: "three", n2: 3,
-			      $result: "res", $entry: "ent", $updateCount: "uc" });
+			      $result: "res", $entry: "ent" });
 
     Assert.that(one.entry.length() == 1, "INSERT did not generate one single entry")
     Assert.that(one..generated_key.length() == 1, "INSERT did not generate one single GENERATED_KEY")
@@ -44,7 +44,7 @@ testRunner.add(new TestCase({
     Assert.areEqual(one.@updateCount, 1, "updateCount is not 1");
     Assert.areEqual(one.entry.generated_key, 1, "GENERATED_KEY of first INSERT was not 1");
 
-    Assert.areEqual(two.@uc, 2, "uc is not 2");
+    Assert.areEqual(two.@updateCount, 2, "updateCount is not 2");
     Assert.areEqual(two.ent.generated_key[0], 2, "GENERATED_KEY of second INSERT was not 2");
     Assert.areEqual(two.ent.generated_key[1], 3, "GENERATED_KEY of second INSERT was not 3");
     Assert.areEqual(two.localName(), "res", "result element name is not 'res'");

@@ -107,7 +107,6 @@ public class JDBCHandler
 
       resultElem      = "result";
       entryElem       = "entry";
-      updateCountAttr = "updateCount";
 
       if (batches > 0 && args[1] instanceof Scriptable) {
 	// (Only the first batch, if a Scriptable, may change the element names)
@@ -121,10 +120,6 @@ public class JDBCHandler
 
 	if ((o = p.get("$entry", p)) != Scriptable.NOT_FOUND) {
 	  entryElem = Context.toString(o);
-	}
-
-	if ((o = p.get("$updateCount", p)) != Scriptable.NOT_FOUND) {
-	  updateCountAttr = Context.toString(o);
 	}
       }
     }
@@ -199,14 +194,24 @@ public class JDBCHandler
       throws SQLException {
       Document          doc   = ESXX.getInstance().createDocument(resultElem);
       Element           root  = doc.getDocumentElement();
-      String[]          names = null;
+
+      if (uc != -1) {
+	root.setAttributeNS(null, "updateCount", Integer.toString(uc));
+      }
 
       if (rs != null) {
-	ResultSetMetaData rmd = rs.getMetaData();
-	names = new String[rmd.getColumnCount() + 1];
+	String[]          labels = null;
+	StringBuilder     names  = new StringBuilder();
+	StringBuilder     types  = new StringBuilder();
+	StringBuilder     flags  = new StringBuilder();
+	StringBuilder     precs  = new StringBuilder();
+	StringBuilder     scale  = new StringBuilder();
 
-	for (int i = 1; i < names.length; ++i) {
-	  names[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i).toLowerCase(), "");
+	ResultSetMetaData rmd = rs.getMetaData();
+	labels = new String[rmd.getColumnCount() + 1];
+
+	for (int i = 1; i < labels.length; ++i) {
+	  labels[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i).toLowerCase(), "");
 
 	  String name = rmd.getColumnName(i);
 	  name = addPart(rmd.getTableName(i), name);
@@ -235,28 +240,41 @@ public class JDBCHandler
 	  if (rmd.isDefinitelyWritable(i)) flag[6] = 'W';
 	  else if (rmd.isWritable(i))      flag[6] = '?';
 
-	  root.setAttributeNS(null, names[i], name + ":" + type + ":" + new String(flag)
-			      + ":" + rmd.getPrecision(i) + "." + rmd.getScale(i));
-	}
-      }
-
-      if (uc != -1 && !updateCountAttr.isEmpty()) {
-	root.setAttributeNS(null, updateCountAttr, Integer.toString(uc));
-      }
-
-      while (rs != null && rs.next()) {
-	Element row = doc.createElementNS(null, entryElem);
-
-	for (int i = 1; i < names.length; ++i) {
-	  String value  = rs.getString(i);
-	  Element child = XML.addChild(row, names[i], value);
-
-	  if (value == null) {
-	    child.setAttributeNS(null, "isNull", "true");
+	  if (i != 1) {
+	    names.append(',');
+	    types.append(',');
+	    flags.append(',');
+	    precs.append(',');
+	    scale.append(',');
 	  }
+
+	  names.append(name);
+	  types.append(type);
+	  flags.append(flag);
+	  precs.append(rmd.getPrecision(i));
+	  scale.append(rmd.getScale(i));
 	}
 
-	root.appendChild(row);
+	root.setAttributeNS(null, "names",      names.toString());
+	root.setAttributeNS(null, "types",      types.toString());
+	root.setAttributeNS(null, "flags",      flags.toString());
+	root.setAttributeNS(null, "precisions", precs.toString());
+	root.setAttributeNS(null, "scales",     scale.toString());
+
+	while (rs.next()) {
+	  Element row = doc.createElementNS(null, entryElem);
+
+	  for (int i = 1; i < labels.length; ++i) {
+	    String value  = rs.getString(i);
+	    Element child = XML.addChild(row, labels[i], value);
+
+	    if (value == null) {
+	      child.setAttributeNS(null, "isNull", "true");
+	    }
+	  }
+
+	  root.appendChild(row);
+	}
       }
       
       if (queryResult == null) {
@@ -283,7 +301,6 @@ public class JDBCHandler
 
     private String resultElem;
     private String entryElem;
-    private String updateCountAttr;
 
     private Object queryResult;
   }

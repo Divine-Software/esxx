@@ -18,7 +18,7 @@ testRunner.add(new TestCase({
 			    + "(default, {s1}, {n1}), (default, {s2}, {n2})",
 			    { s1: "two", n1: 2,
 			      s2: "three", n2: 3,
-			      $result: "res", $entry: "ent", $updateCount: "uc" });
+			      $result: "res", $entry: "ent" });
 
     Assert.that(one.entry.length() == 1, "INSERT did not generate one single entry")
     Assert.that(one..identity.length() == 1, "INSERT did not generate one single identity")
@@ -26,7 +26,7 @@ testRunner.add(new TestCase({
     Assert.areEqual(one.@updateCount, 1, "updateCount is not 1");
     Assert.areEqual(one.entry.identity, 1, "IDENTITY of first INSERT was not 1");
 
-    Assert.areEqual(two.@uc, 2, "uc is not 2");
+    Assert.areEqual(two.@updateCount, 2, "updateCount is not 2");
     Assert.areEqual(two.ent.identity, 3, "IDENTITY of second INSERT was not 3");
     Assert.areEqual(two.localName(), "res", "result element name is not 'res'");
   },
@@ -58,20 +58,12 @@ testRunner.add(new TestCase({
 
     let one   = this.db.query("select number from test where string = {one}", { one: "one" });
     let two   = this.db.query("select string from test where id = {0}", [2]);
-    let multi = this.db.query("select string from test where id = 1 ;" +
-			      "select number from test");
 
     Assert.that(one.entry.length() == 1, "SELECT did not return exactly one entry");
     Assert.areEqual(one.entry.number, 1, "SELECT did not return 1");
 
     Assert.that(two.entry.length() == 1, "SELECT did not return exactly one entry");
     Assert.areEqual(two.entry.string, "two", "SELECT did not return 'two'");
-
-// H2 does not support multiple queries
-//    Assert.that(multi.entry.length() == 3, "SELECT did not return exactly three entries");
-//    Assert.areEqual(multi.entry[0].string, "one", "SELECT #1 did not return 'one'");
-//    Assert.areEqual(multi.entry[1].string, "one", "SELECT #2 did not return 'one'");
-//    Assert.areEqual(multi.entry[2].string, "two", "SELECT #2 did not return 'two'");
   },
 
   testQueryBatch: function() {

@@ -37,7 +37,7 @@ testRunner.add(new TestCase({
 			    "select last_value FROM test_id_seq",
 			    { s1: "two", n1: 2,
 			      s2: "three", n2: 3,
-			      $result: "res", $entry: "ent", $updateCount: "uc" });
+			      $result: "res", $entry: "ent" });
 
     Assert.that(one.length() == 2, "INSERT/SELECT did not generate one two result sets")
     Assert.that(one.entry.length() == 1, "INSERT/SELECT did not generate one single entry")
@@ -46,7 +46,7 @@ testRunner.add(new TestCase({
     Assert.areEqual(one.@updateCount, 1, "updateCount is not 1");
     Assert.areEqual(one.entry.last_value, 1, "LAST_VALUE of first INSERT/SELECT was not 1");
 
-    Assert.areEqual(two.@uc, 2, "uc is not 2");
+    Assert.areEqual(two.@updateCount, 2, "updateCount is not 2");
     Assert.areEqual(two.ent.last_value, 3, "LAST_VALUE of second INSERT/SELECT was not 3");
     Assert.areEqual(two[0].localName(), "res", "result element #1 name is not 'res'");
     Assert.areEqual(two[1].localName(), "res", "result element #2 name is not 'res'");
