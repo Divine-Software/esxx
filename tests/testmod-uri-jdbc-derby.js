@@ -25,7 +25,10 @@ testRunner.add(new TestCase({
 			    { s1: "two", n1: 2,
 			      s2: "three", n2: 3,
 			      $result: "res" });
-    let id2 = this.db.query("values IDENTITY_VAL_LOCAL()", { $entry: "ent" });
+    // Inserts with multiple rows does not affect IDENTITY_VAL_LOCAL
+    this.db.query("insert into test (string, number) values ({0}, {1})",
+		  ["four", -4]);
+    let id4 = this.db.query("values IDENTITY_VAL_LOCAL()", { $entry: "ent" });
 
     Assert.that(id1.entry.length() == 1, "INSERT did not generate one single entry")
     Assert.that(id1.._1.length() == 1, "INSERT did not generate one single identity")
@@ -34,8 +37,9 @@ testRunner.add(new TestCase({
     Assert.areEqual(id1.entry._1, 1, "IDENTITY of first INSERT was not 1");
 
     Assert.areEqual(two.@updateCount, 2, "updateCount is not 2");
-    Assert.areEqual(id2.ent._1, 3, "IDENTITY of second INSERT was not 3");
     Assert.areEqual(two.localName(), "res", "result element name is not 'res'");
+
+    Assert.areEqual(id4.ent._1, 4, "IDENTITY of third INSERT was not 4");
   },
 
   testQueryInsertXML: function() {
@@ -50,7 +54,11 @@ testRunner.add(new TestCase({
 			    <s2>three</s2> <n2>3</n2>
 			    </elem>
 			    );
-    let id2 = this.db.query("values IDENTITY_VAL_LOCAL()");
+
+    // Inserts with multiple rows does not affect IDENTITY_VAL_LOCAL
+    this.db.query("insert into test (string, number) values ({0}, {1})",
+		  <> <c>four</c> <c>-4</c> </>);
+    let id4 = this.db.query("values IDENTITY_VAL_LOCAL()");
 
     Assert.that(id1.entry.length() == 1, "INSERT did not generate one single entry")
     Assert.that(id1.._1.length() == 1, "INSERT did not generate one single identity")
@@ -59,7 +67,8 @@ testRunner.add(new TestCase({
     Assert.areEqual(id1.entry._1, 1, "IDENTITY of first INSERT was not 1");
 
     Assert.areEqual(two.@updateCount, 2, "updateCount is not 2");
-    Assert.areEqual(id2.entry._1, 3, "IDENTITY of second INSERT was not 3");
+
+    Assert.areEqual(id4.entry._1, 4, "IDENTITY of second INSERT was not 4");
   },
 
   testQuerySelect: function() {
