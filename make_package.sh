@@ -121,8 +121,8 @@ case $(uname) in
 	    rm debian/control debian/changelog
 	    rm -r builddir
 	else
-	    mkdir -p rpmroot/{BUILD,SPECS,SRPMS,RPMS/noarch}
-	    cp -r ${SOURCE} ${package_full_name}
+	    mkdir -p rpmroot/{BUILD,SPECS,SRPMS,RPMS/noarch} ${package_full_name}
+	    cp -r ${SOURCE}/* ${package_full_name}/
 	    tar cfz ${package_full_name}.tar.gz ${package_full_name} esxx.spec
 	    rpmbuild -tb --define "_topdir ${BUILD}/rpmroot" ${package_full_name}.tar.gz
 	    cp ${BUILD}/rpmroot/RPMS/noarch/${package_full_name}-*.rpm ${SOURCE}
