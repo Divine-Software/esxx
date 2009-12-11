@@ -114,8 +114,12 @@ class GAEClientConnection
     throws HttpException, IOException {
     try {
       HttpHost host = route.getTargetHost();
-      URI uri = new URI(host.getSchemeName(), null, host.getHostName(), host.getPort(), 
-			request.getRequestLine().getUri(), null, null);
+
+      URI uri = new URI(host.getSchemeName()
+			+ "://"
+			+ host.getHostName()
+			+ ((host.getPort() == -1) ? "": host.getPort())
+			+ request.getRequestLine().getUri());
 
       this.request = new HTTPRequest(uri.toURL(),
 				     HTTPMethod.valueOf(request.getRequestLine().getMethod()),

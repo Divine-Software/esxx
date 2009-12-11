@@ -91,6 +91,10 @@
 
 	* Changed the default Logger level to 'debug'.
 
+	* GAEClientConnection.sendRequestHeader encoded the URI twice
+	and did not handle the query string at all. Thanks to Thibaut
+	for discovering this and suggesting a fix! [Thibaut@blogger.com]
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
