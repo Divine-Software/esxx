@@ -9,8 +9,8 @@ fi
 
 cd /
 
-B="\e[1m"
-N="\e[0m"
+B="\033[1m"
+N="\033[0m"
 RECEIPTS=/Library/Receipts
 SYSDIRS='^(\.|\./Library|\./Library/LaunchDaemons|\./etc|\./etc/default|\./private|\./private/etc|\./private/etc/defaults|\./usr|\./usr/bin|\./usr/sbin|\./usr/share|\./usr/share/doc|)$'
 
