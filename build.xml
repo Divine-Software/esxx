@@ -30,7 +30,7 @@
     <mkdir dir="${jeebuild.dir}"/>
   </target>
 
-  <target name="compile" depends="init" description="compile everything">
+  <target name="compile" depends="init, ragel" description="compile everything">
     <!-- Don't use -Xlint on the json code -->
     <javac srcdir="${src.dir}/org/json" destdir="${classes.dir}" classpathref="classpath"
            debug="true" deprecation="true" target="1.6">
@@ -104,6 +104,18 @@
       <zipfileset prefix="share" dir="share" excludes="*~"/>
       <zipfileset file="jee/build.xml"/>
     </war>
+  </target>
+
+  <uptodate property="dbreference.uptodate" 
+	    srcfile="${src.dir}/org/esxx/util/dbref/DBReference.rl"
+	    targetfile="${src.dir}/org/esxx/util/dbref/DBReference.java" />
+
+  <target name="ragel" unless="dbreference.uptodate" description="generate code using Ragel" >
+    <echo message="Executing Ragel to generate DBReference.java" />
+    <exec executable="ragel">
+      <arg value="-J" />
+      <arg value="${src.dir}/org/esxx/util/dbref/DBReference.rl" />
+    </exec>
   </target>
 
   <target name="clean" description="clean up" >

@@ -5,8 +5,25 @@ MemCache:
 
 
 [martin@elsa ~]$ #id,name?one?(id=3)?!order=id,!
-[martin@elsa ~]$ #friends?id,name??(&(id=3)(name!=johan)?!^C
+[martin@elsa ~]$ #friends?id,name??(&(id=3)(name!=johan)?!
 [martin@elsa ~]$ #friends???(id=3)
 [martin@elsa ~]$ #friends?id,name??(id=3)
-[martin@elsa ~]$ #friends???(id=3) = {id:1, name:'banan'}^C
-[martin@elsa ~]$ new URI(db, "#friends?id,name ").append([1,'johan'])
+[martin@elsa ~]$ #friends???(id=3) = {id:1, name:'banan'}
+[martin@elsa ~]$ new URI(db, "#friends?id,name").append([1,'johan'])
+
+JDBC fragments:
+
+tablename?columns?scope?filter?params
+
+tablename: [ [catalog "."] schema "."] table
+columns:   [ column [ "," columns ] ]
+scope:	   [ "scalar" | "one" | "distinct" | "all" ]
+filter	   [ ldap-filter ]
+params	   [ param [ "=" value] [ "&" params ] ]
+
+
+param	   [ "order" | "desc" | "range" | "group" ]
+
+persons?id,name?distinct?(&(name=Martin)(age>10))?order=name,id&desc&range=0,10
+
+persons??one?(id=3)
