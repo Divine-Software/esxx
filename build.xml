@@ -109,14 +109,14 @@
   </target>
 
   <uptodate property="dbreference.uptodate" 
-	    srcfile="${src.dir}/org/esxx/util/dbref/DBReference.rl"
-	    targetfile="${src.dir}/org/esxx/util/dbref/DBReference.java" />
+	    srcfile="${src.dir}/org/esxx/dbref/DBReference.rl"
+	    targetfile="${src.dir}/org/esxx/dbref/DBReference.java" />
 
   <target name="ragel" unless="dbreference.uptodate" description="generate code using Ragel" >
     <echo message="Executing Ragel to generate DBReference.java" />
     <exec executable="ragel">
       <arg value="-J" />
-      <arg value="${src.dir}/org/esxx/util/dbref/DBReference.rl" />
+      <arg value="${src.dir}/org/esxx/dbref/DBReference.rl" />
     </exec>
   </target>
 
