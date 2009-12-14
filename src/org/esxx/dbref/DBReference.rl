@@ -1,5 +1,5 @@
 
-package org.esxx.util.dbref;
+package org.esxx.dbref;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -87,27 +87,6 @@ import java.util.TreeMap;
     fret;
   }
 
-  action FilterAND {
-    filterStack.push(new Filter(Filter.Op.AND));
-  }
-
-  action FilterOR {
-    filterStack.push(new Filter(Filter.Op.OR));
-  }
-
-  action FilterNOT {
-    filterStack.push(new Filter(Filter.Op.NOT));
-  }
-
-  action FilterItem {
-    filterStack.push(new Filter(filterOp, tmpKey, tmpValue));
-  }
-
-  action FilterChild {
-    Filter child = filterStack.pop();
-    filterStack.peek().addChild(child);
-  }
-
   action OptionalKey {
     tmpKey = getWord();
     paramRequired = false;
@@ -139,7 +118,6 @@ import java.util.TreeMap;
   PERCENT       = '%';
   QUESTION      = '?';
   RPAREN        = ')';
-  SLASH         = '/';
 
   DIGIT         = digit % EncodedDigit;
   HEX_UPPER     = [A-F] % EncodedUpperHex;
@@ -159,27 +137,26 @@ import java.util.TreeMap;
 
   scope         = WORD % Scope;
 
+  filter_and    = "and"      % { pushFilter(Filter.Op.AND); };
+  filter_or     = "or"       % { pushFilter(Filter.Op.OR);  };
+  filter_not    = "not"      % { pushFilter(Filter.Op.NOT); };
+
+  filter_lt     = "lt"       % { pushFilter(Filter.Op.LT); };
+  filter_le     = "le"       % { pushFilter(Filter.Op.LE); };
+  filter_eq     = "eq"       % { pushFilter(Filter.Op.EQ); };
+  filter_ne     = "ne"       % { pushFilter(Filter.Op.NE); };
+  filter_gt     = "gt"       % { pushFilter(Filter.Op.GT); };
+  filter_ge     = "ge"       % { pushFilter(Filter.Op.GE); };
+
+  filter_lit    = COMMA WORD % { addLiteral(getWord());   };
+
+  filter_bool   = filter_and | filter_or | filter_not;
+  filter_rel    = filter_lt | filter_le | filter_eq | filter_ne | filter_gt | filter_ge;
+
   filter        = LPAREN @ FilterCompStart;
   filters       = filter+;
 
-  filter_and    = AMPERSAND % FilterAND filters;
-  filter_or     = SLASH % FilterOR filters;
-  filter_not    = EXCLAMATION % FilterNOT filter;
-
-  filter_key    = WORD                          % { tmpKey = getWord();   };
-  filter_lt     = "$lt$"                        % { filterOp = Filter.Op.LT; };
-  filter_le     = "$le$"                        % { filterOp = Filter.Op.LE; };
-  filter_eq     = ("$eq$" | EQUALS)             % { filterOp = Filter.Op.EQ; };
-  filter_ne     = ("$ne$" | EXCLAMATION EQUALS) % { filterOp = Filter.Op.NE; };
-  filter_gt     = "$gt$"                        % { filterOp = Filter.Op.GT; };
-  filter_ge     = "$ge$"                        % { filterOp = Filter.Op.GE; };
-  filter_value  = WORD                          % { tmpValue = getWord(); };
-
-  filter_op     = filter_lt | filter_le | filter_eq | filter_ne | filter_gt | filter_ge;
-  filter_item   = ( filter_key filter_op filter_value ) % FilterItem;
-
-  filter_comp  := (filter_and | filter_or | filter_not | filter_item) % FilterChild
-                  RPAREN @ FilterCompEnd;
+  filter_comp  := (filter_bool filters | filter_rel filter_lit {2}) RPAREN @ FilterCompEnd;
 
   optional_key  = WORD % OptionalKey;
   required_key  = EXCLAMATION WORD % RequiredKey;
@@ -211,21 +188,20 @@ public class DBReference {
   }
 
   public enum Scope {
-    SCALAR, ONE, DISTINCT, ALL;
+    SCALAR, ROW, DISTINCT, ALL;
   }
 
   public static class Filter {
-    public enum Op { AND, OR, NOT, LT, LE, EQ, NE, GT, GE };
+    public enum Op { AND, OR, NOT, LT, LE, EQ, NE, GT, GE, VAL };
 
     Filter(Op op) {
       this.op  = op;
       children = new LinkedList<Filter>();
     }
 
-    Filter(Op op, String l, String r) {
-      this.op = op;
-      left    = l;
-      right   = r;
+    Filter(String v) {
+      this.op = Op.VAL;
+      value   = v;
     }
 
     void addChild(Filter f) {
@@ -243,6 +219,12 @@ public class DBReference {
 	case AND:
 	case OR:
 	case NOT:
+	case LT:
+	case LE:
+	case EQ:
+	case NE:
+	case GT:
+	case GE:
 	  sb.append('(').append(op).append(' ');
 	  for (Filter c : children) {
 	    c.toString(sb);
@@ -250,16 +232,9 @@ public class DBReference {
 	  sb.append(')');
 	  break;
 
-	case LT:
-	case LE:
-	case EQ:
-	case NE:
-	case GT:
-	case GE:
-	  sb.append("('").append(left).append("' ")
-	    .append(op)
-	    .append(" '").append(right).append("')");
-	  break;
+      case VAL:
+	sb.append(",").append(value);
+	break;
       }
     }
 
@@ -267,12 +242,8 @@ public class DBReference {
       return op;
     }
 
-    public String getLeft() {
-      return left;
-    }
-
-    public String getRight() {
-      return right;
+    public String getValue() {
+      return value;
     }
 
     public List<Filter> getChildren() {
@@ -280,8 +251,7 @@ public class DBReference {
     }
 
     private Op op;
-    private String left;
-    private String right;
+    private String value;
     private List<Filter> children;
   }
 
@@ -334,8 +304,8 @@ public class DBReference {
   }
 
   public String toString() {
-    return "[DBReference: '" + table + "' (" + join(columns) + ") " 
-      + scope + " " + getFilter() + "]";
+    return "[DBReference: " + table + "?" + join(columns) + "?" + scope.toString().toLowerCase() 
+      + "?" + getFilter() + "]";
   }
 
   private String join(List<String> c) {
@@ -346,7 +316,7 @@ public class DBReference {
 	sb.append(',');
       }
 
-      sb.append('\'').append(s).append('\'');
+      sb.append(s);
     }
 
     return sb.toString();
@@ -382,6 +352,14 @@ public class DBReference {
   private String getWord()
     throws java.io.UnsupportedEncodingException {
     return new String(word, 0, wordOffset, "UTF-8");
+  }
+
+  private void pushFilter(Filter.Op op) {
+    filterStack.push(new Filter(op));
+  }
+
+  private void addLiteral(String lit) {
+    filterStack.peek().addChild(new Filter(lit));
   }
 
   %% write data;

@@ -1,7 +1,7 @@
 
-// line 1 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 1 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 
-package org.esxx.util.dbref;
+package org.esxx.dbref;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -12,7 +12,7 @@ import java.util.LinkedList;
 import java.util.TreeMap;
 
 
-// line 195 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 172 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 
 
 public class DBReference {
@@ -32,21 +32,20 @@ public class DBReference {
   }
 
   public enum Scope {
-    SCALAR, ONE, DISTINCT, ALL;
+    SCALAR, ROW, DISTINCT, ALL;
   }
 
   public static class Filter {
-    public enum Op { AND, OR, NOT, LT, LE, EQ, NE, GT, GE };
+    public enum Op { AND, OR, NOT, LT, LE, EQ, NE, GT, GE, VAL };
 
     Filter(Op op) {
       this.op  = op;
       children = new LinkedList<Filter>();
     }
 
-    Filter(Op op, String l, String r) {
-      this.op = op;
-      left    = l;
-      right   = r;
+    Filter(String v) {
+      this.op = Op.VAL;
+      value   = v;
     }
 
     void addChild(Filter f) {
@@ -64,6 +63,12 @@ public class DBReference {
 	case AND:
 	case OR:
 	case NOT:
+	case LT:
+	case LE:
+	case EQ:
+	case NE:
+	case GT:
+	case GE:
 	  sb.append('(').append(op).append(' ');
 	  for (Filter c : children) {
 	    c.toString(sb);
@@ -71,16 +76,9 @@ public class DBReference {
 	  sb.append(')');
 	  break;
 
-	case LT:
-	case LE:
-	case EQ:
-	case NE:
-	case GT:
-	case GE:
-	  sb.append("('").append(left).append("' ")
-	    .append(op)
-	    .append(" '").append(right).append("')");
-	  break;
+      case VAL:
+	sb.append(",").append(value);
+	break;
       }
     }
 
@@ -88,12 +86,8 @@ public class DBReference {
       return op;
     }
 
-    public String getLeft() {
-      return left;
-    }
-
-    public String getRight() {
-      return right;
+    public String getValue() {
+      return value;
     }
 
     public List<Filter> getChildren() {
@@ -101,8 +95,7 @@ public class DBReference {
     }
 
     private Op op;
-    private String left;
-    private String right;
+    private String value;
     private List<Filter> children;
   }
 
@@ -155,8 +148,8 @@ public class DBReference {
   }
 
   public String toString() {
-    return "[DBReference: '" + table + "' (" + join(columns) + ") " 
-      + scope + " " + getFilter() + "]";
+    return "[DBReference: " + table + "?" + join(columns) + "?" + scope.toString().toLowerCase() 
+      + "?" + getFilter() + "]";
   }
 
   private String join(List<String> c) {
@@ -167,7 +160,7 @@ public class DBReference {
 	sb.append(',');
       }
 
-      sb.append('\'').append(s).append('\'');
+      sb.append(s);
     }
 
     return sb.toString();
@@ -182,15 +175,15 @@ public class DBReference {
     int eof = pe;
 
     
-// line 186 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.java"
+// line 179 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
 	{
 	cs = dbpath_start;
 	top = 0;
 	}
 
-// line 364 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 334 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
     
-// line 194 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.java"
+// line 187 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
 	{
 	int _klen;
 	int _trans = 0;
@@ -270,13 +263,13 @@ case 1:
 			switch ( _dbpath_actions[_acts++] )
 			{
 	case 0:
-// line 24 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 24 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     wordOffset = 0;
   }
 	break;
 	case 1:
-// line 28 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 28 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     byte b = data[p - 1];
 
@@ -288,53 +281,53 @@ case 1:
   }
 	break;
 	case 2:
-// line 38 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 38 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     appendWordByte((byte) encoded);
   }
 	break;
 	case 3:
-// line 42 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 42 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = 0;
   }
 	break;
 	case 4:
-// line 47 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 47 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - '0';
   }
 	break;
 	case 5:
-// line 52 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 52 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - 'a' + 10;
   }
 	break;
 	case 6:
-// line 57 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 57 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - 'A' + 10;
   }
 	break;
 	case 7:
-// line 62 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 62 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     table = getWord();
   }
 	break;
 	case 8:
-// line 66 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 66 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     columns.add(getWord());
   }
 	break;
 	case 9:
-// line 70 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 70 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     String s = getWord();
 
@@ -348,7 +341,7 @@ case 1:
   }
 	break;
 	case 10:
-// line 82 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 82 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     {
     if (top == stack.length) {
@@ -360,64 +353,33 @@ case 1:
   }
 	break;
 	case 11:
-// line 86 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 86 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     {cs = stack[--top];_goto_targ = 2; if (true) continue _goto;}
   }
 	break;
 	case 12:
-// line 90 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{
-    filterStack.push(new Filter(Filter.Op.AND));
-  }
-	break;
-	case 13:
-// line 94 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{
-    filterStack.push(new Filter(Filter.Op.OR));
-  }
-	break;
-	case 14:
-// line 98 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{
-    filterStack.push(new Filter(Filter.Op.NOT));
-  }
-	break;
-	case 15:
-// line 102 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{
-    filterStack.push(new Filter(filterOp, tmpKey, tmpValue));
-  }
-	break;
-	case 16:
-// line 106 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{
-    Filter child = filterStack.pop();
-    filterStack.peek().addChild(child);
-  }
-	break;
-	case 17:
-// line 111 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 90 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey = getWord();
     paramRequired = false;
   }
 	break;
-	case 18:
-// line 116 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+	case 13:
+// line 95 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey = getWord();
     paramRequired = true;
   }
 	break;
-	case 19:
-// line 121 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+	case 14:
+// line 100 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpValue = getWord();
   }
 	break;
-	case 20:
-// line 125 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+	case 15:
+// line 104 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     if (paramRequired) {
       requiredParams.put(tmpKey, tmpValue);
@@ -427,39 +389,47 @@ case 1:
     }
   }
 	break;
+	case 16:
+// line 140 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+	{ pushFilter(Filter.Op.AND); }
+	break;
+	case 17:
+// line 141 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+	{ pushFilter(Filter.Op.OR);  }
+	break;
+	case 18:
+// line 142 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+	{ pushFilter(Filter.Op.NOT); }
+	break;
+	case 19:
+// line 144 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+	{ pushFilter(Filter.Op.LT); }
+	break;
+	case 20:
+// line 145 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+	{ pushFilter(Filter.Op.LE); }
+	break;
 	case 21:
-// line 169 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{ tmpKey = getWord();   }
+// line 146 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+	{ pushFilter(Filter.Op.EQ); }
 	break;
 	case 22:
-// line 170 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{ filterOp = Filter.Op.LT; }
+// line 147 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+	{ pushFilter(Filter.Op.NE); }
 	break;
 	case 23:
-// line 171 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{ filterOp = Filter.Op.LE; }
+// line 148 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+	{ pushFilter(Filter.Op.GT); }
 	break;
 	case 24:
-// line 172 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{ filterOp = Filter.Op.EQ; }
+// line 149 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+	{ pushFilter(Filter.Op.GE); }
 	break;
 	case 25:
-// line 173 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{ filterOp = Filter.Op.NE; }
+// line 151 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+	{ addLiteral(getWord());   }
 	break;
-	case 26:
-// line 174 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{ filterOp = Filter.Op.GT; }
-	break;
-	case 27:
-// line 175 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{ filterOp = Filter.Op.GE; }
-	break;
-	case 28:
-// line 176 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
-	{ tmpValue = getWord(); }
-	break;
-// line 463 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.java"
+// line 433 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
 			}
 		}
 	}
@@ -481,7 +451,7 @@ case 4:
 	while ( __nacts-- > 0 ) {
 		switch ( _dbpath_actions[__acts++] ) {
 	case 1:
-// line 28 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 28 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     byte b = data[p - 1];
 
@@ -493,46 +463,46 @@ case 4:
   }
 	break;
 	case 2:
-// line 38 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 38 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     appendWordByte((byte) encoded);
   }
 	break;
 	case 4:
-// line 47 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 47 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - '0';
   }
 	break;
 	case 5:
-// line 52 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 52 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - 'a' + 10;
   }
 	break;
 	case 6:
-// line 57 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 57 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - 'A' + 10;
   }
 	break;
 	case 7:
-// line 62 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 62 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     table = getWord();
   }
 	break;
 	case 8:
-// line 66 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 66 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     columns.add(getWord());
   }
 	break;
 	case 9:
-// line 70 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 70 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     String s = getWord();
 
@@ -545,28 +515,28 @@ case 4:
     }
   }
 	break;
-	case 17:
-// line 111 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+	case 12:
+// line 90 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey = getWord();
     paramRequired = false;
   }
 	break;
-	case 18:
-// line 116 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+	case 13:
+// line 95 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey = getWord();
     paramRequired = true;
   }
 	break;
-	case 19:
-// line 121 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+	case 14:
+// line 100 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpValue = getWord();
   }
 	break;
-	case 20:
-// line 125 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+	case 15:
+// line 104 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     if (paramRequired) {
       requiredParams.put(tmpKey, tmpValue);
@@ -576,7 +546,7 @@ case 4:
     }
   }
 	break;
-// line 580 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.java"
+// line 550 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
 		}
 	}
 	}
@@ -586,7 +556,7 @@ case 5:
 	break; }
 	}
 
-// line 365 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 335 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 
     if (cs < dbpath_first_final) {
       throw new ParseException(new String(data, "UTF-8"), 
@@ -609,30 +579,37 @@ case 5:
     return new String(word, 0, wordOffset, "UTF-8");
   }
 
+  private void pushFilter(Filter.Op op) {
+    filterStack.push(new Filter(op));
+  }
+
+  private void addLiteral(String lit) {
+    filterStack.peek().addChild(new Filter(lit));
+  }
+
   
-// line 614 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.java"
+// line 592 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
 private static byte[] init__dbpath_actions_0()
 {
 	return new byte [] {
 	    0,    1,    0,    1,    1,    1,    3,    1,    4,    1,    5,    1,
-	    6,    1,   10,    2,    1,    7,    2,    1,    8,    2,    1,    9,
-	    2,    1,   17,    2,    1,   18,    2,    1,   21,    2,    4,    2,
-	    2,    5,    2,    2,    6,    2,    2,   12,   10,    2,   13,   10,
-	    2,   14,   10,    2,   16,   11,    2,   22,    0,    2,   23,    0,
-	    2,   24,    0,    2,   25,    0,    2,   26,    0,    2,   27,    0,
-	    3,    1,   17,   20,    3,    1,   18,   20,    3,    1,   19,   20,
-	    3,    4,    2,    7,    3,    4,    2,    8,    3,    4,    2,    9,
-	    3,    4,    2,   17,    3,    4,    2,   18,    3,    4,    2,   21,
-	    3,    5,    2,    7,    3,    5,    2,    8,    3,    5,    2,    9,
-	    3,    5,    2,   17,    3,    5,    2,   18,    3,    5,    2,   21,
-	    3,    6,    2,    7,    3,    6,    2,    8,    3,    6,    2,    9,
-	    3,    6,    2,   17,    3,    6,    2,   18,    3,    6,    2,   21,
-	    4,    4,    2,   17,   20,    4,    4,    2,   18,   20,    4,    4,
-	    2,   19,   20,    4,    5,    2,   17,   20,    4,    5,    2,   18,
-	   20,    4,    5,    2,   19,   20,    4,    6,    2,   17,   20,    4,
-	    6,    2,   18,   20,    4,    6,    2,   19,   20,    5,    1,   28,
-	   15,   16,   11,    6,    4,    2,   28,   15,   16,   11,    6,    5,
-	    2,   28,   15,   16,   11,    6,    6,    2,   28,   15,   16,   11
+	    6,    1,   10,    1,   11,    1,   19,    1,   20,    1,   21,    1,
+	   22,    1,   23,    1,   24,    2,    1,    7,    2,    1,    8,    2,
+	    1,    9,    2,    1,   12,    2,    1,   13,    2,    1,   25,    2,
+	    4,    2,    2,    5,    2,    2,    6,    2,    2,   16,   10,    2,
+	   17,   10,    2,   18,   10,    3,    1,   12,   15,    3,    1,   13,
+	   15,    3,    1,   14,   15,    3,    1,   25,   11,    3,    4,    2,
+	    7,    3,    4,    2,    8,    3,    4,    2,    9,    3,    4,    2,
+	   12,    3,    4,    2,   13,    3,    4,    2,   25,    3,    5,    2,
+	    7,    3,    5,    2,    8,    3,    5,    2,    9,    3,    5,    2,
+	   12,    3,    5,    2,   13,    3,    5,    2,   25,    3,    6,    2,
+	    7,    3,    6,    2,    8,    3,    6,    2,    9,    3,    6,    2,
+	   12,    3,    6,    2,   13,    3,    6,    2,   25,    4,    4,    2,
+	   12,   15,    4,    4,    2,   13,   15,    4,    4,    2,   14,   15,
+	    4,    4,    2,   25,   11,    4,    5,    2,   12,   15,    4,    5,
+	    2,   13,   15,    4,    5,    2,   14,   15,    4,    5,    2,   25,
+	   11,    4,    6,    2,   12,   15,    4,    6,    2,   13,   15,    4,
+	    6,    2,   14,   15,    4,    6,    2,   25,   11
 	};
 }
 
@@ -644,13 +621,13 @@ private static short[] init__dbpath_key_offsets_0()
 	return new short [] {
 	    0,    0,    6,   12,   18,   24,   35,   41,   47,   58,   64,   70,
 	   82,   88,   94,  105,  111,  117,  123,  129,  135,  141,  147,  153,
-	  159,  165,  171,  177,  183,  189,  201,  202,  203,  209,  215,  229,
-	  230,  241,  247,  253,  265,  277,  289,  301,  307,  313,  317,  318,
-	  319,  330,  332,  333,  344,  345,  356,  358,  359,  370,  371,  382,
-	  383,  384,  398,  412,  426,  432,  438,  439,  441,  442,  454,  466,
-	  478,  490,  503,  516,  528,  540,  552,  554,  555,  567,  580,  593,
-	  606,  618,  630,  642,  654,  667,  680,  693,  706,  719,  731,  743,
-	  756,  769,  781,  793
+	  159,  165,  171,  177,  183,  189,  195,  196,  197,  198,  200,  201,
+	  202,  213,  219,  225,  237,  248,  254,  260,  272,  284,  296,  308,
+	  314,  320,  332,  344,  356,  362,  368,  370,  371,  372,  374,  375,
+	  376,  378,  379,  380,  381,  382,  383,  395,  407,  419,  431,  444,
+	  457,  469,  481,  493,  495,  496,  508,  521,  534,  547,  559,  571,
+	  583,  595,  608,  621,  634,  647,  660,  672,  684,  697,  710,  722,
+	  734
 	};
 }
 
@@ -675,58 +652,53 @@ private static byte[] init__dbpath_trans_keys_0()
 	   70,   97,  102,   48,   57,   65,   70,   97,  102,   48,   57,   65,
 	   70,   97,  102,   48,   57,   65,   70,   97,  102,   48,   57,   65,
 	   70,   97,  102,   48,   57,   65,   70,   97,  102,   48,   57,   65,
-	   70,   97,  102,   48,   57,   65,   70,   97,  102,   33,   37,   38,
-	   47,   95,  126,   45,   57,   65,   90,   97,  122,   40,   41,   48,
-	   57,   65,   70,   97,  102,   48,   57,   65,   70,   97,  102,   33,
-	   36,   37,   61,   95,  126,   45,   46,   48,   57,   65,   90,   97,
-	  122,   61,   37,   95,  126,   45,   46,   48,   57,   65,   90,   97,
-	  122,   48,   57,   65,   70,   97,  102,   48,   57,   65,   70,   97,
-	  102,   37,   41,   95,  126,   45,   46,   48,   57,   65,   90,   97,
-	  122,   37,   41,   95,  126,   45,   46,   48,   57,   65,   90,   97,
-	  122,   37,   41,   95,  126,   45,   46,   48,   57,   65,   90,   97,
-	  122,   37,   41,   95,  126,   45,   46,   48,   57,   65,   90,   97,
-	  122,   48,   57,   65,   70,   97,  102,   48,   57,   65,   70,   97,
-	  102,  101,  103,  108,  110,  113,   36,   37,   95,  126,   45,   46,
-	   48,   57,   65,   90,   97,  122,  101,  116,   36,   37,   95,  126,
-	   45,   46,   48,   57,   65,   90,   97,  122,   36,   37,   95,  126,
-	   45,   46,   48,   57,   65,   90,   97,  122,  101,  116,   36,   37,
-	   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   36,   37,
-	   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,  101,   36,
-	   33,   36,   37,   61,   95,  126,   45,   46,   48,   57,   65,   90,
-	   97,  122,   33,   36,   37,   61,   95,  126,   45,   46,   48,   57,
-	   65,   90,   97,  122,   33,   36,   37,   61,   95,  126,   45,   46,
-	   48,   57,   65,   90,   97,  122,   48,   57,   65,   70,   97,  102,
-	   48,   57,   65,   70,   97,  102,   40,   40,   41,   40,   37,   63,
-	   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,   63,
-	   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,   63,
-	   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,   63,
-	   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,   44,
+	   70,   97,  102,   48,   57,   65,   70,   97,  102,   97,  101,  103,
+	  108,  110,  111,  110,  100,   40,   40,   41,  113,   44,   37,   95,
+	  126,   45,   46,   48,   57,   65,   90,   97,  122,   48,   57,   65,
+	   70,   97,  102,   48,   57,   65,   70,   97,  102,   37,   44,   95,
+	  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,   95,  126,
+	   45,   46,   48,   57,   65,   90,   97,  122,   48,   57,   65,   70,
+	   97,  102,   48,   57,   65,   70,   97,  102,   37,   41,   95,  126,
+	   45,   46,   48,   57,   65,   90,   97,  122,   37,   41,   95,  126,
+	   45,   46,   48,   57,   65,   90,   97,  122,   37,   41,   95,  126,
+	   45,   46,   48,   57,   65,   90,   97,  122,   37,   41,   95,  126,
+	   45,   46,   48,   57,   65,   90,   97,  122,   48,   57,   65,   70,
+	   97,  102,   48,   57,   65,   70,   97,  102,   37,   44,   95,  126,
+	   45,   46,   48,   57,   65,   90,   97,  122,   37,   44,   95,  126,
+	   45,   46,   48,   57,   65,   90,   97,  122,   37,   44,   95,  126,
+	   45,   46,   48,   57,   65,   90,   97,  122,   48,   57,   65,   70,
+	   97,  102,   48,   57,   65,   70,   97,  102,  101,  116,   44,   44,
+	  101,  116,   44,   44,  101,  111,   44,  116,   40,  114,   40,   37,
 	   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,
-	   44,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,
-	   37,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,
-	   37,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,
-	   37,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,
-	   40,   63,   63,   33,   37,   95,  126,   45,   46,   48,   57,   65,
-	   90,   97,  122,   37,   44,   61,   95,  126,   45,   46,   48,   57,
-	   65,   90,   97,  122,   37,   44,   61,   95,  126,   45,   46,   48,
-	   57,   65,   90,   97,  122,   37,   44,   61,   95,  126,   45,   46,
-	   48,   57,   65,   90,   97,  122,   37,   44,   95,  126,   45,   46,
-	   48,   57,   65,   90,   97,  122,   37,   44,   95,  126,   45,   46,
-	   48,   57,   65,   90,   97,  122,   37,   44,   95,  126,   45,   46,
-	   48,   57,   65,   90,   97,  122,   37,   44,   95,  126,   45,   46,
-	   48,   57,   65,   90,   97,  122,   37,   44,   61,   95,  126,   45,
-	   46,   48,   57,   65,   90,   97,  122,   37,   44,   61,   95,  126,
-	   45,   46,   48,   57,   65,   90,   97,  122,   37,   44,   61,   95,
-	  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,   44,   61,
-	   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,   44,
-	   61,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,
+	   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,
 	   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,
 	   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,
 	   44,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,
 	   37,   44,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,
 	  122,   37,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,
 	  122,   37,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,
-	  122,    0
+	  122,   37,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,
+	  122,   40,   63,   63,   33,   37,   95,  126,   45,   46,   48,   57,
+	   65,   90,   97,  122,   37,   44,   61,   95,  126,   45,   46,   48,
+	   57,   65,   90,   97,  122,   37,   44,   61,   95,  126,   45,   46,
+	   48,   57,   65,   90,   97,  122,   37,   44,   61,   95,  126,   45,
+	   46,   48,   57,   65,   90,   97,  122,   37,   44,   95,  126,   45,
+	   46,   48,   57,   65,   90,   97,  122,   37,   44,   95,  126,   45,
+	   46,   48,   57,   65,   90,   97,  122,   37,   44,   95,  126,   45,
+	   46,   48,   57,   65,   90,   97,  122,   37,   44,   95,  126,   45,
+	   46,   48,   57,   65,   90,   97,  122,   37,   44,   61,   95,  126,
+	   45,   46,   48,   57,   65,   90,   97,  122,   37,   44,   61,   95,
+	  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,   44,   61,
+	   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,   44,
+	   61,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,   37,
+	   44,   61,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,
+	   37,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,
+	   37,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,  122,
+	   37,   44,   63,   95,  126,   45,   46,   48,   57,   65,   90,   97,
+	  122,   37,   44,   63,   95,  126,   45,   46,   48,   57,   65,   90,
+	   97,  122,   37,   63,   95,  126,   45,   46,   48,   57,   65,   90,
+	   97,  122,   37,   63,   95,  126,   45,   46,   48,   57,   65,   90,
+	   97,  122,    0
 	};
 }
 
@@ -738,13 +710,13 @@ private static byte[] init__dbpath_single_lengths_0()
 	return new byte [] {
 	    0,    0,    0,    0,    0,    3,    0,    0,    3,    0,    0,    4,
 	    0,    0,    3,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-	    0,    0,    0,    0,    0,    6,    1,    1,    0,    0,    6,    1,
-	    3,    0,    0,    4,    4,    4,    4,    0,    0,    4,    1,    1,
-	    3,    2,    1,    3,    1,    3,    2,    1,    3,    1,    3,    1,
-	    1,    6,    6,    6,    0,    0,    1,    2,    1,    4,    4,    4,
-	    4,    5,    5,    4,    4,    4,    2,    1,    4,    5,    5,    5,
-	    4,    4,    4,    4,    5,    5,    5,    5,    5,    4,    4,    5,
-	    5,    4,    4,    0
+	    0,    0,    0,    0,    0,    6,    1,    1,    1,    2,    1,    1,
+	    3,    0,    0,    4,    3,    0,    0,    4,    4,    4,    4,    0,
+	    0,    4,    4,    4,    0,    0,    2,    1,    1,    2,    1,    1,
+	    2,    1,    1,    1,    1,    1,    4,    4,    4,    4,    5,    5,
+	    4,    4,    4,    2,    1,    4,    5,    5,    5,    4,    4,    4,
+	    4,    5,    5,    5,    5,    5,    4,    4,    5,    5,    4,    4,
+	    0
 	};
 }
 
@@ -756,13 +728,13 @@ private static byte[] init__dbpath_range_lengths_0()
 	return new byte [] {
 	    0,    3,    3,    3,    3,    4,    3,    3,    4,    3,    3,    4,
 	    3,    3,    4,    3,    3,    3,    3,    3,    3,    3,    3,    3,
-	    3,    3,    3,    3,    3,    3,    0,    0,    3,    3,    4,    0,
-	    4,    3,    3,    4,    4,    4,    4,    3,    3,    0,    0,    0,
-	    4,    0,    0,    4,    0,    4,    0,    0,    4,    0,    4,    0,
-	    0,    4,    4,    4,    3,    3,    0,    0,    0,    4,    4,    4,
-	    4,    4,    4,    4,    4,    4,    0,    0,    4,    4,    4,    4,
+	    3,    3,    3,    3,    3,    0,    0,    0,    0,    0,    0,    0,
+	    4,    3,    3,    4,    4,    3,    3,    4,    4,    4,    4,    3,
+	    3,    4,    4,    4,    3,    3,    0,    0,    0,    0,    0,    0,
+	    0,    0,    0,    0,    0,    0,    4,    4,    4,    4,    4,    4,
+	    4,    4,    4,    0,    0,    4,    4,    4,    4,    4,    4,    4,
 	    4,    4,    4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
-	    4,    4,    4,    0
+	    0
 	};
 }
 
@@ -774,13 +746,13 @@ private static short[] init__dbpath_index_offsets_0()
 	return new short [] {
 	    0,    0,    4,    8,   12,   16,   24,   28,   32,   40,   44,   48,
 	   57,   61,   65,   73,   77,   81,   85,   89,   93,   97,  101,  105,
-	  109,  113,  117,  121,  125,  129,  139,  141,  143,  147,  151,  162,
-	  164,  172,  176,  180,  189,  198,  207,  216,  220,  224,  229,  231,
-	  233,  241,  244,  246,  254,  256,  264,  267,  269,  277,  279,  287,
-	  289,  291,  302,  313,  324,  328,  332,  334,  337,  339,  348,  357,
-	  366,  375,  385,  395,  404,  413,  422,  425,  427,  436,  446,  456,
-	  466,  475,  484,  493,  502,  512,  522,  532,  542,  552,  561,  570,
-	  580,  590,  599,  608
+	  109,  113,  117,  121,  125,  129,  136,  138,  140,  142,  145,  147,
+	  149,  157,  161,  165,  174,  182,  186,  190,  199,  208,  217,  226,
+	  230,  234,  243,  252,  261,  265,  269,  272,  274,  276,  279,  281,
+	  283,  286,  288,  290,  292,  294,  296,  305,  314,  323,  332,  342,
+	  352,  361,  370,  379,  382,  384,  393,  403,  413,  423,  432,  441,
+	  450,  459,  469,  479,  489,  499,  509,  518,  527,  537,  547,  556,
+	  565
 	};
 }
 
@@ -790,57 +762,54 @@ private static final short _dbpath_index_offsets[] = init__dbpath_index_offsets_
 private static byte[] init__dbpath_trans_targs_0()
 {
 	return new byte [] {
-	    2,   27,   28,    0,   70,   97,   98,    0,    4,   25,   26,    0,
-	   73,   95,   96,    0,    3,   74,   74,   74,   74,   74,   74,    0,
-	    7,   23,   24,    0,   76,   93,   94,    0,    9,   90,   90,   90,
-	   90,   90,   90,    0,   10,   21,   22,    0,   81,   91,   92,    0,
-	    8,   12,   83,   83,   83,   83,   83,   83,    0,   13,   19,   20,
-	    0,   82,   88,   89,    0,   15,   85,   85,   85,   85,   85,   85,
-	    0,   16,   17,   18,    0,   84,   86,   87,    0,   84,   86,   87,
-	    0,   84,   86,   87,    0,   82,   88,   89,    0,   82,   88,   89,
-	    0,   81,   91,   92,    0,   81,   91,   92,    0,   76,   93,   94,
-	    0,   76,   93,   94,    0,   73,   95,   96,    0,   73,   95,   96,
-	    0,   70,   97,   98,    0,   70,   97,   98,    0,   30,   32,   66,
-	   68,   61,   61,   61,   61,   61,    0,   31,    0,   99,    0,   33,
-	   64,   65,    0,   34,   62,   63,    0,   35,   45,   32,   48,   61,
-	   61,   61,   61,   61,   61,    0,   36,    0,   37,   40,   40,   40,
-	   40,   40,   40,    0,   38,   43,   44,    0,   39,   41,   42,    0,
-	   37,   99,   40,   40,   40,   40,   40,   40,    0,   37,   99,   40,
-	   40,   40,   40,   40,   40,    0,   37,   99,   40,   40,   40,   40,
-	   40,   40,    0,   37,   99,   40,   40,   40,   40,   40,   40,    0,
-	   39,   41,   42,    0,   39,   41,   42,    0,   46,   49,   54,   59,
-	    0,   47,    0,   48,    0,   37,   40,   40,   40,   40,   40,   40,
-	    0,   50,   52,    0,   51,    0,   37,   40,   40,   40,   40,   40,
-	   40,    0,   53,    0,   37,   40,   40,   40,   40,   40,   40,    0,
-	   55,   57,    0,   56,    0,   37,   40,   40,   40,   40,   40,   40,
-	    0,   58,    0,   37,   40,   40,   40,   40,   40,   40,    0,   60,
-	    0,   36,    0,   35,   45,   32,   48,   61,   61,   61,   61,   61,
-	   61,    0,   35,   45,   32,   48,   61,   61,   61,   61,   61,   61,
-	    0,   35,   45,   32,   48,   61,   61,   61,   61,   61,   61,    0,
-	   34,   62,   63,    0,   34,   62,   63,    0,   67,    0,   67,   99,
-	    0,   67,    0,    1,   72,   71,   71,   71,   71,   71,   71,    0,
-	    1,   72,   71,   71,   71,   71,   71,   71,    0,    1,   72,   71,
-	   71,   71,   71,   71,   71,    0,    3,   75,   74,   74,   74,   74,
-	   74,   74,    0,    3,    5,   75,   74,   74,   74,   74,   74,   74,
-	    0,    3,    5,   75,   74,   74,   74,   74,   74,   74,    0,    6,
-	   78,   77,   77,   77,   77,   77,   77,    0,    6,   78,   77,   77,
-	   77,   77,   77,   77,    0,    6,   78,   77,   77,   77,   77,   77,
-	   77,    0,   79,   80,    0,   80,    0,    8,   12,   83,   83,   83,
-	   83,   83,   83,    0,    9,   11,   14,   90,   90,   90,   90,   90,
-	   90,    0,   12,   11,   14,   83,   83,   83,   83,   83,   83,    0,
-	   12,   11,   14,   83,   83,   83,   83,   83,   83,    0,   15,   11,
-	   85,   85,   85,   85,   85,   85,    0,   15,   11,   85,   85,   85,
-	   85,   85,   85,    0,   15,   11,   85,   85,   85,   85,   85,   85,
-	    0,   15,   11,   85,   85,   85,   85,   85,   85,    0,   12,   11,
-	   14,   83,   83,   83,   83,   83,   83,    0,   12,   11,   14,   83,
-	   83,   83,   83,   83,   83,    0,    9,   11,   14,   90,   90,   90,
-	   90,   90,   90,    0,    9,   11,   14,   90,   90,   90,   90,   90,
-	   90,    0,    9,   11,   14,   90,   90,   90,   90,   90,   90,    0,
-	    6,   78,   77,   77,   77,   77,   77,   77,    0,    6,   78,   77,
-	   77,   77,   77,   77,   77,    0,    3,    5,   75,   74,   74,   74,
-	   74,   74,   74,    0,    3,    5,   75,   74,   74,   74,   74,   74,
-	   74,    0,    1,   72,   71,   71,   71,   71,   71,   71,    0,    1,
-	   72,   71,   71,   71,   71,   71,   71,    0,    0,    0
+	    2,   27,   28,    0,   67,   94,   95,    0,    4,   25,   26,    0,
+	   70,   92,   93,    0,    3,   71,   71,   71,   71,   71,   71,    0,
+	    7,   23,   24,    0,   73,   90,   91,    0,    9,   87,   87,   87,
+	   87,   87,   87,    0,   10,   21,   22,    0,   78,   88,   89,    0,
+	    8,   12,   80,   80,   80,   80,   80,   80,    0,   13,   19,   20,
+	    0,   79,   85,   86,    0,   15,   82,   82,   82,   82,   82,   82,
+	    0,   16,   17,   18,    0,   81,   83,   84,    0,   81,   83,   84,
+	    0,   81,   83,   84,    0,   79,   85,   86,    0,   79,   85,   86,
+	    0,   78,   88,   89,    0,   78,   88,   89,    0,   73,   90,   91,
+	    0,   73,   90,   91,    0,   70,   92,   93,    0,   70,   92,   93,
+	    0,   67,   94,   95,    0,   67,   94,   95,    0,   30,   34,   54,
+	   57,   60,   64,    0,   31,    0,   32,    0,   33,    0,   33,   96,
+	    0,   35,    0,   36,    0,   37,   49,   49,   49,   49,   49,   49,
+	    0,   38,   52,   53,    0,   39,   50,   51,    0,   37,   40,   49,
+	   49,   49,   49,   49,   49,    0,   41,   44,   44,   44,   44,   44,
+	   44,    0,   42,   47,   48,    0,   43,   45,   46,    0,   41,   96,
+	   44,   44,   44,   44,   44,   44,    0,   41,   96,   44,   44,   44,
+	   44,   44,   44,    0,   41,   96,   44,   44,   44,   44,   44,   44,
+	    0,   41,   96,   44,   44,   44,   44,   44,   44,    0,   43,   45,
+	   46,    0,   43,   45,   46,    0,   37,   40,   49,   49,   49,   49,
+	   49,   49,    0,   37,   40,   49,   49,   49,   49,   49,   49,    0,
+	   37,   40,   49,   49,   49,   49,   49,   49,    0,   39,   50,   51,
+	    0,   39,   50,   51,    0,   55,   56,    0,   36,    0,   36,    0,
+	   58,   59,    0,   36,    0,   36,    0,   61,   62,    0,   36,    0,
+	   63,    0,   33,    0,   65,    0,   33,    0,    1,   69,   68,   68,
+	   68,   68,   68,   68,    0,    1,   69,   68,   68,   68,   68,   68,
+	   68,    0,    1,   69,   68,   68,   68,   68,   68,   68,    0,    3,
+	   72,   71,   71,   71,   71,   71,   71,    0,    3,    5,   72,   71,
+	   71,   71,   71,   71,   71,    0,    3,    5,   72,   71,   71,   71,
+	   71,   71,   71,    0,    6,   75,   74,   74,   74,   74,   74,   74,
+	    0,    6,   75,   74,   74,   74,   74,   74,   74,    0,    6,   75,
+	   74,   74,   74,   74,   74,   74,    0,   76,   77,    0,   77,    0,
+	    8,   12,   80,   80,   80,   80,   80,   80,    0,    9,   11,   14,
+	   87,   87,   87,   87,   87,   87,    0,   12,   11,   14,   80,   80,
+	   80,   80,   80,   80,    0,   12,   11,   14,   80,   80,   80,   80,
+	   80,   80,    0,   15,   11,   82,   82,   82,   82,   82,   82,    0,
+	   15,   11,   82,   82,   82,   82,   82,   82,    0,   15,   11,   82,
+	   82,   82,   82,   82,   82,    0,   15,   11,   82,   82,   82,   82,
+	   82,   82,    0,   12,   11,   14,   80,   80,   80,   80,   80,   80,
+	    0,   12,   11,   14,   80,   80,   80,   80,   80,   80,    0,    9,
+	   11,   14,   87,   87,   87,   87,   87,   87,    0,    9,   11,   14,
+	   87,   87,   87,   87,   87,   87,    0,    9,   11,   14,   87,   87,
+	   87,   87,   87,   87,    0,    6,   75,   74,   74,   74,   74,   74,
+	   74,    0,    6,   75,   74,   74,   74,   74,   74,   74,    0,    3,
+	    5,   72,   71,   71,   71,   71,   71,   71,    0,    3,    5,   72,
+	   71,   71,   71,   71,   71,   71,    0,    1,   69,   68,   68,   68,
+	   68,   68,   68,    0,    1,   69,   68,   68,   68,   68,   68,   68,
+	    0,    0,    0
 	};
 }
 
@@ -860,47 +829,44 @@ private static short[] init__dbpath_trans_actions_0()
 	    0,    9,    9,    9,    0,   11,   11,   11,    0,    9,    9,    9,
 	    0,   11,   11,   11,    0,    9,    9,    9,    0,   11,   11,   11,
 	    0,    9,    9,    9,    0,   11,   11,   11,    0,    9,    9,    9,
-	    0,   11,   11,   11,    0,    9,    9,    9,    0,    0,    1,    0,
-	    0,    1,    1,    1,    1,    1,    0,   48,    0,   51,    0,    5,
-	    5,    5,    0,    7,    7,    7,    0,  104,  104,   33,  104,   33,
-	   33,   33,   33,   33,   33,    0,    0,    0,   63,   63,   63,   63,
-	   63,   63,   63,    0,    5,    5,    5,    0,    7,    7,    7,    0,
-	   33,  207,   33,   33,   33,   33,   33,   33,    0,    3,  201,    3,
-	    3,    3,    3,    3,    3,    0,   39,  221,   39,   39,   39,   39,
-	   39,   39,    0,   36,  214,   36,   36,   36,   36,   36,   36,    0,
-	   11,   11,   11,    0,    9,    9,    9,    0,    0,    0,    0,    0,
-	    0,    0,    0,    0,    0,   60,   60,   60,   60,   60,   60,   60,
-	    0,    0,    0,    0,    0,    0,   69,   69,   69,   69,   69,   69,
-	   69,    0,    0,    0,   66,   66,   66,   66,   66,   66,   66,    0,
-	    0,    0,    0,    0,    0,   57,   57,   57,   57,   57,   57,   57,
-	    0,    0,    0,   54,   54,   54,   54,   54,   54,   54,    0,    0,
-	    0,    0,    0,   30,   30,    3,   30,    3,    3,    3,    3,    3,
-	    3,    0,  152,  152,   39,  152,   39,   39,   39,   39,   39,   39,
-	    0,  128,  128,   36,  128,   36,   36,   36,   36,   36,   36,    0,
-	   11,   11,   11,    0,    9,    9,    9,    0,   42,    0,   13,   51,
-	    0,   45,    0,    1,    0,    1,    1,    1,    1,    1,    1,    0,
-	   33,   84,   33,   33,   33,   33,   33,   33,    0,    3,   15,    3,
-	    3,    3,    3,    3,    3,    0,    1,    0,    1,    1,    1,    1,
-	    1,    1,    0,   33,   88,   88,   33,   33,   33,   33,   33,   33,
-	    0,    3,   18,   18,    3,    3,    3,    3,    3,    3,    0,    1,
-	    0,    1,    1,    1,    1,    1,    1,    0,   33,   92,   33,   33,
-	   33,   33,   33,   33,    0,    3,   21,    3,    3,    3,    3,    3,
-	    3,    0,   13,    0,    0,    0,    0,    0,    1,    1,    1,    1,
-	    1,    1,    1,    0,   33,  161,  100,   33,   33,   33,   33,   33,
-	   33,    0,   33,  156,   96,   33,   33,   33,   33,   33,   33,    0,
-	    3,   72,   24,    3,    3,    3,    3,    3,    3,    0,   33,  166,
-	   33,   33,   33,   33,   33,   33,    0,    3,   80,    3,    3,    3,
-	    3,    3,    3,    0,   39,  196,   39,   39,   39,   39,   39,   39,
-	    0,   36,  181,   36,   36,   36,   36,   36,   36,    0,   39,  186,
-	  144,   39,   39,   39,   39,   39,   39,    0,   36,  171,  120,   36,
-	   36,   36,   36,   36,   36,    0,    3,   76,   27,    3,    3,    3,
-	    3,    3,    3,    0,   39,  191,  148,   39,   39,   39,   39,   39,
-	   39,    0,   36,  176,  124,   36,   36,   36,   36,   36,   36,    0,
-	   39,  140,   39,   39,   39,   39,   39,   39,    0,   36,  116,   36,
-	   36,   36,   36,   36,   36,    0,   39,  136,  136,   39,   39,   39,
-	   39,   39,   39,    0,   36,  112,  112,   36,   36,   36,   36,   36,
-	   36,    0,   39,  132,   39,   39,   39,   39,   39,   39,    0,   36,
-	  108,   36,   36,   36,   36,   36,   36,    0,    0,    0
+	    0,   11,   11,   11,    0,    9,    9,    9,    0,    0,    0,    0,
+	    0,    0,    0,    0,    0,    0,    0,    0,   56,    0,   13,   15,
+	    0,    0,    0,   21,    0,    1,    1,    1,    1,    1,    1,    1,
+	    0,    5,    5,    5,    0,    7,    7,    7,    0,   47,  101,   47,
+	   47,   47,   47,   47,   47,    0,    1,    1,    1,    1,    1,    1,
+	    1,    0,    5,    5,    5,    0,    7,    7,    7,    0,   47,  168,
+	   47,   47,   47,   47,   47,   47,    0,    3,   77,    3,    3,    3,
+	    3,    3,    3,    0,   53,  208,   53,   53,   53,   53,   53,   53,
+	    0,   50,  188,   50,   50,   50,   50,   50,   50,    0,   11,   11,
+	   11,    0,    9,    9,    9,    0,    3,   44,    3,    3,    3,    3,
+	    3,    3,    0,   53,  149,   53,   53,   53,   53,   53,   53,    0,
+	   50,  125,   50,   50,   50,   50,   50,   50,    0,   11,   11,   11,
+	    0,    9,    9,    9,    0,    0,    0,    0,   27,    0,   25,    0,
+	    0,    0,    0,   19,    0,   17,    0,    0,    0,    0,   23,    0,
+	    0,    0,   62,    0,    0,    0,   59,    0,    1,    0,    1,    1,
+	    1,    1,    1,    1,    0,   47,   81,   47,   47,   47,   47,   47,
+	   47,    0,    3,   29,    3,    3,    3,    3,    3,    3,    0,    1,
+	    0,    1,    1,    1,    1,    1,    1,    0,   47,   85,   85,   47,
+	   47,   47,   47,   47,   47,    0,    3,   32,   32,    3,    3,    3,
+	    3,    3,    3,    0,    1,    0,    1,    1,    1,    1,    1,    1,
+	    0,   47,   89,   47,   47,   47,   47,   47,   47,    0,    3,   35,
+	    3,    3,    3,    3,    3,    3,    0,   13,    0,    0,    0,    0,
+	    0,    1,    1,    1,    1,    1,    1,    1,    0,   47,  158,   97,
+	   47,   47,   47,   47,   47,   47,    0,   47,  153,   93,   47,   47,
+	   47,   47,   47,   47,    0,    3,   65,   38,    3,    3,    3,    3,
+	    3,    3,    0,   47,  163,   47,   47,   47,   47,   47,   47,    0,
+	    3,   73,    3,    3,    3,    3,    3,    3,    0,   53,  203,   53,
+	   53,   53,   53,   53,   53,    0,   50,  183,   50,   50,   50,   50,
+	   50,   50,    0,   53,  193,  141,   53,   53,   53,   53,   53,   53,
+	    0,   50,  173,  117,   50,   50,   50,   50,   50,   50,    0,    3,
+	   69,   41,    3,    3,    3,    3,    3,    3,    0,   53,  198,  145,
+	   53,   53,   53,   53,   53,   53,    0,   50,  178,  121,   50,   50,
+	   50,   50,   50,   50,    0,   53,  137,   53,   53,   53,   53,   53,
+	   53,    0,   50,  113,   50,   50,   50,   50,   50,   50,    0,   53,
+	  133,  133,   53,   53,   53,   53,   53,   53,    0,   50,  109,  109,
+	   50,   50,   50,   50,   50,   50,    0,   53,  129,   53,   53,   53,
+	   53,   53,   53,    0,   50,  105,   50,   50,   50,   50,   50,   50,
+	    0,    0,    0
 	};
 }
 
@@ -915,25 +881,25 @@ private static short[] init__dbpath_eof_actions_0()
 	    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
 	    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
 	    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-	    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,   84,   15,
-	    0,   88,   18,    0,   92,   21,    0,    0,    0,  161,  156,   72,
-	  166,   80,  196,  181,  186,  171,   76,  191,  176,  140,  116,  136,
-	  112,  132,  108,    0
+	    0,    0,    0,    0,    0,    0,    0,   81,   29,    0,   85,   32,
+	    0,   89,   35,    0,    0,    0,  158,  153,   65,  163,   73,  203,
+	  183,  193,  173,   69,  198,  178,  137,  113,  133,  109,  129,  105,
+	    0
 	};
 }
 
 private static final short _dbpath_eof_actions[] = init__dbpath_eof_actions_0();
 
 
-static final int dbpath_start = 69;
-static final int dbpath_first_final = 69;
+static final int dbpath_start = 66;
+static final int dbpath_first_final = 66;
 static final int dbpath_error = 0;
 
 static final int dbpath_en_filter_comp = 29;
-static final int dbpath_en_main = 69;
+static final int dbpath_en_main = 66;
 
 
-// line 388 "/home/martin/source/esxx/src/org/esxx/util/dbref/DBReference.rl"
+// line 366 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 
   private int charOffset = 0;
 
