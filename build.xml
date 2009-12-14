@@ -32,12 +32,14 @@
 
   <target name="compile" depends="init, ragel" description="compile everything">
     <!-- Don't use -Xlint on the json code -->
-    <javac srcdir="${src.dir}/org/json" destdir="${classes.dir}" classpathref="classpath"
+    <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath"
            debug="true" deprecation="true" target="1.6">
+      <include name="org/json/*.java"/>
     </javac>
     <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath"
            debug="true" deprecation="true" target="1.6">
       <compilerarg value="-Xlint"/>
+      <exclude name="org/json/*.java"/>
     </javac>
     <copy todir="${classes.dir}/rsrc">
       <fileset dir="rsrc" excludes="*~ *.xslt *.css"/>
