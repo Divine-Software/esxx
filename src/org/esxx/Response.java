@@ -196,6 +196,9 @@ public class Response  {
     else if (object instanceof byte[]) {
       object = new ByteArrayInputStream((byte[]) object);
     }
+    else if (object instanceof File) {
+      object = new FileInputStream((File) object);
+    }
 
     // Serialize primitive types
     if (object instanceof ByteArrayOutputStream) {
@@ -283,6 +286,9 @@ public class Response  {
 	  resultObject instanceof ByteBuffer ||
 	  resultObject instanceof byte[]) {
 	return "application/octet-stream";
+      }
+      else if (resultObject instanceof File) {
+	return ESXX.fileTypeMap.getContentType((File) resultObject);
       }
       else if (resultObject instanceof Reader ||
 	       resultObject instanceof String) {

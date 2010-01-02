@@ -95,6 +95,11 @@
 	and did not handle the query string at all. Thanks to Thibaut
 	for discovering this and suggesting a fix! [Thibaut@blogger.com]
 
+	* load() on file: URIs now use the file extension to guess
+	content type. An ESXX response handler may now also return a
+	Java File object, and the file extension is used to guess
+	content type.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

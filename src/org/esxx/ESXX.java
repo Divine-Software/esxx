@@ -1187,11 +1187,13 @@ public class ESXX {
 	super();
 
 	addIfMissing("css",   "text/css");
+	addIfMissing("eml",   "message/rfc822");
 	addIfMissing("esxx",  "application/x-esxx+xml");
 	addIfMissing("gif",   "image/gif");
 	addIfMissing("html",  "text/html");
 	addIfMissing("jpg",   "image/jpeg");
 	addIfMissing("js",    "application/x-javascript");
+	addIfMissing("json",  "application/json");
 	addIfMissing("pdf",   "application/pdf");
 	addIfMissing("png",   "image/png");
 	addIfMissing("txt",   "text/plain");
