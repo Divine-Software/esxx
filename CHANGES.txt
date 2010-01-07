@@ -100,6 +100,10 @@
 	Java File object, and the file extension is used to guess
 	content type.
 
+	* JDBC auth: The correct property name is "user", not
+	"username". This made the "auth" property on JDBC URIs
+	useless.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

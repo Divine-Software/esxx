@@ -65,7 +65,7 @@ public class JDBCHandler
       Scriptable a = jsuri.getAuth(cx, jsuri.getURI(), null);
 
       if (a != null) {
-	p.setProperty("username", Context.toString(a.get("username", a)));
+	p.setProperty("user",     Context.toString(a.get("username", a)));
 	p.setProperty("password", Context.toString(a.get("password", a)));
       }
 
