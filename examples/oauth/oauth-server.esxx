@@ -1,0 +1,19 @@
+<?xml version='1.0' ?>
+
+<esxx xmlns="http://esxx.org/1.0/">
+  <handlers>
+    <http method="GET" uri="/request" handler="server.issueRequestToken" />
+  </handlers>
+
+  <filters>
+    <filter handler="server.authFilter"/>
+  </filters>
+</esxx>
+
+<?esxx // bootstrap
+
+esxx.include("oauth-server.js");
+
+var server = new OAuthServer("jdbc:h2:mem:OAuthServer");
+
+?>
