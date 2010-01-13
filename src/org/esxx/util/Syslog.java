@@ -54,6 +54,7 @@ public class Syslog
     {
 	public class SyslogException extends Exception
 	    {
+	    static final long serialVersionUID = -4903023885414100838L;
 	    SyslogException()
 		{
 		super();
