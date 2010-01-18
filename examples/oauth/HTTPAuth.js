@@ -15,12 +15,16 @@ function HTTPAuth(auth) {
 	break;
 
       case "Digest":
-      case "OAuth": {
-	let param_re = /(\w+)=(([^'"][^, ]+)|['"]([^'"]+)['"])[, ]*/g;
+      case "OAuth":
+      case "WRAP": {
+//	let param_re = /(\w+)=(([^'"][^, ]+)|['"]([^'"]+)['"])[, ]*/g; //"'
+	// Regular expression to fetch key='value', key="value" and key=value pairs
+	let param_re = /(\w+)=('([^']*)'|"([^"]*)"|([^, ]*))[, ]*/g;   // '
+//			|key|   |-apos|   |quote|  |-plain| |sep|
 	let key_value;
 
 	while (key_value = param_re.exec(type_params[2])) {
-	  this.params[key_value[1]] = key_value[3] || key_value[4];
+	  this.params[key_value[1]] = key_value[3] || key_value[4] || key_value[5];
 	}
 
         break;
