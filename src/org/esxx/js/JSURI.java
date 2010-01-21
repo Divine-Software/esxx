@@ -321,6 +321,21 @@ public class JSURI
   }
 
   public Scriptable getAuth(Context cx, URI uri, String realm) {
+    if (uri.getRawUserInfo() != null) {
+      // If the URI already carries authorization information, use it
+      try {
+	String[]   unp = uri.getRawUserInfo().split(":", 2);
+	Scriptable res = cx.newObject(this);
+
+	ScriptableObject.putProperty(res, "username", StringUtil.decodeURI(unp[0], false));
+	ScriptableObject.putProperty(res, "password", StringUtil.decodeURI(unp[1], false));
+
+	return res;
+      }
+      catch (URISyntaxException ignored) {}
+    }
+
+    // Else, search the 'auth' property for matching entries
     return getBestProperty(cx, "auth", uri, realm);
   }
 
@@ -349,11 +364,13 @@ public class JSURI
   }
 
   private void enumerateProperty(Context cx, String name, PropEnumerator pe,
-				 URI uri, String realm) {
-    String  scheme = uri.getScheme();
-    String  host   = uri.getHost();
-    Integer port   = uri.getPort();
-    String  path   = uri.getPath();
+				 URI candidate, String realm) {
+    String  uri    = candidate.toString();
+    String  scheme = candidate.getScheme();
+    String  user   = candidate.getUserInfo();
+    String  host   = candidate.getHost();
+    Integer port   = candidate.getPort();
+    String  path   = candidate.getPath();
 
     Object p = ScriptableObject.getProperty(this, name);
 
@@ -373,11 +390,13 @@ public class JSURI
 	      
 	  int score = 0;
 
-	  score += filterProperty(cx, param, "scheme", scheme) * 1;
-	  score += filterProperty(cx, param, "realm",  realm)  * 2;
-	  score += filterProperty(cx, param, "path",   path)   * 4;
-	  score += filterProperty(cx, param, "port",   port)   * 8;
-	  score += filterProperty(cx, param, "host",   host)   * 16;
+	  score += filterProperty(cx, param, "scheme",    scheme) * 1;
+	  score += filterProperty(cx, param, "realm",     realm)  * 2;
+	  score += filterProperty(cx, param, "path",      path)   * 4;
+	  score += filterProperty(cx, param, "port",      port)   * 8;
+	  score += filterProperty(cx, param, "host",      host)   * 16;
+	  score += filterProperty(cx, param, "user-info", user)   * 32;
+	  score += filterProperty(cx, param, "uri",       uri)    * 64;
 
 	  if (score >= 0) {
 	    pe.handleProperty(param, score);

@@ -104,6 +104,10 @@
 	"username". This made the "auth" property on JDBC URIs
 	useless.
 
+	* URI auth: If username and password is supplied in the
+	auth-info part, use it. Also, new matcher keys: "user-info"
+	and "uri".
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
