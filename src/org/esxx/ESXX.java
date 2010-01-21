@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.*;
+import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -40,6 +41,7 @@ import org.esxx.saxon.*;
 import org.esxx.util.SingleThreadedExecutor;
 import org.esxx.util.ThreadSafeExecutor;
 import org.esxx.util.SyslogHandler;
+import org.esxx.util.TrivialFormatter;
 import org.esxx.util.URIResolver;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextAction;
@@ -263,18 +265,40 @@ public class ESXX {
 
     public synchronized Logger getLogger() {
       if (logger == null) {
-	logger = Logger.getLogger(ESXX.class.getName());
+	logger = createLogger(ESXX.class.getName(), Level.CONFIG, "esxx");
+      }
 
-	if (logger.getHandlers().length == 0) {
-	  try {
-	    // No specific log handler configured in
-	    // jre/lib/logging.properties -- log everything to syslog
-	    logger.addHandler(new SyslogHandler("esxx"));
-	    logger.setLevel(Level.ALL);
+      return logger;
+    }
+
+    synchronized Logger createLogger(String logger_name,
+				     Level logger_level,
+				     String syslog_ident) {
+      Logger logger = Logger.getLogger(logger_name);
+
+      if (logger.getHandlers().length == 0) {
+	try {
+	  // No specific log handler configured in
+	  // jre/lib/logging.properties -- log everything to both
+	  // syslog and console using the TrivialFormatter.
+
+	  if (logFormatter == null) {
+	    logFormatter = new TrivialFormatter(true);
 	  }
-	  catch (Throwable ex) {
-	    // Probably a Google App Engine problem
-	  }
+
+	  ConsoleHandler ch = new ConsoleHandler();
+
+	  ch.setLevel(Level.ALL);
+	  ch.setFormatter(logFormatter);
+
+	  logger.addHandler(new SyslogHandler(syslog_ident));
+	  logger.addHandler(ch);
+
+	  logger.setUseParentHandlers(false);
+	  logger.setLevel(logger_level);
+	}
+	catch (Throwable ex) {
+	  // Probably a Google App Engine problem
 	}
       }
 
@@ -1232,6 +1256,7 @@ public class ESXX {
     private ScheduledExecutorService executorService;
     private PriorityBlockingQueue<Workload> workloadSet;
     private Logger logger;
+    private java.util.logging.Formatter logFormatter;
   
     private Thread shutdownHook;
 }

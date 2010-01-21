@@ -26,7 +26,6 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -94,33 +93,9 @@ public class Application {
 
   public synchronized Logger getAppLogger() {
     if (logger == null) {
-      logger = Logger.getLogger(Application.class.getName() + "." + getAppName());
-
-      if (logger.getHandlers().length == 0) {
-	try {
-	  // No specific log handler configured in
-	  // jre/lib/logging.properties -- log everything to both
-	  // syslog and console using the TrivialFormatter.
-
-	  if (logFormatter == null) {
-	    logFormatter = new TrivialFormatter(true);
-	  }
-
-	  ConsoleHandler ch = new ConsoleHandler();
-
-	  ch.setLevel(Level.ALL);
-	  ch.setFormatter(logFormatter);
-
-	  logger.addHandler(new SyslogHandler("esxx"));
-	  logger.addHandler(ch);
-
-	  logger.setUseParentHandlers(false);
-	  logger.setLevel(Level.ALL);
-	}
-	catch (Throwable ex) {
-	  // Probably a Google App Engine problem
-	}
-      }
+      logger = esxx.createLogger(Application.class.getName() + "." + getAppName(),
+				 Level.ALL,
+				 "esxx");
     }
 
     return logger;
@@ -1235,6 +1210,4 @@ public class Application {
   private List<FilterRule> filters = new LinkedList<FilterRule>();
 
   private Collection<TimerHandler> timerHandlers = new LinkedList<TimerHandler>();
-
-  private static java.util.logging.Formatter logFormatter;
 }
