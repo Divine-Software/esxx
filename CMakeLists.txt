@@ -54,7 +54,7 @@ ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   FIND_PROGRAM (RPM rpmbuild)
   FIND_PROGRAM (DPKG dpkg-deb)
 
-  IF (RPM AND NOT DPKG)
+  IF (RPM)
     # RedHat-style package
     SET (CONFDIR sysconfig)
     SET (CPACK_GENERATOR RPM)
@@ -76,7 +76,7 @@ ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		   ${CMAKE_CURRENT_SOURCE_DIR}/debian/control @ONLY)
     CONFIGURE_FILE(debian/changelog.in 
 		   ${CMAKE_CURRENT_SOURCE_DIR}/debian/changelog @ONLY)
-  ENDIF (RPM AND NOT DPKG)
+  ENDIF (RPM)
 ELSE (CMAKE_HOST_WIN32)
   # Generic package if unknown system
   SET (CPACK_GENERATOR ZIP)

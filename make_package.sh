@@ -109,7 +109,7 @@ case $(uname) in
 	;;
 
     Linux)
-	if [ -n "$(which dpkg 2> /dev/null)" ]; then
+	if [ -f /etc/debian_version ]; then
 	    # Assume we're on Debian.  CMake has already been run,
 	    # creating the config files in ${SOURCE}/debian.
 	    cd ${SOURCE}
