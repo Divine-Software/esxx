@@ -128,6 +128,11 @@ public class Main {
 
       ESXX esxx = ESXX.initInstance(System.getProperties(), null);
 
+      if (script != null) {
+	// Lower default log level a bit
+	esxx.getLogger().setLevel(java.util.logging.Level.INFO);
+      }
+
       esxx.setNoHandlerMode(cmd.getOptionValue('n', "lighttpd.*"));
 
       // Install our ResponseCache implementation

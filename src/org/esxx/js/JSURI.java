@@ -320,7 +320,7 @@ public class JSURI
     void handleProperty(Scriptable prop, int score);
   }
 
-  public Scriptable getAuth(Context cx, URI uri, String realm) {
+  public Scriptable getAuth(Context cx, URI req_uri, String realm) {
     if (uri.getRawUserInfo() != null) {
       // If the URI already carries authorization information, use it
       try {
@@ -336,18 +336,18 @@ public class JSURI
     }
 
     // Else, search the 'auth' property for matching entries
-    return getBestProperty(cx, "auth", uri, realm);
+    return getBestProperty(cx, "auth", req_uri, realm);
   }
 
-  public Scriptable getCookieJar(Context cx, URI uri) {
-    return getBestProperty(cx, "jars", uri, "");
+  public Scriptable getCookieJar(Context cx, URI req_uri) {
+    return getBestProperty(cx, "jars", req_uri, "");
   }
 
-  public void enumerateHeaders(Context cx, PropEnumerator pe, URI uri) {
-    enumerateProperty(cx, "headers", pe, uri, "");
+  public void enumerateHeaders(Context cx, PropEnumerator pe, URI req_uri) {
+    enumerateProperty(cx, "headers", pe, req_uri, "");
   }
 
-  private Scriptable getBestProperty(Context cx, String name, URI uri, String realm) {
+  private Scriptable getBestProperty(Context cx, String name, URI req_uri, String realm) {
     final Scriptable[] res = { null };
     final int[]      score = { -1 };
 
@@ -358,7 +358,7 @@ public class JSURI
 	    score[0] = s;
 	  }
 	}
-      }, uri, realm);
+      }, req_uri, realm);
 
     return res[0];
   }
