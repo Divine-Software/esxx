@@ -539,6 +539,10 @@ public class QueryCache {
 	      sb.append('?');
 	    }
 	  
+	    if (sb == null) {
+	      throw new ESXXException("Failed to resolve SQL parameter '" + name + "'.");
+	    }
+
 	    query_params.add(param);
 	    return sb.toString();
 	  }
