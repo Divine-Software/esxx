@@ -454,6 +454,11 @@ public class ESXX {
      */
 
     public static org.w3c.dom.Node e4xToDOM(Scriptable node) {
+      if ("XMLList".equals(node.getClassName())) {
+	// If an XMLList object, return only the first member
+	node = (Scriptable) node.get(0, node);
+      }
+
       return org.mozilla.javascript.xmlimpl.XMLLibImpl.toDomNode(node);
     }
 

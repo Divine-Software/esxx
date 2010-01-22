@@ -66,8 +66,10 @@
 	* Bug fix: Content-Type override did not work for http: and
 	https: protocols.
 
-	* SQL query responses now include a type attribute, which also
-	indicates NULL results.
+	* SQL query responses now include result set metadata. Also,
+	results are returned as an XMLList, one entry per result
+	set. Cells that contains NULLs are marked with an
+	isNull='true' attribute.
 
 	* Added a --shell command line parameter, which starts the
 	ESXX Shell.
