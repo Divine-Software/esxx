@@ -307,7 +307,7 @@ public class JSURI
 	  props.setProperty(Context.toString(p.get("name", p)), 
 			    Context.toString(p.get("value", p)));
 	}
-      }, uri, "");
+      }, uri, null, null);
 
     return props;
   }
@@ -320,7 +320,7 @@ public class JSURI
     void handleProperty(Scriptable prop, int score);
   }
 
-  public Scriptable getAuth(Context cx, URI req_uri, String realm) {
+  public Scriptable getAuth(Context cx, URI req_uri, String realm, String mechanism) {
     if (uri.getRawUserInfo() != null) {
       // If the URI already carries authorization information, use it
       try {
@@ -336,18 +336,19 @@ public class JSURI
     }
 
     // Else, search the 'auth' property for matching entries
-    return getBestProperty(cx, "auth", req_uri, realm);
+    return getBestProperty(cx, "auth", req_uri, realm, mechanism);
   }
 
   public Scriptable getCookieJar(Context cx, URI req_uri) {
-    return getBestProperty(cx, "jars", req_uri, "");
+    return getBestProperty(cx, "jars", req_uri, null, null);
   }
 
   public void enumerateHeaders(Context cx, PropEnumerator pe, URI req_uri) {
-    enumerateProperty(cx, "headers", pe, req_uri, "");
+    enumerateProperty(cx, "headers", pe, req_uri, null, null);
   }
 
-  private Scriptable getBestProperty(Context cx, String name, URI req_uri, String realm) {
+  private Scriptable getBestProperty(Context cx, String name, 
+				     URI req_uri, String realm, String mechanism) {
     final Scriptable[] res = { null };
     final int[]      score = { -1 };
 
@@ -358,13 +359,13 @@ public class JSURI
 	    score[0] = s;
 	  }
 	}
-      }, req_uri, realm);
+      }, req_uri, realm, mechanism);
 
     return res[0];
   }
 
   private void enumerateProperty(Context cx, String name, PropEnumerator pe,
-				 URI candidate, String realm) {
+				 URI candidate, String realm, String mechanism) {
     String  uri    = candidate.toString();
     String  scheme = candidate.getScheme();
     String  user   = candidate.getUserInfo();
@@ -390,13 +391,14 @@ public class JSURI
 	      
 	  int score = 0;
 
-	  score += filterProperty(cx, param, "scheme",    scheme) * 1;
-	  score += filterProperty(cx, param, "realm",     realm)  * 2;
-	  score += filterProperty(cx, param, "path",      path)   * 4;
-	  score += filterProperty(cx, param, "port",      port)   * 8;
-	  score += filterProperty(cx, param, "host",      host)   * 16;
-	  score += filterProperty(cx, param, "user-info", user)   * 32;
-	  score += filterProperty(cx, param, "uri",       uri)    * 64;
+	  score += filterProperty(cx, param, "realm",     realm)     * 1;
+	  score += filterProperty(cx, param, "mechanism", mechanism) * 2;
+	  score += filterProperty(cx, param, "scheme",    scheme)    * 4;
+	  score += filterProperty(cx, param, "path",      path)      * 8;
+	  score += filterProperty(cx, param, "port",      port)      * 16;
+	  score += filterProperty(cx, param, "host",      host)      * 32;
+	  score += filterProperty(cx, param, "user-info", user)      * 64;
+	  score += filterProperty(cx, param, "uri",       uri)       * 128;
 
 	  if (score >= 0) {
 	    pe.handleProperty(param, score);
@@ -409,7 +411,7 @@ public class JSURI
   private int filterProperty(Context cx, Scriptable param, String key, Object value) {
     Object rule = param.get(key, param);
 
-    if (rule == null || rule == Scriptable.NOT_FOUND) {
+    if (rule == null || rule == Scriptable.NOT_FOUND || value == null) {
       return 0;
     }
 

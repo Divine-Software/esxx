@@ -110,6 +110,9 @@
 	auth-info part, use it. Also, new matcher keys: "user-info"
 	and "uri".
 
+	* HTTP/HTTPS auth can now match on 'mechanism' (BASIC, DIGEST
+	etc).
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

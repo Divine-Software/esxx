@@ -55,7 +55,7 @@ public class LDAPHandler
     }
 
     Properties p = jsuri.getParams(cx, jsuri.getURI());
-    Scriptable a = jsuri.getAuth(cx, jsuri.getURI(), null);
+    Scriptable a = jsuri.getAuth(cx, jsuri.getURI(), null, null);
 
     if (a != null) {
       p.setProperty(javax.naming.Context.SECURITY_PRINCIPAL, 

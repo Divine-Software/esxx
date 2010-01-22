@@ -257,12 +257,12 @@ public class HTTPHandler
 	  @Override public Credentials getCredentials(AuthScope authscope) {
 	    try {
 	      Scriptable auth = jsuri.getAuth(Context.getCurrentContext(),
-					      new URI(authscope.getScheme(),
+					      new URI(jsuri.getURI().getScheme(),
 						      null,
 						      authscope.getHost(),
 						      authscope.getPort(),
 						      null, null, null),
-					      authscope.getRealm());
+					      authscope.getRealm(), authscope.getScheme());
 
 	      if (auth == null) {
 		return null;
