@@ -322,17 +322,20 @@ public class JSURI
 
   public Scriptable getAuth(Context cx, URI req_uri, String realm, String mechanism) {
     if (uri.getRawUserInfo() != null) {
+      String[] unp = uri.getRawUserInfo().split(":", 2);
+
       // If the URI already carries authorization information, use it
-      try {
-	String[]   unp = uri.getRawUserInfo().split(":", 2);
-	Scriptable res = cx.newObject(this);
+      if (unp.length == 2) {
+	try {
+	  Scriptable res = cx.newObject(this);
 
-	ScriptableObject.putProperty(res, "username", StringUtil.decodeURI(unp[0], false));
-	ScriptableObject.putProperty(res, "password", StringUtil.decodeURI(unp[1], false));
+	  ScriptableObject.putProperty(res, "username", StringUtil.decodeURI(unp[0], false));
+	  ScriptableObject.putProperty(res, "password", StringUtil.decodeURI(unp[1], false));
 
-	return res;
+	  return res;
+	}
+	catch (URISyntaxException ignored) {}
       }
-      catch (URISyntaxException ignored) {}
     }
 
     // Else, search the 'auth' property for matching entries
