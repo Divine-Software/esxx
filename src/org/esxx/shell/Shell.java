@@ -46,6 +46,7 @@ public class Shell
       System.out.println("Welcome to the ESXX Shell!");
       System.out.println("Enter JavaScript statements at the prompt. Tab completion is supported.");
       System.out.println("Use Escape to cancel the current statement and Control-D \\q to quit.");
+      System.out.println("\\h can be used to search the built-in help documents.");
 
       console.addTriggeredAction((char) 27, new ActionListener() {
 	  public void actionPerformed(ActionEvent e) {
