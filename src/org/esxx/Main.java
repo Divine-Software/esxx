@@ -96,7 +96,7 @@ public class Main {
 	script = cmd.getArgs();
       }
       else if (cmd.hasOption('S')) {
-	run_shell= true;
+	run_shell = true;
       }
       else if (cmd.hasOption("db-console")) {
 	org.h2.tools.Console.main(cmd.getArgs());
@@ -128,7 +128,7 @@ public class Main {
 
       ESXX esxx = ESXX.initInstance(System.getProperties(), null);
 
-      if (script != null) {
+      if (script != null || run_shell) {
 	// Lower default log level a bit
 	esxx.getLogger().setLevel(java.util.logging.Level.INFO);
       }
