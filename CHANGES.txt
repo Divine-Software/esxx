@@ -113,6 +113,10 @@
 	* HTTP/HTTPS auth can now match on 'mechanism' (BASIC, DIGEST
 	etc).
 
+	* Made GAEClientConnection.sendRequestEntity() more robust by
+	accepting requests with a null entity. [lonikar]
+
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
