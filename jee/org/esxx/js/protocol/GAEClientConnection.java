@@ -144,7 +144,9 @@ class GAEClientConnection
   @Override public void sendRequestEntity(HttpEntityEnclosingRequest request)
     throws HttpException, IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    request.getEntity().writeTo(baos);
+    if (request.getEntity() != null) {
+      request.getEntity().writeTo(baos);
+    }
     this.request.setPayload(baos.toByteArray());
   }
 
