@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.HashMap;
-import java.util.UUID;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPConstants;
@@ -390,10 +389,8 @@ public class JSRequest
       else if (contentType != null && contentLength > 0) {
 	try {
 	  ESXX esxx = ESXX.getInstance();
-	  String id = "mid:" + UUID.randomUUID() + "@"
-	    + requestURI.getURI().getRawSchemeSpecificPart();
 	  return esxx.parseStream(contentType, contentTypeParams, request.getInputStream(), 
-				  URI.create(id),
+				  URI.create("urn:x-esxx:incoming-request-entity"),
 				  null,
 				  new java.io.PrintWriter(request.getErrorWriter()),
 				  Context.getCurrentContext(), this);
