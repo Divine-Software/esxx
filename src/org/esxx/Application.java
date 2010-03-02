@@ -40,6 +40,9 @@ import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.RhinoException;
 import org.mozilla.javascript.WrappedException;
+import org.mozilla.javascript.commonjs.module.Require;
+import org.mozilla.javascript.commonjs.module.ModuleScript;
+import org.mozilla.javascript.commonjs.module.ModuleScriptProvider;
 import org.w3c.dom.*;
 
 import net.sf.saxon.s9api.*;
@@ -63,8 +66,10 @@ public class Application {
 			 .replaceAll("^.*/", "").replaceAll("\\.[^.]*", ""));
     started           = new Date();
 
-    loadMainFile();
+    setCurrentLocation(baseURI);
+    loadMainFile(cx);
     compileAndInitialize(cx);
+    setCurrentLocation(null);
   }
 
   @Override public String toString() {
@@ -79,31 +84,26 @@ public class Application {
     return jsESXX;
   }
 
-  public Collection<URI> getExternalURIs() {
-    return externalURIs;
-  }
-
-  public synchronized JMXBean getJMXBean() {
-    if (jmxBean == null) {
-      jmxBean = new JMXBean();
+  public synchronized JSLogger getJSAppLogger(Context cx) {
+    if (jsLogger == null) {
+      jsLogger = JSLogger.newJSLogger(cx, this);
     }
 
-    return jmxBean;
+    return jsLogger;
   }
 
-  public synchronized Logger getAppLogger() {
-    if (logger == null) {
-      logger = esxx.createLogger(Application.class.getName() + "." + getAppName(),
-				 Level.ALL,
-				 "esxx");
+  public synchronized JSURI getJSCurrentLocation(Context cx) {
+    if (jsCurrentLocation == null && currentLocation != null) {
+      jsCurrentLocation = (JSURI) cx.newObject(applicationScope, "URI", 
+					       new Object[] { currentLocation });
     }
 
-    return logger;
+    return jsCurrentLocation;
   }
 
   public synchronized JSLRUCache getPLS(Context cx) {
     if (cache == null) {
-      cache = newLRUCache(cx);
+      cache = JSLRUCache.newJSLRUCache(cx, this);
     }
 
     return cache;
@@ -126,7 +126,7 @@ public class Application {
     JSLRUCache cache = tls.caches.get(this);
 
     if (cache == null) {
-      cache = newLRUCache(cx);
+      cache = JSLRUCache.newJSLRUCache(cx, this);
       tls.caches.put(this, cache);
     }
 
@@ -140,29 +140,6 @@ public class Application {
       for (JSLRUCache c : tls.caches.values()) {
 	c.jsFunction_clear();
       }
-    }
-  }
-
-  private JSLRUCache newLRUCache(Context cx) {
-    return (JSLRUCache) JSESXX.newObject(cx, jsESXX, "LRUCache",
-					 new Object[] { Integer.MAX_VALUE, Long.MAX_VALUE });
-  }
-
-
-  public synchronized void importAndExecute(Context cx, Scriptable scope, JSESXX js_esxx,
-					    URI uri, InputStream is)
-    throws IOException {
-    Code c = importCode(uri, is);
-
-    if (c.code == null) {
-      c.code = cx.compileString(c.source, c.uri.toString(), c.line, null);
-    }
-
-    if (!c.hasExecuted) {
-      JSURI old_uri = js_esxx.setLocation(cx, scope, c.uri);
-      c.code.exec(cx, scope);
-      js_esxx.setLocation(old_uri);
-      c.hasExecuted = true;
     }
   }
 
@@ -447,6 +424,28 @@ public class Application {
     return baseURI.toString();
   }
 
+  public synchronized Logger getAppLogger() {
+    if (logger == null) {
+      logger = esxx.createLogger(Application.class.getName() + "." + getAppName(),
+				 Level.ALL,
+				 "esxx");
+    }
+
+    return logger;
+  }
+
+  public Collection<URI> getExternalURIs() {
+    return externalURIs;
+  }
+
+  public synchronized JMXBean getJMXBean() {
+    if (jmxBean == null) {
+      jmxBean = new JMXBean();
+    }
+
+    return jmxBean;
+  }
+
   public Scriptable getMainDocument() {
     return mainDocument;
   }
@@ -459,8 +458,34 @@ public class Application {
     return mainURI;
   }
 
-  public URI getWD() {
+  public synchronized URI getCurrentLocation() {
+    return currentLocation;
+  }
+
+  public synchronized URI getWorkingDirectory() {
     return workingDirectory;
+  }
+
+  public synchronized JSURI getJSWorkingDirectory(Context cx) {
+    if (jsWorkingDirectory == null) {
+      jsWorkingDirectory = JSURI.newJSURI(cx, this, workingDirectory);
+    }
+
+    return jsWorkingDirectory;
+  }
+
+  public synchronized URI setCurrentLocation(URI uri) {
+    URI res = currentLocation;
+    currentLocation    = uri;
+    jsCurrentLocation  = null;
+    return res;
+  }
+
+  public synchronized URI setWorkingDirectory(URI wd) {
+    URI res = workingDirectory;
+    workingDirectory   = wd;
+    jsWorkingDirectory = null;
+    return res;
   }
 
   public Scriptable getIncludePath() {
@@ -469,6 +494,46 @@ public class Application {
 
   public void setIncludePath(Scriptable paths) {
     includePath = paths;
+  }
+
+  public synchronized ESXXScript resolveScript(Context cx, URI file, URI base) 
+    throws IOException {
+    URI uri = null;
+    InputStream is = null;
+
+    try {
+      uri = base.resolve(file);
+      //      System.out.println("Resolving " + file + " against " + base + " => " + uri);
+      is  = esxx.openCachedURI(uri);
+    }
+    catch (IOException ignored) {}
+
+    if (is == null) {
+      // Failed to resolve URL relative the current file's
+      // location -- try the include path
+
+      for (Object path : cx.getElements(includePath)) {
+	try {
+	  uri = ((JSURI) path).getURI().resolve(file);
+	  //	  System.out.println("Resolving " + file + " against " + ((JSURI) path).getURI() + " => " + uri);
+	  is  = esxx.openCachedURI(uri);
+	  break; // On success, break
+	}
+	catch (IOException ignored) { /* Try next */ }
+      }
+
+      if (is == null) {
+	throw Context.reportRuntimeError("File '" + file + "' not found.");
+      }
+    }
+
+    try {
+      //      System.out.println("Loading " + uri);
+      return addScript(cx, new InputStreamReader(is), uri, 1);
+    }
+    finally {
+      is.close();
+    }
   }
 
   public URI getStylesheet(Context cx, String media_type, String path_info) {
@@ -530,61 +595,49 @@ public class Application {
     }
   }
 
-  private void loadMainFile()
+  private void loadMainFile(Context cx)
     throws IOException {
-    boolean is_handled = false;
     InputStream is = esxx.openCachedURI(baseURI);
 
-    externalURIs.add(baseURI);
+    try {
+      externalURIs.add(baseURI);
 
-    // Check if it's an XML document or a JS file
+      // Check if it's an XML document or a JS file
 
-    if (!is.markSupported()) {
-      is = new BufferedInputStream(is);
-    }
+      if (!is.markSupported()) {
+	is = new BufferedInputStream(is);
+      }
 
-    is.mark(4096);
+      is.mark(4096);
 
-    if (is.read() == '#' &&
-	is.read() == '!') {
-      // Skip shebang
-      while (is.read() != '\n') {}
-      importCode(baseURI, is);
+      if (is.read() == '#' &&
+	  is.read() == '!') {
+	while (is.read() != '\n') { /* Skip shebang */ }
+	addScript(cx, new InputStreamReader(is), baseURI, 2);
+      }
+      else {
+	int c;
 
-      is_handled = true;
-    }
-    else {
-      is.reset();
-
-      for (int i = 0; i < 4096; ++i) {
-	int c = is.read();
+	is.reset();
+	while (Character.isWhitespace(c = is.read())) { /* Skip WS */ }
+	is.reset();
 
 	if (c == '<') {
 	  // '<' triggers XML mode
-	  break;
+	  loadESXXFile(cx, is);
 	}
 	else if (!Character.isWhitespace(c)) {
-	  // Any other character except blanks triggers direct JS-mode
-	  is.reset();
-	  importCode(baseURI, is);
-
-	  is_handled = true;
-	  break;
+	  // Any other character triggers direct JS-mode
+	  addScript(cx, new InputStreamReader(is), baseURI, 1);
 	}
       }
     }
-
-    if (!is_handled) {
-      // Load and parse document as XML
-
-      is.reset();
-      loadESXXFile(is);
+    finally {
+      is.close();
     }
-
-    is.close();
   }
 
-  private void loadESXXFile(InputStream is)
+  private void loadESXXFile(Context cx, InputStream is)
     throws IOException {
     try {
       xml = esxx.parseXML(is, baseURI, externalURIs, null);
@@ -601,6 +654,8 @@ public class Application {
 				    "//esxx:esxx/esxx:filters/esxx:filter").load();
       xs.setContextItem(esxx.getSaxonDocumentBuilder().wrap(xml));
 
+      int esxx_pi_cnt = 0;
+
       for (XdmItem i : xs) {
 	Node n = (Node) ((NodeWrapper) i.getUnderlyingValue()).getUnderlyingNode();
 
@@ -612,11 +667,13 @@ public class Application {
 	    n.getParentNode().removeChild(n);
 	  }
 	  else if (name.equals("esxx-include")) {
-	    handleImportPI(n.getNodeValue());
+	    handleImportPI(cx, n.getNodeValue());
 	    n.getParentNode().removeChild(n);
 	  }
 	  else if (name.equals("esxx")) {
-	    addCode(baseURI, 0, n.getNodeValue());
+	    ++esxx_pi_cnt;
+	    addScript(cx, new StringReader(n.getNodeValue()),
+		      baseURI.resolve("#inline-" + esxx_pi_cnt), 1);
 	    n.getParentNode().removeChild(n);
 	  }
 	}
@@ -663,25 +720,64 @@ public class Application {
     }
   }
 
+  private synchronized ESXXScript addScript(Context cx, Reader r, URI uri, int line) 
+    throws IOException {
+    String     key = uri.toString();
+    ESXXScript es  = scriptList.get(key);
+
+    if (es == null) {
+      es = new ESXXScript(cx.compileReader(r, uri.toString(), line, null), uri);
+      scriptList.put(key, es);
+    }
+
+    externalURIs.add(uri);
+    return es;
+  }
+
   private void compileAndInitialize(Context cx) {
     try {
+      // Compile uri-matching regex patterns
+      soapMatcher.compile();
+      requestMatcher.compile();
+      xsltMatcher.compile();
+
       // Create per-application top-level and global scopes
       applicationScope = new JSGlobal(cx);
 
-      // Compile all <?esxx and <?esxx-import PIs and create JS
-      // versions of the URI and the main document.
-      compile(cx);
+      // Create JS versions of the document, it's URI and the include path
+      mainDocument = ESXX.domToE4X(xml, cx, applicationScope);
+      mainURI = (JSURI) cx.newObject(applicationScope, "URI", new Object[] { baseURI });
+
+      URI[] include_path = esxx.getIncludePath();
+      includePath = cx.newArray(applicationScope, include_path.length);
+
+      for (int i = 0; i < include_path.length; ++i) {
+	includePath.put(i, includePath, cx.newObject(applicationScope, "URI",
+						     new Object[] { include_path[i] }));
+      }
 
       // Make the JSESXX object available as "esxx" in the global
       // scope, so the set-up code has access to it. This call returns
       // the old esxx variable, if already present.
       jsESXX = applicationScope.createJSESXX(cx, this);
 
-      // Execute all <?esxx and <?esxx-import PIs, if not already done
-      execute(cx);
+      // Make the CommonJS function 'require' available in the global scope
+      Require require = new Require(cx, applicationScope, new ModuleScriptProvider() {
+	  public ModuleScript getModuleScript(Context cx, String id, Scriptable paths)
+	    throws IOException {
+	    return resolveScript(cx, URI.create(id + ".js"), baseURI);
+	  }
+	}, false);
+      
+      require.delete("paths");
+      require.installMain(cx, applicationScope, 
+			  getAppName(), getAppFilename(),
+			  cx.newObject(applicationScope) /* exports */);
 
-      // Prevent handler from adding global variables
-      applicationScope.disallowNewGlobals();
+      // Execute all <?esxx and <?esxx-import PIs
+      for (ESXXScript es : scriptList.values()) {
+	es.exec(cx, applicationScope);
+      }
 
       // Start timers, if any
       startTimers();
@@ -694,46 +790,6 @@ public class Application {
     }
     catch (java.lang.reflect.InvocationTargetException ex) {
       throw new ESXXException("Failed to initialize Application: " + ex.getMessage(), ex);
-    }
-  }
-
-  private void compile(Context cx)
-    throws IllegalAccessException, InstantiationException,
-	   java.lang.reflect.InvocationTargetException {
-
-    // Compile uri-matching regex patterns
-    soapMatcher.compile();
-    requestMatcher.compile();
-    xsltMatcher.compile();
-
-    for (Code c : codeList.values()) {
-      c.code = cx.compileString(c.source, c.uri.toString(), c.line, null);
-    }
-
-    // Create JS versions of the document, it's URI and the include path
-    mainDocument = ESXX.domToE4X(xml, cx, applicationScope);
-    mainURI = (JSURI) cx.newObject(applicationScope, "URI", new Object[] { baseURI });
-    URI[] include_path = esxx.getIncludePath();
-
-    includePath = cx.newArray(applicationScope, include_path.length);
-
-    for (int i = 0; i < include_path.length; ++i) {
-      includePath.put(i, includePath, cx.newObject(applicationScope, "URI",
-						   new Object[] { include_path[i] }));
-    }
-  }
-
-  private void execute(Context cx) {
-    if (!hasExecuted) {
-      for (Code c : codeList.values().toArray(new Code[0])) {
-	if (!c.hasExecuted) {
-	  JSURI old_uri = jsESXX.setLocation(cx, applicationScope, c.uri);
-	  c.code.exec(cx, applicationScope);
-	  jsESXX.setLocation(old_uri);
-	  c.hasExecuted = true;
-	}
-      }
-      hasExecuted = true;
     }
   }
 
@@ -763,42 +819,6 @@ public class Application {
   }
 
 
-  private Code importCode(URI uri)
-    throws IOException {
-    InputStream is = esxx.openCachedURI(uri);
-
-    try {
-      return importCode(uri, is);
-    }
-    finally {
-      is.close();
-    }
-  }
-
-  private Code importCode(URI uri, InputStream is)
-    throws IOException {
-
-    String key = uri.normalize().toString();
-    Code     c = codeList.get(key);
-
-    if (c == null) {
-      ByteArrayOutputStream os = new ByteArrayOutputStream();
-
-      IO.copyStream(is, os);
-      c = addCode(uri, 1, os.toString());
-    }
-
-    return c;
-  }
-
-  private Code addCode(URI uri, int line, String data)
-    throws IOException {
-    Code c = new Code(uri, line, data);
-    codeList.put(uri.normalize().toString(), c);
-    externalURIs.add(uri);
-
-    return c;
-  }
 
 
   private void handleStylesheetPI(String data) {
@@ -828,7 +848,7 @@ public class Application {
     }
   }
 
-  private void handleImportPI(String data) {
+  private void handleImportPI(Context cx, String data) {
     InputStream is = new ByteArrayInputStream(("<esxx-include " + data + "/>").getBytes());
     Document doc = esxx.parseXML(is, baseURI, null, null);
     Element root = doc.getDocumentElement();
@@ -841,7 +861,7 @@ public class Application {
     }
 
     try {
-      importCode(baseURI.resolve(new URI(href)));
+      resolveScript(cx, new URI(href), baseURI);
     }
     catch (URISyntaxException ex) {
       throw new ESXXException("<?esxx-include?> attribute 'href' is invalid: " +
@@ -978,26 +998,6 @@ public class Application {
     }
 
     filters.add(new FilterRule(method, uri, handler));
-  }
-
-  private static class Code {
-    public Code(URI u, int l, String s) {
-      uri = u;
-      line = l;
-      source = s;
-      code = null;
-      hasExecuted = false;
-    }
-
-    @Override public String toString() {
-      return uri.toString() + "::" + line + ": " + code;
-    }
-
-    public URI uri;
-    public int line;
-    public String source;
-    public Script code;
-    public boolean hasExecuted;
   }
 
   private static class TLS {
@@ -1165,14 +1165,60 @@ public class Application {
     }
   }
 
+  public class ESXXScript
+    extends ModuleScript
+    implements Script {
+
+    public ESXXScript(Script script, URI uri) {
+      super(script, uri.toString());
+      this.uri    = uri;
+    }
+
+    @Override public Script getScript() {
+      return this;
+    }
+    
+    @Override public Object exec(Context cx, Scriptable scope) {
+      URI old_location = setCurrentLocation(uri);
+
+      try { 
+	return super.getScript().exec(cx, scope);
+      }
+      finally {
+	setCurrentLocation(old_location);
+      }
+    }
+
+    private URI uri;
+  }
+
+  // private class ESXXModuleScriptProvider
+  //   implements ModuleScriptProvider {
+
+  //   @Override public ModuleScript getModuleScript(Context cx, 
+  // 						  String module_id, 
+  // 						  Scriptable paths) 
+  //     throws IOException {
+      
+  //   }
+  // }
+
+  
   private ESXX esxx;
   private JMXBean jmxBean;
   private URI baseURI;
   private HashSet<URI> externalURIs = new HashSet<URI>();
+
   private URI workingDirectory;
+  private JSURI jsWorkingDirectory;
+
+  private URI currentLocation;
+  private JSURI jsCurrentLocation;
 
   private String ident;
+
   private Logger logger;
+  private JSLogger jsLogger;
 
   private boolean debuggerEnabled;
   private boolean debuggerActivated;
@@ -1192,14 +1238,14 @@ public class Application {
   private Scriptable mainDocument;
   private JSURI mainURI;
   private Scriptable includePath;
-  private boolean hasExecuted = false;
 
   private boolean gotHTTPHandlers = false;
   private boolean gotSOAPHandlers = false;
   private boolean gotFilters = false;
 
   private Document xml;
-  private LinkedHashMap<String, Code> codeList = new LinkedHashMap<String, Code>();
+  private LinkedHashMap<String, ESXXScript> scriptList 
+    = new LinkedHashMap<String, ESXXScript>();
 
   private RequestMatcher soapMatcher = new RequestMatcher();
   private RequestMatcher requestMatcher = new RequestMatcher();

@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.mozilla.javascript.*;
@@ -41,23 +42,8 @@ public class JSESXX
     public JSESXX(Context cx, Scriptable scope, Application app) {
       this();
 
-      this.app      = app;
-      this.wd       = (JSURI) cx.newObject(scope, "URI", new Object[] { app.getWD() });
-      this.location = null;
+      this.app = app;
     }
-
-    public JSURI setLocation(Context cx, Scriptable scope, URI uri) {
-      JSURI old_location = location;
-      location = (JSURI) cx.newObject(scope, "URI", new Object[] { uri });
-      return old_location;
-    }
-
-    public JSURI setLocation(JSURI loc) {
-      JSURI old_location = location;
-      location = loc;
-      return old_location;
-    }
-
 
     @Override
     public String getClassName() {
@@ -178,65 +164,30 @@ public class JSESXX
       JSESXX   js_esxx = (JSESXX) thisObj;
       Scriptable scope = ScriptableObject.getTopLevelScope(thisObj);
       Application  app = js_esxx.app;
+      URI          uri;
 
       if (args.length > 1 && args[1] != Context.getUndefinedValue()) {
 	scope = (Scriptable) args[1];
       }
 
-      URI          uri = null;
-      InputStream   is = null;
-
-      if (args[0] instanceof JSURI) {
-	uri = ((JSURI) args[0]).getURI();
-	is  = esxx.openCachedURI(uri);
-      }
-      else {
-	String file = Context.toString(args[0]);
-
-	try {
-	  // If location is set, resolve files relative the current
-	  // file. Else, resolve files relative the working directory.
-	  if (js_esxx.location != null) {
-	    uri = js_esxx.location.getURI().resolve(file);
-	  }
-	  else {
-	    uri = js_esxx.wd.getURI().resolve(file);
-	  }
-
-	  is  = esxx.openCachedURI(uri);
-	}
-	catch (IOException ignored) {}
-
-	if (is == null) {
-	  // Failed to resolve URL relative the current file's
-	  // location -- try the include path
-
-	  Object[] paths_to_try = cx.getElements(js_esxx.jsGet_paths());
-
-	  for (Object path : paths_to_try) {
-	    try {
-	      uri = ((JSURI) path).getURI().resolve(file);
-	      is  = esxx.openCachedURI(uri);
-	      // On success, break
-	      break;
-	    }
-	    catch (IOException ex2) {
-	      // Try next
-	    }
-	  }
-
-	  if (is == null) {
-	    throw Context.reportRuntimeError("File '" + file + "' not found.");
-	  }
-	}
-      }
-
       try {
-	app.importAndExecute(cx, scope, js_esxx, uri, is);
+	uri = new URI(Context.toString(args[0]));
       }
-      finally {
-	is.close();
+      catch (URISyntaxException ex) {
+	throw Context.reportRuntimeError("Invalid argument: " + args[0]);
       }
+
+      // If location is set, resolve files relative the current JS
+      // file. Else, resolve files relative the working directory.
+
+      URI base = app.getCurrentLocation();
+
+      if (base == null) {
+	base = app.getWorkingDirectory();
+      }
+
+      Application.ESXXScript es = app.resolveScript(cx, uri, base);
+      es.exec(cx, scope);
     }
 
     public static boolean jsFunction_checkTimeout(Context cx, Scriptable thisObj,
@@ -359,13 +310,8 @@ public class JSESXX
       return join(cx, thisObj, workloads);
     }
 
-    public synchronized JSLogger jsGet_log() {
-      if (logger == null && app != null) {
-	Context cx = Context.getCurrentContext();
-	logger = (JSLogger) newObject(cx, this, "Logger", new Object[] { app, app.getAppName() });
-      }
-
-      return logger;
+    public JSLogger jsGet_log() {
+      return app.getJSAppLogger(Context.getCurrentContext());
     }
 
     public Object jsGet_host() {
@@ -405,18 +351,16 @@ public class JSESXX
     }
 
     public JSURI jsGet_wd() {
-      return wd;
+      return app.getJSWorkingDirectory(Context.getCurrentContext());
     }
 
     public void jsSet_wd(JSURI wd) {
-      this.wd = wd;
+      app.setWorkingDirectory(wd.jsGet_javaURI());
     }
 
     public JSURI jsGet_location() {
-      return location;
+      return app.getJSCurrentLocation(Context.getCurrentContext());
     }
-
-
 
     private interface ForkedFunction {
       public Object call(Context cx, int idx);
@@ -509,7 +453,4 @@ public class JSESXX
     }
 
     private Application app;
-    private JSLogger logger;
-    private JSURI wd;
-    private JSURI location;
 }
