@@ -40,7 +40,12 @@ public class JSLogger
     this.lastLevel = null;
   }
 
-  static public Object jsConstructor(Context cx,
+  public static JSLogger newJSLogger(Context cx, Application app) {
+    return (JSLogger) JSESXX.newObject(cx, app.getJSGlobal(), "Logger",
+				       new Object[] { app, app.getAppName() });
+  }
+
+  public static Object jsConstructor(Context cx,
 				     java.lang.Object[] args,
 				     Function ctorObj,
 				     boolean inNewExpr) {

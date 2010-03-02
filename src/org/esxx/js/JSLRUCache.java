@@ -19,6 +19,7 @@
 package org.esxx.js;
 
 import java.util.HashMap;
+import org.esxx.Application;
 import org.esxx.cache.LRUCache;
 import org.mozilla.javascript.*;
 
@@ -57,6 +58,11 @@ public class JSLRUCache
 	  }
 	}
       });
+  }
+
+  public static JSLRUCache newJSLRUCache(Context cx, Application app) {
+    return (JSLRUCache) JSESXX.newObject(cx, app.getJSGlobal(), "LRUCache",
+					 new Object[] { Integer.MAX_VALUE, Long.MAX_VALUE });
   }
 
   static public Object jsConstructor(Context cx,

@@ -27,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 import org.esxx.ESXX;
+import org.esxx.Application;
 import org.esxx.util.StringUtil;
 import org.esxx.js.protocol.ProtocolHandler;
 import org.mozilla.javascript.*;
@@ -43,6 +44,10 @@ public class JSURI
     super();
     setURI(uri);
     protocolHandler = getProtocolHandler();
+  }
+
+  public static JSURI newJSURI(Context cx, Application app, URI uri) {
+    return (JSURI) cx.newObject(app.getJSGlobal(), "URI", new Object[] { uri });
   }
 
   @Override public String toString() {
