@@ -1,6 +1,5 @@
 
-esxx.include("Assert.js");
-
+var Assert = require("esxx/Assert");
 
 function TestCase(props) {
   // Copy test.*, name, setUp, tearDown
@@ -130,4 +129,11 @@ function TestRunner.prototype.run() {
 	      + (100 * tc_passed / testcases) + "%) passed");
 
   return rc ? 0 : 10;
+}
+
+if (module.id === "esxx/Test") {
+  // If loaded as a CommonJS module, export classes
+  exports.TestCase   = TestCase;
+  exports.TestSuite  = TestSuite;
+  exports.TestRunner = TestRunner;
 }
