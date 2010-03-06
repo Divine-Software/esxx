@@ -22,6 +22,11 @@ function Assert.Failed(test, reason, comment) {
   this.comment = comment || "";
 }
 
+function Assert.Failed.prototype.toString() {
+  return "[Assert.Failed " + this.test + ": " + this.reason +
+	   (this.comment ? " (" + this.comment + ")" : "") + "]";
+}
+
 function Assert.that(arg, comment) {
   if (!arg) {
     throw new Assert.Failed("Assert.that",
@@ -187,4 +192,9 @@ function Assert.fnNotThrows(fn, comment) {
 			    fn + " threw an exception (" + Assert.typeOf(ex) + ")",
 			    comment);
   }
+}
+
+if (module.id === "esxx/Assert") {
+  // If loaded as a CommonJS module, export Assert
+  exports.__proto__ = Assert;
 }
