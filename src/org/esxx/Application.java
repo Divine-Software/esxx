@@ -38,6 +38,7 @@ import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.RhinoException;
 import org.mozilla.javascript.WrappedException;
 import org.mozilla.javascript.commonjs.module.Require;
@@ -769,6 +770,7 @@ public class Application {
 	  }
 	}, false);
       
+      require.setAttributes("paths", ScriptableObject.EMPTY);
       require.delete("paths");
       require.installMain(cx, applicationScope, 
 			  getAppName(), getAppFilename(),
