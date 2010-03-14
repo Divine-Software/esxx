@@ -103,6 +103,7 @@ public class JDBCHandler
 
       resultElem = "result";
       entryElem  = "entry";
+      metaElem  = null; // Default: no meta element
 
       if (batches > 0 && args[1] instanceof Scriptable) {
 	// (Only the first batch, if a Scriptable, may change the element names)
@@ -116,6 +117,10 @@ public class JDBCHandler
 
 	if ((o = p.get("$entry", p)) != Scriptable.NOT_FOUND) {
 	  entryElem = Context.toString(o);
+	}
+
+	if ((o = p.get("$meta", p)) != Scriptable.NOT_FOUND) {
+	  metaElem = Context.toString(o);
 	}
       }
     }
@@ -203,59 +208,66 @@ public class JDBCHandler
 	StringBuilder     precs  = new StringBuilder();
 	StringBuilder     scale  = new StringBuilder();
 
+	Element meta = (metaElem != null ? doc.createElementNS(null, metaElem) : null);
+
 	ResultSetMetaData rmd = rs.getMetaData();
 	labels = new String[rmd.getColumnCount() + 1];
 
 	for (int i = 1; i < labels.length; ++i) {
 	  labels[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i).toLowerCase(), "");
 
-	  String name = rmd.getColumnName(i);
-	  name = addPart(rmd.getTableName(i), name);
-	  name = addPart(rmd.getSchemaName(i), name);
-	  name = addPart(rmd.getCatalogName(i), name);
+	  // Add a metadata element, if requested
+	  if (meta != null) {
+	    Element child = XML.addChild(meta, labels[i], null);
 
-	  String type = typeToString.get(rmd.getColumnType(i));
-	  char[] flag = { 'a', 'c', 'f', 'm', 'n', 's', 'w' };
+	    String name = rmd.getColumnName(i);
+	    name = addPart(rmd.getTableName(i), name);
+	    name = addPart(rmd.getSchemaName(i), name);
+	    name = addPart(rmd.getCatalogName(i), name);
 
-	  if (rmd.isAutoIncrement(i)) flag[0] = 'A';
-	  if (rmd.isCaseSensitive(i)) flag[1] = 'C';
-	  if (rmd.isSearchable(i))    flag[2] = 'F';
-	  if (rmd.isCurrency(i))      flag[3] = 'M';
-	  if (rmd.isSigned(i))        flag[5] = 'S';
+	    String nullable = "unknown";
 
-	  switch (rmd.isNullable(i)) {
-	    case ResultSetMetaData.columnNullable:
-	      flag[4] = 'N';
-	      break;
+	    switch (rmd.isNullable(i)) {
+	      case ResultSetMetaData.columnNullable:
+		nullable = Boolean.toString(true);
+		break;
 
-	    case ResultSetMetaData.columnNullableUnknown:
-	      flag[4] = '?';
-	      break;
+	      case ResultSetMetaData.columnNoNulls:
+		nullable = Boolean.toString(false);
+		break;
+	    }
+
+	    child.setAttributeNS(null, "name", name);
+	    child.setAttributeNS(null, "label", rmd.getColumnLabel(i));
+	    child.setAttributeNS(null, "type", typeToString.get(rmd.getColumnType(i)));
+	    child.setAttributeNS(null, "className", rmd.getColumnClassName(i));
+
+	    child.setAttributeNS(null, "columnName", rmd.getColumnName(i));
+	    child.setAttributeNS(null, "tableName", rmd.getTableName(i));
+	    child.setAttributeNS(null, "schemaName", rmd.getSchemaName(i));
+	    child.setAttributeNS(null, "catalogName", rmd.getCatalogName(i));
+
+	    child.setAttributeNS(null, "isAutoIncrement", Boolean.toString(rmd.isAutoIncrement(i)));
+	    child.setAttributeNS(null, "isCaseSensitive", Boolean.toString(rmd.isCaseSensitive(i)));
+	    child.setAttributeNS(null, "isCurrency", Boolean.toString(rmd.isCurrency(i)));
+	    child.setAttributeNS(null, "isDefinitelyWritable", Boolean.toString(rmd.isDefinitelyWritable(i)));
+	    child.setAttributeNS(null, "isNullable", nullable);
+	    child.setAttributeNS(null, "isReadOnly", Boolean.toString(rmd.isReadOnly(i)));
+	    child.setAttributeNS(null, "isSearchable", Boolean.toString(rmd.isSearchable(i)));
+	    child.setAttributeNS(null, "isSigned", Boolean.toString(rmd.isSigned(i)));
+	    child.setAttributeNS(null, "isWritable", Boolean.toString(rmd.isWritable(i)));
+
+	    child.setAttributeNS(null, "precision", Integer.toString(rmd.getPrecision(i)));
+	    child.setAttributeNS(null, "scale", Integer.toString(rmd.getScale(i)));
+	    child.setAttributeNS(null, "displaySize", Integer.toString(rmd.getColumnDisplaySize(i)));
+
+	    meta.appendChild(child);
 	  }
-
-	  if (rmd.isDefinitelyWritable(i)) flag[6] = 'W';
-	  else if (rmd.isWritable(i))      flag[6] = '?';
-
-	  if (i != 1) {
-	    names.append(',');
-	    types.append(',');
-	    flags.append(',');
-	    precs.append(',');
-	    scale.append(',');
-	  }
-
-	  names.append(name);
-	  types.append(type);
-	  flags.append(flag);
-	  precs.append(rmd.getPrecision(i));
-	  scale.append(rmd.getScale(i));
 	}
 
-	root.setAttributeNS(null, "names",      names.toString());
-	root.setAttributeNS(null, "types",      types.toString());
-	root.setAttributeNS(null, "flags",      flags.toString());
-	root.setAttributeNS(null, "precisions", precs.toString());
-	root.setAttributeNS(null, "scales",     scale.toString());
+	if (meta != null) {
+	  root.appendChild(meta);
+	}
 
 	while (rs.next()) {
 	  Element row = doc.createElementNS(null, entryElem);
@@ -297,6 +309,7 @@ public class JDBCHandler
 
     private String resultElem;
     private String entryElem;
+    private String metaElem;
 
     private Object queryResult;
   }
