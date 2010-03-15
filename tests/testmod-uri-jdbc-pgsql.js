@@ -129,9 +129,10 @@ testRunner.add(new TestCase({
   testMetaData: function() {
     this.db.query("insert into test values (default, 'one', 1)");
 
-    let res = this.db.query("select * from test");
+    let res = this.db.query("select * from test", { $meta: "meta" });
 
-    Assert.areEqual(res.@types, "integer,varchar,integer", "Query returned incorrect types");
+    Assert.areEqual([t.toString() for each (t in res.meta.*.@type)].join(','), 
+		    "integer,varchar,integer", "Query returned incorrect types");
   }
 
 }));
