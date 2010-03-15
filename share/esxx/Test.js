@@ -14,9 +14,9 @@ function TestCase(props) {
 }
 
 
-function TestSuite(name) {
+function TestSuite(name, testcases) {
   this.name = name;
-  this.testCases = [];
+  this.testCases = testcases || [];
 }
 
 function TestSuite.prototype.add(tc) {
