@@ -14,7 +14,7 @@ testRunner.add(
 	    Assert.that(typeof XMLList == "function");
 	  },
 
-	  testIsXMLName: 
+	  testIsXMLName:
 	  function() {
 	    Assert.isTrue(isXMLName("_name"));
 	    Assert.isFalse(isXMLName("$name"));
@@ -25,7 +25,7 @@ testRunner.add(
       new TestCase({
 	  name: "Namespace",
 
-	  testConstructors: 
+	  testConstructor:
 	  function() {
 	    let empty1 = Namespace();
 	    Assert.areIdentical(empty1.prefix, "");
@@ -52,7 +52,7 @@ testRunner.add(
 	    Assert.areIdentical(pre2.uri, "urn:prefix");
 	  },
 
-	  testCopyConstructors:
+	  testCopyConstructor:
 	  function() {
 	    let orig1 = new Namespace();
 	    let orig2 = new Namespace("urn:default");
@@ -90,6 +90,86 @@ testRunner.add(
 	/*     Assert.areIdentical(copy2.uri, ""); */
 	/*   }, */
 	}),
+
+      new TestCase({
+	  name: "XML",
+	  testConstructor: 
+	  function() {
+	    let text1 = XML();
+	    Assert.areIdentical(text1.nodeKind(), "text");
+	    Assert.areIdentical(text1.toXMLString(), "");
+
+	    let text2 = new XML();
+	    Assert.areIdentical(text2.nodeKind(), "text");
+	    Assert.areIdentical(text2.toXMLString(), "");
+	  },
+
+	  testCopyConstructor:
+	  function() {
+	    let orig1 = new XML();
+	    let orig2 = new XML("some text");
+	    let orig3 = new XML("<element/>");
+
+	    let same1 = XML(orig1);
+	    Assert.areIdentical(same1, orig1);
+
+	    let same2 = XML(orig2);
+	    Assert.areIdentical(same2, orig2);
+
+	    let same3 = XML(orig3);
+	    Assert.areIdentical(same3, orig3);
+
+	    let copy1 = new XML(orig1);
+	    Assert.areNotIdentical(copy1, orig1);
+
+	    let copy2 = new XML(orig2);
+	    Assert.areNotIdentical(copy2, orig2);
+
+	    let copy3 = new XML(orig3);
+	    Assert.areNotIdentical(copy3, orig3);
+	  },
+
+	  testDOMConstructor:
+	  function() {
+	    let dr = org.w3c.dom.bootstrap.DOMImplementationRegistry.newInstance();
+	    let di = dr.getDOMImplementation("XML 3.0");
+	    let d  = di.createDocument(null, "root", null);
+	    let de  = d.getDocumentElement();
+
+	    let doc_wrapper = XML(d);
+	    doc_wrapper.@attr1 = "a1";
+	    Assert.areIdentical(de.getAttribute('attr1'), "a1");
+
+	    let root_wrapper = XML(de);
+	    root_wrapper.@attr2 = "a2";
+	    Assert.areIdentical(de.getAttribute('attr1'), "a1");
+	    Assert.areIdentical(de.getAttribute('attr2'), "a2");
+
+	    let copy = new XML(de);
+	    copy.@attr3 = "a3";
+	    Assert.areIdentical(de.getAttribute('attr1'), "a1");
+	    Assert.areIdentical(de.getAttribute('attr2'), "a2");
+	    Assert.areIdentical(de.getAttribute('attr3'), "");
+
+	    Assert.areEqual(copy.@attr1, "a1");
+	    Assert.areEqual(copy.@attr2, "a2");
+	    Assert.areEqual(copy.@attr3, "a3");
+	  },
+
+	  testDOMLevel1:
+	  function() {
+	    let dr = org.w3c.dom.bootstrap.DOMImplementationRegistry.newInstance();
+	    let di = dr.getDOMImplementation("XML 3.0");
+	    let d  = di.createDocument(null, "root", null);
+	    let de  = d.getDocumentElement();
+
+	    de.appendChild(d.createElement("level1"));
+	    de.appendChild(d.createElementNS(null, "level2"));
+
+	    Assert.areIdentical(XML(d).level1.length(), 1);
+	    Assert.areIdentical(XML(d).level2.length(), 1);
+	  }
+      })
     ])
 );
-	
+
