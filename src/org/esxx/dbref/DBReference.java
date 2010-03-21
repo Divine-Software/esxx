@@ -12,7 +12,7 @@ import java.util.LinkedList;
 import java.util.TreeMap;
 
 
-// line 172 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 173 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 
 
 public class DBReference {
@@ -69,16 +69,16 @@ public class DBReference {
 	case NE:
 	case GT:
 	case GE:
-	  sb.append('(').append(op).append(' ');
+	  sb.append('(').append(op.toString().toLowerCase());
 	  for (Filter c : children) {
 	    c.toString(sb);
 	  }
 	  sb.append(')');
 	  break;
 
-      case VAL:
-	sb.append(",").append(value);
-	break;
+	case VAL:
+	  sb.append(",").append(value);
+	  break;
       }
     }
 
@@ -103,7 +103,7 @@ public class DBReference {
     throws Exception {
 
     for (String a: args) {
-      System.out.println("Parsing DB refernece " + a);
+      System.out.println("Parsing dbref " + a);
       DBReference dbf = new DBReference(a);
       System.out.println(dbf);
     }
@@ -148,8 +148,9 @@ public class DBReference {
   }
 
   public String toString() {
+    Filter filter = getFilter();
     return "[DBReference: " + table + "?" + join(columns) + "?" + scope.toString().toLowerCase() 
-      + "?" + getFilter() + "]";
+      + (filter == null ? "" : "?" + filter) + "]";
   }
 
   private String join(List<String> c) {
@@ -175,15 +176,15 @@ public class DBReference {
     int eof = pe;
 
     
-// line 179 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
+// line 180 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
 	{
 	cs = dbpath_start;
 	top = 0;
 	}
 
-// line 334 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 336 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
     
-// line 187 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
+// line 188 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
 	{
 	int _klen;
 	int _trans = 0;
@@ -355,31 +356,32 @@ case 1:
 	case 11:
 // line 86 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
+    popFilter();
     {cs = stack[--top];_goto_targ = 2; if (true) continue _goto;}
   }
 	break;
 	case 12:
-// line 90 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 91 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey = getWord();
     paramRequired = false;
   }
 	break;
 	case 13:
-// line 95 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 96 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey = getWord();
     paramRequired = true;
   }
 	break;
 	case 14:
-// line 100 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 101 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpValue = getWord();
   }
 	break;
 	case 15:
-// line 104 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 105 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     if (paramRequired) {
       requiredParams.put(tmpKey, tmpValue);
@@ -390,46 +392,46 @@ case 1:
   }
 	break;
 	case 16:
-// line 140 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 141 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.AND); }
 	break;
 	case 17:
-// line 141 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 142 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.OR);  }
 	break;
 	case 18:
-// line 142 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 143 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.NOT); }
 	break;
 	case 19:
-// line 144 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 145 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.LT); }
 	break;
 	case 20:
-// line 145 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 146 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.LE); }
 	break;
 	case 21:
-// line 146 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 147 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.EQ); }
 	break;
 	case 22:
-// line 147 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 148 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.NE); }
 	break;
 	case 23:
-// line 148 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 149 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.GT); }
 	break;
 	case 24:
-// line 149 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 150 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.GE); }
 	break;
 	case 25:
-// line 151 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 152 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ addLiteral(getWord());   }
 	break;
-// line 433 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
+// line 435 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
 			}
 		}
 	}
@@ -516,27 +518,27 @@ case 4:
   }
 	break;
 	case 12:
-// line 90 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 91 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey = getWord();
     paramRequired = false;
   }
 	break;
 	case 13:
-// line 95 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 96 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey = getWord();
     paramRequired = true;
   }
 	break;
 	case 14:
-// line 100 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 101 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpValue = getWord();
   }
 	break;
 	case 15:
-// line 104 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 105 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     if (paramRequired) {
       requiredParams.put(tmpKey, tmpValue);
@@ -546,7 +548,7 @@ case 4:
     }
   }
 	break;
-// line 550 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
+// line 552 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
 		}
 	}
 	}
@@ -556,7 +558,7 @@ case 5:
 	break; }
 	}
 
-// line 335 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 337 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 
     if (cs < dbpath_first_final) {
       throw new ParseException(new String(data, "UTF-8"), 
@@ -580,15 +582,25 @@ case 5:
   }
 
   private void pushFilter(Filter.Op op) {
-    filterStack.push(new Filter(op));
+    Filter f = new Filter(op);
+    addFilter(f);
+    filterStack.push(f);
+  }
+
+  private void popFilter() {
+    filterStack.pop();
+  }
+
+  private void addFilter(Filter f) {
+    filterStack.peek().addChild(f);
   }
 
   private void addLiteral(String lit) {
-    filterStack.peek().addChild(new Filter(lit));
+    addFilter(new Filter(lit));
   }
 
   
-// line 592 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
+// line 604 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
 private static byte[] init__dbpath_actions_0()
 {
 	return new byte [] {
@@ -899,7 +911,7 @@ static final int dbpath_en_filter_comp = 29;
 static final int dbpath_en_main = 66;
 
 
-// line 366 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 378 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
 
   private int charOffset = 0;
 

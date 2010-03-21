@@ -84,6 +84,7 @@ import java.util.TreeMap;
   }
 
   action FilterCompEnd {
+    popFilter();
     fret;
   }
 
@@ -225,16 +226,16 @@ public class DBReference {
 	case NE:
 	case GT:
 	case GE:
-	  sb.append('(').append(op).append(' ');
+	  sb.append('(').append(op.toString().toLowerCase());
 	  for (Filter c : children) {
 	    c.toString(sb);
 	  }
 	  sb.append(')');
 	  break;
 
-      case VAL:
-	sb.append(",").append(value);
-	break;
+	case VAL:
+	  sb.append(",").append(value);
+	  break;
       }
     }
 
@@ -259,7 +260,7 @@ public class DBReference {
     throws Exception {
 
     for (String a: args) {
-      System.out.println("Parsing DB refernece " + a);
+      System.out.println("Parsing dbref " + a);
       DBReference dbf = new DBReference(a);
       System.out.println(dbf);
     }
@@ -304,8 +305,9 @@ public class DBReference {
   }
 
   public String toString() {
+    Filter filter = getFilter();
     return "[DBReference: " + table + "?" + join(columns) + "?" + scope.toString().toLowerCase() 
-      + "?" + getFilter() + "]";
+      + (filter == null ? "" : "?" + filter) + "]";
   }
 
   private String join(List<String> c) {
@@ -355,11 +357,21 @@ public class DBReference {
   }
 
   private void pushFilter(Filter.Op op) {
-    filterStack.push(new Filter(op));
+    Filter f = new Filter(op);
+    addFilter(f);
+    filterStack.push(f);
+  }
+
+  private void popFilter() {
+    filterStack.pop();
+  }
+
+  private void addFilter(Filter f) {
+    filterStack.peek().addChild(f);
   }
 
   private void addLiteral(String lit) {
-    filterStack.peek().addChild(new Filter(lit));
+    addFilter(new Filter(lit));
   }
 
   %% write data;
