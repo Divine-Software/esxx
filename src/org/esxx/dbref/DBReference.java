@@ -111,8 +111,6 @@ public class DBReference {
 
   public DBReference(String dbref) 
     throws ParseException {
-    filterStack.push(new Filter(Filter.Op.AND)); // Dummy top-level filter
-
     try {
       parseReference(dbref.getBytes("UTF-8"));
     }
@@ -134,9 +132,7 @@ public class DBReference {
   }
 
   public Filter getFilter() {
-    List<Filter> children = filterStack.peek().getChildren();
-
-    return children.isEmpty() ? null : children.get(0);
+    return filter;
   }
 
   public Map<String, String> getOptionalParams() {
@@ -592,7 +588,13 @@ case 5:
   }
 
   private void addFilter(Filter f) {
-    filterStack.peek().addChild(f);
+    if (filter == null) {
+      // This is the top-level filter 
+      filter = f;
+    }
+    else {
+      filterStack.peek().addChild(f);
+    }
   }
 
   private void addLiteral(String lit) {
@@ -932,6 +934,7 @@ static final int dbpath_en_main = 66;
   private String table;
   private List<String> columns = new LinkedList<String>();
   private Scope scope = Scope.ALL;
+  private Filter filter;
   private Map<String,String> optionalParams = new TreeMap<String,String>();
   private Map<String,String> requiredParams = new TreeMap<String,String>();
 }

@@ -1,0 +1,196 @@
+/*
+     ESXX - The friendly ECMAscript/XML Application Server
+     Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
+
+     This program is free software: you can redistribute it and/or
+     modify it under the terms of the GNU General Public License
+     as published by the Free Software Foundation, either version 3
+     of the License, or (at your option) any later version.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
+
+     You should have received a copy of the GNU General Public License
+     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+package org.esxx.dbref;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.regex.Pattern;
+import java.util.List;
+import java.util.ArrayList;
+
+public class QueryBuilder {
+  public static void main(String[] args) 
+    throws Exception {
+
+    for (String a: args) {
+      System.out.println("Processing dbref " + a);
+      QueryBuilder qb = new QueryBuilder(new URI("#" + a));
+      System.out.println(qb.getSelectQuery(new ArrayList<String>()));
+    }
+  }
+
+  public QueryBuilder(URI uri) 
+    throws URISyntaxException {
+
+    this.uri = uri;
+    dbref = new DBReference(uri.getRawFragment());
+
+    ensureValidTableName(dbref.getTable());
+    
+    for (String c : dbref.getColumns()) {
+      ensureValidColumnName(c);
+    }
+  }
+
+  public DBReference getParsedReference() {
+    return dbref;
+  }
+
+  public String getSelectQuery(List<String> params) 
+    throws URISyntaxException {
+    StringBuilder sb = new StringBuilder();
+
+    sb.append("SELECT ");
+
+    if (dbref.getScope() == DBReference.Scope.DISTINCT) {
+      sb.append("DISTINCT ");
+    }
+
+    if (dbref.getColumns().isEmpty()) {
+      sb.append("*");
+    }
+    else {
+      append(dbref.getColumns(), ",", sb);
+    }
+
+    sb.append(" FROM ").append(dbref.getTable());
+
+    if (dbref.getFilter() != null) {
+      sb.append(" WHERE ");
+      where(dbref.getFilter(), sb, params);
+    }
+
+    return sb.toString();
+  }
+
+
+  private void append(Iterable<String> iter, String delim, StringBuilder sb) {
+    boolean first = true;
+
+    for (String s : iter) {
+      if (first) {
+	first = false;
+      }
+      else {
+	sb.append(delim);
+      }
+
+      sb.append(s);
+    }
+  }
+
+  private void where(DBReference.Filter filter, StringBuilder sb, List<String> params) 
+    throws URISyntaxException {
+    DBReference.Filter.Op op = filter.getOp();
+
+    sb.append("(");
+
+    switch (op) {
+      case AND:
+      case OR: {
+	boolean first = true;
+
+	for (DBReference.Filter f : filter.getChildren()) {
+	  if (first) {
+	    first = false;
+	  }
+	  else {
+	    sb.append(" ").append(op.toString()).append(" ");
+	  }
+
+	  where(f, sb, params);
+	}
+
+	break;
+      }
+
+      case NOT:
+	if (filter.getChildren().size() != 1) {
+	  throw new IllegalStateException("Filter.Op." + op + " must have exactly one child");
+	}
+
+	sb.append("NOT ");
+	where(filter.getChildren().get(0), sb, params);
+	break;
+
+      case LT:
+      case LE:
+      case EQ:
+      case NE:
+      case GT:
+      case GE: {
+	if (filter.getChildren().size() != 2 ||
+	    filter.getChildren().get(0).getOp() != DBReference.Filter.Op.VAL ||
+	    filter.getChildren().get(1).getOp() != DBReference.Filter.Op.VAL) {
+	  throw new IllegalStateException("Filter.Op." + op + " must have exactly two VAL children");
+	}
+
+	String column = filter.getChildren().get(0).getValue();
+	ensureValidColumnName(column);
+	sb.append(column);
+
+	switch (op) {
+	  case LT: sb.append(" < ");  break;
+	  case LE: sb.append(" <= "); break;
+	  case EQ: sb.append(" = ");  break;
+	  case NE: sb.append(" != "); break;
+	  case GT: sb.append(" > ");  break;
+	  case GE: sb.append(" >= "); break;
+	  default:
+	    throw new IllegalStateException("This can't happen");
+	}
+
+	sb.append("{").append(params.size()).append("}");
+
+	if (filter.getChildren().get(1).getOp() != DBReference.Filter.Op.VAL) {
+	  throw new IllegalStateException("Filter.Op." + op + "'s second child must be VAL");
+	}
+
+	params.add(filter.getChildren().get(1).getValue());
+	break;
+      }
+
+      case VAL:
+	throw new IllegalStateException("Filter.Op." + op + " should have been handled already");
+    }
+
+    sb.append(")");
+  }
+
+  private void ensureValidTableName(String name) 
+    throws URISyntaxException {
+    if (!strictTableName.matcher(name).matches()) {
+      throw new URISyntaxException(uri.toString(), "'" + name + "' is not a valid table name");
+    }
+  }
+
+  private void ensureValidColumnName(String name) 
+    throws URISyntaxException {
+    if (!strictColumnName.matcher(name).matches()) {
+      throw new URISyntaxException(uri.toString(), "'" + name + "' is not a valid column name");
+    }
+  }
+
+  private URI uri;
+  private DBReference dbref;
+
+  private static Pattern strictColumnName = Pattern.compile("[_A-Za-z][_A-Za-z0-9]*");
+  private static Pattern strictTableName  = Pattern.compile("[_A-Za-z][_A-Za-z0-9]*" +
+							    "(\\.[_A-Za-z][_A-Za-z0-9]*)*");
+}
