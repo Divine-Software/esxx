@@ -31,7 +31,26 @@ public class QueryBuilder {
     for (String a: args) {
       System.out.println("Processing dbref " + a);
       QueryBuilder qb = new QueryBuilder(new URI("#" + a));
-      System.out.println(qb.getSelectQuery(new ArrayList<String>()));
+      try { 
+	System.out.println(qb.getSelectQuery(new ArrayList<String>())); 
+      }
+      catch (Exception ex) {
+	System.out.println(ex);
+      }
+
+      try { 
+	System.out.println(qb.getInsertQuery(java.util.Arrays.asList(new String[] { "c1", "c2", "c3" })));
+      }
+      catch (Exception ex) {
+	System.out.println(ex);
+      }
+
+      try { 
+	System.out.println(qb.getDeleteQuery(new ArrayList<String>()));
+      }
+      catch (Exception ex) {
+	System.out.println(ex);
+      }
     }
   }
 
@@ -54,6 +73,13 @@ public class QueryBuilder {
 
   public String getSelectQuery(List<String> params) 
     throws URISyntaxException {
+
+    if (dbref.getScope() == DBReference.Scope.SCALAR && 
+	dbref.getColumns().size() != 1) {
+      throw new URISyntaxException(uri.toString(), 
+				   "Scalar scope only works with one single column");
+    }
+
     StringBuilder sb = new StringBuilder();
 
     sb.append("SELECT ");
@@ -79,7 +105,8 @@ public class QueryBuilder {
     return sb.toString();
   }
 
-  public String getInsertQuery(Iterable<String> columns) {
+  public String getInsertQuery(Iterable<String> columns) 
+    throws URISyntaxException {
     if (dbref.getScope() != DBReference.Scope.ALL) {
       throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
 				   " is not a valid scope when inserting");
@@ -95,7 +122,7 @@ public class QueryBuilder {
     
     if (dbref.getColumns().isEmpty()) {
       for (String c : columns) {
-	ensureValidColumName(c);
+	ensureValidColumnName(c);
       }
 
       append(columns, ",", sb);
@@ -106,7 +133,15 @@ public class QueryBuilder {
 
     sb.append(") VALUES (");
 
+    boolean first = true;
     for (String s : (dbref.getColumns().isEmpty() ? columns : dbref.getColumns())) {
+      if (first) {
+	first = false;
+      }
+      else {
+	sb.append(",");
+      }
+
       sb.append("{").append(s).append("}");
     }
 
