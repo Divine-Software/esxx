@@ -79,6 +79,69 @@ public class QueryBuilder {
     return sb.toString();
   }
 
+  public String getInsertQuery(Iterable<String> columns) {
+    if (dbref.getScope() != DBReference.Scope.ALL) {
+      throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
+				   " is not a valid scope when inserting");
+    }
+
+    if (dbref.getFilter() != null) {
+      throw new URISyntaxException(uri.toString(), "Filters may not be used when inserting");
+    }
+
+    StringBuilder sb = new StringBuilder();
+
+    sb.append("INSERT INTO ").append(dbref.getTable()).append("(");
+    
+    if (dbref.getColumns().isEmpty()) {
+      for (String c : columns) {
+	ensureValidColumName(c);
+      }
+
+      append(columns, ",", sb);
+    }
+    else {
+      append(dbref.getColumns(), ",", sb);
+    }
+
+    sb.append(") VALUES (");
+
+    for (String s : (dbref.getColumns().isEmpty() ? columns : dbref.getColumns())) {
+      sb.append("{").append(s).append("}");
+    }
+
+    sb.append(")");
+
+    return sb.toString();
+  }
+
+  public String getDeleteQuery(List<String> params) 
+    throws URISyntaxException {
+    switch (dbref.getScope()) {
+      case SCALAR:
+      case DISTINCT:
+	throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
+				     " is not a valid scope when deleting");
+      case ROW:
+      case ALL:
+	break;
+    }
+
+    if (!dbref.getColumns().isEmpty()) {
+      throw new URISyntaxException(uri.toString(), "Columns may not be specified when deleting");
+    }
+
+    StringBuilder sb = new StringBuilder();
+
+    sb.append("DELETE FROM ").append(dbref.getTable());
+    
+    if (dbref.getFilter() != null) {
+      sb.append(" WHERE ");
+      where(dbref.getFilter(), sb, params);
+    }
+
+    return sb.toString();
+  }
 
   private void append(Iterable<String> iter, String delim, StringBuilder sb) {
     boolean first = true;
