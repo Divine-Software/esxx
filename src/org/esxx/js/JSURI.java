@@ -164,7 +164,7 @@ public class JSURI
 	prop_src_uri = js_esxx.jsGet_wd();
 
 	if (prop_src_uri != null) {
-	  uri = prop_src_uri.uri.resolve(uri_string);
+	  uri = resolveURI(prop_src_uri.uri, uri_string);
 	}
       }
 
@@ -176,7 +176,7 @@ public class JSURI
 
     if (uri_relative != null) {
       // Resolve relative part against first URI argument
-      uri = uri.resolve(uri_relative);
+      uri = resolveURI(uri, uri_relative);
     }
 
     JSURI rc = new JSURI(uri);
@@ -497,6 +497,23 @@ public class JSURI
     }
 
     return (JSURI) obj;
+  }
+
+  private static URI resolveURI(URI base, String relative)
+    throws URISyntaxException {
+    URI rel = new URI(relative);
+    URI res;
+
+    // Make #frag resolve agianst non-hierachial URIs too
+    if (rel.getScheme() == null &&
+	rel.getSchemeSpecificPart().isEmpty()) {
+      res = new URI(base.getScheme(), base.getSchemeSpecificPart(), rel.getFragment());
+    }
+    else {
+      res = base.resolve(rel);
+    }
+
+    return res;
   }
 
   private static ConcurrentHashMap<String, Constructor<? extends ProtocolHandler>> schemeConstructors = new ConcurrentHashMap<String, Constructor<? extends ProtocolHandler>>();
