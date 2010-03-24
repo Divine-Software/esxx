@@ -20,11 +20,14 @@ package org.esxx.js.protocol;
 
 import java.net.URISyntaxException;
 import java.sql.*;
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Properties;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Properties;
 import org.esxx.*;
+import org.esxx.dbref.QueryBuilder;
 import org.esxx.js.JSURI;
 import org.esxx.util.QueryCache;
 import org.esxx.util.QueryHandler;
@@ -55,27 +58,82 @@ public class JDBCHandler
     }
   }
 
+  @Override public Object load(Context cx, Scriptable thisObj,
+			       String type, HashMap<String,String> params)
+    throws Exception {
+
+    // Default jdbc: load() media type is XML
+    if (type == null) {
+      type = "text/xml";
+    }
+
+    if (!type.equals("text/xml")) {
+      throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
+				       "' can only load 'text/xml'.");
+    }
+
+    QueryBuilder qb = new QueryBuilder(jsuri.getURI());
+    List<String> qp = new ArrayList<String>();
+    String       q  = qb.getSelectQuery(qp);
+    Scriptable   s  = cx.newObject(thisObj);
+
+    for (int i = 0; i < qp.size(); ++i) {
+      s.put(i, s, qp.get(i));
+    }
+
+    return query(cx, thisObj, new Object[] { q, s });
+  }
+
   @Override public Object query(Context cx, Scriptable thisObj, Object[] args) {
     try {
       if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
 	throw Context.reportRuntimeError("Missing query argument");
       }
 
-      Properties p = jsuri.getParams(cx, jsuri.getURI());
-      Scriptable a = jsuri.getAuth(cx, jsuri.getURI(), null, null);
-
-      if (a != null) {
-	p.setProperty("user",     Context.toString(a.get("username", a)));
-	p.setProperty("password", Context.toString(a.get("password", a)));
-      }
-
-      JDBCQueryHandler qh = new JDBCQueryHandler(cx, thisObj, args);
+      JDBCQueryHandler qh;
 
       if (args[0] instanceof Function) {
-	queryCache.executeTransaction(jsuri.getURI(), p, qh);
+	qh = new JDBCQueryHandler(cx, thisObj, (Function) args[0]);
+	queryCache.executeTransaction(jsuri.getURI(), getJDBCProperties(cx), qh);
       }
       else {
-	queryCache.executeQuery(jsuri.getURI(), p, Context.toString(args[0]), qh);
+	int    batches = 0;
+	String result  = null;
+	String entry   = null;
+	String meta    = null;
+
+	for (int i = args.length - 1; i >= 1; --i) {
+	  if (args[i] != Context.getUndefinedValue()) {
+	    ++batches;
+	  }
+	}
+
+	if (args.length > 1 && args[1] instanceof Scriptable) {
+	  // (Only the first batch, if a Scriptable, may change the element names)
+
+	  Scriptable s = (Scriptable) args[1];
+	  Object     o;
+
+	  if ((o = s.get("$result", s)) != Scriptable.NOT_FOUND) {
+	    result = Context.toString(o);
+	  }
+
+	  if ((o = s.get("$entry", s)) != Scriptable.NOT_FOUND) {
+	    entry = Context.toString(o);
+	  }
+
+	  if ((o = s.get("$meta", s)) != Scriptable.NOT_FOUND) {
+	    meta = Context.toString(o);
+	  }
+	}
+
+	Object[] data = new Object[batches];
+	System.arraycopy(args, 1, data, 0, batches);
+
+	qh = new JDBCQueryHandler(cx, thisObj, data, result, entry, meta);
+
+	queryCache.executeQuery(jsuri.getURI(), getJDBCProperties(cx),
+				Context.toString(args[0]), qh);
       }
 
       return qh.getResult();
@@ -86,43 +144,35 @@ public class JDBCHandler
     }
   }
 
-  private static class JDBCQueryHandler 
+  private Properties getJDBCProperties(Context  cx) {
+    Properties p = jsuri.getParams(cx, jsuri.getURI());
+    Scriptable a = jsuri.getAuth(cx, jsuri.getURI(), null, null);
+
+    if (a != null) {
+      p.setProperty("user",     Context.toString(a.get("username", a)));
+      p.setProperty("password", Context.toString(a.get("password", a)));
+    }
+
+    return p;
+  }
+
+  private static class JDBCQueryHandler
     implements QueryHandler {
 
-    public JDBCQueryHandler(Context cx, Scriptable jsthis, Object[] a) {
-      this.cx = cx;
-      jsThis  = jsthis;
-      args    = a;
-      batches = 0;
+    public JDBCQueryHandler(Context cx, Scriptable jsthis, Function f) {
+      this.cx  = cx;
+      jsThis   = jsthis;
+      function = f;
+    }
 
-      for (int i = args.length - 1; i >= 1; --i) {
-	if (args[i] != Context.getUndefinedValue()) {
-	  ++batches;
-	}
-      }
-
-      resultElem = "result";
-      entryElem  = "entry";
-      metaElem  = null; // Default: no meta element
-
-      if (batches > 0 && args[1] instanceof Scriptable) {
-	// (Only the first batch, if a Scriptable, may change the element names)
-
-	Scriptable p = (Scriptable) args[1];
-	Object     o;
-
-	if ((o = p.get("$result", p)) != Scriptable.NOT_FOUND) {
-	  resultElem = Context.toString(o);
-	}
-
-	if ((o = p.get("$entry", p)) != Scriptable.NOT_FOUND) {
-	  entryElem = Context.toString(o);
-	}
-
-	if ((o = p.get("$meta", p)) != Scriptable.NOT_FOUND) {
-	  metaElem = Context.toString(o);
-	}
-      }
+    public JDBCQueryHandler(Context cx, Scriptable jsthis, Object[] b,
+			    String result, String entry, String meta) {
+      this.cx    = cx;
+      jsThis     = jsthis;
+      batches    = b;
+      resultElem = result == null ? "result" : result;
+      entryElem  = entry == null ? "entry" : entry;
+      metaElem   = meta == null ? null /* Default: no meta element */ : meta;
     }
 
     public Object getResult() {
@@ -131,18 +181,16 @@ public class JDBCHandler
 
     @Override public void handleTransaction()
       throws SQLException {
-      Function   func = (Function) args[0];
-      Scriptable thiz = func.getParentScope();
-
-      queryResult = func.call(cx, thiz, thiz, Context.emptyArgs);
+      Scriptable thiz = function.getParentScope();
+      queryResult = function.call(cx, thiz, thiz, Context.emptyArgs);
     }
 
     @Override public int getBatches() {
-      return batches;
+      return batches.length;
     }
 
     @Override public int getParamLength(int batch, String param) {
-      Object params = args[1 + batch];
+      Object params = batches[batch];
       Object object = ScriptRuntime.getObjectElem(params, param, cx);
       int    length;
 
@@ -163,9 +211,9 @@ public class JDBCHandler
       return length;
     }
 
-    @Override public void resolveParam(int batch, String param, int length, 
+    @Override public void resolveParam(int batch, String param, int length,
 				       Collection<Object> result) {
-      Object params = args[1 + batch];
+      Object params = batches[batch];
       Object object = ScriptRuntime.getObjectElem(params, param, cx);
 
       if (object instanceof Iterable) {
@@ -191,7 +239,7 @@ public class JDBCHandler
       }
     }
 
-    @Override public void handleResult(int set, int uc, ResultSet rs) 
+    @Override public void handleResult(int set, int uc, ResultSet rs)
       throws SQLException {
       Document          doc   = ESXX.getInstance().createDocument(resultElem);
       Element           root  = doc.getDocumentElement();
@@ -228,13 +276,13 @@ public class JDBCHandler
 	    String nullable = "unknown";
 
 	    switch (rmd.isNullable(i)) {
-	      case ResultSetMetaData.columnNullable:
-		nullable = Boolean.toString(true);
-		break;
+	    case ResultSetMetaData.columnNullable:
+	      nullable = Boolean.toString(true);
+	      break;
 
-	      case ResultSetMetaData.columnNoNulls:
-		nullable = Boolean.toString(false);
-		break;
+	    case ResultSetMetaData.columnNoNulls:
+	      nullable = Boolean.toString(false);
+	      break;
 	    }
 
 	    child.setAttributeNS(null, "name", name);
@@ -284,7 +332,7 @@ public class JDBCHandler
 	  root.appendChild(row);
 	}
       }
-      
+
       if (queryResult == null) {
 	queryResult = cx.newObject(jsThis, "XMLList", Context.emptyArgs);
       }
@@ -304,9 +352,9 @@ public class JDBCHandler
     private Context cx;
     private Scriptable jsThis;
 
-    private Object[] args;
-    private int batches;
+    private Function function;
 
+    private Object[] batches;
     private String resultElem;
     private String entryElem;
     private String metaElem;
