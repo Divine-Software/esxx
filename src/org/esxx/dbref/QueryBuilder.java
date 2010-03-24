@@ -69,7 +69,14 @@ public class QueryBuilder {
     this.uri = uri;
     dbref = new DBReference(uri.getRawFragment());
 
-    ensureValidTableName(dbref.getTable());
+    String table = dbref.getTable();
+
+    if (table == null) {
+      throw new URISyntaxException(uri.toString(), "Table name missing from URI fragment part");
+    }
+    else if (!strictTableName.matcher(table).matches()) {
+      throw new URISyntaxException(uri.toString(), "'" + table + "' is not a valid table name");
+    }
     
     for (String c : dbref.getColumns()) {
       ensureValidColumnName(c);
@@ -314,13 +321,6 @@ public class QueryBuilder {
     }
 
     sb.append(")");
-  }
-
-  private void ensureValidTableName(String name) 
-    throws URISyntaxException {
-    if (!strictTableName.matcher(name).matches()) {
-      throw new URISyntaxException(uri.toString(), "'" + name + "' is not a valid table name");
-    }
   }
 
   private void ensureValidColumnName(String name) 
