@@ -39,7 +39,16 @@ public class QueryBuilder {
       }
 
       try { 
-	System.out.println(qb.getInsertQuery(java.util.Arrays.asList(new String[] { "c1", "c2", "c3" })));
+	System.out.println(qb.getInsertQuery(java.util.Arrays.asList(new String[] { 
+		"c1", "c2", "c3" })));
+      }
+      catch (Exception ex) {
+	System.out.println(ex);
+      }
+
+      try { 
+	System.out.println(qb.getUpdateQuery(java.util.Arrays.asList(new String[] { 
+		"c1", "c2", "c3" }), new ArrayList<String>()));
       }
       catch (Exception ex) {
 	System.out.println(ex);
@@ -92,7 +101,7 @@ public class QueryBuilder {
       sb.append("*");
     }
     else {
-      append(dbref.getColumns(), ",", sb);
+      append(dbref.getColumns(), ", ", sb);
     }
 
     sb.append(" FROM ").append(dbref.getTable());
@@ -125,10 +134,10 @@ public class QueryBuilder {
 	ensureValidColumnName(c);
       }
 
-      append(columns, ",", sb);
+      append(columns, ", ", sb);
     }
     else {
-      append(dbref.getColumns(), ",", sb);
+      append(dbref.getColumns(), ", ", sb);
     }
 
     sb.append(") VALUES (");
@@ -139,7 +148,7 @@ public class QueryBuilder {
 	first = false;
       }
       else {
-	sb.append(",");
+	sb.append(", ");
       }
 
       sb.append("{").append(s).append("}");
@@ -149,6 +158,42 @@ public class QueryBuilder {
 
     return sb.toString();
   }
+
+  public String getUpdateQuery(Iterable<String> columns, List<String> params) 
+    throws URISyntaxException {
+    if (dbref.getScope() == DBReference.Scope.DISTINCT) {
+      throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
+				   " is not a valid scope when updating");
+    }
+
+    if (dbref.getColumns().isEmpty() && !columns.iterator().hasNext()) {
+      throw new URISyntaxException(uri.toString(), "Must have columns to update");
+    }
+
+    StringBuilder sb = new StringBuilder();
+
+    sb.append("UPDATE ").append(dbref.getTable()).append(" SET ");
+
+    boolean first = true;
+    for (String s : (dbref.getColumns().isEmpty() ? columns : dbref.getColumns())) {
+      if (first) {
+	first = false;
+      }
+      else {
+	sb.append(", ");
+      }
+
+      sb.append(s).append(" = ").append("{").append(s).append("}");
+    }
+
+    if (dbref.getFilter() != null) {
+      sb.append(" WHERE ");
+      where(dbref.getFilter(), sb, params);
+    }
+
+    return sb.toString();
+  }
+
 
   public String getDeleteQuery(List<String> params) 
     throws URISyntaxException {
