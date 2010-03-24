@@ -183,9 +183,9 @@ import java.util.TreeMap;
   params        = param (COMMA param)*;
 
 
-  main := table? (QUESTION columns? 
-		  (QUESTION scope? 
-		   (QUESTION filter? 
+  main := table? (QUESTION columns?
+		  (QUESTION scope?
+		   (QUESTION filter?
 		    (QUESTION params? )? )? )? )?;
 }%%
 
@@ -273,7 +273,7 @@ public class DBReference {
     private List<Filter> children;
   }
 
-  public static void main(String[] args) 
+  public static void main(String[] args)
     throws Exception {
 
     for (String a: args) {
@@ -283,10 +283,8 @@ public class DBReference {
     }
   }
 
-  public DBReference(String dbref) 
+  public DBReference(String dbref)
     throws ParseException {
-    filterStack.push(new Filter(Filter.Op.AND)); // Dummy top-level filter
-
     try {
       parseReference(dbref.getBytes("UTF-8"));
     }
@@ -308,9 +306,7 @@ public class DBReference {
   }
 
   public Filter getFilter() {
-    List<Filter> children = filterStack.peek().getChildren();
-
-    return children.isEmpty() ? null : children.get(0);
+    return filter;
   }
 
   public Map<String, String> getOptionalParams() {
@@ -323,7 +319,7 @@ public class DBReference {
 
   public String toString() {
     Filter filter = getFilter();
-    return "[DBReference: " + table + "?" + join(columns) + "?" + scope.toString().toLowerCase() 
+    return "[DBReference: " + table + "?" + join(columns) + "?" + scope.toString().toLowerCase()
       + (filter == null ? "" : "?" + filter) + "]";
   }
 
@@ -353,7 +349,7 @@ public class DBReference {
     %% write exec;
 
     if (cs < dbpath_first_final) {
-      throw new ParseException(new String(data, "UTF-8"), 
+      throw new ParseException(new String(data, "UTF-8"),
 			       "Failed to parse DB reference", charOffset);
     }
   }
@@ -364,7 +360,7 @@ public class DBReference {
       word = new byte[old.length * 2];
       System.arraycopy(old, 0, word, 0, old.length);
     }
-    
+
     word[wordOffset++] = b;
   }
 
@@ -384,7 +380,13 @@ public class DBReference {
   }
 
   private void addFilter(Filter f) {
-    filterStack.peek().addChild(f);
+    if (filter == null) {
+      // This is the top-level filter
+      filter = f;
+    }
+    else {
+      filterStack.peek().addChild(f);
+    }
   }
 
   private void addLiteral(String lit) {
@@ -412,6 +414,7 @@ public class DBReference {
   private String table;
   private List<String> columns = new LinkedList<String>();
   private Scope scope = Scope.ALL;
+  private Filter filter;
   private Map<String,String> optionalParams = new TreeMap<String,String>();
   private Map<String,String> requiredParams = new TreeMap<String,String>();
 }
