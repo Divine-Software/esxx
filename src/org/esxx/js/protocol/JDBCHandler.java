@@ -20,6 +20,8 @@ package org.esxx.js.protocol;
 
 import java.net.URISyntaxException;
 import java.sql.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -61,28 +63,57 @@ public class JDBCHandler
 
   @Override public Object load(Context cx, Scriptable thisObj,
 			       String type, HashMap<String,String> params)
-    throws Exception {
-
-    // Default jdbc: load() media type is XML
-    if (type == null) {
-      type = "text/xml";
-    }
-
-    if (!type.equals("text/xml")) {
-      throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
-				       "' can only load 'text/xml'.");
-    }
+    throws URISyntaxException {
+    ensureTypeIsXML(type);
 
     QueryBuilder        qb = new QueryBuilder(jsuri.getURI());
     List<String>        qa = new ArrayList<String>();
     Map<String, String> qp = new HashMap<String, String>();
     String              q  = qb.getSelectQuery(qa, qp);
 
-    Scriptable s = cx.newObject(thisObj);
+    Scriptable s = createParamObject(cx, thisObj, qa, qp);
+    ensureRequiredParamsHandled(qb, qp);
 
-    for (int i = 0; i < qa.size(); ++i) {
-      s.put(i, s, qa.get(i));
+    return query(cx, thisObj, new Object[] { q, s });
+  }
+
+  @Override public Object append(Context cx, Scriptable thisObj,
+  				 Object data, String type, HashMap<String,String> params)
+    throws URISyntaxException {
+
+    if (!(data instanceof ScriptableObject)) {
+      throw Context.reportRuntimeError("Object must be a JavaScript object");
     }
+
+    List<String> columns = new ArrayList<String>();
+
+    for (Object c : ((ScriptableObject) data).getIds()) {
+      if (c instanceof String) {
+	columns.add((String) c);
+      }
+    }
+
+    QueryBuilder        qb = new QueryBuilder(jsuri.getURI());
+    Map<String, String> qp = new HashMap<String, String>();
+    String              q  = qb.getInsertQuery(columns, qp);
+
+    ensureRequiredParamsHandled(qb, qp);
+
+    return query(cx, thisObj, new Object[] { q, data });
+  }
+
+  @Override public Object remove(Context cx, Scriptable thisObj,
+				 String type, HashMap<String,String> params)
+    throws URISyntaxException {
+    ensureTypeIsXML(type);
+
+    QueryBuilder        qb = new QueryBuilder(jsuri.getURI());
+    List<String>        qa = new ArrayList<String>();
+    Map<String, String> qp = new HashMap<String, String>();
+    String              q  = qb.getDeleteQuery(qa, qp);
+
+    Scriptable s = createParamObject(cx, thisObj, qa, qp);
+    ensureRequiredParamsHandled(qb, qp);
 
     return query(cx, thisObj, new Object[] { q, s });
   }
@@ -97,7 +128,7 @@ public class JDBCHandler
 
       if (args[0] instanceof Function) {
 	qh = new JDBCQueryHandler(cx, thisObj, (Function) args[0]);
-	queryCache.executeTransaction(jsuri.getURI(), getJDBCProperties(cx), qh);
+	queryCache.executeTransaction(getJDBCURI(), getJDBCProperties(cx), qh);
       }
       else {
 	int    batches = 0;
@@ -135,21 +166,69 @@ public class JDBCHandler
 
 	qh = new JDBCQueryHandler(cx, thisObj, data, result, entry, meta);
 
-	queryCache.executeQuery(jsuri.getURI(), getJDBCProperties(cx),
+	queryCache.executeQuery(getJDBCURI(), getJDBCProperties(cx),
 				Context.toString(args[0]), qh);
       }
 
       return qh.getResult();
     }
     catch (SQLException ex) {
-      ex.printStackTrace();
       throw Context.reportRuntimeError("SQL query failed: " + ex.getMessage());
     }
   }
 
+  private void ensureTypeIsXML(String type) {
+    // Default media type is XML
+    if (type == null) {
+      type = "text/xml";
+    }
+
+    if (!type.equals("text/xml")) {
+      throw Context.reportRuntimeError("Type must be 'text/xml'");
+    }
+  }
+
+  private void ensureRequiredParamsHandled(QueryBuilder qb, Map<String, String> qp) {
+    String required = qb.findRequiredParam(qp);
+
+    if (required != null) {
+      throw Context.reportRuntimeError("The required parameter '" + required + "' is unknown");
+    }
+  }
+
+  private Scriptable createParamObject(Context cx, Scriptable scope,
+				       List<String> qa, Map<String, String> qp) {
+    Scriptable s = cx.newObject(scope);
+
+    for (int i = 0; i < qa.size(); ++i) {
+      s.put(i, s, qa.get(i));
+    }
+
+    String result = qp.remove("result");
+    String entry  = qp.remove("entry");
+    String meta   = qp.remove("meta");
+
+    if (result != null) s.put("$result", s, result);
+    if (entry != null) s.put("$entry", s, entry);
+    if (meta != null) s.put("$meta", s, meta);
+
+    return s;
+  }
+
+  private URI getJDBCURI() {
+    URI full = jsuri.getURI();
+
+    try {
+      return new URI(full.getScheme(), full.getSchemeSpecificPart(), null /* Remove fragment */);
+    }
+    catch (URISyntaxException ignored) {
+      return full; // Should never happen
+    }
+  }
+
   private Properties getJDBCProperties(Context  cx) {
-    Properties p = jsuri.getParams(cx, jsuri.getURI());
-    Scriptable a = jsuri.getAuth(cx, jsuri.getURI(), null, null);
+    Properties p = jsuri.getParams(cx, getJDBCURI());
+    Scriptable a = jsuri.getAuth(cx, getJDBCURI(), null, null);
 
     if (a != null) {
       p.setProperty("user",     Context.toString(a.get("username", a)));
