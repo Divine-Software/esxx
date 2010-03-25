@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.TreeMap;
+import java.util.HashMap;
 
 %%{
   machine dbpath;
@@ -106,12 +106,14 @@ import java.util.TreeMap;
   }
 
   action OptionalKey {
-    tmpKey = getWord();
+    tmpKey   = getWord();
+    tmpValue = "";
     paramRequired = false;
   }
 
   action RequiredKey {
     tmpKey = getWord();
+    tmpValue = "";
     paramRequired = true;
   }
 
@@ -415,6 +417,6 @@ public class DBReference {
   private List<String> columns = new LinkedList<String>();
   private Scope scope = Scope.ALL;
   private Filter filter;
-  private Map<String,String> optionalParams = new TreeMap<String,String>();
-  private Map<String,String> requiredParams = new TreeMap<String,String>();
+  private Map<String,String> optionalParams = new HashMap<String,String>();
+  private Map<String,String> requiredParams = new HashMap<String,String>();
 }

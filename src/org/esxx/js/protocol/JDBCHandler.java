@@ -23,6 +23,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -72,13 +73,15 @@ public class JDBCHandler
 				       "' can only load 'text/xml'.");
     }
 
-    QueryBuilder qb = new QueryBuilder(jsuri.getURI());
-    List<String> qp = new ArrayList<String>();
-    String       q  = qb.getSelectQuery(qp);
-    Scriptable   s  = cx.newObject(thisObj);
+    QueryBuilder        qb = new QueryBuilder(jsuri.getURI());
+    List<String>        qa = new ArrayList<String>();
+    Map<String, String> qp = new HashMap<String, String>();
+    String              q  = qb.getSelectQuery(qa, qp);
 
-    for (int i = 0; i < qp.size(); ++i) {
-      s.put(i, s, qp.get(i));
+    Scriptable s = cx.newObject(thisObj);
+
+    for (int i = 0; i < qa.size(); ++i) {
+      s.put(i, s, qa.get(i));
     }
 
     return query(cx, thisObj, new Object[] { q, s });

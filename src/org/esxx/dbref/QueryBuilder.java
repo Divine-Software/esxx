@@ -20,42 +20,47 @@ package org.esxx.dbref;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.regex.Pattern;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class QueryBuilder {
-  public static void main(String[] args) 
+  public static void main(String[] args)
     throws Exception {
 
     for (String a: args) {
       System.out.println("Processing dbref " + a);
       QueryBuilder qb = new QueryBuilder(new URI("#" + a));
-      try { 
-	System.out.println(qb.getSelectQuery(new ArrayList<String>())); 
+      List<String>        result = new ArrayList<String>();
+      Map<String, String> params = new HashMap<String, String>();
+
+      try {
+	System.out.println(qb.getSelectQuery(result, params));
       }
       catch (Exception ex) {
 	System.out.println(ex);
       }
 
-      try { 
-	System.out.println(qb.getInsertQuery(java.util.Arrays.asList(new String[] { 
-		"c1", "c2", "c3" })));
+      try {
+	System.out.println(qb.getInsertQuery(java.util.Arrays.asList(new String[] {
+		"c1", "c2", "c3" }), params));
       }
       catch (Exception ex) {
 	System.out.println(ex);
       }
 
-      try { 
-	System.out.println(qb.getUpdateQuery(java.util.Arrays.asList(new String[] { 
-		"c1", "c2", "c3" }), new ArrayList<String>()));
+      try {
+	System.out.println(qb.getUpdateQuery(java.util.Arrays.asList(new String[] {
+		"c1", "c2", "c3" }), result, params));
       }
       catch (Exception ex) {
 	System.out.println(ex);
       }
 
-      try { 
-	System.out.println(qb.getDeleteQuery(new ArrayList<String>()));
+      try {
+	System.out.println(qb.getDeleteQuery(result, params));
       }
       catch (Exception ex) {
 	System.out.println(ex);
@@ -63,7 +68,7 @@ public class QueryBuilder {
     }
   }
 
-  public QueryBuilder(URI uri) 
+  public QueryBuilder(URI uri)
     throws URISyntaxException {
 
     this.uri = uri;
@@ -77,7 +82,7 @@ public class QueryBuilder {
     else if (!strictTableName.matcher(table).matches()) {
       throw new URISyntaxException(uri.toString(), "'" + table + "' is not a valid table name");
     }
-    
+
     for (String c : dbref.getColumns()) {
       ensureValidColumnName(c);
     }
@@ -87,12 +92,36 @@ public class QueryBuilder {
     return dbref;
   }
 
-  public String getSelectQuery(List<String> params) 
+  public boolean isRequiredParam(String param) {
+    return dbref.getRequiredParams().containsKey(param);
+  }
+
+  public String findRequiredParam(Map<String, String> params) {
+    for (String key : params.keySet()) {
+      if (isRequiredParam(key)) {
+	return key;
+      }
+    }
+
+    return null;
+  }
+
+  public String getSelectQuery(List<String> args, Map<String, String> unhandled_params)
     throws URISyntaxException {
 
-    if (dbref.getScope() == DBReference.Scope.SCALAR && 
+    args.clear();
+    unhandled_params.clear();
+    unhandled_params.putAll(dbref.getOptionalParams());
+    unhandled_params.putAll(dbref.getRequiredParams());
+
+    String order   = unhandled_params.remove("order");
+    String reverse = unhandled_params.remove("reverse");
+    String offset  = unhandled_params.remove("offset");
+    String count   = unhandled_params.remove("count");
+
+    if (dbref.getScope() == DBReference.Scope.SCALAR &&
 	dbref.getColumns().size() != 1) {
-      throw new URISyntaxException(uri.toString(), 
+      throw new URISyntaxException(uri.toString(),
 				   "Scalar scope only works with one single column");
     }
 
@@ -115,14 +144,23 @@ public class QueryBuilder {
 
     if (dbref.getFilter() != null) {
       sb.append(" WHERE ");
-      where(dbref.getFilter(), sb, params);
+      where(dbref.getFilter(), sb, args);
     }
+
+    orderBy(order, reverse, sb);
+    offsetCount(offset, count, sb);
 
     return sb.toString();
   }
 
-  public String getInsertQuery(Iterable<String> columns) 
+  public String getInsertQuery(Iterable<String> columns,
+			       Map<String, String> unhandled_params)
     throws URISyntaxException {
+
+    unhandled_params.clear();
+    unhandled_params.putAll(dbref.getOptionalParams());
+    unhandled_params.putAll(dbref.getRequiredParams());
+
     if (dbref.getScope() != DBReference.Scope.ALL) {
       throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
 				   " is not a valid scope when inserting");
@@ -135,7 +173,7 @@ public class QueryBuilder {
     StringBuilder sb = new StringBuilder();
 
     sb.append("INSERT INTO ").append(dbref.getTable()).append("(");
-    
+
     if (dbref.getColumns().isEmpty()) {
       for (String c : columns) {
 	ensureValidColumnName(c);
@@ -166,8 +204,15 @@ public class QueryBuilder {
     return sb.toString();
   }
 
-  public String getUpdateQuery(Iterable<String> columns, List<String> params) 
+  public String getUpdateQuery(Iterable<String> columns,
+			       List<String> args, Map<String, String> unhandled_params)
     throws URISyntaxException {
+
+    args.clear();
+    unhandled_params.clear();
+    unhandled_params.putAll(dbref.getOptionalParams());
+    unhandled_params.putAll(dbref.getRequiredParams());
+
     if (dbref.getScope() == DBReference.Scope.DISTINCT) {
       throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
 				   " is not a valid scope when updating");
@@ -195,15 +240,21 @@ public class QueryBuilder {
 
     if (dbref.getFilter() != null) {
       sb.append(" WHERE ");
-      where(dbref.getFilter(), sb, params);
+      where(dbref.getFilter(), sb, args);
     }
 
     return sb.toString();
   }
 
 
-  public String getDeleteQuery(List<String> params) 
+  public String getDeleteQuery(List<String> args, Map<String, String> unhandled_params)
     throws URISyntaxException {
+
+    args.clear();
+    unhandled_params.clear();
+    unhandled_params.putAll(dbref.getOptionalParams());
+    unhandled_params.putAll(dbref.getRequiredParams());
+
     switch (dbref.getScope()) {
       case SCALAR:
       case DISTINCT:
@@ -221,10 +272,10 @@ public class QueryBuilder {
     StringBuilder sb = new StringBuilder();
 
     sb.append("DELETE FROM ").append(dbref.getTable());
-    
+
     if (dbref.getFilter() != null) {
       sb.append(" WHERE ");
-      where(dbref.getFilter(), sb, params);
+      where(dbref.getFilter(), sb, args);
     }
 
     return sb.toString();
@@ -245,7 +296,7 @@ public class QueryBuilder {
     }
   }
 
-  private void where(DBReference.Filter filter, StringBuilder sb, List<String> params) 
+  private void where(DBReference.Filter filter, StringBuilder sb, List<String> args)
     throws URISyntaxException {
     DBReference.Filter.Op op = filter.getOp();
 
@@ -264,7 +315,7 @@ public class QueryBuilder {
 	    sb.append(" ").append(op.toString()).append(" ");
 	  }
 
-	  where(f, sb, params);
+	  where(f, sb, args);
 	}
 
 	break;
@@ -276,7 +327,7 @@ public class QueryBuilder {
 	}
 
 	sb.append("NOT ");
-	where(filter.getChildren().get(0), sb, params);
+	where(filter.getChildren().get(0), sb, args);
 	break;
 
       case LT:
@@ -306,13 +357,13 @@ public class QueryBuilder {
 	    throw new IllegalStateException("This can't happen");
 	}
 
-	sb.append("{").append(params.size()).append("}");
+	sb.append("{").append(args.size()).append("}");
 
 	if (filter.getChildren().get(1).getOp() != DBReference.Filter.Op.VAL) {
 	  throw new IllegalStateException("Filter.Op." + op + "'s second child must be VAL");
 	}
 
-	params.add(filter.getChildren().get(1).getValue());
+	args.add(filter.getChildren().get(1).getValue());
 	break;
       }
 
@@ -323,7 +374,42 @@ public class QueryBuilder {
     sb.append(")");
   }
 
-  private void ensureValidColumnName(String name) 
+  private void orderBy(String order, String reverse, StringBuilder sb)
+    throws URISyntaxException {
+    if (order != null) {
+      ensureValidColumnName(order);
+      sb.append(" ORDER BY ").append(order);
+    }
+
+    if ("".equals(reverse) || Boolean.parseBoolean(reverse)) {
+      sb.append(" DESC");
+    }
+  }
+
+  private void offsetCount(String offset, String count, StringBuilder sb) {
+    boolean use_offset_limit = useLimitOffset.matcher(uri.getSchemeSpecificPart()).matches();
+
+    if (use_offset_limit) {
+      if (count != null) {
+	sb.append(" LIMIT ").append(Integer.parseInt(count));
+      }
+
+      if (offset != null) {
+	sb.append(" OFFSET ").append(Integer.parseInt(offset));
+      }
+    }
+    else {
+      if (offset != null) {
+	sb.append(" OFFSET ").append(Integer.parseInt(offset)).append(" ROWS");
+      }
+
+      if (count != null) {
+	sb.append(" FETCH FIRST ").append(Integer.parseInt(count)).append(" ROWS ONLY");
+      }
+    }
+  }
+
+  private void ensureValidColumnName(String name)
     throws URISyntaxException {
     if (!strictColumnName.matcher(name).matches()) {
       throw new URISyntaxException(uri.toString(), "'" + name + "' is not a valid column name");
@@ -333,6 +419,7 @@ public class QueryBuilder {
   private URI uri;
   private DBReference dbref;
 
+  private static Pattern useLimitOffset   = Pattern.compile("(h2|mysql|postgresql):.*");
   private static Pattern strictColumnName = Pattern.compile("[_A-Za-z][_A-Za-z0-9]*");
   private static Pattern strictTableName  = Pattern.compile("[_A-Za-z][_A-Za-z0-9]*" +
 							    "(\\.[_A-Za-z][_A-Za-z0-9]*)*");
