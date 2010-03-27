@@ -47,7 +47,7 @@ public class QueryCache {
 
     connectionPools = new HashMap<ConnectionKey, ConnectionPool>();
   }
-  
+
   public void purgeConnections() {
     synchronized (connectionPools) {
       for (ConnectionPool cp : connectionPools.values()) {
@@ -59,7 +59,7 @@ public class QueryCache {
   public void executeQuery(URI uri, Properties props, final String query, final QueryHandler qh)
     throws SQLException {
     withConnection(uri, props, new ConnectionCallback() {
-	public void execute(PooledConnection pc) 
+	public void execute(PooledConnection pc)
 	  throws SQLException {
 
 	  List<Query.Param> params = new ArrayList<Query.Param>(32);
@@ -81,10 +81,10 @@ public class QueryCache {
       });
   }
 
-  public void executeTransaction(URI uri, Properties props, final QueryHandler qh) 
+  public void executeTransaction(URI uri, Properties props, final QueryHandler qh)
     throws SQLException {
     withConnection(uri, props, new ConnectionCallback() {
-	public void execute(PooledConnection pc) 
+	public void execute(PooledConnection pc)
 	  throws SQLException {
 
 	  boolean committed = false;
@@ -118,7 +118,7 @@ public class QueryCache {
 
   private static Properties nullProperties = new Properties();
 
-  private void withConnection(URI uri, Properties props, ConnectionCallback cb) 
+  private void withConnection(URI uri, Properties props, ConnectionCallback cb)
     throws SQLException {
     ConnectionPool cp;
 
@@ -160,7 +160,7 @@ public class QueryCache {
       }
     }
   }
-  
+
   private static class PerThreadConnection {
     long refCounter;
     PooledConnection pooledConnection;
@@ -170,7 +170,7 @@ public class QueryCache {
     }
   }
 
-  private static final ThreadLocal<PerThreadConnection> perThreadConnection = 
+  private static final ThreadLocal<PerThreadConnection> perThreadConnection =
     new ThreadLocal<PerThreadConnection>() {
     @Override protected PerThreadConnection initialValue() {
       return new PerThreadConnection();
@@ -208,7 +208,7 @@ public class QueryCache {
     private URI uri;
     private Properties props;
   }
-  
+
 
   private class ConnectionPool {
     public ConnectionPool(URI uri, Properties props) {
@@ -218,7 +218,7 @@ public class QueryCache {
       numConnections = 0;
     }
 
-    public PooledConnection getConnection() 
+    public PooledConnection getConnection()
       throws SQLException {
       PooledConnection res;
 
@@ -293,7 +293,7 @@ public class QueryCache {
 
 
   private class PooledConnection {
-    public PooledConnection(URI uri, Properties props) 
+    public PooledConnection(URI uri, Properties props)
       throws SQLException {
       connection = DriverManager.getConnection(uri.toString(), props);
       queryCache = new LRUCache<String, Query>(maxQueries, queryTimeout);
@@ -354,14 +354,14 @@ public class QueryCache {
 	    return true;
 	  }
 	});
-      
+
       // Close connection
       try {
 	connection.close();
       }
       catch (SQLException ex) {
 	// Log and ignore
-	ESXX.getInstance().getLogger().log(java.util.logging.Level.WARNING, 
+	ESXX.getInstance().getLogger().log(java.util.logging.Level.WARNING,
 					   "Failed to close pooled connection: " + ex.getMessage(),
 					   ex);
       }
@@ -416,6 +416,12 @@ public class QueryCache {
 
 	for (int i = 1; i < paramTypes.length; ++i) {
 	  paramTypes[i] = DataType.convertSQLTypeToValueType(pmd.getParameterType(i));
+
+	  // FIXME: Workaround for invalid conversion from Double to
+	  // String in H2 MERGE queries
+	  if (paramTypes[i] == Value.STRING) {
+	    paramTypes[i] = Value.UNKNOWN; // Don't bother with strings for now
+	  }
 	}
       }
       catch (Exception ex) {
@@ -423,7 +429,7 @@ public class QueryCache {
       }
     }
 
-    public void bindParams(int batch, List<Param> params, int total_params_length, QueryHandler qh) 
+    public void bindParams(int batch, List<Param> params, int total_params_length, QueryHandler qh)
       throws SQLException {
       ArrayList<Object> objects = new ArrayList<Object>(total_params_length);
 
@@ -434,9 +440,10 @@ public class QueryCache {
       int p = 1;
 
       for (Object o : objects) {
-	if (paramTypes != null) {
+	if (paramTypes != null && paramTypes[p] != Value.UNKNOWN) {
 	  try { // Why reinvent the wheel?
-	    o = DataType.convertToValue(null /* session */, o, paramTypes[p]).convertTo(paramTypes[p]).getObject(); 
+	    o = DataType.convertToValue(null /* session */, o, paramTypes[p])
+	      .convertTo(paramTypes[p]).getObject();
 	  }
 	  catch (Exception ignored) {
 	    paramTypes = null; // Don't try again
@@ -477,7 +484,7 @@ public class QueryCache {
 	// I have no idea what to do with update_counts here ...
 
 	int update_count;
-      
+
 	while (true) {
 	  ResultSet result;
 
@@ -512,13 +519,13 @@ public class QueryCache {
       }
       catch (SQLException ex) {
 	// Log and ignore
-	ESXX.getInstance().getLogger().log(java.util.logging.Level.WARNING, 
+	ESXX.getInstance().getLogger().log(java.util.logging.Level.WARNING,
 					   "Failed to close statement: " + ex.getMessage(),
 					   ex);
       }
     }
 
-    public static String parseQuery(String unparsed_query, 
+    public static String parseQuery(String unparsed_query,
 				    final List<Param> query_params,
 				    final QueryHandler qh) {
       query_params.clear();
@@ -538,7 +545,7 @@ public class QueryCache {
 
 	      sb.append('?');
 	    }
-	  
+
 	    if (sb == null) {
 	      throw new ESXXException("Failed to resolve SQL parameter '" + name + "'.");
 	    }

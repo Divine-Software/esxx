@@ -62,23 +62,23 @@ public class JDBCHandler
   }
 
   @Override public Object load(Context cx, Scriptable thisObj,
-			       String type, HashMap<String,String> params)
+			       String type, HashMap<String,String> type_params)
     throws URISyntaxException {
     ensureTypeIsXML(type);
 
-    QueryBuilder        qb = new QueryBuilder(jsuri.getURI());
-    List<String>        qa = new ArrayList<String>();
-    Map<String, String> qp = new HashMap<String, String>();
-    String              q  = qb.getSelectQuery(qa, qp);
+    QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
+    List<String>        args    = new ArrayList<String>();
+    Map<String, String> params  = new HashMap<String, String>();
+    String              query   = builder.getSelectQuery(args, params);
 
-    Scriptable s = createParamObject(cx, thisObj, qa, qp);
-    ensureRequiredParamsHandled(qb, qp);
+    Scriptable s = createParamObject(cx, thisObj, args, null, null, params);
+    ensureRequiredParamsHandled(builder, params);
 
-    return query(cx, thisObj, new Object[] { q, s });
+    return this.query(cx, thisObj, new Object[] { query, s });
   }
 
-  @Override public Object append(Context cx, Scriptable thisObj,
-  				 Object data, String type, HashMap<String,String> params)
+  @Override public Object save(final Context cx, Scriptable thisObj,
+			       final Object data, String type, HashMap<String,String> type_params)
     throws URISyntaxException {
 
     if (!(data instanceof ScriptableObject)) {
@@ -93,29 +93,90 @@ public class JDBCHandler
       }
     }
 
-    QueryBuilder        qb = new QueryBuilder(jsuri.getURI());
-    Map<String, String> qp = new HashMap<String, String>();
-    String              q  = qb.getInsertQuery(columns, qp);
+    QueryBuilder.ColumnGetter cg = new QueryBuilder.ColumnGetter() {
+	public Object get(String key) {
+	  return ScriptRuntime.getObjectElem(data, key, cx);
+	}
+      };
 
-    ensureRequiredParamsHandled(qb, qp);
+    QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
+    List<String>        args    = new ArrayList<String>();
+    Map<String, String> params  = new HashMap<String, String>();
+    String              query   = builder.getMergeQuery(columns, cg, args, params);
 
-    return query(cx, thisObj, new Object[] { q, data });
+    Scriptable s = createParamObject(cx, thisObj, args, columns, data, params);
+    ensureRequiredParamsHandled(builder, params);
+
+    return this.query(cx, thisObj, new Object[] { query, data });
+  }
+
+  @Override public Object append(Context cx, Scriptable thisObj,
+				 Object data, String type, HashMap<String,String> type_params)
+    throws URISyntaxException {
+
+    if (!(data instanceof ScriptableObject)) {
+      throw Context.reportRuntimeError("Object must be a JavaScript object");
+    }
+
+    List<String> columns = new ArrayList<String>();
+
+    for (Object c : ((ScriptableObject) data).getIds()) {
+      if (c instanceof String) {
+	columns.add((String) c);
+      }
+    }
+
+    QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
+    Map<String, String> params  = new HashMap<String, String>();
+    String              query   = builder.getInsertQuery(columns, params);
+
+    Scriptable s = createParamObject(cx, thisObj, null, columns, data, params);
+    ensureRequiredParamsHandled(builder, params);
+
+    return this.query(cx, thisObj, new Object[] { query, s });
+  }
+
+  @Override public Object modify(Context cx, Scriptable thisObj,
+				 Object data, String type, HashMap<String,String> type_params)
+    throws URISyntaxException {
+
+    if (!(data instanceof ScriptableObject)) {
+      throw Context.reportRuntimeError("Object must be a JavaScript object");
+    }
+
+    List<String> columns = new ArrayList<String>();
+
+    for (Object c : ((ScriptableObject) data).getIds()) {
+      if (c instanceof String) {
+	columns.add((String) c);
+      }
+    }
+
+    QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
+    List<String>        args    = new ArrayList<String>();
+    Map<String, String> params  = new HashMap<String, String>();
+    String              query   = builder.getUpdateQuery(columns, args, params);
+
+    Scriptable s = createParamObject(cx, thisObj, args, columns, data, params);
+    ensureRequiredParamsHandled(builder, params);
+
+    return this.query(cx, thisObj, new Object[] { query, s });
   }
 
   @Override public Object remove(Context cx, Scriptable thisObj,
-				 String type, HashMap<String,String> params)
+				 String type, HashMap<String,String> type_params)
     throws URISyntaxException {
     ensureTypeIsXML(type);
 
-    QueryBuilder        qb = new QueryBuilder(jsuri.getURI());
-    List<String>        qa = new ArrayList<String>();
-    Map<String, String> qp = new HashMap<String, String>();
-    String              q  = qb.getDeleteQuery(qa, qp);
+    QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
+    List<String>        args    = new ArrayList<String>();
+    Map<String, String> params  = new HashMap<String, String>();
+    String              query   = builder.getDeleteQuery(args, params);
 
-    Scriptable s = createParamObject(cx, thisObj, qa, qp);
-    ensureRequiredParamsHandled(qb, qp);
+    Scriptable s = createParamObject(cx, thisObj, args, null, null, params);
+    ensureRequiredParamsHandled(builder, params);
 
-    return query(cx, thisObj, new Object[] { q, s });
+    return this.query(cx, thisObj, new Object[] { query, s });
   }
 
   @Override public Object query(Context cx, Scriptable thisObj, Object[] args) {
@@ -188,8 +249,8 @@ public class JDBCHandler
     }
   }
 
-  private void ensureRequiredParamsHandled(QueryBuilder qb, Map<String, String> qp) {
-    String required = qb.findRequiredParam(qp);
+  private void ensureRequiredParamsHandled(QueryBuilder builder, Map<String, String> params) {
+    String required = builder.findRequiredParam(params);
 
     if (required != null) {
       throw Context.reportRuntimeError("The required parameter '" + required + "' is unknown");
@@ -197,16 +258,28 @@ public class JDBCHandler
   }
 
   private Scriptable createParamObject(Context cx, Scriptable scope,
-				       List<String> qa, Map<String, String> qp) {
+				       List<String> args, List<String> columns, Object data,
+				       Map<String, String> params) {
     Scriptable s = cx.newObject(scope);
 
-    for (int i = 0; i < qa.size(); ++i) {
-      s.put(i, s, qa.get(i));
+    // Add QueryBuilder-generated arguments (integer keys)
+    if (args != null) {
+      for (int i = 0; i < args.size(); ++i) {
+	s.put(i, s, args.get(i));
+      }
     }
 
-    String result = qp.remove("result");
-    String entry  = qp.remove("entry");
-    String meta   = qp.remove("meta");
+    // Add user-provided arguments (string keys)
+    if (columns != null) {
+      for (String c : columns) {
+	s.put(c, s, ScriptRuntime.getObjectElem(data, c, cx));
+      }
+    }
+
+    // Add params from the extensions part of the fragment
+    String result = params.remove("result");
+    String entry  = params.remove("entry");
+    String meta   = params.remove("meta");
 
     if (result != null) s.put("$result", s, result);
     if (entry != null) s.put("$entry", s, entry);

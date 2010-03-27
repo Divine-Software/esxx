@@ -121,7 +121,7 @@
 	* Added support for JDBC fragment references.
 
 	* Added modify() to the URI class, which translates to HTTP
-	PATCH and SQL MERGE.
+	PATCH and SQL UPDATE.
 
 0.9.20090521
 	* Added the XKCD example from the Wiki.
