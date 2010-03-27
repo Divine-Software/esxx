@@ -137,7 +137,7 @@ public class QueryBuilder {
       sb.append("*");
     }
     else {
-      append(dbref.getColumns(), ", ", sb);
+      sequence(dbref.getColumns(), true, false, sb);
     }
 
     sb.append(" FROM ").append(dbref.getTable());
@@ -161,6 +161,15 @@ public class QueryBuilder {
     unhandled_params.putAll(dbref.getOptionalParams());
     unhandled_params.putAll(dbref.getRequiredParams());
 
+    if (dbref.getColumns().isEmpty()) {
+      for (String c : columns) {
+	ensureValidColumnName(c);
+      }
+    }
+    else {
+      columns = dbref.getColumns();
+    }
+
     if (dbref.getScope() != DBReference.Scope.ALL) {
       throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
 				   " is not a valid scope when inserting");
@@ -172,33 +181,10 @@ public class QueryBuilder {
 
     StringBuilder sb = new StringBuilder();
 
-    sb.append("INSERT INTO ").append(dbref.getTable()).append("(");
-
-    if (dbref.getColumns().isEmpty()) {
-      for (String c : columns) {
-	ensureValidColumnName(c);
-      }
-
-      append(columns, ", ", sb);
-    }
-    else {
-      append(dbref.getColumns(), ", ", sb);
-    }
-
+    sb.append("INSERT INTO ").append(dbref.getTable()).append(" (");
+    sequence(columns, true, false, sb);
     sb.append(") VALUES (");
-
-    boolean first = true;
-    for (String s : (dbref.getColumns().isEmpty() ? columns : dbref.getColumns())) {
-      if (first) {
-	first = false;
-      }
-      else {
-	sb.append(", ");
-      }
-
-      sb.append("{").append(s).append("}");
-    }
-
+    sequence(columns, false, true, sb);
     sb.append(")");
 
     return sb.toString();
@@ -213,30 +199,28 @@ public class QueryBuilder {
     unhandled_params.putAll(dbref.getOptionalParams());
     unhandled_params.putAll(dbref.getRequiredParams());
 
+    if (dbref.getColumns().isEmpty()) {
+      for (String c : columns) {
+	ensureValidColumnName(c);
+      }
+    }
+    else {
+      columns = dbref.getColumns();
+    }
+
     if (dbref.getScope() == DBReference.Scope.DISTINCT) {
       throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
 				   " is not a valid scope when updating");
     }
 
-    if (dbref.getColumns().isEmpty() && !columns.iterator().hasNext()) {
-      throw new URISyntaxException(uri.toString(), "Must have columns to update");
+    if (!columns.iterator().hasNext()) {
+      throw new URISyntaxException(uri.toString(), "No columns to update");
     }
 
     StringBuilder sb = new StringBuilder();
 
     sb.append("UPDATE ").append(dbref.getTable()).append(" SET ");
-
-    boolean first = true;
-    for (String s : (dbref.getColumns().isEmpty() ? columns : dbref.getColumns())) {
-      if (first) {
-	first = false;
-      }
-      else {
-	sb.append(", ");
-      }
-
-      sb.append(s).append(" = ").append("{").append(s).append("}");
-    }
+    sequence(columns, true, true, sb);
 
     if (dbref.getFilter() != null) {
       sb.append(" WHERE ");
@@ -256,13 +240,13 @@ public class QueryBuilder {
     unhandled_params.putAll(dbref.getRequiredParams());
 
     switch (dbref.getScope()) {
-      case SCALAR:
-      case DISTINCT:
-	throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
-				     " is not a valid scope when deleting");
-      case ROW:
-      case ALL:
-	break;
+    case SCALAR:
+    case DISTINCT:
+      throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
+				   " is not a valid scope when deleting");
+    case ROW:
+    case ALL:
+      break;
     }
 
     if (!dbref.getColumns().isEmpty()) {
@@ -281,7 +265,82 @@ public class QueryBuilder {
     return sb.toString();
   }
 
-  private void append(Iterable<String> iter, String delim, StringBuilder sb) {
+  public interface ColumnGetter {
+    public Object get(String key);
+  }
+
+  public String getMergeQuery(Iterable<String> columns, ColumnGetter cg,
+			      List<String> args, Map<String, String> unhandled_params)
+    throws URISyntaxException {
+
+    unhandled_params.clear();
+    unhandled_params.putAll(dbref.getOptionalParams());
+    unhandled_params.putAll(dbref.getRequiredParams());
+
+    String key = unhandled_params.remove("key");
+
+    if (key == null) {
+      throw new URISyntaxException(uri.toString(), "Missing 'key' parameter");
+    }
+    
+    ensureValidColumnName(key);
+
+    if (dbref.getColumns().isEmpty()) {
+      for (String c : columns) {
+	ensureValidColumnName(c);
+      }
+    }
+    else {
+      columns = dbref.getColumns();
+    }
+
+    if (dbref.getScope() != DBReference.Scope.ALL) {
+      throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
+				   " is not a valid scope when merging");
+    }
+
+    if (dbref.getFilter() != null) {
+      throw new URISyntaxException(uri.toString(), "Filters may not be used when merging");
+    }
+
+    StringBuilder sb = new StringBuilder();
+    String       ssp = uri.getSchemeSpecificPart();
+
+    if (ssp.startsWith("h2:")) {
+      sb.append("MERGE INTO ").append(dbref.getTable()).append(" (");
+      sequence(columns, true, false, sb);
+      sb.append(") KEY (").append(key).append(") VALUES (");
+      sequence(columns, false, true, sb);
+      sb.append(")");
+    }
+    else if (ssp.startsWith("mysql:")) {
+      sb.append("INSERT INTO ").append(dbref.getTable()).append(" (");
+      sequence(columns, true, false, sb);
+      sb.append(") VALUES (");
+      sequence(columns, false, true, sb);
+      sb.append(") ON DUPLICATE KEY UPDATE ");
+      sequence(columns, true, true, sb);
+    }
+    else {
+      args.add(cg.get(key).toString());
+
+      sb.append("MERGE INTO ").append(dbref.getTable())
+	.append(" USING ").append(dbref.getTable())
+	.append(" ON ").append(key).append(" = {0}")
+	.append(" WHEN MATCHED THEN UPDATE SET ");
+      sequence(columns, true, true, sb);
+      sb.append(" WHEN NOT MATCHED THEN INSERT (");
+      sequence(columns, true, false, sb);
+      sb.append(") VALUES (");
+      sequence(columns, false, true, sb);
+      sb.append(")");
+    }
+
+    return sb.toString();
+  }
+
+
+  private void sequence(Iterable<String> iter, boolean col, boolean ref, StringBuilder sb) {
     boolean first = true;
 
     for (String s : iter) {
@@ -289,10 +348,20 @@ public class QueryBuilder {
 	first = false;
       }
       else {
-	sb.append(delim);
+	sb.append(", ");
       }
 
-      sb.append(s);
+      if (col) {
+	sb.append(s);
+      }
+
+      if (col && ref) {
+	sb.append(" = ");
+      }
+
+      if (ref) {
+        sb.append("{").append(s).append("}");
+      }
     }
   }
 
@@ -303,72 +372,72 @@ public class QueryBuilder {
     sb.append("(");
 
     switch (op) {
-      case AND:
-      case OR: {
-	boolean first = true;
+    case AND:
+    case OR: {
+      boolean first = true;
 
-	for (DBReference.Filter f : filter.getChildren()) {
-	  if (first) {
-	    first = false;
-	  }
-	  else {
-	    sb.append(" ").append(op.toString()).append(" ");
-	  }
-
-	  where(f, sb, args);
+      for (DBReference.Filter f : filter.getChildren()) {
+	if (first) {
+	  first = false;
+	}
+	else {
+	  sb.append(" ").append(op.toString()).append(" ");
 	}
 
-	break;
+	where(f, sb, args);
       }
 
-      case NOT:
-	if (filter.getChildren().size() != 1) {
-	  throw new IllegalStateException("Filter.Op." + op + " must have exactly one child");
-	}
+      break;
+    }
 
-	sb.append("NOT ");
-	where(filter.getChildren().get(0), sb, args);
-	break;
-
-      case LT:
-      case LE:
-      case EQ:
-      case NE:
-      case GT:
-      case GE: {
-	if (filter.getChildren().size() != 2 ||
-	    filter.getChildren().get(0).getOp() != DBReference.Filter.Op.VAL ||
-	    filter.getChildren().get(1).getOp() != DBReference.Filter.Op.VAL) {
-	  throw new IllegalStateException("Filter.Op." + op + " must have exactly two VAL children");
-	}
-
-	String column = filter.getChildren().get(0).getValue();
-	ensureValidColumnName(column);
-	sb.append(column);
-
-	switch (op) {
-	  case LT: sb.append(" < ");  break;
-	  case LE: sb.append(" <= "); break;
-	  case EQ: sb.append(" = ");  break;
-	  case NE: sb.append(" != "); break;
-	  case GT: sb.append(" > ");  break;
-	  case GE: sb.append(" >= "); break;
-	  default:
-	    throw new IllegalStateException("This can't happen");
-	}
-
-	sb.append("{").append(args.size()).append("}");
-
-	if (filter.getChildren().get(1).getOp() != DBReference.Filter.Op.VAL) {
-	  throw new IllegalStateException("Filter.Op." + op + "'s second child must be VAL");
-	}
-
-	args.add(filter.getChildren().get(1).getValue());
-	break;
+    case NOT:
+      if (filter.getChildren().size() != 1) {
+	throw new IllegalStateException("Filter.Op." + op + " must have exactly one child");
       }
 
-      case VAL:
-	throw new IllegalStateException("Filter.Op." + op + " should have been handled already");
+      sb.append("NOT ");
+      where(filter.getChildren().get(0), sb, args);
+      break;
+
+    case LT:
+    case LE:
+    case EQ:
+    case NE:
+    case GT:
+    case GE: {
+      if (filter.getChildren().size() != 2 ||
+	  filter.getChildren().get(0).getOp() != DBReference.Filter.Op.VAL ||
+	  filter.getChildren().get(1).getOp() != DBReference.Filter.Op.VAL) {
+	throw new IllegalStateException("Filter.Op." + op + " must have exactly two VAL children");
+      }
+
+      String column = filter.getChildren().get(0).getValue();
+      ensureValidColumnName(column);
+      sb.append(column);
+
+      switch (op) {
+      case LT: sb.append(" < ");  break;
+      case LE: sb.append(" <= "); break;
+      case EQ: sb.append(" = ");  break;
+      case NE: sb.append(" != "); break;
+      case GT: sb.append(" > ");  break;
+      case GE: sb.append(" >= "); break;
+      default:
+	throw new IllegalStateException("This can't happen");
+      }
+
+      sb.append("{").append(args.size()).append("}");
+
+      if (filter.getChildren().get(1).getOp() != DBReference.Filter.Op.VAL) {
+	throw new IllegalStateException("Filter.Op." + op + "'s second child must be VAL");
+      }
+
+      args.add(filter.getChildren().get(1).getValue());
+      break;
+    }
+
+    case VAL:
+      throw new IllegalStateException("Filter.Op." + op + " should have been handled already");
     }
 
     sb.append(")");
