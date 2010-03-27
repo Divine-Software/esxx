@@ -116,6 +116,12 @@
 	* Made GAEClientConnection.sendRequestEntity() more robust by
 	accepting requests with a null entity. [lonikar]
 
+	* Added CommonJS modules support.
+
+	* Added support for JDBC fragment references.
+
+	* Added modify() to the URI class, which translates to HTTP
+	PATCH and SQL MERGE.
 
 0.9.20090521
 	* Added the XKCD example from the Wiki.

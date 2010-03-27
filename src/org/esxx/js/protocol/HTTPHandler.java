@@ -62,7 +62,7 @@ public class HTTPHandler
     throws Exception {
     Result result = sendRequest(cx, thisObj, type, params, new HttpGet(jsuri.getURI()));
 
-    if (result.status / 100 != 2) {
+    if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
     }
 
@@ -78,8 +78,8 @@ public class HTTPHandler
     attachObject(data, type, params, put, cx);
 
     Result result = sendRequest(cx, thisObj, null, null, put);
-    
-    if (result.status / 100 != 2) {
+
+    if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
     }
 
@@ -88,15 +88,49 @@ public class HTTPHandler
 
   @Override
   public Object append(Context cx, Scriptable thisObj,
-			 Object data, String type, HashMap<String,String> params)
+		       Object data, String type, HashMap<String,String> params)
     throws Exception {
     HttpPost post = new HttpPost(jsuri.getURI());
 
     attachObject(data, type, params, post, cx);
 
     Result result = sendRequest(cx, thisObj, null, null, post);
-    
-    if (result.status / 100 != 2) {
+
+    if (result.status < 200 || result.status >= 300) {
+      throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
+    }
+
+    return result.object;
+  }
+
+  @Override
+  public Object modify(Context cx, Scriptable thisObj,
+		       Object data, String type, HashMap<String,String> params)
+    throws Exception {
+    HttpPost patch = new HttpPost(jsuri.getURI()) {
+	@Override public String getMethod() {
+	  return "PATCH";
+	}
+      };
+
+    attachObject(data, type, params, patch, cx);
+
+    Result result = sendRequest(cx, thisObj, null, null, patch);
+
+    if (result.status < 200 || result.status >= 300) {
+      throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
+    }
+
+    return result.object;
+  }
+
+  @Override
+  public Object remove(Context cx, Scriptable thisObj,
+			 String type, HashMap<String,String> params)
+    throws Exception {
+    Result result = sendRequest(cx, thisObj, type, params, new HttpDelete(jsuri.getURI()));
+
+    if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
     }
 
@@ -124,7 +158,7 @@ public class HTTPHandler
       if (!(args[1] instanceof Scriptable)) {
 	throw Context.reportRuntimeError("Second URI.query() argument must be an Object");
       }
-      
+
       headers = (Scriptable) args[1];
     }
 
@@ -140,15 +174,9 @@ public class HTTPHandler
       recv_ct = ESXX.parseMIMEType(Context.toString(args[4]), recv_params);
     }
 
-    HttpPost req = new HttpPost() {
-	@Override
-	public String getMethod() {
+    HttpPost req = new HttpPost(jsuri.getURI()) {
+	@Override public String getMethod() {
 	  return method;
-	}
-
-	@Override
-	public URI getURI() {
-	  return jsuri.getURI();
 	}
       };
 
@@ -168,20 +196,6 @@ public class HTTPHandler
     Result result = sendRequest(cx, thisObj, recv_ct, recv_params, req);
 
     return makeJSResponse(cx, thisObj, result);
-  }
-
-
-  @Override
-  public Object remove(Context cx, Scriptable thisObj,
-			 String type, HashMap<String,String> params)
-    throws Exception {
-    Result result = sendRequest(cx, thisObj, type, params, new HttpDelete(jsuri.getURI()));
-
-    if (result.status / 100 != 2) {
-      throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
-    }
-
-    return result.object;
   }
 
 
@@ -213,11 +227,11 @@ public class HTTPHandler
 	SSLContext sslcontext = SSLContext.getInstance(SSLSocketFactory.TLS);
 	sslcontext.init(null, new TrustManager[] { new X509TrustManager() {
 	    @Override public void checkServerTrusted(X509Certificate[] chain, String auth) {}
-	    
+
 	    @Override public X509Certificate[] getAcceptedIssuers() {
 	      return new X509Certificate[0];
 	    }
-	    
+
 	    @Override public void checkClientTrusted(X509Certificate[] certs, String auth) {}
 	  } }, new java.security.SecureRandom());
 
@@ -242,7 +256,7 @@ public class HTTPHandler
   private synchronized HttpClient getHttpClient() {
     if (httpClient == null) {
       httpClient = new DefaultHttpClient(getConnectionManager(), getHttpParams());
-      
+
       httpClient.setCredentialsProvider(new CredentialsProvider() {
 	  @Override public void clear() {
 	    throw new UnsupportedOperationException("HttpURI.CredentialsProvider.clear()"
@@ -308,9 +322,9 @@ public class HTTPHandler
     public Object object;
   }
 
-  private Result sendRequest(Context cx, Scriptable thisObj, 
+  private Result sendRequest(Context cx, Scriptable thisObj,
 			     String type, HashMap<String,String> params,
-			     final HttpUriRequest msg) 
+			     final HttpUriRequest msg)
     throws Exception {
     // Add HTTP headers
     jsuri.enumerateHeaders(cx, new JSURI.PropEnumerator() {
@@ -361,9 +375,9 @@ public class HTTPHandler
       }
     }
   }
-  
+
   private void attachObject(Object data, String type, HashMap<String,String> params,
-			    HttpEntityEnclosingRequest entity, Context cx) 
+			    HttpEntityEnclosingRequest entity, Context cx)
     throws IOException {
     // FIXME: This may store the data three times in memory -- If
     // there were a way to turn the Object into an InputStream
@@ -382,7 +396,7 @@ public class HTTPHandler
       hdr.put(h.getName(), hdr, h.getValue());
     }
 
-    return JSESXX.newObject(cx, scope, "Response", new Object[] { 
+    return JSESXX.newObject(cx, scope, "Response", new Object[] {
 	result.status, hdr, result.object, result.contentType
       });
   }

@@ -50,6 +50,13 @@ public class ProtocolHandler {
 				       "' does not support append().");
     }
 
+    public Object modify(Context cx, Scriptable thisObj,
+			 Object data, String type, HashMap<String,String> params)
+      throws Exception {
+      throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
+				       "' does not support modify().");
+    }
+
     public Object remove(Context cx, Scriptable thisObj,
 			 String type, HashMap<String,String> params)
       throws Exception {

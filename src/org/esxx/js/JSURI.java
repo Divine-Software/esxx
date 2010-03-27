@@ -282,6 +282,24 @@ public class JSURI
     return js_this.protocolHandler.append(cx, thisObj, args[0], type, params);
   }
 
+  public static Object jsFunction_modify(Context cx, Scriptable thisObj,
+					 Object[] args, Function funObj)
+    throws Exception {
+    JSURI  js_this = checkInstance(thisObj);
+    String type    = null;
+    HashMap<String,String> params = new HashMap<String,String>();
+
+    if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
+      throw Context.reportRuntimeError("Missing append() argument");
+    }
+
+    if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
+      type = ESXX.parseMIMEType(Context.toString(args[1]), params);
+    }
+
+    return js_this.protocolHandler.modify(cx, thisObj, args[0], type, params);
+  }
+
   public static Object jsFunction_remove(Context cx, Scriptable thisObj,
 					 Object[] args, Function funObj)
     throws Exception {
