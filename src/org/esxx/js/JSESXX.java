@@ -21,6 +21,7 @@ package org.esxx.js;
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
 import org.esxx.Application;
+import org.esxx.Schema;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -66,6 +67,7 @@ public class JSESXX
 	ScriptableObject.defineClass(constructor, JSLRUCache.class);
 	ScriptableObject.defineClass(constructor, JSRequest.class);
 	ScriptableObject.defineClass(constructor, JSResponse.class);
+	ScriptableObject.defineClass(constructor, JSSchema.class);
       }
       catch (Exception ex) {
 	throw new ESXXException("Failed to define Logger, Request and Response classes");
@@ -177,16 +179,7 @@ public class JSESXX
 	throw Context.reportRuntimeError("Invalid argument: " + args[0]);
       }
 
-      // If location is set, resolve files relative the current JS
-      // file. Else, resolve files relative the working directory.
-
-      URI base = app.getCurrentLocation();
-
-      if (base == null) {
-	base = app.getWorkingDirectory();
-      }
-
-      Application.ESXXScript es = app.resolveScript(cx, uri, base);
+      Application.ESXXScript es = app.resolveScript(cx, uri, null);
       es.exec(cx, scope);
     }
 

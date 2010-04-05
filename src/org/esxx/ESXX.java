@@ -127,6 +127,11 @@ public class ESXX {
 
       stylesheetCache.addListener(new StylesheetCacheListener());
 
+      schemaCache = new LRUCache<String, Schema>(
+	Integer.parseInt(p.getProperty("esxx.cache.schema.max_entries", "1024")),
+	(long) (Double.parseDouble(p.getProperty("esxx.cache.schema.max_age", "3600")) * 1000));
+
+      schemaCache.addListener(new SchemaCacheListener());
 
       parsers = new Parsers();
 
@@ -223,6 +228,7 @@ public class ESXX {
 
       applicationCache.clear();
       stylesheetCache.clear();
+      schemaCache.clear();
       shutdownAndAwaitTermination(executorService);
     }
 
@@ -608,7 +614,7 @@ public class ESXX {
 
       DOMConfiguration dc = p.getDomConfig();
 
-      URIResolver ur = new URIResolver(this, external_uris);
+      URIResolver ur = new URIResolver(this, is_uri, external_uris);
 
       try {
 	dc.setParameter("comments", false);
@@ -629,7 +635,7 @@ public class ESXX {
     public InputStream openCachedURI(URI uri) 
       throws IOException {
 
-      if (uri.getScheme().equals("esxx-rsrc")) {
+      if ("esxx-rsrc".equals(uri.getScheme())) {
 	InputStream rsrc = getClass().getResourceAsStream("/rsrc/" + uri.getSchemeSpecificPart());
 
 	if (rsrc == null) {
@@ -704,11 +710,12 @@ public class ESXX {
     }
 
     public void releaseApplication(Application app, long start_time) {
-      app.exit(start_time);
+      app.logUsage(start_time);
+      app.exit();
     }
 
     public void removeCachedApplication(Application app) {
-      applicationCache.remove(app.getAppFilename());
+      applicationCache.remove(app.getFilename());
     }
 
     public Stylesheet getCachedStylesheet(final URI uri)
@@ -737,6 +744,32 @@ public class ESXX {
       stylesheetCache.remove(xslt.getFilename());
     }
 
+    public Schema getCachedSchema(final URI uri, final InputStream is, final String type)
+      throws IOException {
+      try {
+	return schemaCache.add(uri.toString(), new LRUCache.ValueFactory<String, Schema>() {
+	    public Schema create(String key, long expires) 
+	      throws IOException {
+	      return new Schema(uri, is, type);
+	    }
+	  }, 0);
+      }
+      catch (IOException ex) {
+	throw ex;
+      }
+      catch (ESXXException ex) {
+	throw ex;
+      }
+      catch (Exception ex) {
+	ex.printStackTrace();
+	throw new ESXXException("Unexpected exception in getCachedSchema(): " + ex.toString(),
+				ex);
+      }
+    }
+
+    public void removeCachedSchema(Schema schema) {
+      schemaCache.remove(schema.getFilename());
+    }
 
     public DOMImplementationLS getDOMImplementationLS() {
       return (DOMImplementationLS) getDOMImplementation();
@@ -889,12 +922,12 @@ public class ESXX {
 
       public void entryAdded(String key, Application app) {
 	try {
-	  mxRegister("Application", app.getAppFilename(), app.getJMXBean());
+	  mxRegister("Application", app.getFilename(), app.getJMXBean());
 	}
 	catch (Throwable ex) {
 	  // Probably a Google App Engine problem
 	  getLogger().logp(Level.WARNING, null, null, 
-			   "Failed to register Application MXBean " + app.getAppFilename());
+			   "Failed to register Application MXBean " + app.getFilename());
 	}
 	getLogger().logp(Level.CONFIG, null, null, app + " loaded.");
       }
@@ -926,12 +959,12 @@ public class ESXX {
 	}
 	finally {
 	  try {
-	    mxUnregister("Application", app.getAppFilename());
+	    mxUnregister("Application", app.getFilename());
 	  }
 	  catch (Throwable ex) {
 	    // Probably a Google App Engine problem
 	    getLogger().logp(Level.WARNING, null, null, 
-			     "Failed to unregister Application MXBean " + app.getAppFilename());
+			     "Failed to unregister Application MXBean " + app.getFilename());
 	  }
 
 	  getLogger().logp(Level.CONFIG, null, null, app + " unloaded.");
@@ -940,7 +973,7 @@ public class ESXX {
     }
 
 
-    /** This class monitors all styleseets that are being loaded and
+    /** This class monitors all stylesheets that are being loaded and
      *  unload and handles MX registration.
      */
 	
@@ -972,8 +1005,40 @@ public class ESXX {
       }
     }
 
+    /** This class monitors all schemas that are being loaded and
+     *  unload and handles MX registration.
+     */
+	
+    private class SchemaCacheListener
+      implements LRUCache.LRUListener<String, Schema> {
 
-     /** This class checks if any of an Application's or Stylesheet's
+      public void entryAdded(String key, Schema sch) {
+	try {
+	  mxRegister("Schema", sch.getFilename(), sch.getJMXBean());
+	}
+	catch (Throwable ex) {
+	  // Probably a Google App Engine problem
+	  getLogger().logp(Level.WARNING, null, null, 
+			   "Failed to register Schema MXBean " + sch.getFilename());
+	}
+	getLogger().logp(Level.CONFIG, null, null, sch + " loaded.");
+      }
+
+      public void entryRemoved(String key, Schema sch) {
+	try {
+	  mxUnregister("Schema", sch.getFilename());
+	}
+	catch (Throwable ex) {
+	  // Probably a Google App Engine problem
+	  getLogger().logp(Level.WARNING, null, null, 
+			   "Failed to unregister Schema MXBean " + sch.getFilename());
+	}
+	getLogger().logp(Level.CONFIG, null, null, sch + " unloaded.");
+      }
+    }
+
+
+     /** This class checks if any of an Application's, Stylesheet's or Schema's
      *   files have been modified since it was loaded, and if so,
      *   unloads the cached object.
      */
@@ -997,6 +1062,18 @@ public class ESXX {
 	stylesheetCache.filterEntries(new LRUCache.EntryFilter<String, Stylesheet>() {
 	    public boolean isStale(String key, Stylesheet xslt, long created) {
 	      for (URI uri : xslt.getExternalURIs()) {
+		if (getLastModified(uri) > created) {
+		  return true;
+		}
+	      }
+
+	      return false;
+	    }
+	  });
+
+	schemaCache.filterEntries(new LRUCache.EntryFilter<String, Schema>() {
+	    public boolean isStale(String key, Schema sch, long created) {
+	      for (URI uri : sch.getExternalURIs()) {
 		if (getLastModified(uri) > created) {
 		  return true;
 		}
@@ -1223,11 +1300,17 @@ public class ESXX {
 	addIfMissing("jpg",   "image/jpeg");
 	addIfMissing("js",    "application/x-javascript");
 	addIfMissing("json",  "application/json");
+	addIfMissing("nrl",   "application/x-nrl+xml");
+	addIfMissing("nvdl",  "application/x-nvdl+xml");
 	addIfMissing("pdf",   "application/pdf");
 	addIfMissing("png",   "image/png");
+	addIfMissing("rnc",   "application/relax-ng-compact-syntax");
+	addIfMissing("rng",   "application/x-rng+xml");
+	addIfMissing("sch",   "application/x-schematron+xml");
 	addIfMissing("txt",   "text/plain");
 	addIfMissing("xhtml", "application/xhtml+xml");
 	addIfMissing("xml",   "application/xml");
+	addIfMissing("xsd",   "application/x-xsd+xml");
 	addIfMissing("xsl",   "text/xsl");
 	addIfMissing("xslt",  "text/xsl");
       }
@@ -1247,6 +1330,7 @@ public class ESXX {
 
     private LRUCache<String, Application> applicationCache;
     private LRUCache<String, Stylesheet> stylesheetCache;
+    private LRUCache<String, Schema> schemaCache;
 
     private Parsers parsers;
     private Properties settings;

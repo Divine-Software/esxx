@@ -53,16 +53,25 @@ import org.w3c.dom.Document;
 
 class Parsers {
   public Parsers() {
-    parserMap.put("application/json",                  new JSONParser());
-    parserMap.put("application/octet-stream",          new BinaryParser());
-    parserMap.put("application/x-www-form-urlencoded", new FormParser());
-    parserMap.put("application/xml",                   new XMLParser());
-    parserMap.put("image/*",                           new ImageParser());
-    parserMap.put("message/rfc822",                    new MIMEParser());
-    parserMap.put("multipart/form-data",               new MultipartFormParser());
-    parserMap.put("text/html",                         new HTMLParser());
-    parserMap.put("text/plain",                        new StringParser());
-    parserMap.put("text/xml",                          new XMLParser());
+    Parser schema_parser = new SchemaParser();
+
+    parserMap.put("application/json",                    new JSONParser());
+    parserMap.put("application/octet-stream",            new BinaryParser());
+    parserMap.put("application/relax-ng-compact-syntax", schema_parser);
+    parserMap.put("application/x-nrl+xml",               schema_parser);
+    parserMap.put("application/x-nvdl+xml",              schema_parser);
+    parserMap.put("application/x-rnc",                   schema_parser);
+    parserMap.put("application/x-rng+xml",               schema_parser);
+    parserMap.put("application/x-schematron+xml",        schema_parser);
+    parserMap.put("application/x-www-form-urlencoded",   new FormParser());
+    parserMap.put("application/x-xsd+xml",               schema_parser);
+    parserMap.put("application/xml",                     new XMLParser());
+    parserMap.put("image/*",                             new ImageParser());
+    parserMap.put("message/rfc822",                      new MIMEParser());
+    parserMap.put("multipart/form-data",                 new MultipartFormParser());
+    parserMap.put("text/html",                           new HTMLParser());
+    parserMap.put("text/plain",                          new StringParser());
+    parserMap.put("text/xml",                            new XMLParser());
   }
 
   public Object parse(String mime_type, HashMap<String,String> mime_params,
@@ -86,10 +95,13 @@ class Parsers {
       }
     }
 
-    Object result =  parser.parse(mime_type, mime_params, is, is_uri,
-				  external_uris, err, cx, scope);
-    is.close();
-    return result;
+    try {
+      return parser.parse(mime_type, mime_params, is, is_uri,
+			  external_uris, err, cx, scope);
+    }
+    finally {
+      is.close();
+    }
   }
 
   /** The interface all parsers must implement */
@@ -316,7 +328,7 @@ class Parsers {
     }
   }
 
-  /** A Parser that parses JSON and returns a JavaScrip Array or Object. */
+  /** A Parser that parses JSON and returns a JavaScript Array or Object. */
   private static class JSONParser
     implements Parser {
     public Object parse(String mime_type, HashMap<String,String> mime_params,
@@ -500,6 +512,19 @@ class Parsers {
 	  return null;
 	}
       }
+    }
+  }
+
+  /** A Parser that parses XML Schemas and returns a JavaScript ESXX.Schema object. */
+  private static class SchemaParser
+    implements Parser {
+    public Object parse(String mime_type, HashMap<String,String> mime_params,
+			InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope) {
+      // NB: If the schema is already loaded into the schema cache
+      // (with key 'is_uri'), the 'is' argument will be left unused.
+      return org.esxx.js.JSSchema.newJSSchema(cx, scope, is_uri, is, mime_type);
     }
   }
 }

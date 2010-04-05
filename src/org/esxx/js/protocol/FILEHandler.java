@@ -47,16 +47,15 @@ public class FILEHandler
   public Object load(Context cx, Scriptable thisObj,
 		     String type, HashMap<String,String> params)
     throws Exception {
-    // Default file: load() media type is XML
+    File file = new File(jsuri.getURI());
+
     if (type == null) {
-      type = "text/xml";
+      type = ESXX.fileTypeMap.getContentType(file);
     }
 
-    if (type.equals("text/xml")) {
-      File dir = new File(jsuri.getURI());
-
-      if (dir.exists() && dir.isDirectory()) {
-	Document result = createDirectoryListing(dir);
+    if (type.equals("text/xml") || type.equals("application/xml")) {
+      if (file.exists() && file.isDirectory()) {
+	Document result = createDirectoryListing(file);
 
 	return ESXX.domToE4X(result, cx, thisObj);
       }

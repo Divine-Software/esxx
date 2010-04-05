@@ -380,7 +380,8 @@ public class JSRequest
 	  throw new ESXXException("Unable to read SOAP message stream: " + ex.getMessage());
 	}
 	catch (SOAPException ex) {
-	  throw new ESXXException("Invalid SOAP message: " + ex.getMessage());
+	  throw new ESXXException(400 /* Bad Request */, 
+				  "Invalid SOAP message: " + ex.getMessage());
 	}
 	finally {
 	  try { request.getInputStream().close(); } catch (Exception ignored) {}
@@ -396,7 +397,8 @@ public class JSRequest
 				  Context.getCurrentContext(), this);
 	}
 	catch (Exception ex) {
-	  throw new ESXXException("Unable to parse request entity: " + ex.getMessage(), ex);
+	  throw new ESXXException(400 /* Bad Request */, 
+				  "Unable to parse request entity: " + ex.getMessage(), ex);
 	}
 	finally {
 	  try { request.getInputStream().close(); } catch (Exception ignored) {}

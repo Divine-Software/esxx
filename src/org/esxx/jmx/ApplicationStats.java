@@ -35,8 +35,12 @@ public class ApplicationStats {
     return invocations;
   }
 
-  @Units("wall clock milliseconds") public long getExecutionTime() {
+  @Units("wall clock milliseconds") public long getTotalExecutionTime() {
     return executionTime;
+  }
+
+  @Units("wall clock milliseconds") public long getMeanExecutionTime() {
+    return invocations == 0 ? 0 : executionTime / invocations;
   }
 
   public Date getStarted() {

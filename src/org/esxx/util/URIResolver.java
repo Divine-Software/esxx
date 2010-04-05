@@ -28,12 +28,16 @@ import javax.xml.transform.TransformerException;
 import org.esxx.ESXX;
 import org.w3c.dom.ls.LSException;
 import org.w3c.dom.ls.LSInput;
+import org.w3c.dom.ls.LSResourceResolver;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 
 public class URIResolver
-  implements javax.xml.transform.URIResolver, org.w3c.dom.ls.LSResourceResolver {
+  implements javax.xml.transform.URIResolver, LSResourceResolver, EntityResolver {
 
-  public URIResolver(ESXX esxx, Collection<URI> log_visited) {
+  public URIResolver(ESXX esxx, URI base_uri, Collection<URI> log_visited) {
     this.esxx = esxx;
+    baseURI = base_uri;
     logVisited = log_visited;
     openedStreams = new LinkedList<InputStream>();
   }
@@ -46,8 +50,8 @@ public class URIResolver
   }
 
 
-  @Override public Source resolve(String href,
-				  String base) 
+  @Override /* URIResolver */ public Source resolve(String href,
+						    String base) 
     throws TransformerException {
     try {
       URI uri = getURI(href, base);
@@ -60,11 +64,11 @@ public class URIResolver
   }
 
 
-  @Override public LSInput resolveResource(String type,
-					   String namespaceURI,
-					   String publicId,
-					   String systemId,
-					   String baseURI) {
+  @Override /* LSResourceResolver */ public LSInput resolveResource(String type,
+								    String namespaceURI,
+								    String publicId,
+								    String systemId,
+								    String baseURI) {
     try {
       LSInput lsi = esxx.getDOMImplementationLS().createLSInput();
       URI     uri = getURI(systemId, baseURI);
@@ -80,18 +84,29 @@ public class URIResolver
     }
   }
 
+  @Override /* EntityResolver */ public InputSource resolveEntity(String publicId, 
+								  String systemId) 
+    throws IOException {
+
+    if (systemId == null) {
+      throw new IOException("System ID missing");
+    }
+
+    return new InputSource(getIS(getURI(systemId, null)));
+  }
 
   private URI getURI(String uri, String base_uri) 
     throws IOException {
     try {
+      URI base = baseURI;
+
       if (base_uri != null) {
-	return new URI(base_uri).resolve(uri);
+	base = new URI(base_uri);
       }
-      else {
-	return new URI(uri);
-      }
+
+      return base.resolve(uri);
     }
-    catch (Exception ex) {
+    catch (java.net.URISyntaxException ex) {
       throw new IOException(ex.getMessage(), ex);
     }
   }
@@ -112,6 +127,7 @@ public class URIResolver
   }
 
   private ESXX esxx;
+  private URI baseURI;
   private Collection<URI> logVisited;
   private Collection<InputStream> openedStreams;
 }

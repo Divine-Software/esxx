@@ -30,7 +30,8 @@ import net.sf.saxon.s9api.*;
 import org.esxx.ESXX;
 import org.esxx.util.URIResolver;
 
-public class Stylesheet {
+public class Stylesheet 
+  implements org.esxx.cache.Cached {
   public Stylesheet(final URI uri) 
     throws IOException {
     esxx = ESXX.getInstance();
@@ -41,7 +42,7 @@ public class Stylesheet {
 
     XsltCompiler compiler = esxx.getSaxonProcessor().newXsltCompiler();
 
-    URIResolver ur = new URIResolver(esxx, externalURIs);
+    URIResolver ur = new URIResolver(esxx, uri, externalURIs);
 
     final TransformerException[] cause = { null };
 
@@ -106,7 +107,7 @@ public class Stylesheet {
     }
   }
 
-  public String getFilename() {
+  @Override /* Cached */ public String getFilename() {
     return uri.toString();
   }
 
@@ -114,7 +115,7 @@ public class Stylesheet {
     return xslt;
   }
 
-  public synchronized void logUsage(long start_time) {
+  @Override /* Cached */ public synchronized void logUsage(long start_time) {
     ++invocations;
     lastAccessed  = System.currentTimeMillis();
 
@@ -124,7 +125,7 @@ public class Stylesheet {
   }
 
 
-  public Collection<URI> getExternalURIs() {
+  @Override /* Cached */  public Collection<URI> getExternalURIs() {
     return externalURIs;
   }
 
@@ -133,7 +134,7 @@ public class Stylesheet {
     return "[" + this.getClass().getName() + ": " + uri + "]";
   }
 
-  public synchronized JMXBean getJMXBean() {
+  @Override /* Cached */  public synchronized JMXBean getJMXBean() {
     if (jmxBean == null) {
       jmxBean = new JMXBean();
     }
@@ -151,15 +152,15 @@ public class Stylesheet {
 	    new javax.management.NotificationBroadcasterSupport());
     }
 
-    public String getFilename() {
+    @Override public String getFilename() {
       return Stylesheet.this.getFilename();
     }
 
-    public void unloadStylesheet() {
+    @Override public void unloadStylesheet() {
       esxx.removeCachedStylesheet(Stylesheet.this);
     }
 
-    public org.esxx.jmx.ApplicationStats getStatistics() {
+    @Override public org.esxx.jmx.ApplicationStats getStatistics() {
       synchronized (Stylesheet.this) {
 	return new org.esxx.jmx.ApplicationStats(invocations, executionTime, 
 						 started, new Date(lastAccessed));

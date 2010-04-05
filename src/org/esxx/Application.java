@@ -55,8 +55,8 @@ import net.sf.saxon.dom.*;
   * will be interpreted.
   */
 
-public class Application {
-
+public class Application
+  implements org.esxx.cache.Cached {
   public Application(Context cx, Request request)
     throws IOException {
     esxx = ESXX.getInstance();
@@ -401,27 +401,29 @@ public class Application {
     return enterCount == 0;
   }
 
-  public synchronized void exit(long start_time) {
+  public synchronized void exit() {
     if (enterCount == 0) {
       throw new IllegalStateException("enterCount becomes negative!");
-    }
-
-    ++invocations;
-    lastAccessed  = System.currentTimeMillis();
-
-    if (start_time != 0) {
-      executionTime += (lastAccessed - start_time);
     }
 
     --enterCount;
     this.notify();
   }
 
+  @Override /* Cached */ public synchronized void logUsage(long start_time) {
+    ++invocations;
+    lastAccessed  = System.currentTimeMillis();
+
+    if (start_time != 0) {
+      executionTime += (lastAccessed - start_time);
+    }
+  }
+
   public String getAppName() {
     return ident;
   }
 
-  public String getAppFilename() {
+  @Override /* Cached */ public String getFilename() {
     return baseURI.toString();
   }
 
@@ -435,11 +437,11 @@ public class Application {
     return logger;
   }
 
-  public Collection<URI> getExternalURIs() {
+  @Override /* Cached */ public Collection<URI> getExternalURIs() {
     return externalURIs;
   }
 
-  public synchronized JMXBean getJMXBean() {
+  @Override /* Cached */ public synchronized JMXBean getJMXBean() {
     if (jmxBean == null) {
       jmxBean = new JMXBean();
     }
@@ -497,14 +499,24 @@ public class Application {
     includePath = paths;
   }
 
-  public synchronized ESXXScript resolveScript(Context cx, URI file, URI base) 
-    throws IOException {
+  public URI resolveURI(Context cx, URI file, URI base) {
     URI uri = null;
     InputStream is = null;
 
+    // If base is null and if location is set, resolve files relative
+    // the current JS file. Then try to resolve files relative the working
+    // directory. Finally, try the include path.
+
+    if (base == null) {
+      base = getCurrentLocation();
+    }
+
+    if (base == null) {
+      base = getWorkingDirectory();
+    }
+
     try {
       uri = base.resolve(file);
-      //      System.out.println("Resolving " + file + " against " + base + " => " + uri);
       is  = esxx.openCachedURI(uri);
     }
     catch (IOException ignored) {}
@@ -516,8 +528,8 @@ public class Application {
       for (Object path : cx.getElements(includePath)) {
 	try {
 	  uri = ((JSURI) path).getURI().resolve(file);
-	  //	  System.out.println("Resolving " + file + " against " + ((JSURI) path).getURI() + " => " + uri);
 	  is  = esxx.openCachedURI(uri);
+	  is.close();
 	  break; // On success, break
 	}
 	catch (IOException ignored) { /* Try next */ }
@@ -527,9 +539,17 @@ public class Application {
 	throw Context.reportRuntimeError("File '" + file + "' not found.");
       }
     }
+    
+    return uri;
+  }
+
+  public ESXXScript resolveScript(Context cx, URI file, URI base) 
+    throws IOException {
+
+    URI uri = resolveURI(cx, file, base);
+    InputStream is = esxx.openCachedURI(uri);
 
     try {
-      //      System.out.println("Loading " + uri);
       return addScript(cx, new InputStreamReader(is), uri, 1);
     }
     finally {
@@ -773,7 +793,7 @@ public class Application {
       require.setAttributes("paths", ScriptableObject.EMPTY);
       require.delete("paths");
       require.installMain(cx, applicationScope, 
-			  getAppName(), getAppFilename(),
+			  getAppName(), getFilename(),
 			  cx.newObject(applicationScope) /* exports */);
 
       // Execute all <?esxx and <?esxx-import PIs
@@ -1139,27 +1159,27 @@ public class Application {
 	    new javax.management.NotificationBroadcasterSupport());
     }
 
-    public String getAppName() {
+    @Override public String getAppName() {
       return Application.this.getAppName();
     }
 
-    public String getAppFilename() {
-      return Application.this.getAppFilename();
+    @Override public String getAppFilename() {
+      return Application.this.getFilename();
     }
 
-    public boolean isDebuggerEnabled() {
+    @Override public boolean isDebuggerEnabled() {
       return debuggerEnabled;
     }
 
-    public boolean isDebuggerActivated() {
+    @Override public boolean isDebuggerActivated() {
       return debuggerActivated;
     }
 
-    public void unloadApplication() {
+    @Override public void unloadApplication() {
       esxx.removeCachedApplication(Application.this);
     }
 
-    public org.esxx.jmx.ApplicationStats getStatistics() {
+    @Override public org.esxx.jmx.ApplicationStats getStatistics() {
       synchronized (Application.this) {
 	return new org.esxx.jmx.ApplicationStats(invocations, executionTime,
 						 started, new Date(lastAccessed));
