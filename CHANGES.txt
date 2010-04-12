@@ -1,6 +1,10 @@
-0.9.2009xxxx
+0.9.2010xxxx
 
 	* Upgraded embedded H2 to 1.1.114, 2009-06-01.
+
+	* Upgraded the JSON classes to version 2009-09-11.
+
+	* Upgraded HttpComponents to 4.0.1.
 
 	* The Ajax Blog and app-form-sql examples now uses an
 	in-memory database by default.
@@ -85,8 +89,6 @@
 	comma-separeted list. Very useful for queries like
 	"SELECT ... WHERE IN (param)".
 
-	* Updated the JSON classes to version 2009-09-11.
-
 	* The URI object's toString() value now returns the URI in Unicode
 	formate (like an IRI). The valueOf() function has been changed to
 	return the strict US-ASCII URI string.
@@ -124,6 +126,9 @@
 	PATCH and SQL UPDATE.
 
 	* Added XML Schema validation support.
+
+	* The HTTP protocol now uses preemptive authentication for
+	subsequent requests.
 
 0.9.20090521
 	* Added the XKCD example from the Wiki.

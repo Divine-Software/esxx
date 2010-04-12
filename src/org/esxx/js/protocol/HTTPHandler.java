@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -42,6 +43,8 @@ import org.apache.http.impl.client.*;
 import org.apache.http.impl.conn.tsccm.*;
 import org.apache.http.params.*;
 import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.HttpContext;
+import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.client.protocol.ClientContext;
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
@@ -57,7 +60,7 @@ public class HTTPHandler
   }
 
   @Override
-  public Object load(Context cx, Scriptable thisObj,
+    public Object load(Context cx, Scriptable thisObj,
 		       String type, HashMap<String,String> params)
     throws Exception {
     Result result = sendRequest(cx, thisObj, type, params, new HttpGet(jsuri.getURI()));
@@ -70,7 +73,7 @@ public class HTTPHandler
   }
 
   @Override
-  public Object save(Context cx, Scriptable thisObj,
+    public Object save(Context cx, Scriptable thisObj,
 		       Object data, String type, HashMap<String,String> params)
     throws Exception {
     HttpPut put = new HttpPut(jsuri.getURI());
@@ -87,8 +90,8 @@ public class HTTPHandler
   }
 
   @Override
-  public Object append(Context cx, Scriptable thisObj,
-		       Object data, String type, HashMap<String,String> params)
+    public Object append(Context cx, Scriptable thisObj,
+			 Object data, String type, HashMap<String,String> params)
     throws Exception {
     HttpPost post = new HttpPost(jsuri.getURI());
 
@@ -104,8 +107,8 @@ public class HTTPHandler
   }
 
   @Override
-  public Object modify(Context cx, Scriptable thisObj,
-		       Object data, String type, HashMap<String,String> params)
+    public Object modify(Context cx, Scriptable thisObj,
+			 Object data, String type, HashMap<String,String> params)
     throws Exception {
     HttpPost patch = new HttpPost(jsuri.getURI()) {
 	@Override public String getMethod() {
@@ -125,7 +128,7 @@ public class HTTPHandler
   }
 
   @Override
-  public Object remove(Context cx, Scriptable thisObj,
+    public Object remove(Context cx, Scriptable thisObj,
 			 String type, HashMap<String,String> params)
     throws Exception {
     Result result = sendRequest(cx, thisObj, type, params, new HttpDelete(jsuri.getURI()));
@@ -139,7 +142,7 @@ public class HTTPHandler
 
 
   @Override
-  public Object query(Context cx, Scriptable thisObj, Object[] args)
+    public Object query(Context cx, Scriptable thisObj, Object[] args)
     throws Exception {
     if (args.length < 1) {
       throw Context.reportRuntimeError("Missing arguments to URI.query().");
@@ -257,40 +260,8 @@ public class HTTPHandler
     if (httpClient == null) {
       httpClient = new DefaultHttpClient(getConnectionManager(), getHttpParams());
 
-      httpClient.setCredentialsProvider(new CredentialsProvider() {
-	  @Override public void clear() {
-	    throw new UnsupportedOperationException("HttpURI.CredentialsProvider.clear()"
-						    + " not implemented.");
-	  }
-
-	  @Override public void setCredentials(AuthScope authscope, Credentials credentials) {
-	    throw new UnsupportedOperationException("HttpURI.CredentialsProvider.setCredentials()"
-						    + " not implemented.");
-	  }
-
-	  @Override public Credentials getCredentials(AuthScope authscope) {
-	    try {
-	      Scriptable auth = jsuri.getAuth(Context.getCurrentContext(),
-					      new URI(jsuri.getURI().getScheme(),
-						      null,
-						      authscope.getHost(),
-						      authscope.getPort(),
-						      null, null, null),
-					      authscope.getRealm(), authscope.getScheme());
-
-	      if (auth == null) {
-		return null;
-	      }
-
-	      return new UsernamePasswordCredentials(Context.toString(auth.get("username", auth)),
-						     Context.toString(auth.get("password", auth)));
-	    }
-	    catch (URISyntaxException ex) {
-	      throw new ESXXException("Failed to convert AuthScope to URI: " + ex.getMessage(), ex);
-	    }
-	  }
-	});
-
+      httpClient.addRequestInterceptor(new PreemptiveInterceptor(jsuri), 0);
+      httpClient.setCredentialsProvider(new JSCredentialsProvider(jsuri));
       httpClient.setCookieStore(new CookieJar(jsuri));
 
       httpClient.getAuthSchemes().register(OAuthSchemeFactory.SCHEME_NAME,
@@ -305,11 +276,11 @@ public class HTTPHandler
       httpContext = new BasicHttpContext();
       httpContext.setAttribute(ClientContext.AUTH_SCHEME_PREF,
 			       Arrays.asList(new String[] {
-				   "oauth",
-				   "ntlm",
-				   "digest",
-				   "basic"
-				 }));
+				 "oauth",
+				 "ntlm",
+				 "digest",
+				 "basic"
+			       }));
     }
 
     return httpContext;
@@ -397,12 +368,152 @@ public class HTTPHandler
     }
 
     return JSESXX.newObject(cx, scope, "Response", new Object[] {
-	result.status, hdr, result.object, result.contentType
-      });
+      result.status, hdr, result.object, result.contentType
+    });
+  }
+
+  private static class PreemptiveInterceptor
+    implements HttpRequestInterceptor {
+
+    public PreemptiveInterceptor(JSURI jsuri) {
+      this.jsuri = jsuri;
+    }
+
+    @Override public void process(HttpRequest request, HttpContext context) 
+      throws HttpException, IOException {
+      try {
+	AuthState           as = (AuthState) 
+	  context.getAttribute(ClientContext.TARGET_AUTH_STATE);
+	CredentialsProvider cp = (CredentialsProvider) 
+	  context.getAttribute(ClientContext.CREDS_PROVIDER);
+	HttpHost          host = (HttpHost) 
+	  context.getAttribute(ExecutionContext.HTTP_TARGET_HOST);
+	URI        request_uri = new URI(host.toURI() + request.getRequestLine().getUri());
+	
+
+	if (as.getAuthScheme() == null) {
+	  for (PreemptiveScheme ps : preemptiveSchemes) {
+	    if (ps.matches(request_uri)) {
+	      Credentials creds = cp.getCredentials(ps.getScope());
+
+	      if (creds != null) {
+		as.setAuthScheme(ps.getScheme());
+		as.setCredentials(creds);
+		//		System.out.println("Preemptive " + ps);
+	      }
+
+	      break;
+	    }
+	  }
+	}
+	else {
+	  for (PreemptiveScheme ps : preemptiveSchemes) {
+	    if (ps.matches(request_uri)) {
+	      return;
+	    }
+	  }
+
+	  preemptiveSchemes.add(new PreemptiveScheme(request_uri, 
+						     as.getAuthScheme(), 
+						     as.getAuthScope()));
+	}
+      }
+      catch (Exception ex) {
+	ex.printStackTrace();
+      }
+    }
+
+    private JSURI jsuri;
+  }
+
+  private static class JSCredentialsProvider
+    implements CredentialsProvider {
+    
+    public JSCredentialsProvider(JSURI jsuri) {
+      this.jsuri = jsuri;
+    }
+
+    @Override public void clear() {
+      throw new UnsupportedOperationException("HttpURI.CredentialsProvider.clear()"
+					      + " not implemented.");
+    }
+
+    @Override public void setCredentials(AuthScope authscope, Credentials credentials) {
+      throw new UnsupportedOperationException("HttpURI.CredentialsProvider.setCredentials()"
+					      + " not implemented.");
+    }
+
+    @Override public Credentials getCredentials(AuthScope authscope) {
+      try {
+	Scriptable auth = jsuri.getAuth(Context.getCurrentContext(),
+					new URI(jsuri.getURI().getScheme(),
+						null,
+						authscope.getHost(),
+						authscope.getPort(),
+						null, null, null),
+					authscope.getRealm(), authscope.getScheme());
+
+	if (auth == null) {
+	  return null;
+	}
+
+	return new UsernamePasswordCredentials(Context.toString(auth.get("username", auth)),
+					       Context.toString(auth.get("password", auth)));
+      }
+      catch (URISyntaxException ex) {
+	throw new ESXXException("Failed to convert AuthScope to URI: " + ex.getMessage(), ex);
+      }
+    }
+
+    private JSURI jsuri;
+  }
+
+  private static class PreemptiveScheme {
+    public PreemptiveScheme(URI uri, AuthScheme auth_scheme, AuthScope auth_scope) {
+      expires = System.currentTimeMillis() + 3600 * 1000; // One hour
+
+      String uri_str = uri.toString();
+
+      if (uri_str.endsWith("/")) {
+	rule = Pattern.compile("^" + Pattern.quote(uri_str) + ".*");
+      }
+      else {
+	rule = Pattern.compile("^" + Pattern.quote(uri_str) + "($|/.*)");
+      }
+
+      scheme = auth_scheme;
+      scope  = auth_scope;
+    }
+
+    public boolean isExpired(long now) {
+      return now >= expires;
+    }
+
+    public boolean matches(URI uri) {
+      return rule.matcher(uri.toString()).matches();
+    }
+
+    public AuthScheme getScheme() {
+      return scheme;
+    }
+
+    public AuthScope getScope() {
+      return scope;
+    }
+
+    public String toString() {
+      return "[PreemptiveScheme " + rule + ", " + scheme + ", " + scope + "]";
+    }
+
+    private long expires;
+    private Pattern rule;
+    private AuthScheme scheme;
+    private AuthScope scope;
   }
 
   private static HttpParams httpParams;
   private static ClientConnectionManager connectionManager;
+  private static List<PreemptiveScheme> preemptiveSchemes = new LinkedList<PreemptiveScheme>();
   private DefaultHttpClient httpClient;
   private BasicHttpContext httpContext;
 }
