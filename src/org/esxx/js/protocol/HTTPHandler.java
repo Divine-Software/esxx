@@ -412,7 +412,7 @@ public class HTTPHandler
 	    if (creds != null) {
 	      as.setAuthScheme(ps.getScheme());
 	      as.setCredentials(creds);
-	      System.out.println("Preemptive " + ps);
+	      //System.out.println("Preemptive " + ps);
 	    }
 	  }
 	}
