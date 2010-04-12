@@ -57,6 +57,20 @@ public class HTTPHandler
   public HTTPHandler(JSURI jsuri)
     throws URISyntaxException {
     super(jsuri);
+
+    synchronized (HTTPHandler.class) {
+      if (preemptiveSchemes == null) {
+	preemptiveSchemes = new PreemptiveSchemes();
+	preemptiveInterceptor = new PreemptiveInterceptor();
+
+	// Purge preemptive cache peridically
+	ESXX.getInstance().getExecutor().scheduleWithFixedDelay(new Runnable() {
+	    @Override public void run() {
+	      preemptiveSchemes.purgeEntries();
+	    }
+	  }, 10, 10, java.util.concurrent.TimeUnit.SECONDS);
+      }
+    }
   }
 
   @Override
@@ -260,7 +274,7 @@ public class HTTPHandler
     if (httpClient == null) {
       httpClient = new DefaultHttpClient(getConnectionManager(), getHttpParams());
 
-      httpClient.addRequestInterceptor(new PreemptiveInterceptor(jsuri), 0);
+      httpClient.addRequestInterceptor(preemptiveInterceptor, 0);
       httpClient.setCredentialsProvider(new JSCredentialsProvider(jsuri));
       httpClient.setCookieStore(new CookieJar(jsuri));
 
@@ -276,11 +290,11 @@ public class HTTPHandler
       httpContext = new BasicHttpContext();
       httpContext.setAttribute(ClientContext.AUTH_SCHEME_PREF,
 			       Arrays.asList(new String[] {
-				 "oauth",
-				 "ntlm",
-				 "digest",
-				 "basic"
-			       }));
+				   "oauth",
+				   "ntlm",
+				   "digest",
+				   "basic"
+				 }));
     }
 
     return httpContext;
@@ -368,67 +382,58 @@ public class HTTPHandler
     }
 
     return JSESXX.newObject(cx, scope, "Response", new Object[] {
-      result.status, hdr, result.object, result.contentType
-    });
+	result.status, hdr, result.object, result.contentType
+      });
   }
 
   private static class PreemptiveInterceptor
     implements HttpRequestInterceptor {
-
-    public PreemptiveInterceptor(JSURI jsuri) {
-      this.jsuri = jsuri;
-    }
-
-    @Override public void process(HttpRequest request, HttpContext context) 
+    @Override public void process(HttpRequest request, HttpContext context)
       throws HttpException, IOException {
       try {
-	AuthState           as = (AuthState) 
+	AuthState           as = (AuthState)
 	  context.getAttribute(ClientContext.TARGET_AUTH_STATE);
-	CredentialsProvider cp = (CredentialsProvider) 
+	CredentialsProvider cp = (CredentialsProvider)
 	  context.getAttribute(ClientContext.CREDS_PROVIDER);
-	HttpHost          host = (HttpHost) 
+	HttpHost          host = (HttpHost)
 	  context.getAttribute(ExecutionContext.HTTP_TARGET_HOST);
-	URI        request_uri = new URI(host.toURI() + request.getRequestLine().getUri());
-	
+	String        full_uri = host.toURI() + request.getRequestLine().getUri();
 
 	if (as.getAuthScheme() == null) {
-	  for (PreemptiveScheme ps : preemptiveSchemes) {
-	    if (ps.matches(request_uri)) {
-	      Credentials creds = cp.getCredentials(ps.getScope());
+	  // This request does not have an AuthScheme, so lets see if
+	  // we've already been here, and if so, add the apporopriate
+	  // authentication header.
 
-	      if (creds != null) {
-		as.setAuthScheme(ps.getScheme());
-		as.setCredentials(creds);
-		//		System.out.println("Preemptive " + ps);
-	      }
+	  PreemptiveScheme ps = preemptiveSchemes.find(full_uri);
 
-	      break;
+	  if (ps != null) {
+	    Credentials creds = cp.getCredentials(ps.getScope());
+
+	    if (creds != null) {
+	      as.setAuthScheme(ps.getScheme());
+	      as.setCredentials(creds);
+	      System.out.println("Preemptive " + ps);
 	    }
 	  }
 	}
 	else {
-	  for (PreemptiveScheme ps : preemptiveSchemes) {
-	    if (ps.matches(request_uri)) {
-	      return;
-	    }
-	  }
+	  // This is a request with authenication available. Make a
+	  // not of this for the next time we access this host.
 
-	  preemptiveSchemes.add(new PreemptiveScheme(request_uri, 
-						     as.getAuthScheme(), 
-						     as.getAuthScope()));
+	  preemptiveSchemes.remember(host.toURI(), // RFC 2617 says all host URLs
+				     as.getAuthScheme(),
+				     as.getAuthScope());
 	}
       }
       catch (Exception ex) {
 	ex.printStackTrace();
       }
     }
-
-    private JSURI jsuri;
   }
 
   private static class JSCredentialsProvider
     implements CredentialsProvider {
-    
+
     public JSCredentialsProvider(JSURI jsuri) {
       this.jsuri = jsuri;
     }
@@ -469,28 +474,27 @@ public class HTTPHandler
   }
 
   private static class PreemptiveScheme {
-    public PreemptiveScheme(URI uri, AuthScheme auth_scheme, AuthScope auth_scope) {
-      expires = System.currentTimeMillis() + 3600 * 1000; // One hour
+    public PreemptiveScheme(String uri, AuthScheme auth_scheme, AuthScope auth_scope) {
+      created = System.currentTimeMillis();
 
-      String uri_str = uri.toString();
-
-      if (uri_str.endsWith("/")) {
-	rule = Pattern.compile("^" + Pattern.quote(uri_str) + ".*");
+      if (uri.endsWith("/")) {
+	rule = Pattern.compile("^" + Pattern.quote(uri) + ".*");
       }
       else {
-	rule = Pattern.compile("^" + Pattern.quote(uri_str) + "($|/.*)");
+	rule = Pattern.compile("^" + Pattern.quote(uri) + "($|/.*)");
       }
 
       scheme = auth_scheme;
       scope  = auth_scope;
     }
 
-    public boolean isExpired(long now) {
-      return now >= expires;
+    public long getCreatedDate() {
+      return created;
     }
 
-    public boolean matches(URI uri) {
-      return rule.matcher(uri.toString()).matches();
+    public boolean matches(String uri) {
+      System.out.println(uri + " matches " + rule + ": " + rule.matcher(uri).matches());
+      return rule.matcher(uri).matches();
     }
 
     public AuthScheme getScheme() {
@@ -505,15 +509,88 @@ public class HTTPHandler
       return "[PreemptiveScheme " + rule + ", " + scheme + ", " + scope + "]";
     }
 
-    private long expires;
+    private long created;
     private Pattern rule;
     private AuthScheme scheme;
     private AuthScope scope;
   }
 
+  private static class PreemptiveSchemes {
+    public PreemptiveSchemes() {
+      Properties p = ESXX.getInstance().getSettings();
+
+      maxEntries = Integer.parseInt(p.getProperty("esxx.cache.preemptive-http.max_entries",
+						  "32"));
+      maxAge = (long) (Double.parseDouble(p.getProperty("esxx.cache.preemptive-http.max_age",
+							"3600")) * 1000);
+    }
+
+    public synchronized void purgeEntries() {
+      long now = System.currentTimeMillis();
+      Iterator<PreemptiveScheme> i = schemes.iterator();
+
+      while (i.hasNext()) {
+	PreemptiveScheme ps = i.next();
+
+	if (ps.getCreatedDate() + maxAge > now) {
+	  i.remove();
+	}
+      }
+    }
+
+    public synchronized PreemptiveScheme find(String uri) {
+      Iterator<PreemptiveScheme> i = schemes.iterator();
+
+      while (i.hasNext()) {
+	PreemptiveScheme ps = i.next();
+
+	if (ps.matches(uri)) {
+	  // Move ps to the front of the LRU list and return
+	  i.remove();
+	  schemes.addFirst(ps);
+	  return ps;
+	}
+      }
+
+      return null;
+    }
+
+    public synchronized void remember(String uri_prefix, AuthScheme scheme, AuthScope scope) {
+      String[] prefices = { uri_prefix };
+      String    domains = scheme.getParameter("domain");
+
+      if (domains != null && !domains.isEmpty()) {
+	prefices = wsPattern.split(domains);
+      }
+
+      for (String prefix : prefices) {
+	// Add schemes to the front of the LRU list
+	if (prefix.startsWith("/")) {
+	  prefix = URI.create(uri_prefix).resolve(prefix).toString();
+	}
+
+	if (find(prefix) == null) {
+	  schemes.addFirst(new PreemptiveScheme(prefix, scheme, scope));
+	}
+      }
+
+      // Trim cache
+      while (schemes.size() > maxEntries) {
+	schemes.removeLast();
+      }
+    }
+
+    // (We should probably switch to a LinkedHashMap instead.)
+    private Deque<PreemptiveScheme> schemes = new LinkedList<PreemptiveScheme>();
+    private int maxEntries;
+    private long maxAge;
+  }
+
+  private static Pattern wsPattern = Pattern.compile("\\s+");
   private static HttpParams httpParams;
   private static ClientConnectionManager connectionManager;
-  private static List<PreemptiveScheme> preemptiveSchemes = new LinkedList<PreemptiveScheme>();
+  private static PreemptiveSchemes preemptiveSchemes;
+  private static PreemptiveInterceptor preemptiveInterceptor;
   private DefaultHttpClient httpClient;
   private BasicHttpContext httpContext;
 }
