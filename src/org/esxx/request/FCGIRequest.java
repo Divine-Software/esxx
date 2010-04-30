@@ -30,7 +30,7 @@ public class FCGIRequest
   extends WebRequest {
 
   public FCGIRequest(JFastRequest jfast) {
-    super(new ByteArrayInputStream(jfast.data), System.err);
+    super(new ByteArrayInputStream(jfast.data), jfast.error);
     jFast = jfast;
   }
 
