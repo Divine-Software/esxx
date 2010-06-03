@@ -312,7 +312,7 @@ public class Application
 
     if (cause instanceof ESXXException.TimeOut) {
       // Never handle this exception, wrapped or not
-      throw (ESXXException.TimeOut) error;
+      throw (ESXXException.TimeOut) cause;
     }
 
     Object result  = null;
