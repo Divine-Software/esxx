@@ -39,8 +39,10 @@ import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.RhinoException;
 import org.mozilla.javascript.WrappedException;
+import org.mozilla.javascript.Wrapper;
 import org.mozilla.javascript.commonjs.module.Require;
 import org.mozilla.javascript.commonjs.module.ModuleScript;
 import org.mozilla.javascript.commonjs.module.ModuleScriptProvider;
@@ -303,11 +305,22 @@ public class Application
       throw error;
     }
 
-    Throwable cause = error;
+    Object cause = error;
 
-    if (cause instanceof WrappedException) {
-      // Unwrap wrapped exceptions
-      cause = ((WrappedException) cause).getWrappedException();
+    // Unwrap wrapped exceptions
+    while (true) {
+      if (cause instanceof JavaScriptException) {
+	cause = ((JavaScriptException) cause).getValue();
+      }
+      else if (cause instanceof WrappedException) {
+	cause = ((WrappedException) cause).getWrappedException();
+      }
+      else if (cause instanceof Wrapper) {
+	cause = ((Wrapper) cause).unwrap();
+      }
+      else {
+	break;
+      }
     }
 
     if (cause instanceof ESXXException.TimeOut) {
