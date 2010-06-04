@@ -3,32 +3,6 @@ MemCache:
  * client, URI?
  * internal server?
 
-
-[martin@elsa ~]$ #id,name?one?(id=3)?!order=id,!
-[martin@elsa ~]$ #friends?id,name??(&(id=3)(name!=johan)?!
-[martin@elsa ~]$ #friends???(id=3)
-[martin@elsa ~]$ #friends?id,name??(id=3)
-[martin@elsa ~]$ #friends???(id=3) = {id:1, name:'banan'}
-[martin@elsa ~]$ new URI(db, "#friends?id,name").append([1,'johan'])
-
-JDBC fragments:
-
-tablename?columns?scope?filter?params
-
-tablename: [ [catalog "."] schema "."] table
-columns:   [ column [ "," columns ] ]
-scope:	   [ "scalar" | "one" | "distinct" | "all" ]
-filter	   [ ldap-filter ]
-params	   [ param [ "=" value] [ "&" params ] ]
-
-
-param	   [ "order" | "desc" | "range" | "group" ]
-
-persons?id,name?distinct?(&(name=Martin)(age>10))?order=name,id&desc&range=0,10
-
-persons??one?(id=3)
-
-(eq:name,hello%20!(martin!))
 reserved=":/?#[]@--!$&'()*+,;=";
 encodeURI(reserved)
 encodeURIComponent(reserved)
@@ -37,3 +11,16 @@ function fixedEncodeURIComponent (str) {
   return encodeURIComponent(str).replace(/!/g, '%21').replace(/'/g, '%27').replace(/\(/g, '%28').  
                                  replace(/\)/g, '%29').replace(/\*/g, '%2A');  
 }  
+
+Exceptions
+**********
+
+* Throw EvaluatorException or EcmeError/TypeError on bad params
+	* JavaImporter(1) and getClass() vs XML("<")
+
+* Throw URIError on bad URIs
+
+* ESXXException inherits JavaScriptException, includes HTTP error code
+  and is used to throw:
+	* ESXX.SchemaError -> Validation failed
+	* 
