@@ -89,7 +89,7 @@ public class JSURI
     if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
       throw Context.reportRuntimeError("Missing argument");
     }
-    
+
     // First argument is always the URI
     if (args.length >= 1 && args[0] != Context.getUndefinedValue()) {
       if (args[0] instanceof JSURI) {
@@ -106,7 +106,7 @@ public class JSURI
 	uri_string = Context.toString(args[0]);
       }
     }
-    
+
     // Third argument can only by params
     if (args.length >= 3 && args[2] != Context.getUndefinedValue()) {
       params = (Scriptable) args[2];
@@ -200,7 +200,7 @@ public class JSURI
     return rc;
   }
 
-  public static void finishInit(Scriptable scope, 
+  public static void finishInit(Scriptable scope,
 				FunctionObject constructor,
 				Scriptable prototype) {
     // Create and make these properties in the prototype visible
@@ -327,7 +327,7 @@ public class JSURI
 
     enumerateProperty(cx, "params", new PropEnumerator() {
 	public void handleProperty(Scriptable p, int s) {
-	  props.setProperty(Context.toString(p.get("name", p)), 
+	  props.setProperty(Context.toString(p.get("name", p)),
 			    Context.toString(p.get("value", p)));
 	}
       }, uri, null, null);
@@ -365,6 +365,29 @@ public class JSURI
     return getBestProperty(cx, "auth", req_uri, realm, mechanism);
   }
 
+  public String[] getAuthMechanisms(Context cx, URI req_uri, String realm,
+				    final String[] default_mechanisms) {
+    final LinkedHashSet<String> result = new LinkedHashSet<String>(); // Order is important
+
+    enumerateProperty(cx, "auth", new PropEnumerator() {
+	public void handleProperty(Scriptable p, int s) {
+	  Object mechanism = p.get("mechanism", p);
+
+	  if (mechanism == null ||
+	      mechanism == Scriptable.NOT_FOUND ||
+	      mechanism == Context.getUndefinedValue()) {
+	    // Any mechanism is OK
+	    result.addAll(Arrays.asList(default_mechanisms));
+	  }
+	  else {
+	    result.add(Context.toString(mechanism).toLowerCase());
+	  }
+	}
+      }, req_uri, realm, null);
+
+    return result.toArray(new String[result.size()]);
+  }
+
   public Scriptable getCookieJar(Context cx, URI req_uri) {
     return getBestProperty(cx, "jars", req_uri, null, null);
   }
@@ -373,7 +396,7 @@ public class JSURI
     enumerateProperty(cx, "headers", pe, req_uri, null, null);
   }
 
-  private Scriptable getBestProperty(Context cx, String name, 
+  private Scriptable getBestProperty(Context cx, String name,
 				     URI req_uri, String realm, String mechanism) {
     final Scriptable[] res = { null };
     final int[]      score = { -1 };
@@ -414,7 +437,7 @@ public class JSURI
 
 	if (p instanceof Scriptable) {
 	  Scriptable param = (Scriptable) p;
-	      
+
 	  int score = 0;
 
 	  score += filterProperty(cx, param, "realm",     realm)     * 1;
@@ -502,7 +525,7 @@ public class JSURI
       }
 
       return null;
-    } 
+    }
     catch (Exception  ex) {
       schemeConstructors.remove(key);
       return null;

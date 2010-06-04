@@ -276,7 +276,8 @@ public class HTTPHandler
       httpClient = new DefaultHttpClient(getConnectionManager(), getHttpParams());
 
       httpClient.addRequestInterceptor(preemptiveInterceptor, 0);
-      httpClient.setCredentialsProvider(new JSCredentialsProvider(jsuri));
+      httpClient.setCredentialsProvider(new ESXXCredentialsProvider());
+      httpClient.setTargetAuthenticationHandler(new ESXXAuthenticationHandler());
       httpClient.setCookieStore(new CookieJar(jsuri));
 
       httpClient.getAuthSchemes().register(OAuthSchemeFactory.SCHEME_NAME,
@@ -286,22 +287,6 @@ public class HTTPHandler
     }
 
     return httpClient;
-  }
-
-  private synchronized BasicHttpContext getHttpContext() {
-    if (httpContext == null) {
-      httpContext = new BasicHttpContext();
-      httpContext.setAttribute(ClientContext.AUTH_SCHEME_PREF,
-			       Arrays.asList(new String[] {
-				   "oauth",
-				   "wrap",
-				   "ntlm",
-				   "digest",
-				   "basic"
-				 }));
-    }
-
-    return httpContext;
   }
 
   private static class Result {
@@ -323,7 +308,7 @@ public class HTTPHandler
 	}
       }, jsuri.getURI());
 
-    HttpResponse response = getHttpClient().execute(msg, getHttpContext());
+    HttpResponse response = getHttpClient().execute(msg);
     HttpEntity   entity   = response.getEntity();
 
     if (params == null) {
@@ -422,7 +407,7 @@ public class HTTPHandler
 	}
 	else {
 	  // This is a request with authenication available. Make a
-	  // not of this for the next time we access this host.
+	  // note of this for the next time we access this host.
 
 	  preemptiveSchemes.remember(host.toURI(), // RFC 2617 says all host URLs
 				     as.getAuthScheme(),
@@ -435,13 +420,8 @@ public class HTTPHandler
     }
   }
 
-  private static class JSCredentialsProvider
+  private class ESXXCredentialsProvider
     implements CredentialsProvider {
-
-    public JSCredentialsProvider(JSURI jsuri) {
-      this.jsuri = jsuri;
-    }
-
     @Override public void clear() {
       throw new UnsupportedOperationException("HttpURI.CredentialsProvider.clear()"
 					      + " not implemented.");
@@ -473,8 +453,52 @@ public class HTTPHandler
 	throw new ESXXException("Failed to convert AuthScope to URI: " + ex.getMessage(), ex);
       }
     }
+  }
 
-    private JSURI jsuri;
+  private class ESXXAuthenticationHandler
+    extends DefaultTargetAuthenticationHandler {
+      @Override public AuthScheme selectScheme(Map<String, Header> challenges,
+					       HttpResponse response,
+					       HttpContext context)
+	throws AuthenticationException {
+        AuthSchemeRegistry registry = (AuthSchemeRegistry)
+	  context.getAttribute(ClientContext.AUTHSCHEME_REGISTRY);
+
+        if (registry == null) {
+	  throw new IllegalStateException("No AuthScheme registry");
+        }
+
+	Context cx = Context.getCurrentContext();
+	HttpHost h = (HttpHost) context.getAttribute(ExecutionContext.HTTP_TARGET_HOST);
+	URI    uri = URI.create(h.toURI());
+
+	String[] mechanisms = jsuri.getAuthMechanisms(cx, uri, null, preferredSchemes);
+
+	for (String mechanism : mechanisms) {
+	  Header challenge = challenges.get(mechanism.toLowerCase(Locale.ENGLISH));
+
+	  try {
+	    AuthScheme scheme = registry.getAuthScheme(mechanism, response.getParams());
+	    scheme.processChallenge(challenge);
+
+	    if (jsuri.getAuth(cx, uri, scheme.getRealm(), scheme.getSchemeName()) != null) {
+	      // We've found a scheme that works -- use it
+	      return scheme;
+	    }
+	  }
+	  catch (Exception ignored) {
+	    // Try next mechanism/scheme
+	  }
+	}
+
+	throw new AuthenticationException("Unable to find a suitable AuthScheme for the" +
+					  " provided challenges");
+      }
+
+      private String[] preferredSchemes = new String[] {
+	// Note: Lowercase names only, because of addAll() in JSURI.getAuthMechanisms()
+	"ntlm", "digest", "oauth", "wrap", "basic"
+      };
   }
 
   private static class PreemptiveScheme {
