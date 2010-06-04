@@ -49,6 +49,7 @@ import org.apache.http.client.protocol.ClientContext;
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
 import org.esxx.Response;
+import org.esxx.oauth.WRAPSchemeFactory;
 import org.esxx.js.*;
 import org.mozilla.javascript.*;
 
@@ -280,6 +281,8 @@ public class HTTPHandler
 
       httpClient.getAuthSchemes().register(OAuthSchemeFactory.SCHEME_NAME,
 					   new OAuthSchemeFactory());
+      httpClient.getAuthSchemes().register(WRAPSchemeFactory.SCHEME_NAME,
+					   new WRAPSchemeFactory());
     }
 
     return httpClient;
@@ -291,6 +294,7 @@ public class HTTPHandler
       httpContext.setAttribute(ClientContext.AUTH_SCHEME_PREF,
 			       Arrays.asList(new String[] {
 				   "oauth",
+				   "wrap",
 				   "ntlm",
 				   "digest",
 				   "basic"
