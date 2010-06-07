@@ -51,6 +51,7 @@ import org.esxx.ESXXException;
 import org.esxx.Response;
 import org.esxx.oauth.WRAPSchemeFactory;
 import org.esxx.js.*;
+import org.esxx.util.JS;
 import org.mozilla.javascript.*;
 
 public class HTTPHandler
@@ -393,16 +394,38 @@ public class HTTPHandler
 	  // we've already been here, and if so, add the apporopriate
 	  // authentication header.
 
+	  AuthScheme   scheme = null;
+	  Credentials   creds = null;
 	  PreemptiveScheme ps = preemptiveSchemes.find(full_uri);
 
 	  if (ps != null) {
-	    Credentials creds = cp.getCredentials(ps.getScope());
+	    // We've been here before; use known state
+	    scheme = ps.getScheme();
+	    creds  = cp.getCredentials(ps.getScope());
+	  }
+	  else {
+	    // We've not been here before; check if the user wishes to
+	    // force preemptive authentication
+	    AuthScope scope = new AuthScope(host.getHostName(), host.getPort());
+	    creds = cp.getCredentials(scope);
 
-	    if (creds != null) {
-	      as.setAuthScheme(ps.getScheme());
-	      as.setCredentials(creds);
-	      //System.out.println("Preemptive " + ps);
+	    AuthSchemeRegistry authreg = (AuthSchemeRegistry)
+	      context.getAttribute(ClientContext.AUTHSCHEME_REGISTRY);
+
+	    if (creds instanceof ESXXCredentialsProvider.Auth && authreg != null) {
+	      ESXXCredentialsProvider.Auth auth = (ESXXCredentialsProvider.Auth) creds;
+
+	      if (auth.isPreemptive()) {
+		HttpParams params = getHttpParams().copy();
+		params.setParameter("defaultRealm", auth.getRealm());
+		scheme = authreg.getAuthScheme(auth.getMechanism(), params);
+	      }
 	    }
+	  }
+
+	  if (scheme != null && creds != null) {
+	    as.setAuthScheme(scheme);
+	    as.setCredentials(creds);
 	  }
 	}
 	else {
@@ -442,17 +465,41 @@ public class HTTPHandler
 						null, null, null),
 					authscope.getRealm(), authscope.getScheme());
 
-	if (auth == null) {
-	  return null;
-	}
-
-	return new UsernamePasswordCredentials(Context.toString(auth.get("username", auth)),
-					       Context.toString(auth.get("password", auth)));
+	return auth == null ? null : new Auth(auth);
       }
       catch (URISyntaxException ex) {
 	throw new ESXXException("Failed to convert AuthScope to URI: " + ex.getMessage(), ex);
       }
     }
+
+    public class Auth
+      extends UsernamePasswordCredentials {
+	public Auth(Scriptable auth) {
+	  super(Context.toString(auth.get("username", auth)),
+		JS.toStringOrNull(auth, "password"));
+	  mechanism  = JS.toStringOrNull(auth, "mechanism");
+	  realm      = JS.toStringOrNull(auth, "realm");
+	  preemptive = JS.toBoolean(auth, "preemptive");
+	}
+
+	public String getMechanism() {
+	  return mechanism;
+	}
+
+	public String getRealm() {
+	  return realm;
+	}
+
+	public boolean isPreemptive() {
+	  return preemptive;
+	}
+
+	private String mechanism;
+	private String realm;
+	private boolean preemptive;
+
+    }
+
   }
 
   private class ESXXAuthenticationHandler
@@ -521,7 +568,7 @@ public class HTTPHandler
     }
 
     public boolean matches(String uri) {
-      System.out.println(uri + " matches " + rule + ": " + rule.matcher(uri).matches());
+      // System.out.println(uri + " matches " + rule + ": " + rule.matcher(uri).matches());
       return rule.matcher(uri).matches();
     }
 
