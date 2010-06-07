@@ -254,6 +254,12 @@ public abstract class JS {
     }
   }
 
+  public static boolean toBoolean(Scriptable scope, String name) {
+    Object prop = scope.get(name, scope);
+
+    return prop == Scriptable.NOT_FOUND ? false : Context.toBoolean(prop);
+  }
+
   public static class JSFilenameFilter
     implements FilenameFilter {
     public boolean accept(File dir, String name) {
