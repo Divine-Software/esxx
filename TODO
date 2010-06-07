@@ -12,6 +12,12 @@ function fixedEncodeURIComponent (str) {
                                  replace(/\)/g, '%29').replace(/\*/g, '%2A');  
 }  
 
+Not finished
+************
+
+Schema support.
+DBRef: Scalars etc.
+
 Exceptions
 **********
 
