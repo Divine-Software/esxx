@@ -139,7 +139,7 @@ public abstract class JS {
       System.err.println();
     }
     else {
-      System.err.print(toString(scope) + " ");
+      System.err.print(defaultToString(scope) + " ");
       printPrototypeTrace(scope.getPrototype());
     }
   }
@@ -229,7 +229,7 @@ public abstract class JS {
   private static void printPlainObject(Object object) {
     try {
       if (object.getClass().getMethod("toString").getDeclaringClass() != Object.class) {
-	System.out.println("-> " + JS.toString(object) + ":");
+	System.out.println("-> " + defaultToString(object) + ":");
       }
     }
     catch (Exception ignored) {}
@@ -237,8 +237,21 @@ public abstract class JS {
     System.out.println("-> " + object);
   }
 
-  public static String toString(Object o) {
+  public static String defaultToString(Object o) {
     return o.getClass().getName() + "@" + Integer.toHexString(o.hashCode());
+  }
+
+  public static String toStringOrNull(Scriptable scope, String name) {
+    Object prop = scope.get(name, scope);
+
+    if (prop != null &&
+	prop != Scriptable.NOT_FOUND &&
+	prop != Context.getUndefinedValue()) {
+      return Context.toString(prop);
+    }
+    else {
+      return null;
+    }
   }
 
   public static class JSFilenameFilter
