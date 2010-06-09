@@ -28,6 +28,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.security.cert.X509Certificate;
+import net.oauth.client.httpclient4.OAuthCredentials;
 import net.oauth.client.httpclient4.OAuthSchemeFactory;
 import org.apache.http.*;
 import org.apache.http.auth.*;
@@ -396,7 +397,7 @@ public class HTTPHandler
 
 	  AuthScheme   scheme = null;
 	  Credentials   creds = null;
-	  PreemptiveScheme ps = preemptiveSchemes.find(full_uri);
+	  PreemptiveSchemes.PreemptiveScheme ps = preemptiveSchemes.find(full_uri);
 
 	  if (ps != null) {
 	    // We've been here before; use known state
@@ -409,11 +410,12 @@ public class HTTPHandler
 	    AuthScope scope = new AuthScope(host.getHostName(), host.getPort());
 	    creds = cp.getCredentials(scope);
 
-	    AuthSchemeRegistry authreg = (AuthSchemeRegistry)
-	      context.getAttribute(ClientContext.AUTHSCHEME_REGISTRY);
+	    if (cp instanceof ESXXCredentialsProvider) {
+	      ESXXCredentialsProvider ecp = (ESXXCredentialsProvider) cp;
+	      AuthSchemeRegistry  authreg = (AuthSchemeRegistry)
+		context.getAttribute(ClientContext.AUTHSCHEME_REGISTRY);
 
-	    if (creds instanceof ESXXCredentialsProvider.Auth && authreg != null) {
-	      ESXXCredentialsProvider.Auth auth = (ESXXCredentialsProvider.Auth) creds;
+	      Auth auth = ecp.getAuth(scope);
 
 	      if (auth.isPreemptive()) {
 		HttpParams params = getHttpParams().copy();
@@ -456,6 +458,23 @@ public class HTTPHandler
     }
 
     @Override public Credentials getCredentials(AuthScope authscope) {
+      Auth auth = getAuth(authscope);
+
+      if ("oauth".equalsIgnoreCase(auth.getMechanism())) {
+	OAuthCredentials creds = new OAuthCredentials(auth.getUsername(), auth.getPassword());
+	creds.getAccessor().accessToken = auth.getUsername2();
+	creds.getAccessor().tokenSecret = auth.getPassword2();
+	return creds;
+      }
+      else if (auth.getUsername() != null) {
+	return new UsernamePasswordCredentials(auth.getUsername(), auth.getPassword());
+      }
+      else {
+	return null;
+      }
+    }
+
+    public Auth getAuth(AuthScope authscope) {
       try {
 	Scriptable auth = jsuri.getAuth(Context.getCurrentContext(),
 					new URI(jsuri.getURI().getScheme(),
@@ -464,42 +483,12 @@ public class HTTPHandler
 						authscope.getPort(),
 						null, null, null),
 					authscope.getRealm(), authscope.getScheme());
-
-	return auth == null ? null : new Auth(auth);
+	return new Auth(auth);
       }
       catch (URISyntaxException ex) {
 	throw new ESXXException("Failed to convert AuthScope to URI: " + ex.getMessage(), ex);
       }
     }
-
-    public class Auth
-      extends UsernamePasswordCredentials {
-	public Auth(Scriptable auth) {
-	  super(Context.toString(auth.get("username", auth)),
-		JS.toStringOrNull(auth, "password"));
-	  mechanism  = JS.toStringOrNull(auth, "mechanism");
-	  realm      = JS.toStringOrNull(auth, "realm");
-	  preemptive = JS.toBoolean(auth, "preemptive");
-	}
-
-	public String getMechanism() {
-	  return mechanism;
-	}
-
-	public String getRealm() {
-	  return realm;
-	}
-
-	public boolean isPreemptive() {
-	  return preemptive;
-	}
-
-	private String mechanism;
-	private String realm;
-	private boolean preemptive;
-
-    }
-
   }
 
   private class ESXXAuthenticationHandler
@@ -548,120 +537,6 @@ public class HTTPHandler
       };
   }
 
-  private static class PreemptiveScheme {
-    public PreemptiveScheme(String uri, AuthScheme auth_scheme, AuthScope auth_scope) {
-      created = System.currentTimeMillis();
-
-      if (uri.endsWith("/")) {
-	rule = Pattern.compile("^" + Pattern.quote(uri) + ".*");
-      }
-      else {
-	rule = Pattern.compile("^" + Pattern.quote(uri) + "($|/.*)");
-      }
-
-      scheme = auth_scheme;
-      scope  = auth_scope;
-    }
-
-    public long getCreatedDate() {
-      return created;
-    }
-
-    public boolean matches(String uri) {
-      // System.out.println(uri + " matches " + rule + ": " + rule.matcher(uri).matches());
-      return rule.matcher(uri).matches();
-    }
-
-    public AuthScheme getScheme() {
-      return scheme;
-    }
-
-    public AuthScope getScope() {
-      return scope;
-    }
-
-    public String toString() {
-      return "[PreemptiveScheme " + rule + ", " + scheme + ", " + scope + "]";
-    }
-
-    private long created;
-    private Pattern rule;
-    private AuthScheme scheme;
-    private AuthScope scope;
-  }
-
-  private static class PreemptiveSchemes {
-    public PreemptiveSchemes() {
-      Properties p = ESXX.getInstance().getSettings();
-
-      maxEntries = Integer.parseInt(p.getProperty("esxx.cache.preemptive-http.max_entries",
-						  "32"));
-      maxAge = (long) (Double.parseDouble(p.getProperty("esxx.cache.preemptive-http.max_age",
-							"3600")) * 1000);
-    }
-
-    public synchronized void purgeEntries() {
-      long now = System.currentTimeMillis();
-      Iterator<PreemptiveScheme> i = schemes.iterator();
-
-      while (i.hasNext()) {
-	PreemptiveScheme ps = i.next();
-
-	if (ps.getCreatedDate() + maxAge > now) {
-	  i.remove();
-	}
-      }
-    }
-
-    public synchronized PreemptiveScheme find(String uri) {
-      Iterator<PreemptiveScheme> i = schemes.iterator();
-
-      while (i.hasNext()) {
-	PreemptiveScheme ps = i.next();
-
-	if (ps.matches(uri)) {
-	  // Move ps to the front of the LRU list and return
-	  i.remove();
-	  schemes.addFirst(ps);
-	  return ps;
-	}
-      }
-
-      return null;
-    }
-
-    public synchronized void remember(String uri_prefix, AuthScheme scheme, AuthScope scope) {
-      String[] prefices = { uri_prefix };
-      String    domains = scheme.getParameter("domain");
-
-      if (domains != null && !domains.isEmpty()) {
-	prefices = wsPattern.split(domains);
-      }
-
-      for (String prefix : prefices) {
-	// Add schemes to the front of the LRU list
-	if (prefix.startsWith("/")) {
-	  prefix = URI.create(uri_prefix).resolve(prefix).toString();
-	}
-
-	if (find(prefix) == null) {
-	  schemes.addFirst(new PreemptiveScheme(prefix, scheme, scope));
-	}
-      }
-
-      // Trim cache
-      while (schemes.size() > maxEntries) {
-	schemes.removeLast();
-      }
-    }
-
-    // (We should probably switch to a LinkedHashMap instead.)
-    private Deque<PreemptiveScheme> schemes = new LinkedList<PreemptiveScheme>();
-    private int maxEntries;
-    private long maxAge;
-  }
-
-  private static Pattern wsPattern = Pattern.compile("\\s+");
   private static HttpParams httpParams;
   private static ClientConnectionManager connectionManager;
   private static PreemptiveSchemes preemptiveSchemes;
