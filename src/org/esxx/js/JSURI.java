@@ -545,10 +545,14 @@ public class JSURI
     URI rel = new URI(relative);
     URI res;
 
-    // Make #frag resolve agianst non-hierachial URIs too
-    if (rel.getScheme() == null &&
-	rel.getSchemeSpecificPart().isEmpty()) {
-      res = new URI(base.getScheme(), base.getSchemeSpecificPart(), rel.getFragment());
+    if (relative.startsWith("#")) {
+      // Make #frag resolve against non-hierachial URIs too
+      res = new URI(base.getScheme(), base.getSchemeSpecificPart(), relative);
+    }
+    else if (relative.startsWith("?")) {
+      // Make ?query resolve correctly
+      res = new URI(base.getScheme(), base.getAuthority(), base.getPath(), 
+		    rel.getQuery(), rel.getFragment());
     }
     else {
       res = base.resolve(rel);
