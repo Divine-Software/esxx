@@ -241,9 +241,7 @@ public abstract class JS {
     return o.getClass().getName() + "@" + Integer.toHexString(o.hashCode());
   }
 
-  public static String toStringOrNull(Scriptable scope, String name) {
-    Object prop = scope.get(name, scope);
-
+  public static String toStringOrNull(Object prop) {
     if (prop != null &&
 	prop != Scriptable.NOT_FOUND &&
 	prop != Context.getUndefinedValue()) {
@@ -254,10 +252,16 @@ public abstract class JS {
     }
   }
 
-  public static boolean toBoolean(Scriptable scope, String name) {
-    Object prop = scope.get(name, scope);
+  public static String toStringOrNull(Scriptable scope, String name) {
+    return toStringOrNull(scope.get(name, scope));
+  }
 
+  public static boolean toBoolean(Object prop) {
     return prop == Scriptable.NOT_FOUND ? false : Context.toBoolean(prop);
+  }
+
+  public static boolean toBoolean(Scriptable scope, String name) {
+    return toBoolean(scope.get(name, scope));
   }
 
   public static class JSFilenameFilter
