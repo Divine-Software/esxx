@@ -53,12 +53,15 @@ public class FILEHandler
       type = ESXX.fileTypeMap.getContentType(file);
     }
 
-    if (type.equals("text/xml") || type.equals("application/xml")) {
-      if (file.exists() && file.isDirectory()) {
-	Document result = createDirectoryListing(file);
+    if ((type.equals("text/xml") || type.equals("application/xml"))
+	&& file.exists() && file.isDirectory()) {
+      type = "application/vnd.esxx.directory+xml";
+    }
 
-	return ESXX.domToE4X(result, cx, thisObj);
-      }
+    if (type.equals("application/vnd.esxx.directory+xml")) {
+      Document result = createDirectoryListing(file);
+
+      return ESXX.domToE4X(result, cx, thisObj);
     }
 
     return super.load(cx, thisObj, type, params);
@@ -161,7 +164,7 @@ public class FILEHandler
     XML.addChild(element, "hidden", f.isHidden() ? "true" : "false");
     XML.addChild(element, "lastModified", Long.toString(f.lastModified()));
     XML.addChild(element, "id", Integer.toHexString(f.hashCode()));
-    XML.addChild(element, "type", ESXX.fileTypeMap.getContentType(f.getName()));
+    XML.addChild(element, "type", ESXX.fileTypeMap.getContentType(f));
 
     return element;
   }

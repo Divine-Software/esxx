@@ -1315,6 +1315,18 @@ public class ESXX {
 	addIfMissing("xslt",  "text/xsl");
       }
 
+      @Override public String getContentType(File file) {
+	if (file.isDirectory()) {
+	  return "application/vnd.esxx.directory+xml";
+	}
+	else if (!file.isFile()) {
+	  return "application/vnd.esxx.object";
+	}
+	else {
+	  return super.getContentType(file);
+	}
+      }
+
       private void addIfMissing(String ext, String type) {
 	if (getContentType("file." + ext).equals("application/octet-stream")) {
 	  addMimeTypes(type + " " + ext + " " + ext.toUpperCase());
