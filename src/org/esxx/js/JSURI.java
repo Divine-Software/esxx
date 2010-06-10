@@ -23,6 +23,7 @@ import java.net.URL;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
@@ -540,6 +541,9 @@ public class JSURI
     return (JSURI) obj;
   }
 
+  private static Pattern fragmentPart = Pattern.compile("#.*");
+  private static Pattern queryPart = Pattern.compile("\\?.*");
+
   private static URI resolveURI(URI base, String relative)
     throws URISyntaxException {
     URI rel = new URI(relative);
@@ -547,12 +551,11 @@ public class JSURI
 
     if (relative.startsWith("#")) {
       // Make #frag resolve against non-hierachial URIs too
-      res = new URI(base.getScheme(), base.getSchemeSpecificPart(), relative);
+      res = new URI(fragmentPart.matcher(base.toString()).replaceFirst("") + relative);
     }
     else if (relative.startsWith("?")) {
       // Make ?query resolve correctly
-      res = new URI(base.getScheme(), base.getAuthority(), base.getPath(), 
-		    rel.getQuery(), rel.getFragment());
+      res = new URI(queryPart.matcher(base.toString()).replaceFirst("") + relative );
     }
     else {
       res = base.resolve(rel);
