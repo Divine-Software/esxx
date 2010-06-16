@@ -32,6 +32,7 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/sysconfig/esxx 
 %config(noreplace) %{_sysconfdir}/sysconfig/esxx-js
+%config(noreplace) %{_sysconfdir}/sysconfig/esxx-fcgi
 %dir %attr(755,root,root) %{_docdir}/esxx
 %dir %attr(755,root,root) %{_docdir}/esxx/examples
 %dir %attr(755,root,root) %{_datadir}/esxx

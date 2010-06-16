@@ -1,6 +1,11 @@
-#JVMARGS="-Dcom.sun.management.jmxremote 
-#         -Dcom.sun.management.jmxremote.port=4567
-#         -Dcom.sun.management.jmxremote.authenticate=false
-#         -Dcom.sun.management.jmxremote.ssl=false"
-#
-#ESXX_PATH="/my/include/path:${ESXX_PATH}"
+# This file is sourced every time ESXX starts, be it from an
+# initscript (esxx-fcgi), from the command line (esxx) or from a JS
+# script (esxx-js)
+
+# Set JAVA variable by default on OSX
+if [ "`uname`" = "Darwin" ]; then
+  JAVA=/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Home/bin/java
+fi
+
+# Add a custom include directory to the predefined list
+# ESXX_PATH="/my/include/path:${ESXX_PATH}"

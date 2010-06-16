@@ -1,0 +1,16 @@
+# This file is sourced when ESXX is started from the FCGI initscript
+# (esxx-fcgi). It should be named esxx-${ESXX_INSTANCE}
+
+# Override default port and user, enable JMX on port 4567
+# ESXX_OPTIONS="--bind 9090
+#               --user fcgiuser
+#               --jvmargs '-Dcom.sun.management.jmxremote 
+#                          -Dcom.sun.management.jmxremote.port=4567
+#                          -Dcom.sun.management.jmxremote.authenticate=false
+#                          -Dcom.sun.management.jmxremote.ssl=false'"
+
+# Force a custom Java version
+# export JAVA_HOME="/opt/java/jdk1.6.0_20"
+
+# Force default include directories
+# export ESXX_PATH="/opt/esxx/share:/opt/esxx/share/site"

@@ -16,7 +16,7 @@ SET (CPACK_PACKAGE_CONTACT "Martin Blom <martin@blom.org>")
 SET (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt")
 SET (CPACK_PACKAGE_VERSION_MAJOR "0")
 SET (CPACK_PACKAGE_VERSION_MINOR "9")
-SET (CPACK_PACKAGE_VERSION_PATCH "20100610")
+SET (CPACK_PACKAGE_VERSION_PATCH "20100616")
 SET (CPACK_PACKAGE_INSTALL_DIRECTORY "ESXX")
 SET (CPACK_IGNORE_FILES "/etc")
 
@@ -187,27 +187,32 @@ ELSEIF (UNIX)
   ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     CONFIGURE_FILE(package/initscript-esxx.in 
 		   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx @ONLY)
+    CONFIGURE_FILE(package/initscript-fcgi.in 
+		   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-fcgi @ONLY)
     CONFIGURE_FILE(package/initscript-binfmt.in 
 		   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-binfmt @ONLY)
 
-    INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/esxx
+    INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/esxx
+	     DESTINATION ${SYSCONF_INSTALL_DIR}/init.d)
+    INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-fcgi
 		      ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-binfmt
 	     DESTINATION ${SYSCONF_INSTALL_DIR}/init.d)
   ENDIF (CMAKE_HOST_APPLE)
 
-  # Create and install config file
-  IF (CMAKE_HOST_APPLE)
-    CONFIGURE_FILE(package/config.osx.in ${CMAKE_CURRENT_BINARY_DIR}/package/esxx.conf @ONLY)
-  ELSE (CMAKE_HOST_APPLE)
-    CONFIGURE_FILE(package/config.in 
-		   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx.conf @ONLY)
-  ENDIF (CMAKE_HOST_APPLE)
+  # Create and install config files
+  CONFIGURE_FILE(package/config.in ${CMAKE_CURRENT_BINARY_DIR}/package/config @ONLY)
+  CONFIGURE_FILE(package/config-js.in ${CMAKE_CURRENT_BINARY_DIR}/package/config-js @ONLY)
+  CONFIGURE_FILE(package/config-fcgi.in ${CMAKE_CURRENT_BINARY_DIR}/package/config-fcgi @ONLY)
 
-  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/esxx.conf
+  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/config
 	   DESTINATION ${SYSCONF_INSTALL_DIR}/${CONFDIR}
 	   RENAME esxx)
 
-  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/esxx.conf
+  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/config-js
 	   DESTINATION ${SYSCONF_INSTALL_DIR}/${CONFDIR}
 	   RENAME esxx-js)
+
+  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/config-fcgi
+	   DESTINATION ${SYSCONF_INSTALL_DIR}/${CONFDIR}
+	   RENAME esxx-fcgi)
 ENDIF (WIN32)
