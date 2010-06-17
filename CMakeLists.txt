@@ -187,14 +187,13 @@ ELSEIF (UNIX)
   ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     CONFIGURE_FILE(package/initscript-esxx.in 
 		   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx @ONLY)
-    CONFIGURE_FILE(package/initscript-fcgi.in 
-		   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-fcgi @ONLY)
+    CONFIGURE_FILE(package/initscript-http.in 
+		   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-http @ONLY)
     CONFIGURE_FILE(package/initscript-binfmt.in 
 		   ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-binfmt @ONLY)
 
-    INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/esxx
-	     DESTINATION ${SYSCONF_INSTALL_DIR}/init.d)
-    INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-fcgi
+    INSTALL (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/package/esxx
+    	    	      ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-http
 		      ${CMAKE_CURRENT_BINARY_DIR}/package/esxx-binfmt
 	     DESTINATION ${SYSCONF_INSTALL_DIR}/init.d)
   ENDIF (CMAKE_HOST_APPLE)
@@ -203,6 +202,7 @@ ELSEIF (UNIX)
   CONFIGURE_FILE(package/config.in ${CMAKE_CURRENT_BINARY_DIR}/package/config @ONLY)
   CONFIGURE_FILE(package/config-js.in ${CMAKE_CURRENT_BINARY_DIR}/package/config-js @ONLY)
   CONFIGURE_FILE(package/config-fcgi.in ${CMAKE_CURRENT_BINARY_DIR}/package/config-fcgi @ONLY)
+  CONFIGURE_FILE(package/config-http.in ${CMAKE_CURRENT_BINARY_DIR}/package/config-http @ONLY)
 
   INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/config
 	   DESTINATION ${SYSCONF_INSTALL_DIR}/${CONFDIR}
@@ -215,4 +215,8 @@ ELSEIF (UNIX)
   INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/config-fcgi
 	   DESTINATION ${SYSCONF_INSTALL_DIR}/${CONFDIR}
 	   RENAME esxx-fcgi)
+
+  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/package/config-http
+	   DESTINATION ${SYSCONF_INSTALL_DIR}/${CONFDIR}
+	   RENAME esxx-http)
 ENDIF (WIN32)

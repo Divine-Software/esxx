@@ -1,11 +1,12 @@
-# This file is sourced when ESXX is started from the default FCGI
-# initscript (esxx). It should be named esxx-${ESXX_INSTANCE}
+# This file is sourced when ESXX is started from the HTTP initscript
+# (esxx-http). It should be named esxx-${ESXX_INSTANCE}
 
-# Override default port and user, enable JMX on port 4567
-# ESXX_OPTIONS="--bind 9090 \
-#               --user fcgiuser \
+# Override default port and user, enable JMX on port 4568
+# ESXX_OPTIONS="--http 8080 \
+#               --http-root /var/www/ \
+#               --user httpuser \
 #               --jvmargs '-Dcom.sun.management.jmxremote 
-#                          -Dcom.sun.management.jmxremote.port=4567
+#                          -Dcom.sun.management.jmxremote.port=4568
 #                          -Dcom.sun.management.jmxremote.authenticate=false
 #                          -Dcom.sun.management.jmxremote.ssl=false'"
 
