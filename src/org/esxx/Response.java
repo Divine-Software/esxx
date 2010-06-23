@@ -19,6 +19,7 @@
 package org.esxx;
 
 import org.esxx.util.IO;
+import org.esxx.util.JS;
 import org.esxx.util.StringUtil;
 
 import java.awt.image.RenderedImage;
@@ -103,7 +104,7 @@ public class Response  {
   }
 
   public void unwrapResult() {
-    resultObject = unwrap(resultObject);
+    resultObject = JS.toJavaObject(resultObject);
   }
 
   public Map<String, String> headers() {
@@ -137,7 +138,7 @@ public class Response  {
     }
 
     // Unwrap wrapped objects
-    object = unwrap(object);
+    object = JS.toJavaObject(object);
 
     // Convert complex types to primitive types
     if (object instanceof Node) {
@@ -262,20 +263,6 @@ public class Response  {
       throw new UnsupportedOperationException("Unsupported object class type: "
 					      + object.getClass());
     }
-  }
-
-  private static Object unwrap(Object object) {
-    // Unwrap wrapped objects
-    while (object instanceof Wrapper) {
-      object = ((Wrapper) object).unwrap();
-    }
-
-    // Convert to "primitive" types
-    if (object instanceof org.mozilla.javascript.xml.XMLObject) {
-      object = ESXX.e4xToDOM((Scriptable) object);
-    }
-    
-    return object;
   }
 
   public String guessContentType() {

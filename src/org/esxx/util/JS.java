@@ -20,7 +20,9 @@ package org.esxx.util;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.Date;
 import java.util.regex.Pattern;
+import org.esxx.ESXX;
 import org.esxx.ESXXException;
 import org.mozilla.javascript.*;
 
@@ -263,6 +265,43 @@ public abstract class JS {
   public static boolean toBoolean(Scriptable scope, String name) {
     return toBoolean(scope.get(name, scope));
   }
+
+  public static Object unwrap(Object object) {
+    // Unwrap wrapped objects and exceptions
+    while (true) {
+      if (object instanceof JavaScriptException) {
+	object = ((JavaScriptException) object).getValue();
+      }
+      else if (object instanceof WrappedException) {
+	object = ((WrappedException) object).getWrappedException();
+      }
+      else if (object instanceof Wrapper) {
+	object = ((Wrapper) object).unwrap();
+      }
+      else {
+	break;
+      }
+    }
+    
+    return object;
+  }
+
+  public static Object toJavaObject(Object object) {
+    object = unwrap(object);
+
+    // Convert to "primitive" types
+    if (object instanceof org.mozilla.javascript.xml.XMLObject) {
+      object = ESXX.e4xToDOM((Scriptable) object);
+    }
+    else if (object instanceof Scriptable) {
+      if (((Scriptable) object).getClassName().equals("Date")) {
+	object = Context.jsToJava(object, Date.class);
+      }
+    }
+
+    return object;
+  }
+
 
   public static class JSFilenameFilter
     implements FilenameFilter {
