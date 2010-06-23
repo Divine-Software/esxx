@@ -32,6 +32,7 @@ import java.util.Properties;
 import org.esxx.*;
 import org.esxx.dbref.QueryBuilder;
 import org.esxx.js.JSURI;
+import org.esxx.util.JS;
 import org.esxx.util.QueryCache;
 import org.esxx.util.QueryHandler;
 import org.esxx.util.StringUtil;
@@ -349,6 +350,8 @@ public class JDBCHandler
       Object object = ScriptRuntime.getObjectElem(params, param, cx);
       int    length;
 
+      object = JS.unwrap(object);
+
       if (object instanceof Iterable) {
 	Iterator i = ((Iterable) object).iterator();
 
@@ -356,12 +359,15 @@ public class JDBCHandler
 	  ++length;
 	}
       }
-      else if (object instanceof Scriptable) {
+      else if (object instanceof NativeObject || object instanceof NativeArray) {
 	length = ((Scriptable) object).getIds().length;
       }
       else {
 	length = 1;
       }
+
+      // System.out.println("getParamLength " + batch + " " + param
+      // 			 + " from " + params + " => " + object + " length " + length);
 
       return length;
     }
@@ -371,12 +377,18 @@ public class JDBCHandler
       Object params = batches[batch];
       Object object = ScriptRuntime.getObjectElem(params, param, cx);
 
+      object = JS.unwrap(object);
+
+      // System.out.println("resolveParam " + batch + " " + param + " " + length 
+      // 			 + " from " + params + " => " + object + " "
+      // 			 + (object != null ? object.getClass() : "null.class"));
+
       if (object instanceof Iterable) {
 	for (Object o : ((Iterable) object)) {
 	  result.add(o);
 	}
       }
-      else if (object instanceof Scriptable) {
+      else if (object instanceof NativeObject || object instanceof NativeArray) {
 	Scriptable jsobj = (Scriptable) object;
 
 	for (Object id : jsobj.getIds()) {
@@ -385,11 +397,21 @@ public class JDBCHandler
 	  if (o instanceof XMLObject) {
 	    o = o.toString();
 	  }
+	  else {
+	    o = JS.toJavaObject(o);
+	  }
 
 	  result.add(o);
 	}
       }
       else {
+	if (object instanceof XMLObject) {
+	  object = object.toString();
+	}
+	else {
+	  object = JS.toJavaObject(object);
+	}
+
 	result.add(object);
       }
     }
