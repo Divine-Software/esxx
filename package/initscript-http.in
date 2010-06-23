@@ -24,4 +24,4 @@
 
 ESXX_INSTANCE=http
 ESXX_OPTIONS="--http 8654 --http-root @SHARE_INSTALL_PREFIX@/doc/@PROJECT_NAME@/examples/"
-. $(dirname $0)/esxx
+. @SYSCONF_INSTALL_DIR@/init.d/esxx
