@@ -167,7 +167,7 @@ function Assert.fnThrows(fn, type, comment) {
 				comment);
       }
     }
-    else {
+    else if (type) {
       if (typeof ex != type) {
 	throw new Assert.Failed("Assert.throws",
 				fn + " did not throw an type of '" + type + "'",
