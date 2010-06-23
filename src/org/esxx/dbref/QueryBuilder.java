@@ -352,7 +352,7 @@ public class QueryBuilder {
       }
 
       if (col) {
-	sb.append(s);
+	sb.append('`').append(s).append('`');
       }
 
       if (col && ref) {
