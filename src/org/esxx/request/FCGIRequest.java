@@ -30,7 +30,10 @@ public class FCGIRequest
   extends WebRequest {
 
   public FCGIRequest(JFastRequest jfast) {
-    super(new ByteArrayInputStream(jfast.data), jfast.error);
+    // NOTE: We MUST NOT send the error stream to jfast.error, because
+    // that stream will, at least by lighttpd, be inserted in the
+    // output stream, leading to broken HTTP responses!
+    super(new ByteArrayInputStream(jfast.data), System.err);
     jFast = jfast;
   }
 
