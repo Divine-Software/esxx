@@ -466,8 +466,15 @@ public class MIMEParser {
 
 	String value = decodeMIMEValue(hdr.getValue());
 
-	if (forced_encoding != null && name.equalsIgnoreCase("Content-Transfer-Encoding")) {
-	  value = forced_encoding;
+	if (name.equalsIgnoreCase("Content-Transfer-Encoding")) {
+	  if (forced_encoding != null) {
+	    value = forced_encoding;
+	  }
+	  else {
+	    // Remove Content-Transfer-Encoding unless we're forcing
+	    // an encoding by returning here
+	    return;
+	  }
 	}
 
 	convertPlainHeader(element, name, value);

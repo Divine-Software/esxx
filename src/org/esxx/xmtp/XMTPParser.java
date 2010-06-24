@@ -282,7 +282,19 @@ public class XMTPParser {
       try {
 	String value = xr.getElementText();
 
-	return InternetAddress.parse(value);
+	InternetAddress[] addresses = InternetAddress.parse(value);
+
+	// Force reparse of the 'personal' part
+	for (InternetAddress adr : addresses) {
+	  try {
+	    adr.setPersonal(adr.getPersonal());
+	  }
+	  catch (Exception ignored) {
+	    // Leave as-is
+	  }
+	}
+
+	return addresses;
       }
       catch (AddressException ex) {
 	throw new XMLStreamException("Invalid address format: " + ex.getMessage(), ex);
