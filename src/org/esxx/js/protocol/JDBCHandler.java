@@ -499,6 +499,11 @@ public class JDBCHandler
 
 	  for (int i = 1; i < labels.length; ++i) {
 	    String value  = rs.getString(i);
+
+	    if (rmd.getColumnType(i) == Types.BOOLEAN) {
+	      value = value.toLowerCase();
+	    }
+
 	    Element child = XML.addChild(row, labels[i], value);
 
 	    if (value == null) {
