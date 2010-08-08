@@ -118,7 +118,7 @@ class GAEClientConnection
       URI uri = new URI(host.getSchemeName()
 			+ "://"
 			+ host.getHostName()
-			+ ((host.getPort() == -1) ? "": host.getPort())
+			+ ((host.getPort() == -1) ? "" : (":" + host.getPort()))
 			+ request.getRequestLine().getUri());
 
       this.request = new HTTPRequest(uri.toURL(),
@@ -166,7 +166,7 @@ class GAEClientConnection
 //       System.err.println("RECV: " + h.getName() + ": " + h.getValue());
       response.addHeader(h.getName(), h.getValue());
     }
-    
+
     return response;
   }
 

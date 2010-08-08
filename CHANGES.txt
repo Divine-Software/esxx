@@ -136,6 +136,10 @@
 	* Changed .js MIME type from application/x-javascript to
 	text/javascript.
 
+	* GAEClientConnection.sendRequestHeader failed to add a colon
+	before the port number to the URI, in case such a number was
+	specified. [Nello]
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
