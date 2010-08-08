@@ -130,6 +130,12 @@
 	* The HTTP protocol now uses preemptive authentication for
 	subsequent requests.
 
+	* Changed .esxx MIME type from application/x-esxx+xml
+	to application/vnd.esxx.webapp+xml.
+
+	* Changed .js MIME type from application/x-javascript to
+	text/javascript.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

@@ -1294,11 +1294,11 @@ public class ESXX {
 
 	addIfMissing("css",   "text/css");
 	addIfMissing("eml",   "message/rfc822");
-	addIfMissing("esxx",  "application/x-esxx+xml");
+	addIfMissing("esxx",  "application/vnd.esxx.webapp+xml");
 	addIfMissing("gif",   "image/gif");
 	addIfMissing("html",  "text/html");
 	addIfMissing("jpg",   "image/jpeg");
-	addIfMissing("js",    "application/x-javascript");
+	addIfMissing("js",    "text/javascript");
 	addIfMissing("json",  "application/json");
 	addIfMissing("nrl",   "application/x-nrl+xml");
 	addIfMissing("nvdl",  "application/x-nvdl+xml");

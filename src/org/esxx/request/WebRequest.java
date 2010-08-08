@@ -85,7 +85,8 @@ public abstract class WebRequest
 
 	  quick_response = getFileListingResponse(request_uri.getPath(), script_file);
 	}
-	else if (!ESXX.fileTypeMap.getContentType(script_file).equals("application/x-esxx+xml")) {
+	else if (!ESXX.fileTypeMap.getContentType(script_file)
+		 .equals("application/vnd.esxx.webapp+xml")) {
 	  if (iterated) {
 	    throw new FileNotFoundException("Only .esxx files can have a trailing path.");
 	  }
