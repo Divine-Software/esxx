@@ -469,6 +469,9 @@ public class HTTPHandler
       else if (auth.getUsername() != null) {
 	return new UsernamePasswordCredentials(auth.getUsername(), auth.getPassword());
       }
+      else if (auth.getPassword() != null) {
+	return new UsernamePasswordCredentials("", auth.getPassword());
+      }
       else {
 	return null;
       }
