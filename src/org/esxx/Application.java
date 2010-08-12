@@ -442,9 +442,9 @@ public class Application
 
   public synchronized Logger getAppLogger() {
     if (logger == null) {
-      logger = esxx.createLogger(Application.class.getName() + "." + getAppName(),
-				 Level.ALL,
-				 "esxx");
+      logger = SyslogHandler.createLogger(Application.class.getName() + "." + getAppName(),
+					  Level.ALL,
+					  "esxx");
     }
 
     return logger;
