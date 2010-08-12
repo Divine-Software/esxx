@@ -61,8 +61,8 @@ public class SyslogHandler
       return logger;
     }
 
-    private static synchronized Formatter getTrivialFormatter(bool include_level) {
-      int idx = include_level : 0 : 1;
+    private static synchronized Formatter getTrivialFormatter(boolean include_level) {
+      int idx = include_level ? 0 : 1;
 
       if (trivialFormatters[idx] == null) {
 	trivialFormatters[idx] = new TrivialFormatter(include_level);
@@ -71,7 +71,7 @@ public class SyslogHandler
       return trivialFormatters[idx];
     }
 
-    private static Formatter[2] trivialFormatters;
+    private static Formatter[] trivialFormatters = new Formatter[2];
 
 
     public SyslogHandler() {
