@@ -36,11 +36,13 @@ public class TrivialFormatter
       sb.append("[").append(record.getLevel()).append("] ");
     }
 
+    int len = sb.length();
+
     if (record.getSourceClassName() != null) {      
       sb.append(record.getSourceClassName());
     } 
     else {
-      sb.append(record.getLoggerName());
+      sb.append("<").append(record.getLoggerName()).append(">");
     }
 
     if (record.getSourceMethodName() != null) {     
@@ -48,7 +50,10 @@ public class TrivialFormatter
       sb.append(record.getSourceMethodName());
     }
 
-    sb.append(": ");
+    if (len != sb.length()) {
+      sb.append(": ");
+    }
+
     sb.append(formatMessage(record));
 
     if (record.getThrown() != null) {
