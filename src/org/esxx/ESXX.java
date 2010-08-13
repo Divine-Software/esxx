@@ -98,7 +98,7 @@ public class ESXX {
       settings = p;
       hostObject = h;
 
-      defaultTimeout = (int) (Double.parseDouble(p.getProperty("esxx.app.timeout", "60")) 
+      defaultTimeout = (int) (Double.parseDouble(p.getProperty("esxx.app.timeout", "60"))
 			      * 1000);
       addShutdownHook = Boolean.parseBoolean(p.getProperty("esxx.app.clean_shutdown", "true"));
 
@@ -189,7 +189,7 @@ public class ESXX {
       // Add periodic check to expunge applications and xslt stylesheets
       executorService.scheduleWithFixedDelay(new CacheFilter(), 1, 1, TimeUnit.SECONDS);
 
-//       org.mozilla.javascript.tools.debugger.Main main = 
+//       org.mozilla.javascript.tools.debugger.Main main =
 // 	new org.mozilla.javascript.tools.debugger.Main("ESXX Debugger");
 //       main.doBreak();
 //       main.attachTo(contextFactory);
@@ -311,7 +311,7 @@ public class ESXX {
 	}, timeout);
     }
 
-    public Workload addContextAction(Context old_cx, final ContextAction ca, 
+    public Workload addContextAction(Context old_cx, final ContextAction ca,
 				     int timeout) {
       long expires;
 
@@ -512,7 +512,7 @@ public class ESXX {
 	return "HTTP_" + name.toUpperCase().replaceAll("-", "_");
       }
     }
-  
+
 
     public URI[] getIncludePath() {
       return includePath;
@@ -597,7 +597,7 @@ public class ESXX {
       }
     }
 
-    public InputStream openCachedURI(URI uri) 
+    public InputStream openCachedURI(URI uri)
       throws IOException {
 
       if ("esxx-rsrc".equals(uri.getScheme())) {
@@ -620,7 +620,7 @@ public class ESXX {
       return uc.getInputStream();
     }
 
-    public File createTempFile(Context cx) 
+    public File createTempFile(Context cx)
       throws IOException {
       File temp = File.createTempFile(getClass().getName(), null);
       temp.deleteOnExit();
@@ -650,7 +650,7 @@ public class ESXX {
 
       while (true) {
 	app = applicationCache.add(url_string, new LRUCache.ValueFactory<String, Application>() {
-	    public Application create(String key, long expires) 
+	    public Application create(String key, long expires)
 	    throws IOException {
 	      // The application cache makes sure we are
 	      // single-threaded (per application URL) here, so only
@@ -687,7 +687,7 @@ public class ESXX {
       throws IOException {
       try {
 	return stylesheetCache.add(uri.toString(), new LRUCache.ValueFactory<String, Stylesheet>() {
-	    public Stylesheet create(String key, long expires) 
+	    public Stylesheet create(String key, long expires)
 	      throws IOException {
 	      return new Stylesheet(uri);
 	    }
@@ -713,7 +713,7 @@ public class ESXX {
       throws IOException {
       try {
 	return schemaCache.add(uri.toString(), new LRUCache.ValueFactory<String, Schema>() {
-	    public Schema create(String key, long expires) 
+	    public Schema create(String key, long expires)
 	      throws IOException {
 	      return new Schema(uri, is, type);
 	    }
@@ -779,9 +779,9 @@ public class ESXX {
     return saxonDocumentBuilder;
   }
 
-  private void mxRegister(String type, String name, javax.management.StandardMBean object) 
+  private void mxRegister(String type, String name, javax.management.StandardMBean object)
     throws javax.management.JMException {
-    javax.management.MBeanServer mbs = 
+    javax.management.MBeanServer mbs =
       java.lang.management.ManagementFactory.getPlatformMBeanServer();
 
     mbs.registerMBean(object, mxObjectName(type, name));
@@ -789,24 +789,24 @@ public class ESXX {
 
   private void mxUnregister(String type, String name)
     throws javax.management.JMException {
-    javax.management.MBeanServer mbs = 
+    javax.management.MBeanServer mbs =
       java.lang.management.ManagementFactory.getPlatformMBeanServer();
-    
+
     mbs.unregisterMBean(mxObjectName(type, name));
   }
 
   /** A pattern that matches the characters '"', '\', '?' and '*'. */
-  private static java.util.regex.Pattern mxObjectNamePattern = 
+  private static java.util.regex.Pattern mxObjectNamePattern =
     java.util.regex.Pattern.compile("(\"\\\\\\?\\*)");
 
-  private javax.management.ObjectName mxObjectName(String type, String name) 
+  private javax.management.ObjectName mxObjectName(String type, String name)
     throws javax.management.MalformedObjectNameException {
     String object_name = ESXX.class.getName() + ":type=" + type;
 
     if (name != null) {
       // Quote illegal characters
       name = mxObjectNamePattern.matcher(name).replaceAll("\\\\$1");
-      object_name += ",name=\"" + name + "\""; 
+      object_name += ",name=\"" + name + "\"";
     }
 
     return new javax.management.ObjectName(object_name);
@@ -815,7 +815,7 @@ public class ESXX {
 
     public ContextFactory getContextFactory() {
       return contextFactory;
-    } 
+    }
 
 
     public static String parseMIMEType(String ct, HashMap<String,String> params) {
@@ -845,13 +845,13 @@ public class ESXX {
 
       try {
 	javax.mail.internet.ContentType ct = new javax.mail.internet.ContentType(type);
-	
+
 	if (params != null) {
 	  for (Map.Entry<String,String> e : params.entrySet()) {
 	    ct.setParameter(e.getKey(), e.getValue());
 	  }
 	}
-      
+
 	return ct.toString();
       }
       catch (javax.mail.internet.ParseException ex) {
@@ -881,7 +881,7 @@ public class ESXX {
      *  unload, and handles MX registration and application exit
      *  handlers.
      */
-	
+
     private class ApplicationCacheListener
       implements LRUCache.LRUListener<String, Application> {
 
@@ -891,7 +891,7 @@ public class ESXX {
 	}
 	catch (Throwable ex) {
 	  // Probably a Google App Engine problem
-	  getLogger().logp(Level.WARNING, null, null, 
+	  getLogger().logp(Level.WARNING, null, null,
 			   "Failed to register Application MXBean " + app.getFilename());
 	}
 	getLogger().logp(Level.CONFIG, null, null, app + " loaded.");
@@ -928,7 +928,7 @@ public class ESXX {
 	  }
 	  catch (Throwable ex) {
 	    // Probably a Google App Engine problem
-	    getLogger().logp(Level.WARNING, null, null, 
+	    getLogger().logp(Level.WARNING, null, null,
 			     "Failed to unregister Application MXBean " + app.getFilename());
 	  }
 
@@ -941,7 +941,7 @@ public class ESXX {
     /** This class monitors all stylesheets that are being loaded and
      *  unload and handles MX registration.
      */
-	
+
     private class StylesheetCacheListener
       implements LRUCache.LRUListener<String, Stylesheet> {
 
@@ -951,7 +951,7 @@ public class ESXX {
 	}
 	catch (Throwable ex) {
 	  // Probably a Google App Engine problem
-	  getLogger().logp(Level.WARNING, null, null, 
+	  getLogger().logp(Level.WARNING, null, null,
 			   "Failed to register Stylesheet MXBean " + xslt.getFilename());
 	}
 	getLogger().logp(Level.CONFIG, null, null, xslt + " loaded.");
@@ -963,7 +963,7 @@ public class ESXX {
 	}
 	catch (Throwable ex) {
 	  // Probably a Google App Engine problem
-	  getLogger().logp(Level.WARNING, null, null, 
+	  getLogger().logp(Level.WARNING, null, null,
 			   "Failed to unregister Stylesheet MXBean " + xslt.getFilename());
 	}
 	getLogger().logp(Level.CONFIG, null, null, xslt + " unloaded.");
@@ -973,7 +973,7 @@ public class ESXX {
     /** This class monitors all schemas that are being loaded and
      *  unload and handles MX registration.
      */
-	
+
     private class SchemaCacheListener
       implements LRUCache.LRUListener<String, Schema> {
 
@@ -983,7 +983,7 @@ public class ESXX {
 	}
 	catch (Throwable ex) {
 	  // Probably a Google App Engine problem
-	  getLogger().logp(Level.WARNING, null, null, 
+	  getLogger().logp(Level.WARNING, null, null,
 			   "Failed to register Schema MXBean " + sch.getFilename());
 	}
 	getLogger().logp(Level.CONFIG, null, null, sch + " loaded.");
@@ -995,7 +995,7 @@ public class ESXX {
 	}
 	catch (Throwable ex) {
 	  // Probably a Google App Engine problem
-	  getLogger().logp(Level.WARNING, null, null, 
+	  getLogger().logp(Level.WARNING, null, null,
 			   "Failed to unregister Schema MXBean " + sch.getFilename());
 	}
 	getLogger().logp(Level.CONFIG, null, null, sch + " unloaded.");
@@ -1011,11 +1011,12 @@ public class ESXX {
     private class CacheFilter
       implements Runnable {
       @Override public void run() {
+	getLogger().logp(Level.FINER, null, null, "Checking for modified applications");
 	applicationCache.filterEntries(new LRUCache.EntryFilter<String, Application>() {
 	    public boolean isStale(String key, Application app, long created) {
 	      for (URI uri : app.getExternalURIs()) {
-		//		System.err.println("Resource " + uri + " was created on " + new java.util.Date(created));
 		if (getLastModified(uri) > created) {
+		  getLogger().logp(Level.FINE, null, null, uri + " modification detected");
 		  return true;
 		}
 	      }
@@ -1024,10 +1025,12 @@ public class ESXX {
 	    }
 	  });
 
+	getLogger().logp(Level.FINER, null, null, "Checking for modified stylesheets");
 	stylesheetCache.filterEntries(new LRUCache.EntryFilter<String, Stylesheet>() {
 	    public boolean isStale(String key, Stylesheet xslt, long created) {
 	      for (URI uri : xslt.getExternalURIs()) {
 		if (getLastModified(uri) > created) {
+		  getLogger().logp(Level.FINE, null, null, uri + " modification detected");
 		  return true;
 		}
 	      }
@@ -1036,10 +1039,12 @@ public class ESXX {
 	    }
 	  });
 
+	getLogger().logp(Level.FINER, null, null, "Checking for modified schemas");
 	schemaCache.filterEntries(new LRUCache.EntryFilter<String, Schema>() {
 	    public boolean isStale(String key, Schema sch, long created) {
 	      for (URI uri : sch.getExternalURIs()) {
 		if (getLastModified(uri) > created) {
+		  getLogger().logp(Level.FINE, null, null, uri + " modification detected");
 		  return true;
 		}
 	      }
@@ -1047,6 +1052,8 @@ public class ESXX {
 	      return false;
 	    }
 	  });
+
+	getLogger().logp(Level.FINER, null, null, "Finished checking for modified resources");
       }
 
       private long getLastModified(URI uri) {
@@ -1067,7 +1074,7 @@ public class ESXX {
 	  else {
 	    uc.connect();
 	  }
-	  //	  System.err.println("Resource " + uri + " was last modified on " + new java.util.Date(uc.getLastModified()));
+
 	  return uc.getLastModified();
 	}
 	catch (IOException ex) {
@@ -1122,7 +1129,7 @@ public class ESXX {
 
 	      // Provide a better mapping for primitive types on this context
 	      WrapFactory wf = new WrapFactory() {
-		  @Override public Object wrap(Context cx, Scriptable scope, 
+		  @Override public Object wrap(Context cx, Scriptable scope,
 					       Object obj, Class<?> static_type) {
 		    if (obj instanceof char[]) {
 		      return new String((char[]) obj);
@@ -1184,16 +1191,21 @@ public class ESXX {
 
 	synchronized (workload) {
 	  if (workload.future != null && workload.future.isCancelled()) {
+	    ESXX.getInstance().getLogger().logp(Level.FINE, null, null,
+						"Workload " + workload
+						+ " cancelled: throwing TimeOut");
 	    throw new ESXXException.TimeOut();
 	  }
 	}
       }
     }
 
-    private class WorkloadCancellator 
+    private class WorkloadCancellator
       implements Runnable {
       @Override public void run() {
 	long now = System.currentTimeMillis();
+
+	getLogger().logp(Level.FINER, null, null, "Checking for workloads to cancel");
 
 	while (true) {
 	  Workload w = workloadSet.peek();
@@ -1203,6 +1215,7 @@ public class ESXX {
 	  }
 
 	  if (w.expires < now) {
+	    getLogger().logp(Level.FINE, null, null, "Cancelling workload " + w);
 	    w.future.cancel(true);
 	    workloadSet.poll();
 	  }
@@ -1212,6 +1225,8 @@ public class ESXX {
 	    break;
 	  }
 	}
+
+	getLogger().logp(Level.FINER, null, null, "Finished checking for workloads to cancel");
       }
     }
 
@@ -1232,7 +1247,7 @@ public class ESXX {
 	tempFiles.clear();
       }
 
-      @Override protected void finalize() 
+      @Override protected void finalize()
 	throws Throwable {
 	try {
 	  close();
@@ -1326,6 +1341,6 @@ public class ESXX {
     private ScheduledExecutorService executorService;
     private PriorityBlockingQueue<Workload> workloadSet;
     private Logger logger;
-  
+
     private Thread shutdownHook;
 }
