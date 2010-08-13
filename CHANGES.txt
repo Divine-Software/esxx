@@ -52,7 +52,7 @@
 	mod_jk/mod_proxy_ajp as an alternative to FastCGI or HTTP
 	(courtesy of Jetty).
 
-	* The -r/--http-root command line parameter now applies to 
+	* The -r/--http-root command line parameter now applies to
 	both AJP/HTTP and FCGI modes. In FCGI mode, it means that only
 	${REQUEST_URI} will be used by ESXX -- ${PATH_TRANSLATED}/
 	${SCRIPT_FILENAME} are ignored if this flag is supplied.
@@ -139,6 +139,13 @@
 	* GAEClientConnection.sendRequestHeader failed to add a colon
 	before the port number to the URI, in case such a number was
 	specified. [Nello]
+
+	* Added "esxx.net.timeout" config option, which specifies
+	socket timeout (in decimal seconds) used for HTTP/AJP and
+	FastCGI.
+
+	* The FastCGI server now reads each request in a separate
+	thread. Upgraded jfast.jar to 1.0lcs3.
 
 0.9.20090521
 	* Added the XKCD example from the Wiki.

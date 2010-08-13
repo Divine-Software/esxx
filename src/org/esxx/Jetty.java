@@ -35,23 +35,29 @@ import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.esxx.request.ServletRequest;
 
 public abstract class Jetty {
-  public static void runJettyServer(int http_port, int ajp_port, URI fs_root_uri) 
+  public static void runJettyServer(int http_port, int ajp_port, URI fs_root_uri)
     throws Exception {
     ESXX esxx = ESXX.getInstance();
 
     Log.setLog(new JavaUtilLog(esxx.getLogger().getName()));
+
+    int timeout = (int) (Double.parseDouble(esxx.getSettings()
+					    .getProperty("esxx.net.timeout", "60"))
+			 * 1000);
 
     Server server = new Server();
 
     if (http_port != -1) {
       SelectChannelConnector http = new SelectChannelConnector();
       http.setPort(http_port);
+      http.setMaxIdleTime(timeout);
       server.addConnector(http);
     }
 
     if (ajp_port != -1) {
       Ajp13SocketConnector ajp = new Ajp13SocketConnector();
       ajp.setPort(ajp_port);
+      ajp.setMaxIdleTime(timeout);
       server.addConnector(ajp);
     }
 
@@ -77,14 +83,14 @@ public abstract class Jetty {
     }
 
     @Override
-    public void handle(String                           target, 
+    public void handle(String                           target,
 		       org.eclipse.jetty.server.Request req,
 		       HttpServletRequest               sreq,
-		       HttpServletResponse              sres) 
+		       HttpServletResponse              sres)
       throws IOException, ServletException {
       req.setHandled(true);
       ServletRequest.handleServletRequest(sreq, sres, fsRootURI, "Jetty Error");
-    }	
+    }
 
     private URI fsRootURI;
   }

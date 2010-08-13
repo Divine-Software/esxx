@@ -19,12 +19,16 @@
 package org.esxx.request;
 
 import java.io.*;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.logging.Level;
 import org.bumblescript.jfast.*;
 import org.esxx.*;
 import org.esxx.util.IO;
 import org.esxx.util.StringUtil;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextAction;
 
 public class FCGIRequest
   extends WebRequest {
@@ -65,18 +69,18 @@ public class FCGIRequest
 
     if (fs_root_uri == null) {
       String pt_path = null;
-  
+
       if (ESXX.getInstance().isHandlerMode(jFast.properties.getProperty("SERVER_SOFTWARE"))) {
         pt_path = jFast.properties.getProperty("PATH_TRANSLATED");
       }
-  
+
       if (pt_path == null) {
         // If not handler mode, or PATH_TRANSLATED missing, use
         // SCRIPT_FILENAME + PATH_INFO instead
-        pt_path = (jFast.properties.getProperty("SCRIPT_FILENAME") 
+        pt_path = (jFast.properties.getProperty("SCRIPT_FILENAME")
   		 + jFast.properties.getProperty("PATH_INFO"));
       }
-  
+
       path_translated = new URI("file", null, pt_path, null);
       fs_root_uri = URI.create("file:/");
     }
@@ -122,48 +126,98 @@ public class FCGIRequest
     }
   }
 
-  public static void runServer(int fastcgi_port, URI fs_root_uri) 
+  public static void runServer(int fastcgi_port, final URI fs_root_uri)
     throws IOException {
-    ESXX  esxx  = ESXX.getInstance();
+    final ESXX esxx  = ESXX.getInstance();
     JFast jfast = new JFast(fastcgi_port);
 
-    esxx.getLogger().logp(java.util.logging.Level.INFO, null, null, 
+    esxx.getLogger().logp(Level.INFO, null, null,
 			  "Listening for FastCGI requests on port " + fastcgi_port);
+
+    int timeout = (int) (Double.parseDouble(esxx.getSettings()
+					    .getProperty("esxx.net.timeout", "60"))
+			 * 1000);
 
     while (true) {
       try {
 	while (true) {
-	  try {
-	    JFastRequest req = jfast.acceptRequest();
-	    FCGIRequest fr = new FCGIRequest(req);
+	  esxx.getLogger().log(Level.FINE, "Waiting for FastCGI connection");
+	  final Socket accepted = jfast.accept();
+	  accepted.setSoTimeout(timeout);
+	  esxx.getLogger().log(Level.FINE, "Accepted FastCGI connection from " + accepted);
 
-	    // Fire and forget
-	    try {
-	      fr.initRequest(fs_root_uri);
-	      esxx.addRequest(fr, fr, 0);
-	      req = null;
-	    }
-	    catch (Exception ex) {
-	      fr.reportInternalError(500, 
-				     "ESXX Server Error", "FastCGI Error", 
-				     ex.getMessage(), ex);
-	      req = null;
-	    }
-	    finally {
-	      if (req != null) {
-		try { req.end(); } catch (Exception ignored) {}
-	      }
-	    }
-	  }
-	  catch (JFastException ex) {
-	    esxx.getLogger().log(java.util.logging.Level.WARNING,
-				 "Failed to process JFast request", ex);
-	  }
+	  // Read JFast message in new thread with default timeout
+	  esxx.addContextAction(null, new ContextAction() {
+		@Override public Object run(Context cx) {
+		  Socket socket = accepted;
+
+		  try {
+		    esxx.getLogger().log(Level.FINE,
+					 "Reading FastCGI request from " + accepted);
+
+		    JFastRequest req = new JFastRequest(socket);
+		    socket = null; // JFastRequest owns Socket
+
+		    esxx.getLogger().log(Level.FINE,
+					 "Initializing FastCGI request from " + accepted);
+
+		    FCGIRequest fr = new FCGIRequest(req);
+
+		    try {
+		      // Fire and forget
+		      fr.initRequest(fs_root_uri);
+		      esxx.addRequest(fr, fr, 0);
+		      req = null; // FCGIRequest owns JFastRequest
+
+		      esxx.getLogger().log(Level.FINE,
+					   "FastCGI request from " + accepted
+					   + " successfully initialized");
+		    }
+		    catch (Exception ex) {
+		      fr.reportInternalError(500,
+					     "ESXX Server Error", "FastCGI Error",
+					     ex.getMessage(), ex);
+		      req = null; // FCGIRequest owns JFastRequest
+
+		      esxx.getLogger().log(Level.FINE,
+					   "FastCGI request from " + accepted
+					   + " failed to initialize");
+		    }
+		    finally {
+		      if (req != null) {
+			try { req.end(); } catch (Exception ignored) {}
+		      }
+		    }
+		  }
+		  catch (JFastException ex) {
+		    // Invalid FCGI packet data etc
+		    esxx.getLogger().log(Level.WARNING,
+					 "Failed to process FastCGI request from " + accepted, ex);
+		  }
+		  catch (java.net.SocketTimeoutException ex) {
+		    esxx.getLogger().logp(Level.WARNING, null, null,
+					  "FastCGI socket timeout from " + accepted);
+		  }
+		  catch (IOException ex) {
+		    // I/O error on Socket
+		    esxx.getLogger().log(Level.SEVERE,
+					 "I/O error when processing FastCGI request from "
+					 + accepted, ex);
+		  }
+		  finally {
+		    if (socket != null) {
+		      try { socket.close(); } catch (Exception ignored) {}
+		    }
+		  }
+
+		  return null;
+		}
+	    }, timeout);
 	}
       }
       catch (IOException ex) {
-	esxx.getLogger().log(java.util.logging.Level.SEVERE,
-			     "Failed to handle JFast request", ex);
+	esxx.getLogger().log(Level.SEVERE,
+			     "Failed to accept JFast request", ex);
 	// Re-bind
 	jfast.close();
 	jfast = new JFast(fastcgi_port);
