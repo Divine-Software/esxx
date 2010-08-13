@@ -1234,8 +1234,12 @@ public class ESXX {
 
       @Override protected void finalize() 
 	throws Throwable {
-	super.finalize();
-	close();
+	try {
+	  close();
+	}
+	finally {
+	  super.finalize();
+	}
       }
 
       public Future<Object> future;

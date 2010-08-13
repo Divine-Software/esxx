@@ -546,8 +546,12 @@ public class XMTPParser {
 	@Override
 	public void finalize()
 	  throws Throwable {
-	  tempFile.delete();
-	  super.finalize();
+	  try {
+	    tempFile.delete();
+	  }
+	  finally {
+	    super.finalize();
+	  }
 	}
 
 	public String getContentType() {
