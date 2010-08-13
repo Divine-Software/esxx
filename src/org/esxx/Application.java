@@ -847,7 +847,7 @@ public class Application
 		    return null;
 		  }
 		}
-	      }, (int) (th.period * 2) /* Timeout */);
+	      }, this + "timer " + th.handler, (int) (th.period * 2) /* Timeout */);
 	  }
 	}, th.delay, th.period, TimeUnit.MILLISECONDS);
     }

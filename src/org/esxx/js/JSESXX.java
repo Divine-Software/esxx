@@ -194,13 +194,14 @@ public class JSESXX
     private static void checkTimeout(Context cx) {
       ESXX.Workload workload = (ESXX.Workload) cx.getThreadLocal(ESXX.Workload.class);
 
-      if (workload.future.isCancelled()) {
+      if (workload.isCancelled()) {
 	throw new ESXXException.TimeOut();
       }
     }
 
     public static Scriptable jsFunction_parallel(final Context cx, Scriptable thisObj,
 						 Object[] args, Function funcObj) {
+      JSESXX   js_esxx = (JSESXX) thisObj;
       Scriptable scope = funcObj.getParentScope();
 
       Object[] fargs = Context.emptyArgs;
@@ -236,7 +237,7 @@ public class JSESXX
       ESXX.Workload[] workloads   = new ESXX.Workload[tasks.length];
       final Object[]  final_fargs = fargs;
 
-      fork(cx, workloads, new ForkedFunction() {
+      js_esxx.fork(cx, workloads, new ForkedFunction() {
 	  public Object call(Context cx, int idx) {
 	    if (tasks[idx] instanceof Function) {
 	      Function   func = (Function) tasks[idx];
@@ -255,6 +256,8 @@ public class JSESXX
 
     public static Scriptable jsFunction_map(final Context cx, Scriptable thisObj,
 					    final Object[] args, Function funcObj) {
+      JSESXX js_esxx = (JSESXX) thisObj;
+
       // The first argument is the data array
       if (args.length < 1 || !(args[0] instanceof NativeArray)) {
 	throw Context.reportRuntimeError("First argument must be an Array");
@@ -288,7 +291,7 @@ public class JSESXX
       ESXX.Workload[] workloads = new ESXX.Workload[data.length];
       final Object undefined    = Context.getUndefinedValue();
 
-      fork(cx, workloads, new ForkedFunction() {
+      js_esxx.fork(cx, workloads, new ForkedFunction() {
 	  public Object call(Context cx, int idx) {
 	    if (data[idx] != undefined) {
 	      Object fargs[] = { data[idx], idx, args[0] };
@@ -360,10 +363,10 @@ public class JSESXX
     }
 
 
-    private static void fork(Context cx,
-			     ESXX.Workload[] workloads,
-			     final ForkedFunction ff,
-			     int timeout_ms, int max_tasks) {
+    private void fork(Context cx,
+		      ESXX.Workload[] workloads,
+		      final ForkedFunction ff,
+		      int timeout_ms, int max_tasks) {
       ESXX esxx = ESXX.getInstance();
 
       // Submit workloads, limit if asked to
@@ -398,7 +401,7 @@ public class JSESXX
 		limit.release();
 	      }
 	    }
-	  }, timeout_ms);
+	  }, app + "/" + Thread.currentThread() + " fork " + i, timeout_ms);
       }
     }
 
@@ -413,7 +416,7 @@ public class JSESXX
       for (int i = 0; i < workloads.length; ++i) {
 	if (workloads[i] != null) {
 	  try {
-	    result[i] = workloads[i].future.get();
+	    result[i] = workloads[i].getResult();
 	  }
 	  catch (ExecutionException ex) {
 	    result[i] = undefined;

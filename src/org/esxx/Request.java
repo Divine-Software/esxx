@@ -124,6 +124,10 @@ public abstract class Request {
       }
     }
 
+    @Override public String toString() {
+      return "[Request: " + requestMethod + " " + requestURI + "]";
+    }
+
     public interface Handler {
       public Object handleRequest(Context cx, Request req, Application app)
 	throws Exception;

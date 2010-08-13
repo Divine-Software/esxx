@@ -165,7 +165,7 @@ public class Main {
 	ESXX.Workload wl = esxx.addRequest(sr, sr, -1 /* no timeout for the shell */);
 
 	try {
-	  System.exit((Integer) wl.future.get());
+	  System.exit((Integer) wl.getResult());
 	}
 	catch (java.util.concurrent.CancellationException ex) {
 	  System.exit(5);
@@ -179,7 +179,7 @@ public class Main {
 	ESXX.Workload wl = esxx.addRequest(sr, sr, -1 /* no timeout for scripts */);
 
 	try {
-	  System.exit((Integer) wl.future.get());
+	  System.exit((Integer) wl.getResult());
 	}
 	catch (java.util.concurrent.CancellationException ex) {
 	  System.exit(5);

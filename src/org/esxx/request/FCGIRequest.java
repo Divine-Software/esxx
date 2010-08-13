@@ -212,7 +212,7 @@ public class FCGIRequest
 
 		  return null;
 		}
-	    }, timeout);
+	    }, "FastCGI " + accepted, timeout);
 	}
       }
       catch (IOException ex) {

@@ -147,6 +147,8 @@
 	* The FastCGI server now reads each request in a separate
 	thread. Upgraded jfast.jar to 1.0lcs3.
 
+	* The current set of workloads can now be inspected using JMX.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

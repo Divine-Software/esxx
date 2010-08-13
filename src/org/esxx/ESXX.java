@@ -26,6 +26,8 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -36,6 +38,7 @@ import java.util.regex.Pattern;
 import javax.activation.FileTypeMap;
 import javax.activation.MimetypesFileTypeMap;
 import org.esxx.cache.*;
+import org.esxx.jmx.WorkloadInfo;
 import org.esxx.saxon.*;
 import org.esxx.util.SingleThreadedExecutor;
 import org.esxx.util.ThreadSafeExecutor;
@@ -177,9 +180,18 @@ public class ESXX {
 
       workloadSet = new PriorityBlockingQueue<Workload>(16, new Comparator<Workload>() {
 	  public int compare(Workload w1, Workload w2) {
-	    return Long.signum(w1.expires - w2.expires);
+	    return Long.signum(w1.getExpires() - w2.getExpires());
 	  }
 	});
+
+      try {
+	mxRegister("Workloads", null, new WorkloadJMXBean());
+      }
+      catch (Throwable ex) {
+	ex.printStackTrace();
+	// Probably a Google App Engine problem
+	getLogger().logp(Level.WARNING, null, null, "Failed to register Workloads MXBean");
+      }
 
       // Add periodic Workload cancellation (if not single-threaded)
       if (worker_threads != 0) {
@@ -308,11 +320,11 @@ public class ESXX {
 	      return rh.handleError(t);
 	    }
 	  }
-	}, timeout);
+	}, request.toString(), timeout);
     }
 
     public Workload addContextAction(Context old_cx, final ContextAction ca,
-				     int timeout) {
+				     final String name, int timeout) {
       long expires;
 
       if (timeout == -1) {
@@ -328,13 +340,13 @@ public class ESXX {
       if (old_cx != null) {
 	Workload old_work = (Workload) old_cx.getThreadLocal(Workload.class);
 
-	if (old_work != null && old_work.expires < expires) {
+	if (old_work != null && old_work.getExpires() < expires) {
 	  // If we're already executing a workload, never extend the timeout
-	  expires = old_work.expires;
+	  expires = old_work.getExpires();
 	}
       }
 
-      final Workload workload = new Workload(expires);
+      final Workload workload = new Workload(name, expires);
 
       workloadSet.add(workload);
 
@@ -346,8 +358,12 @@ public class ESXX {
 	      return contextFactory.call(new ContextAction() {
 		  @Override public Object run(Context new_cx) {
 		    Object old_workload = new_cx.getThreadLocal(Workload.class);
+		    // Thread thread       = Thread.currentThread();
+		    // String old_name     = thread.getName();
 
+		    workload.open();
 		    new_cx.putThreadLocal(Workload.class, workload);
+		    // thread.setName(old_name + " - " + name);
 
 		    try {
 		      return ca.run(new_cx);
@@ -359,9 +375,10 @@ public class ESXX {
 		      else {
 			new_cx.removeThreadLocal(Workload.class);
 		      }
-
+		      
 		      workload.close();
 		      workloadSet.remove(workload);
+		      // thread.setName(old_name);
 		    }
 		  }
 		});
@@ -910,10 +927,10 @@ public class ESXX {
 	      app.clearPLS();
 	      return null;
 	    }
-	  }, defaultTimeout);
+	  }, app + " exit handler", defaultTimeout);
 
 	try {
-	  workload.future.get();
+	  workload.getResult();
 	}
 	catch (InterruptedException ex) {
 	  Thread.currentThread().interrupt();
@@ -1011,7 +1028,7 @@ public class ESXX {
     private class CacheFilter
       implements Runnable {
       @Override public void run() {
-	getLogger().logp(Level.FINER, null, null, "Checking for modified applications");
+	getLogger().logp(Level.FINEST, null, null, "Checking for modified applications");
 	applicationCache.filterEntries(new LRUCache.EntryFilter<String, Application>() {
 	    public boolean isStale(String key, Application app, long created) {
 	      for (URI uri : app.getExternalURIs()) {
@@ -1025,7 +1042,7 @@ public class ESXX {
 	    }
 	  });
 
-	getLogger().logp(Level.FINER, null, null, "Checking for modified stylesheets");
+	getLogger().logp(Level.FINEST, null, null, "Checking for modified stylesheets");
 	stylesheetCache.filterEntries(new LRUCache.EntryFilter<String, Stylesheet>() {
 	    public boolean isStale(String key, Stylesheet xslt, long created) {
 	      for (URI uri : xslt.getExternalURIs()) {
@@ -1039,7 +1056,7 @@ public class ESXX {
 	    }
 	  });
 
-	getLogger().logp(Level.FINER, null, null, "Checking for modified schemas");
+	getLogger().logp(Level.FINEST, null, null, "Checking for modified schemas");
 	schemaCache.filterEntries(new LRUCache.EntryFilter<String, Schema>() {
 	    public boolean isStale(String key, Schema sch, long created) {
 	      for (URI uri : sch.getExternalURIs()) {
@@ -1053,7 +1070,7 @@ public class ESXX {
 	    }
 	  });
 
-	getLogger().logp(Level.FINER, null, null, "Finished checking for modified resources");
+	getLogger().logp(Level.FINEST, null, null, "Finished checking for modified resources");
       }
 
       private long getLastModified(URI uri) {
@@ -1190,7 +1207,7 @@ public class ESXX {
 	}
 
 	synchronized (workload) {
-	  if (workload.future != null && workload.future.isCancelled()) {
+	  if (workload.isCancelled()) {
 	    ESXX.getInstance().getLogger().logp(Level.FINE, null, null,
 						"Workload " + workload
 						+ " cancelled: throwing TimeOut");
@@ -1205,7 +1222,7 @@ public class ESXX {
       @Override public void run() {
 	long now = System.currentTimeMillis();
 
-	getLogger().logp(Level.FINER, null, null, "Checking for workloads to cancel");
+	getLogger().logp(Level.FINEST, null, null, "Checking for workloads to cancel");
 
 	while (true) {
 	  Workload w = workloadSet.peek();
@@ -1214,9 +1231,9 @@ public class ESXX {
 	    break;
 	  }
 
-	  if (w.expires < now) {
+	  if (w.getExpires() < now) {
 	    getLogger().logp(Level.FINE, null, null, "Cancelling workload " + w);
-	    w.future.cancel(true);
+	    w.cancel();
 	    workloadSet.poll();
 	  }
 	  else {
@@ -1226,25 +1243,65 @@ public class ESXX {
 	  }
 	}
 
-	getLogger().logp(Level.FINER, null, null, "Finished checking for workloads to cancel");
+	getLogger().logp(Level.FINEST, null, null, "Finished checking for workloads to cancel");
       }
     }
 
     public static class Workload {
-      public Workload(long exp) {
+      public Workload(String name, long exp) {
 	future    = null;
+	this.name = name;
 	expires   = exp;
       }
 
-      public void addTempFile(File file) {
+      public synchronized void addTempFile(File file) {
 	tempFiles.add(file);
       }
 
-      public void close() {
+      public synchronized void open() {
+	thread = Thread.currentThread();
+      }
+
+      public synchronized void close() {
 	for (File temp : tempFiles) {
 	  try { temp.delete(); } catch (Exception ignored) {}
 	}
 	tempFiles.clear();
+
+	thread = null;
+      }
+
+      public String getName() {
+	return name;
+      }
+
+      public long getExpires() {
+	return expires;
+      }
+
+      public synchronized Thread getThread() {
+	return thread;
+      }
+
+      public Object getResult() 
+	throws InterruptedException, ExecutionException {
+	return future.get();
+      }
+
+      public boolean isDone() {
+	return future.isDone();
+      }
+
+      public boolean isCancelled() {
+	return future.isCancelled();
+      }
+
+      public void cancel() {
+	future.cancel(true);
+      }
+
+      @Override public String toString() {
+	return "[Workload: " + name + " (expires " + new java.util.Date(expires) + ")]";
       }
 
       @Override protected void finalize()
@@ -1257,10 +1314,43 @@ public class ESXX {
 	}
       }
 
-      public Future<Object> future;
-      public long expires;
-      public Collection<File> tempFiles = new ArrayList<File>();
+      private Future<Object> future;
+      private Thread thread;
+      private String name;
+      private long expires;
+      private Collection<File> tempFiles = new ArrayList<File>();
     }
+
+
+    private class WorkloadJMXBean 
+      extends javax.management.StandardEmitterMBean
+      implements org.esxx.jmx.WorkloadMXBean {
+
+      public WorkloadJMXBean() {
+	super(org.esxx.jmx.WorkloadMXBean.class, true,
+	      new javax.management.NotificationBroadcasterSupport());
+      }
+
+      @Override public int getWorkloadCount() {
+	return ESXX.this.workloadSet.size();
+      }
+
+      @Override public List<WorkloadInfo> getWorkloads() {
+	ArrayList<Workload> workloads = new ArrayList<Workload>(workloadSet);
+	ArrayList<WorkloadInfo> infos = new ArrayList<WorkloadInfo>(workloads.size());
+
+	for (Workload w : workloads) {
+	  synchronized (w) {
+	    infos.add(new WorkloadInfo(w.getName(), new Date(w.getExpires()), 
+				       w.getThread().getName(),
+				       w.isDone(), w.isCancelled()));
+	  }
+	}
+	
+	return infos;
+      }
+    }
+
 
     public interface ResponseHandler {
       Integer handleResponse(Response result)
@@ -1340,6 +1430,7 @@ public class ESXX {
     private ContextFactory contextFactory;
     private ScheduledExecutorService executorService;
     private PriorityBlockingQueue<Workload> workloadSet;
+    private WorkloadJMXBean workloadJMXBean;
     private Logger logger;
 
     private Thread shutdownHook;

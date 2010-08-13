@@ -135,7 +135,7 @@ public class ServletRequest
       sr.initRequest(fs_root_uri, getPathTranslated(fs_root_uri, path, context));
       ESXX.Workload wl = ESXX.getInstance().addRequest(sr, sr, 0);
       sres = null;
-      wl.future.get(); // Wait for request to complete
+      wl.getResult(); // Wait for request to complete
     }
     catch (Exception ex) {
       sr.reportInternalError(500, "ESXX Server Error", error_subtitle,  ex.getMessage(), ex);
