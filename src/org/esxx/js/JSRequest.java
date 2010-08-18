@@ -342,7 +342,7 @@ public class JSRequest
 
 
     public void handleContentHeader(String name, String value) {
-      if (name.startsWith("Content-")) {
+      if (name.startsWith("Content-") && !value.isEmpty()) {
 	if (name.equals("Content-Type")) {
 	  contentTypeParams = new HashMap<String,String>();
 	  contentType       = ESXX.parseMIMEType(value, contentTypeParams);

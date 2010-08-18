@@ -130,6 +130,9 @@
 	* The HTTP protocol now uses preemptive authentication for
 	subsequent requests.
 
+	* Treat empty Content-Type and Content-Length headers as
+	non-existing.
+
 	* Changed .esxx MIME type from application/x-esxx+xml
 	to application/vnd.esxx.webapp+xml.
 
