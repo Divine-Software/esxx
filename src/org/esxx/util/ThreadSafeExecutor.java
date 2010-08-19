@@ -129,6 +129,7 @@ public class ThreadSafeExecutor
 
   private void startDelayedWorker() {
     execute(new Runnable() {
+	@SuppressWarnings("unchecked")
 	@Override public void run() {
 	  try {
 	    while (!isShutdown()) {

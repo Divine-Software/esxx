@@ -36,6 +36,7 @@ public class ServletRequest
     this.sres = sres;
   }
 
+  @SuppressWarnings("unchecked")
   public void initRequest(URI fs_root_uri, URI path_translated) {
     StringBuffer request_url  = sreq.getRequestURL();
     String       query_string = sreq.getQueryString();

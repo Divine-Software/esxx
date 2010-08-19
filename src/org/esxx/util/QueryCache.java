@@ -19,21 +19,25 @@
 package org.esxx.util;
 
 import java.net.URI;
-import java.sql.*;
+import java.sql.BatchUpdateException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
+
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
 import org.esxx.cache.LRUCache;
-import org.esxx.util.StringUtil;
-
 import org.h2.value.DataType;
 import org.h2.value.Value;
-
-import org.mozilla.javascript.Scriptable;
 
 /** An easy-to-use SQL query cache and connection pool. */
 

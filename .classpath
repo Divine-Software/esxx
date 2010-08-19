@@ -20,7 +20,6 @@
 	<classpathentry kind="lib" path="lib/exe/commons-cli.jar"/>
 	<classpathentry kind="lib" path="lib/exe/jfast.jar"/>
 	<classpathentry kind="lib" path="lib/exe/mail.jar"/>
-	<classpathentry kind="lib" path="lib/gae/appengine-api-1.0-sdk-1.2.1.jar"/>
 	<classpathentry kind="lib" path="lib/exe/jetty-ajp.jar"/>
 	<classpathentry kind="lib" path="lib/exe/jetty-continuation.jar"/>
 	<classpathentry kind="lib" path="lib/exe/jetty-http.jar"/>
@@ -29,5 +28,8 @@
 	<classpathentry kind="lib" path="lib/exe/jetty-server.jar"/>
 	<classpathentry kind="lib" path="lib/exe/jetty-util.jar"/>
 	<classpathentry kind="lib" path="lib/exe/servlet-api-2.5.jar"/>
+	<classpathentry kind="lib" path="lib/gae/appengine-api.jar"/>
+	<classpathentry kind="lib" path="lib/exe/jline.jar"/>
+	<classpathentry kind="lib" path="lib/core/jing.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

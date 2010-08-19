@@ -70,7 +70,7 @@ public class ArrayQueryHandler
     int    len = 1;
 
     if (obj instanceof Iterable) {
-      Iterator i = ((Iterable) obj).iterator();
+      Iterator<?> i = ((Iterable<?>) obj).iterator();
 
       for (len = 0; i.hasNext(); i.next()) {
 	++len;
@@ -80,6 +80,7 @@ public class ArrayQueryHandler
     return len;
   }
 
+  @SuppressWarnings("unchecked")
   public void resolveParam(int batch, String param, int length, Collection<Object> result) {
     if (batch != 0) {
       throw new IllegalArgumentException("ArrayQueryHandler does not support multiple batches");

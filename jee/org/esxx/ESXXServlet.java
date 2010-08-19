@@ -32,6 +32,7 @@ import org.esxx.request.ServletRequest;
 public class ESXXServlet extends HttpServlet {
   private static final long serialVersionUID = -6042154377037338687L;
 
+  @SuppressWarnings("unchecked")
   @Override
   public void init()
     throws ServletException {
