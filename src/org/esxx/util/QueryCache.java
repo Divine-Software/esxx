@@ -304,13 +304,13 @@ public class QueryCache {
 
       queryCache.addListener(new LRUCache.LRUListener<String, Query>() {
 	  public void entryAdded(String key, Query q) {
-	    ESXX.getInstance().mxRegister("JDBC Query", q.toString(), q.getJMXBean());
+	    ESXX.getInstance().mxRegister("JDBC Queries", q.toString(), q.getJMXBean());
 	  }
 
 	  public void entryRemoved(String key, Query q) {
 	    // Close statment
 	    q.close();
-	    ESXX.getInstance().mxUnregister("JDBC Query", q.toString());
+	    ESXX.getInstance().mxUnregister("JDBC Queries", q.toString());
 	  }
 	});
 

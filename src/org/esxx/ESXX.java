@@ -924,7 +924,7 @@ public class ESXX {
       implements LRUCache.LRUListener<String, Application> {
 
       public void entryAdded(String key, Application app) {
-	mxRegister("Application", app.getFilename(), app.getJMXBean());
+	mxRegister("Applications", app.getFilename(), app.getJMXBean());
 	getLogger().logp(Level.CONFIG, null, null, app + " loaded.");
       }
 
@@ -954,7 +954,7 @@ public class ESXX {
 	  ex.printStackTrace();
 	}
 	finally {
-	  mxUnregister("Application", app.getFilename());
+	  mxUnregister("Applications", app.getFilename());
 	  getLogger().logp(Level.CONFIG, null, null, app + " unloaded.");
 	}
       }
@@ -969,12 +969,12 @@ public class ESXX {
       implements LRUCache.LRUListener<String, Stylesheet> {
 
       public void entryAdded(String key, Stylesheet xslt) {
-	mxRegister("Stylesheet", xslt.getFilename(), xslt.getJMXBean());
+	mxRegister("Stylesheets", xslt.getFilename(), xslt.getJMXBean());
 	getLogger().logp(Level.CONFIG, null, null, xslt + " loaded.");
       }
 
       public void entryRemoved(String key, Stylesheet xslt) {
-	mxUnregister("Stylesheet", xslt.getFilename());
+	mxUnregister("Stylesheets", xslt.getFilename());
 	getLogger().logp(Level.CONFIG, null, null, xslt + " unloaded.");
       }
     }
@@ -987,12 +987,12 @@ public class ESXX {
       implements LRUCache.LRUListener<String, Schema> {
 
       public void entryAdded(String key, Schema sch) {
-	mxRegister("Schema", sch.getFilename(), sch.getJMXBean());
+	mxRegister("Schemas", sch.getFilename(), sch.getJMXBean());
 	getLogger().logp(Level.CONFIG, null, null, sch + " loaded.");
       }
 
       public void entryRemoved(String key, Schema sch) {
-	mxUnregister("Schema", sch.getFilename());
+	mxUnregister("Schemas", sch.getFilename());
 	getLogger().logp(Level.CONFIG, null, null, sch + " unloaded.");
       }
     }
