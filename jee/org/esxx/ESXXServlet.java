@@ -108,5 +108,5 @@ public class ESXXServlet extends HttpServlet {
     }
   }
 
-  private URI fsRootURI;
+  protected URI fsRootURI;
 }
