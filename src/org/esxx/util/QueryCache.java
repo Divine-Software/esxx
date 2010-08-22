@@ -304,12 +304,13 @@ public class QueryCache {
 
       queryCache.addListener(new LRUCache.LRUListener<String, Query>() {
 	  public void entryAdded(String key, Query q) {
-	    // Do nothing
+	    ESXX.getInstance().mxRegister("JDBC Query", q.toString(), q.getJMXBean());
 	  }
 
 	  public void entryRemoved(String key, Query q) {
 	    // Close statment
 	    q.close();
+	    ESXX.getInstance().mxUnregister("JDBC Query", q.toString());
 	  }
 	});
 
@@ -570,9 +571,54 @@ public class QueryCache {
       int length;
     };
 
+    public synchronized JMXBean getJMXBean() {
+      if (jmxBean == null) {
+	jmxBean = new JMXBean();
+      }
+
+      return jmxBean;
+    }
+
+    private class JMXBean 
+      extends javax.management.StandardEmitterMBean
+      implements org.esxx.jmx.QueryMXBean {
+
+      public JMXBean() {
+	super(org.esxx.jmx.QueryMXBean.class, true,
+	      new javax.management.NotificationBroadcasterSupport());
+      }
+
+      @Override public String getQuery() {
+	return sql.toString();
+      }
+
+      @Override public int getParameterCount() {
+	try {
+	  return pmd.getParameterCount();
+	}
+	catch (SQLException ignored) {
+	  return -1;
+	}
+      }
+
+      @Override public String getConnection() {
+	try {
+	  return sql.getConnection().toString(); 
+	} 
+	catch (SQLException ignored) {
+	  return "<Unknown>";
+	}
+      }
+
+      @Override public boolean isGeneratedKeys() {
+	return generatedKeys;
+      }
+    }
+
     private PreparedStatement sql;
     private ParameterMetaData pmd;
     private boolean generatedKeys;
     private int[] paramTypes;
+    private JMXBean jmxBean;
   }
 }
