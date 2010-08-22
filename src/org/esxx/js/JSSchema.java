@@ -118,4 +118,6 @@ public class JSSchema
 
   private URI schemaURI;
   private String mimeType;
+
+  static final long serialVersionUID = -9064181451882970599L;
 }

@@ -1225,6 +1225,8 @@ public class Application
     }
 
     private URI uri;
+
+    static final long serialVersionUID = 991981776646286974L;
   }
 
   // private class ESXXModuleScriptProvider
