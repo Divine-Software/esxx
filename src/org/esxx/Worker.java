@@ -79,6 +79,10 @@ class Worker {
 	  result = app.wrapResult(cx, app.getMainDocument());
 	}
       }
+      catch (InterruptedException ex) {
+	ESXX.checkTimeout(cx); // Throws TimeOut
+	throw ex;
+      }
       catch (Exception ex) {
 	// On errors, invoke error handler
 	result = app.executeErrorHandler(cx, jsreq, ex);

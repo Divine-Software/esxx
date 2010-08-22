@@ -136,7 +136,7 @@ public class JSESXX
 	    object.wait(timeout_ms);
 	  }
 	  catch (InterruptedException ex) {
-	    checkTimeout(cx);
+	    ESXX.checkTimeout(cx);
 	  }
 	}
 	else {
@@ -148,7 +148,7 @@ public class JSESXX
 	      object.wait(expires - now);
 	    }
 	    catch (InterruptedException ex) {
-	      checkTimeout(cx);
+	      ESXX.checkTimeout(cx);
 	    }
 
 	    now = System.currentTimeMillis();
@@ -186,17 +186,9 @@ public class JSESXX
     public static boolean jsFunction_checkTimeout(Context cx, Scriptable thisObj,
 						  Object[] args, Function funcObj) {
       if (Thread.currentThread().isInterrupted()) {
-	checkTimeout(cx);
+	ESXX.checkTimeout(cx);
       }
       return true;
-    }
-
-    private static void checkTimeout(Context cx) {
-      ESXX.Workload workload = (ESXX.Workload) cx.getThreadLocal(ESXX.Workload.class);
-
-      if (workload.isTimedOut()) {
-	throw new ESXXException.TimeOut();
-      }
     }
 
     public static Scriptable jsFunction_parallel(final Context cx, Scriptable thisObj,
@@ -378,7 +370,7 @@ public class JSESXX
 	  limit.acquire();
 	}
 	catch (InterruptedException ex) {
-	  checkTimeout(cx);
+	  ESXX.checkTimeout(cx);
 	  break;
 	}
 
@@ -433,7 +425,7 @@ public class JSESXX
 	    failed   = true;
 	  }
 	  catch (InterruptedException ex) {
-	    checkTimeout(cx);
+	    ESXX.checkTimeout(cx);
 	  }
 	}
 	else {

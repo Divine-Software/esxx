@@ -389,6 +389,22 @@ public class ESXX {
       return workload;
     }
 
+    public static void checkTimeout(Context cx)
+      throws ESXXException.TimeOut {
+      Workload workload = (Workload) cx.getThreadLocal(Workload.class);
+
+      if (workload == null) {
+	return;
+      }
+
+      if (workload.isTimedOut()) {
+	ESXX.getInstance().getLogger().logp(Level.FINE, null, null,
+					    "Workload " + workload
+					    + " timed out: throwing TimeOut");
+	throw new ESXXException.TimeOut();
+      }
+    }
+
 
     /** Utility method that serializes a W3C DOM Node to a String.
      *
@@ -1200,20 +1216,7 @@ public class ESXX {
       }
 
       @Override public void observeInstructionCount(Context cx, int instruction_count) {
-	Workload workload = (Workload) cx.getThreadLocal(Workload.class);
-
-	if (workload == null) {
-	  return;
-	}
-
-	synchronized (workload) {
-	  if (workload.isTimedOut()) {
-	    ESXX.getInstance().getLogger().logp(Level.FINE, null, null,
-						"Workload " + workload
-						+ " timed out: throwing TimeOut");
-	    throw new ESXXException.TimeOut();
-	  }
-	}
+	checkTimeout(cx);
       }
     }
 
