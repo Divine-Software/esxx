@@ -839,7 +839,7 @@ public class ESXX {
 
   private javax.management.ObjectName mxObjectName(String type, String name)
     throws javax.management.MalformedObjectNameException {
-    String object_name = ESXX.class.getName() + ":type=" + type;
+    String object_name = "org.esxx:type=" + type;
 
     if (name != null) {
       // Quote illegal characters
