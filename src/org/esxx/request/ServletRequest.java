@@ -20,20 +20,24 @@ package org.esxx.request;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Enumeration;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.*;
 import org.esxx.*;
 
 public class ServletRequest
   extends WebRequest {
 
-  public ServletRequest(HttpServletRequest sreq, 
+  public ServletRequest(HttpServletRequest sreq,
 			HttpServletResponse sres)
     throws IOException {
     super(sreq.getInputStream(), System.err);
     this.sreq = sreq;
     this.sres = sres;
+    this.done = new CountDownLatch(1);
   }
 
   @SuppressWarnings("unchecked")
@@ -47,9 +51,9 @@ public class ServletRequest
     }
 
     URI full_request_uri = URI.create(request_url.toString());
-			       
-    Properties p = createCGIEnvironment(sreq.getMethod(), 
-					sreq.getProtocol(), 
+
+    Properties p = createCGIEnvironment(sreq.getMethod(),
+					sreq.getProtocol(),
 					full_request_uri,
 					sreq.getLocalAddr(), sreq.getLocalPort(),
 					sreq.getRemoteAddr(), sreq.getRemotePort(),
@@ -103,7 +107,17 @@ public class ServletRequest
       return 20;
     }
     finally {
-      sres.flushBuffer();
+      try { sres.flushBuffer(); } catch (Exception ignored) {}
+      done.countDown();
+    }
+  }
+
+  public void waitUntilDone(int timeout) {
+    try {
+      done.await(timeout, TimeUnit.MILLISECONDS);
+    }
+    catch (InterruptedException ignored) {
+      Thread.currentThread().interrupt();
     }
   }
 
@@ -112,31 +126,48 @@ public class ServletRequest
       sres.setContentLength((int) length);
     }else{
       sres.addHeader("Content-Length", Long.toString(length));
-    }  
+    }
   }
 
+  protected static URI getPathTranslated(URI fs_root_uri, HttpServletRequest sreq)
+    throws URISyntaxException {
+    // Prefer getRequestURI(), but use getServletPath() as a fall-back
+    String path    = sreq.getRequestURI();
+    String context = sreq.getContextPath() != null ? sreq.getContextPath() : "/";
+
+    if (! path.startsWith(context)) {
+      path = org.esxx.util.StringUtil.encodeURI(sreq.getServletPath(), true);
+      context = "/";
+    }
+
+    return getPathTranslated(fs_root_uri, path, context);
+  }
 
   public static void handleServletRequest(HttpServletRequest  sreq,
 					  HttpServletResponse sres,
 					  URI                 fs_root_uri,
 					  String              error_subtitle)
     throws IOException {
+    ESXX         esxx = ESXX.getInstance();
     ServletRequest sr = new ServletRequest(sreq, sres);
+    ESXX.Workload  wl = null;
 
     try {
-      // Prefer getRequestURI(), but use getServletPath() as a fall-back
-      String path    = sreq.getRequestURI();
-      String context = sreq.getContextPath() != null ? sreq.getContextPath() : "/";
-
-      if (! path.startsWith(context)) {
-	path = org.esxx.util.StringUtil.encodeURI(sreq.getServletPath(), true);
-	context = "/";
-      }
-
-      sr.initRequest(fs_root_uri, getPathTranslated(fs_root_uri, path, context));
-      ESXX.Workload wl = ESXX.getInstance().addRequest(sr, sr, 0);
+      sr.initRequest(fs_root_uri, getPathTranslated(fs_root_uri, sreq));
+      wl = esxx.addRequest(sr, sr, 0);
       sres = null;
-      wl.getResult(); // Wait for request to complete
+
+      // Wait for request to complete. Yes, this blocks and locks up
+      // this thread until the result is ready! In an JEE application
+      // server, you may prefer to use AsyncServletRequest.  Note that
+      // in Google App Engine, this does not matter since there we use
+      // a single-threaded "thread-pool" anyway.
+      wl.getResult();
+    }
+    catch (java.util.concurrent.CancellationException ex) {
+      esxx.getLogger().logp(java.util.logging.Level.WARNING, null, null,
+			    "Workload " + wl + " cancelled");
+      sr.waitUntilDone(5000);
     }
     catch (Exception ex) {
       sr.reportInternalError(500, "ESXX Server Error", error_subtitle,  ex.getMessage(), ex);
@@ -150,5 +181,6 @@ public class ServletRequest
   }
 
   private HttpServletRequest sreq;
-  private HttpServletResponse sres;
+  protected HttpServletResponse sres; /* Allow AsyncServletRequest to access this */
+  private CountDownLatch done;
 }

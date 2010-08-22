@@ -32,7 +32,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.JavaUtilLog;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
-import org.esxx.request.ServletRequest;
+import org.esxx.request.AsyncServletRequest;
 
 public abstract class Jetty {
   public static void runJettyServer(int http_port, int ajp_port, URI fs_root_uri)
@@ -89,7 +89,7 @@ public abstract class Jetty {
 		       HttpServletResponse              sres)
       throws IOException, ServletException {
       req.setHandled(true);
-      ServletRequest.handleServletRequest(sreq, sres, fsRootURI, "Jetty Error");
+      AsyncServletRequest.handleServletRequest(sreq, sres, fsRootURI, "Jetty Error");
     }
 
     private URI fsRootURI;
