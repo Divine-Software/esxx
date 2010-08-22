@@ -21,13 +21,13 @@ package org.esxx.jmx;
 import java.util.Date;
 
 public class WorkloadInfo {
-  @java.beans.ConstructorProperties({"name, expires, thread, done, cancelled"})
-  public WorkloadInfo(String name, Date expires, String thread, boolean done, boolean cancelled) {
-    this.name      = name;
-    this.expires   = expires;
-    this.thread    = thread != null ? thread : "<Queued>";
-    this.done      = done;
-    this.cancelled = cancelled;
+  @java.beans.ConstructorProperties({"name, expires, thread, timedout, done"})
+  public WorkloadInfo(String name, Date expires, String thread, boolean timedout, boolean done) {
+    this.name     = name;
+    this.expires  = expires;
+    this.thread   = thread != null ? thread : "<Queued>";
+    this.timedout = timedout;
+    this.done     = done;
   }
 
   public String getName() {
@@ -42,17 +42,17 @@ public class WorkloadInfo {
     return thread;
   }
 
-  public boolean isDone() {
-    return done;
+  public boolean isTimedOut() {
+    return timedout;
   }
 
-  public boolean isCancelled() {
-    return cancelled;
+  public boolean isDone() {
+    return done;
   }
 
   private String name;
   private Date expires;
   private String thread;
+  private boolean timedout;
   private boolean done;
-  private boolean cancelled;
 }

@@ -194,7 +194,7 @@ public class JSESXX
     private static void checkTimeout(Context cx) {
       ESXX.Workload workload = (ESXX.Workload) cx.getThreadLocal(ESXX.Workload.class);
 
-      if (workload.isCancelled()) {
+      if (workload.isTimedOut()) {
 	throw new ESXXException.TimeOut();
       }
     }

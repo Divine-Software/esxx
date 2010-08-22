@@ -1207,10 +1207,10 @@ public class ESXX {
 	}
 
 	synchronized (workload) {
-	  if (workload.isCancelled()) {
+	  if (workload.isTimedOut()) {
 	    ESXX.getInstance().getLogger().logp(Level.FINE, null, null,
 						"Workload " + workload
-						+ " cancelled: throwing TimeOut");
+						+ " timed out: throwing TimeOut");
 	    throw new ESXXException.TimeOut();
 	  }
 	}
@@ -1220,8 +1220,6 @@ public class ESXX {
     private class WorkloadCancellator
       implements Runnable {
       @Override public void run() {
-	long now = System.currentTimeMillis();
-
 	getLogger().logp(Level.FINEST, null, null, "Checking for workloads to cancel");
 
 	while (true) {
@@ -1231,7 +1229,7 @@ public class ESXX {
 	    break;
 	  }
 
-	  if (w.getExpires() < now) {
+	  if (w.shouldCancel()) {
 	    getLogger().logp(Level.FINE, null, null, "Cancelling workload " + w);
 	    w.cancel();
 	    workloadSet.poll();
@@ -1292,8 +1290,13 @@ public class ESXX {
 	return future.isDone();
       }
 
-      public boolean isCancelled() {
-	return future.isCancelled();
+      public boolean isTimedOut() {
+	return expires < System.currentTimeMillis();
+      }
+
+      public boolean shouldCancel() {
+	// 10 seconds grace time
+	return (expires + 10000) < System.currentTimeMillis();
       }
 
       public void cancel() {
@@ -1343,7 +1346,7 @@ public class ESXX {
 	  synchronized (w) {
 	    infos.add(new WorkloadInfo(w.getName(), new Date(w.getExpires()), 
 				       w.getThread().getName(),
-				       w.isDone(), w.isCancelled()));
+				       w.isTimedOut(), w.isDone()));
 	  }
 	}
 	
