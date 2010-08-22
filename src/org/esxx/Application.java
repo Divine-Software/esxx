@@ -1036,6 +1036,7 @@ public class Application
   }
 
   private static class TLS {
+    /* A map from Application instances to JSLRUCache objects */
     HashMap<Object, JSLRUCache> caches = new HashMap<Object, JSLRUCache>();
   }
 
