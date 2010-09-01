@@ -2,7 +2,7 @@
 
 <project name="esxx" default="compile">
   <taskdef name="one-jar" classname="com.simontuffs.onejar.ant.OneJarTask" 
-           classpath="lib/one-jar-ant-task-0.96.jar" onerror="report"/>
+           classpath="lib/one-jar-ant-task-0.96b.jar" onerror="report"/>
 
 
   <description>esxx build file</description>
