@@ -168,6 +168,7 @@ public class Main {
 	  System.exit((Integer) wl.getResult());
 	}
 	catch (java.util.concurrent.CancellationException ex) {
+	  ex.printStackTrace();
 	  System.exit(5);
 	}	
       }
@@ -182,6 +183,7 @@ public class Main {
 	  System.exit((Integer) wl.getResult());
 	}
 	catch (java.util.concurrent.CancellationException ex) {
+	  ex.printStackTrace();
 	  System.exit(5);
 	}
       }

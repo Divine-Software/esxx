@@ -1256,12 +1256,13 @@ public class ESXX {
       }
 
       public boolean isTimedOut() {
-	return expires < System.currentTimeMillis();
+	return System.currentTimeMillis() > expires;
       }
 
       public boolean shouldCancel() {
-	// 10 seconds grace time
-	return (expires + 10000) < System.currentTimeMillis();
+	// 10 seconds grace time. (Note that we cannot add to expires,
+	// since it may be set to Long.MAX_VALUE.)
+	return (System.currentTimeMillis() - 10000) > expires;
       }
 
       public void cancel() {
