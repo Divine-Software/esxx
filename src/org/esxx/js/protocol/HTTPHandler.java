@@ -353,7 +353,7 @@ public class HTTPHandler
   }
 
   private void attachObject(Object data, String type, HashMap<String,String> params,
-			    HttpEntityEnclosingRequest entity, Context cx)
+			    HttpEntityEnclosingRequest request, Context cx)
     throws IOException {
     // FIXME: This may store the data three times in memory -- If
     // there were a way to turn the Object into an InputStream
@@ -361,8 +361,10 @@ public class HTTPHandler
     Response response = new Response(0, ESXX.combineMIMEType(type, params), data, null);
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     response.writeResult(bos);
-    entity.setHeader("Content-Type", response.getContentType(true));
-    entity.setEntity(new ByteArrayEntity(bos.toByteArray()));
+    ByteArrayEntity bae = new ByteArrayEntity(bos.toByteArray());
+    bae.setContentType(response.getContentType(true));
+    // request.setHeader("Content-Type", response.getContentType(true));
+    request.setEntity(bae);
   }
 
   private static Scriptable makeJSResponse(Context cx, Scriptable scope, Result result) {
