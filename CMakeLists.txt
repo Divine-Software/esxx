@@ -141,6 +141,7 @@ IF (WIN32)
 		    ${CMAKE_CURRENT_SOURCE_DIR}/package/start-fastcgi.bat
 		    ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx.bat
 		    ${CMAKE_CURRENT_SOURCE_DIR}/package/esxx-js.bat
+		    ${CMAKE_CURRENT_BINARY_DIR}/build/esxx.jar
 	   DESTINATION ${CMAKE_INSTALL_PREFIX})
 ELSEIF (UNIX)
   CONFIGURE_FILE(package/version.in

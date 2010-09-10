@@ -4,7 +4,6 @@
 	<classpathentry excluding="*" including="rsrc/" kind="src" path=""/>
 	<classpathentry kind="src" path="jee"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/one-jar-ant-task-0.96.jar"/>
 	<classpathentry kind="lib" path="lib/core/commons-codec.jar"/>
 	<classpathentry kind="lib" path="lib/core/commons-logging.jar"/>
 	<classpathentry kind="lib" path="lib/core/h2.jar"/>
@@ -12,7 +11,6 @@
 	<classpathentry kind="lib" path="lib/core/httpclient.jar"/>
 	<classpathentry kind="lib" path="lib/core/httpcore.jar"/>
 	<classpathentry kind="lib" path="lib/core/js.jar"/>
-	<classpathentry kind="lib" path="lib/core/oauth-httpclient4.jar"/>
 	<classpathentry kind="lib" path="lib/core/oauth.jar"/>
 	<classpathentry kind="lib" path="lib/core/saxon9-dom.jar"/>
 	<classpathentry kind="lib" path="lib/core/saxon9-s9api.jar"/>
