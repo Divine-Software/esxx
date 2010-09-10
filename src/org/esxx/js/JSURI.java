@@ -345,21 +345,16 @@ public class JSURI
   }
 
   public Scriptable getAuth(Context cx, URI req_uri, String realm, String mechanism) {
-    if (uri.getRawUserInfo() != null) {
-      String[] unp = uri.getRawUserInfo().split(":", 2);
+    String[] unp = getUsernameAndPassword();
 
-      // If the URI already carries authorization information, use it
-      if (unp.length == 2) {
-	try {
-	  Scriptable res = cx.newObject(this);
+    // If the URI already carries authorization information, use it
+    if (unp != null) {
+      Scriptable res = cx.newObject(this);
 
-	  ScriptableObject.putProperty(res, "username", StringUtil.decodeURI(unp[0], false));
-	  ScriptableObject.putProperty(res, "password", StringUtil.decodeURI(unp[1], false));
+      ScriptableObject.putProperty(res, "username", unp[0]);
+      ScriptableObject.putProperty(res, "password", unp[1]);
 
-	  return res;
-	}
-	catch (URISyntaxException ignored) {}
-      }
+      return res;
     }
 
     // Else, search the 'auth' property for matching entries
@@ -369,6 +364,10 @@ public class JSURI
   public String[] getAuthMechanisms(Context cx, URI req_uri, String realm,
 				    final String[] default_mechanisms) {
     final LinkedHashSet<String> result = new LinkedHashSet<String>(); // Order is important
+
+    if (getUsernameAndPassword() != null) {
+      result.addAll(Arrays.asList(default_mechanisms));
+    }
 
     enumerateProperty(cx, "auth", new PropEnumerator() {
 	public void handleProperty(Scriptable p, int s) {
@@ -395,6 +394,22 @@ public class JSURI
 
   public void enumerateHeaders(Context cx, PropEnumerator pe, URI req_uri) {
     enumerateProperty(cx, "headers", pe, req_uri, null, null);
+  }
+
+  private String[] getUsernameAndPassword() {
+    if (uri.getRawUserInfo() != null) {
+      String[] unp = uri.getRawUserInfo().split(":", 2);
+
+      if (unp.length == 2) {
+	try {
+	  return new String[] { StringUtil.decodeURI(unp[0], false),
+				StringUtil.decodeURI(unp[1], false) };
+	}
+	catch (URISyntaxException ignored) {}
+      }
+    }
+
+    return null;
   }
 
   private Scriptable getBestProperty(Context cx, String name,
