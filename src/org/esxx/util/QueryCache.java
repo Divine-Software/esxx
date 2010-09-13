@@ -401,7 +401,7 @@ public class QueryCache {
 
 	  generatedKeys = false;
 
-	  sql = db.prepareStatement(parsed_query, Statement.NO_GENERATED_KEYS);
+	  sql = db.prepareStatement(parsed_query);
 	  pmd = sql.getParameterMetaData();
 	}
 
@@ -461,7 +461,6 @@ public class QueryCache {
 
       if (qh.getBatches() > 1) {
 	sql.addBatch();
-	sql.clearParameters();
       }
     }
 
@@ -498,7 +497,17 @@ public class QueryCache {
 	    result = sql.getResultSet();
 	  }
 	  else {
-	    update_count = sql.getUpdateCount();
+	    try {
+	      update_count = sql.getUpdateCount();
+	    }
+	    catch (SQLException ex) {
+	      // FIXME: Ugly sqlite workaround -- remove me
+	      if (!"statement is not executing".equals(ex.getMessage())) {
+		throw ex;
+	      }
+
+	      update_count = -1;
+	    }
 
 	    if (update_count == -1) {
 	      break;
@@ -514,7 +523,15 @@ public class QueryCache {
 	}
       }
       finally {
-	sql.clearParameters();
+	try {
+	  sql.clearParameters();
+	}
+	catch (SQLException ex) {
+	  // FIXME: Ugly sqlite workaround -- remove me
+	  if (!"statement is not executing".equals(ex.getMessage())) {
+	    throw ex;
+	  }
+	}
       }
     }
 
@@ -579,7 +596,7 @@ public class QueryCache {
       return jmxBean;
     }
 
-    private class JMXBean 
+    private class JMXBean
       extends javax.management.StandardEmitterMBean
       implements org.esxx.jmx.QueryMXBean {
 
@@ -603,8 +620,8 @@ public class QueryCache {
 
       @Override public String getConnection() {
 	try {
-	  return sql.getConnection().toString(); 
-	} 
+	  return sql.getConnection().toString();
+	}
 	catch (SQLException ignored) {
 	  return "<Unknown>";
 	}
