@@ -497,17 +497,7 @@ public class QueryCache {
 	    result = sql.getResultSet();
 	  }
 	  else {
-	    try {
-	      update_count = sql.getUpdateCount();
-	    }
-	    catch (SQLException ex) {
-	      // FIXME: Ugly sqlite workaround -- remove me
-	      if (!"statement is not executing".equals(ex.getMessage())) {
-		throw ex;
-	      }
-
-	      update_count = -1;
-	    }
+	    update_count = sql.getUpdateCount();
 
 	    if (update_count == -1) {
 	      break;
@@ -523,15 +513,7 @@ public class QueryCache {
 	}
       }
       finally {
-	try {
-	  sql.clearParameters();
-	}
-	catch (SQLException ex) {
-	  // FIXME: Ugly sqlite workaround -- remove me
-	  if (!"statement is not executing".equals(ex.getMessage())) {
-	    throw ex;
-	  }
-	}
+	sql.clearParameters();
       }
     }
 
