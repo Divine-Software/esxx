@@ -489,7 +489,7 @@ public class QueryBuilder {
   private DBReference dbref;
 
   private static Pattern useLimitOffset   = Pattern.compile("(h2|mysql|postgresql):.*");
-  private static Pattern strictColumnName = Pattern.compile("[_A-Za-z][_A-Za-z0-9]*");
-  private static Pattern strictTableName  = Pattern.compile("[_A-Za-z][_A-Za-z0-9]*" +
-							    "(\\.[_A-Za-z][_A-Za-z0-9]*)*");
+  private static Pattern strictColumnName = Pattern.compile("[_A-Za-z][-_A-Za-z0-9]*");
+  private static Pattern strictTableName  = Pattern.compile("[_A-Za-z][-_A-Za-z0-9]*" +
+							    "(\\.[_A-Za-z][-_A-Za-z0-9]*)*");
 }
