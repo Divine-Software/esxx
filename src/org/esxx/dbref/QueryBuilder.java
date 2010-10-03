@@ -125,32 +125,32 @@ public class QueryBuilder {
 				   "Scalar scope only works with one single column");
     }
 
-    StringBuilder sb = new StringBuilder();
+    QueryBuffer qb = new QueryBuffer(uri.getSchemeSpecificPart());
 
-    sb.append("SELECT ");
+    qb.append("SELECT ");
 
     if (dbref.getScope() == DBReference.Scope.DISTINCT) {
-      sb.append("DISTINCT ");
+      qb.append("DISTINCT ");
     }
 
     if (dbref.getColumns().isEmpty()) {
-      sb.append("*");
+      qb.append("*");
     }
     else {
-      sequence(dbref.getColumns(), true, false, sb);
+      sequence(dbref.getColumns(), true, false, qb);
     }
 
-    sb.append(" FROM ").append(dbref.getTable());
+    qb.append(" FROM ").appendTable(dbref.getTable());
 
     if (dbref.getFilter() != null) {
-      sb.append(" WHERE ");
-      where(dbref.getFilter(), sb, args);
+      qb.append(" WHERE ");
+      where(dbref.getFilter(), qb, args);
     }
 
-    orderBy(order, reverse, sb);
-    offsetCount(offset, count, sb);
+    orderBy(order, reverse, qb);
+    offsetCount(offset, count, qb);
 
-    return sb.toString();
+    return qb.toString();
   }
 
   public String getInsertQuery(Iterable<String> columns,
@@ -179,15 +179,15 @@ public class QueryBuilder {
       throw new URISyntaxException(uri.toString(), "Filters may not be used when inserting");
     }
 
-    StringBuilder sb = new StringBuilder();
+    QueryBuffer qb = new QueryBuffer(uri.getSchemeSpecificPart());
 
-    sb.append("INSERT INTO ").append(dbref.getTable()).append(" (");
-    sequence(columns, true, false, sb);
-    sb.append(") VALUES (");
-    sequence(columns, false, true, sb);
-    sb.append(")");
+    qb.append("INSERT INTO ").appendTable(dbref.getTable()).append(" (");
+    sequence(columns, true, false, qb);
+    qb.append(") VALUES (");
+    sequence(columns, false, true, qb);
+    qb.append(")");
 
-    return sb.toString();
+    return qb.toString();
   }
 
   public String getUpdateQuery(Iterable<String> columns,
@@ -217,17 +217,17 @@ public class QueryBuilder {
       throw new URISyntaxException(uri.toString(), "No columns to update");
     }
 
-    StringBuilder sb = new StringBuilder();
+    QueryBuffer qb = new QueryBuffer(uri.getSchemeSpecificPart());
 
-    sb.append("UPDATE ").append(dbref.getTable()).append(" SET ");
-    sequence(columns, true, true, sb);
+    qb.append("UPDATE ").appendTable(dbref.getTable()).append(" SET ");
+    sequence(columns, true, true, qb);
 
     if (dbref.getFilter() != null) {
-      sb.append(" WHERE ");
-      where(dbref.getFilter(), sb, args);
+      qb.append(" WHERE ");
+      where(dbref.getFilter(), qb, args);
     }
 
-    return sb.toString();
+    return qb.toString();
   }
 
 
@@ -253,16 +253,16 @@ public class QueryBuilder {
       throw new URISyntaxException(uri.toString(), "Columns may not be specified when deleting");
     }
 
-    StringBuilder sb = new StringBuilder();
+    QueryBuffer qb = new QueryBuffer(uri.getSchemeSpecificPart());
 
-    sb.append("DELETE FROM ").append(dbref.getTable());
+    qb.append("DELETE FROM ").appendTable(dbref.getTable());
 
     if (dbref.getFilter() != null) {
-      sb.append(" WHERE ");
-      where(dbref.getFilter(), sb, args);
+      qb.append(" WHERE ");
+      where(dbref.getFilter(), qb, args);
     }
 
-    return sb.toString();
+    return qb.toString();
   }
 
   public interface ColumnGetter {
@@ -303,44 +303,44 @@ public class QueryBuilder {
       throw new URISyntaxException(uri.toString(), "Filters may not be used when merging");
     }
 
-    StringBuilder sb = new StringBuilder();
-    String       ssp = uri.getSchemeSpecificPart();
+    String     ssp = uri.getSchemeSpecificPart();
+    QueryBuffer qb = new QueryBuffer(ssp);
 
     if (ssp.startsWith("h2:")) {
-      sb.append("MERGE INTO ").append(dbref.getTable()).append(" (");
-      sequence(columns, true, false, sb);
-      sb.append(") KEY (").append(key).append(") VALUES (");
-      sequence(columns, false, true, sb);
-      sb.append(")");
+      qb.append("MERGE INTO ").appendTable(dbref.getTable()).append(" (");
+      sequence(columns, true, false, qb);
+      qb.append(") KEY (").appendColumn(key).append(") VALUES (");
+      sequence(columns, false, true, qb);
+      qb.append(")");
     }
     else if (ssp.startsWith("mysql:")) {
-      sb.append("INSERT INTO ").append(dbref.getTable()).append(" (");
-      sequence(columns, true, false, sb);
-      sb.append(") VALUES (");
-      sequence(columns, false, true, sb);
-      sb.append(") ON DUPLICATE KEY UPDATE ");
-      sequence(columns, true, true, sb);
+      qb.append("INSERT INTO ").appendTable(dbref.getTable()).append(" (");
+      sequence(columns, true, false, qb);
+      qb.append(") VALUES (");
+      sequence(columns, false, true, qb);
+      qb.append(") ON DUPLICATE KEY UPDATE ");
+      sequence(columns, true, true, qb);
     }
     else {
       args.add(cg.get(key).toString());
 
-      sb.append("MERGE INTO ").append(dbref.getTable())
-	.append(" USING ").append(dbref.getTable())
-	.append(" ON ").append(key).append(" = {0}")
+      qb.append("MERGE INTO ").appendTable(dbref.getTable())
+	.append(" USING ").appendTable(dbref.getTable())
+	.append(" ON ").appendColumn(key).append(" = {0}")
 	.append(" WHEN MATCHED THEN UPDATE SET ");
-      sequence(columns, true, true, sb);
-      sb.append(" WHEN NOT MATCHED THEN INSERT (");
-      sequence(columns, true, false, sb);
-      sb.append(") VALUES (");
-      sequence(columns, false, true, sb);
-      sb.append(")");
+      sequence(columns, true, true, qb);
+      qb.append(" WHEN NOT MATCHED THEN INSERT (");
+      sequence(columns, true, false, qb);
+      qb.append(") VALUES (");
+      sequence(columns, false, true, qb);
+      qb.append(")");
     }
 
-    return sb.toString();
+    return qb.toString();
   }
 
 
-  private void sequence(Iterable<String> iter, boolean col, boolean ref, StringBuilder sb) {
+  private void sequence(Iterable<String> iter, boolean col, boolean ref, QueryBuffer qb) {
     boolean first = true;
 
     for (String s : iter) {
@@ -348,28 +348,28 @@ public class QueryBuilder {
 	first = false;
       }
       else {
-	sb.append(", ");
+	qb.append(", ");
       }
 
       if (col) {
-	sb.append('`').append(s).append('`');
+	qb.appendColumn(s);
       }
 
       if (col && ref) {
-	sb.append(" = ");
+	qb.append(" = ");
       }
 
       if (ref) {
-        sb.append("{").append(s).append("}");
+        qb.append("{").append(s).append("}");
       }
     }
   }
 
-  private void where(DBReference.Filter filter, StringBuilder sb, List<String> args)
+  private void where(DBReference.Filter filter, QueryBuffer qb, List<String> args)
     throws URISyntaxException {
     DBReference.Filter.Op op = filter.getOp();
 
-    sb.append("(");
+    qb.append("(");
 
     switch (op) {
     case AND:
@@ -381,10 +381,10 @@ public class QueryBuilder {
 	  first = false;
 	}
 	else {
-	  sb.append(" ").append(op.toString()).append(" ");
+	  qb.append(" ").append(op.toString()).append(" ");
 	}
 
-	where(f, sb, args);
+	where(f, qb, args);
       }
 
       break;
@@ -395,8 +395,8 @@ public class QueryBuilder {
 	throw new IllegalStateException("Filter.Op." + op + " must have exactly one child");
       }
 
-      sb.append("NOT ");
-      where(filter.getChildren().get(0), sb, args);
+      qb.append("NOT ");
+      where(filter.getChildren().get(0), qb, args);
       break;
 
     case LT:
@@ -413,20 +413,20 @@ public class QueryBuilder {
 
       String column = filter.getChildren().get(0).getValue();
       ensureValidColumnName(column);
-      sb.append(column);
+      qb.appendColumn(column);
 
       switch (op) {
-      case LT: sb.append(" < ");  break;
-      case LE: sb.append(" <= "); break;
-      case EQ: sb.append(" = ");  break;
-      case NE: sb.append(" != "); break;
-      case GT: sb.append(" > ");  break;
-      case GE: sb.append(" >= "); break;
+      case LT: qb.append(" < ");  break;
+      case LE: qb.append(" <= "); break;
+      case EQ: qb.append(" = ");  break;
+      case NE: qb.append(" != "); break;
+      case GT: qb.append(" > ");  break;
+      case GE: qb.append(" >= "); break;
       default:
 	throw new IllegalStateException("This can't happen");
       }
 
-      sb.append("{").append(args.size()).append("}");
+      qb.append("{").append(args.size()).append("}");
 
       if (filter.getChildren().get(1).getOp() != DBReference.Filter.Op.VAL) {
 	throw new IllegalStateException("Filter.Op." + op + "'s second child must be VAL");
@@ -440,40 +440,40 @@ public class QueryBuilder {
       throw new IllegalStateException("Filter.Op." + op + " should have been handled already");
     }
 
-    sb.append(")");
+    qb.append(")");
   }
 
-  private void orderBy(String order, String reverse, StringBuilder sb)
+  private void orderBy(String order, String reverse, QueryBuffer qb)
     throws URISyntaxException {
     if (order != null) {
       ensureValidColumnName(order);
-      sb.append(" ORDER BY ").append(order);
+      qb.append(" ORDER BY ").appendColumn(order);
     }
 
     if ("".equals(reverse) || Boolean.parseBoolean(reverse)) {
-      sb.append(" DESC");
+      qb.append(" DESC");
     }
   }
 
-  private void offsetCount(String offset, String count, StringBuilder sb) {
+  private void offsetCount(String offset, String count, QueryBuffer qb) {
     boolean use_offset_limit = useLimitOffset.matcher(uri.getSchemeSpecificPart()).matches();
 
     if (use_offset_limit) {
       if (count != null) {
-	sb.append(" LIMIT ").append(Integer.parseInt(count));
+	qb.append(" LIMIT ").append(Integer.parseInt(count));
       }
 
       if (offset != null) {
-	sb.append(" OFFSET ").append(Integer.parseInt(offset));
+	qb.append(" OFFSET ").append(Integer.parseInt(offset));
       }
     }
     else {
       if (offset != null) {
-	sb.append(" OFFSET ").append(Integer.parseInt(offset)).append(" ROWS");
+	qb.append(" OFFSET ").append(Integer.parseInt(offset)).append(" ROWS");
       }
 
       if (count != null) {
-	sb.append(" FETCH FIRST ").append(Integer.parseInt(count)).append(" ROWS ONLY");
+	qb.append(" FETCH FIRST ").append(Integer.parseInt(count)).append(" ROWS ONLY");
       }
     }
   }
@@ -483,6 +483,46 @@ public class QueryBuilder {
     if (!strictColumnName.matcher(name).matches()) {
       throw new URISyntaxException(uri.toString(), "'" + name + "' is not a valid column name");
     }
+  }
+
+  private static class QueryBuffer {
+    public QueryBuffer(String ssp) {
+      sb = new StringBuffer();
+      sq = '`';
+      eq = '`';
+    }
+
+    public QueryBuffer append(char c) {
+      sb.append(c);
+      return this;
+    }
+
+    public QueryBuffer append(int i) {
+      sb.append(i);
+      return this;
+    }
+
+    public QueryBuffer append(String s) {
+      sb.append(s);
+      return this;
+    }
+
+    public QueryBuffer appendColumn(String s) {
+      sb.append(sq).append(s).append(eq);
+      return this;
+    }
+
+    public QueryBuffer appendTable(String s) {
+      sb.append(sq).append(s).append(eq);
+      return this;
+    }
+
+    @Override public String toString() {
+      return sb.toString();
+    }
+
+    private StringBuffer sb;
+    private char sq, eq;
   }
 
   private URI uri;
