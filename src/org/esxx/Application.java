@@ -26,6 +26,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -97,7 +98,7 @@ public class Application
 
   public synchronized JSURI getJSCurrentLocation(Context cx) {
     if (jsCurrentLocation == null && currentLocation != null) {
-      jsCurrentLocation = (JSURI) cx.newObject(applicationScope, "URI", 
+      jsCurrentLocation = (JSURI) cx.newObject(applicationScope, "URI",
 					       new Object[] { currentLocation });
     }
 
@@ -265,7 +266,7 @@ public class Application
 	  Object args[] = { req };
 
 	  try {
-	    result = wrapResult(cx, JS.callJSMethod(match.handler, args, 
+	    result = wrapResult(cx, JS.callJSMethod(match.handler, args,
 						    "'" + request_method + "' handler",
 						    cx, applicationScope));
 	  }
@@ -366,8 +367,8 @@ public class Application
     Object args[] = { req, next };
 
     try {
-      result = wrapResult(cx, JS.callJSMethod(filter, args, 
-					      "'" + filter + "' filter", 
+      result = wrapResult(cx, JS.callJSMethod(filter, args,
+					      "'" + filter + "' filter",
 					      cx, applicationScope));
     }
     catch (Exception ex) {
@@ -552,11 +553,11 @@ public class Application
 	throw Context.reportRuntimeError("File '" + file + "' not found.");
       }
     }
-    
+
     return uri;
   }
 
-  public ESXXScript resolveScript(Context cx, URI file, URI base) 
+  public ESXXScript resolveScript(Context cx, URI file, URI base)
     throws IOException {
 
     URI uri = resolveURI(cx, file, base);
@@ -684,7 +685,7 @@ public class Application
       xc.declareNamespace("esxx", ESXX.NAMESPACE);
 
       XPathSelector xs = xc.compile("//processing-instruction() | " +
-				    "//esxx:esxx/esxx:handlers/esxx:* | " + 
+				    "//esxx:esxx/esxx:handlers/esxx:* | " +
 				    "//esxx:esxx/esxx:filters/esxx:filter").load();
       xs.setContextItem(esxx.getSaxonDocumentBuilder().wrap(xml));
 
@@ -754,7 +755,7 @@ public class Application
     }
   }
 
-  private synchronized ESXXScript addScript(Context cx, Reader r, URI uri, int line) 
+  private synchronized ESXXScript addScript(Context cx, Reader r, URI uri, int line)
     throws IOException {
     String     key = uri.toString();
     ESXXScript es  = scriptList.get(key);
@@ -802,10 +803,10 @@ public class Application
 	    return resolveScript(cx, URI.create(id + ".js"), baseURI);
 	  }
 	}, false);
-      
+
       require.setAttributes("paths", ScriptableObject.EMPTY);
       require.delete("paths");
-      require.installMain(cx, applicationScope, 
+      require.installMain(cx, applicationScope,
 			  getAppName(), getFilename(),
 			  cx.newObject(applicationScope) /* exports */);
 
@@ -831,25 +832,39 @@ public class Application
   private void startTimers() {
     // Start timers, if any
     for (final TimerHandler th : timerHandlers) {
-      th.future = esxx.getExecutor().scheduleAtFixedRate(new Runnable() {
-	  @Override public void run() {
-	    esxx.addContextAction(null, new ContextAction() {
-		@Override public Object run(Context cx) {
-		  try{
-		    Object[] args = { new Date() };
+      Runnable r = new Runnable() {
+	    @Override public void run() {
+	      if (th.running.compareAndSet(false, true) /* Do not run handler concurrently */) {
+		esxx.addContextAction(null, new ContextAction() {
+		      @Override public Object run(Context cx) {
+			try{
+			  Object[] args = { new Date() };
 
-		    return JS.callJSMethod(th.handler, args,
-					   getAppName() + " timer",
-					   cx, applicationScope);
-		  }
-		  catch (Exception ex) {
-		    ex.printStackTrace();
-		    return null;
-		  }
-		}
-	      }, this + "timer " + th.handler, (int) (th.period * 2) /* Timeout */);
-	  }
-	}, th.delay, th.period, TimeUnit.MILLISECONDS);
+			  return JS.callJSMethod(th.handler, args,
+						 getAppName() + " timer",
+						 cx, applicationScope);
+			}
+			catch (Exception ex) {
+			  ex.printStackTrace();
+			  return null;
+			}
+			finally {
+			  th.running.set(false);
+			}
+		      }
+		  }, this + "timer " + th.handler, -1 /* Timeout */);
+	      }
+	    }
+	};
+
+      if (th.fixedDelay) {
+	th.future = esxx.getExecutor().scheduleWithFixedDelay(r, th.delay, th.period,
+							      TimeUnit.MILLISECONDS);
+      }
+      else {
+	th.future = esxx.getExecutor().scheduleAtFixedRate(r, th.delay, th.period,
+							   TimeUnit.MILLISECONDS);
+      }
     }
   }
 
@@ -944,6 +959,7 @@ public class Application
   private void handleTimerHandler(Element e) {
     String delay   = e.getAttributeNS(null, "delay").trim();
     String period  = e.getAttributeNS(null, "period").trim();
+    String mode    = e.getAttributeNS(null, "mode").trim();
     String handler = e.getAttributeNS(null, "handler").trim();
 
     if (delay.equals("") && period.equals("")) {
@@ -959,7 +975,7 @@ public class Application
     }
 
 
-    timerHandlers.add(new TimerHandler(delay, period, handler));
+    timerHandlers.add(new TimerHandler(delay, period, mode, handler));
   }
 
   private void handleErrorHandler(Element e) {
@@ -1041,7 +1057,7 @@ public class Application
   }
 
   private class TimerHandler {
-    TimerHandler(String delay, String period, String handler) {
+    TimerHandler(String delay, String period, String mode, String handler) {
       try {
 	if (!delay.isEmpty()) {
 	  this.delay = (long) (1000 * Double.parseDouble(delay));
@@ -1060,13 +1076,26 @@ public class Application
 	throw new ESXXException("Failed to parse <timer> attribute 'period': " + ex.getMessage());
       }
 
+      if ("fixed-delay".equals(mode)) {
+	this.fixedDelay = true;
+      }
+      else if ("fixed-rate".equals(mode) || mode.isEmpty()) {
+	this.fixedDelay = false;
+      }
+      else {
+	throw new ESXXException("Failed to parse <timer> attribute 'mode': "
+				+ mode + " is not 'fixed-delay' or 'fixed-rate'");
+      }
+
       this.handler = handler;
     }
 
     public long delay;
     public long period;
+    public boolean fixedDelay;
     public String handler;
     public ScheduledFuture<?> future;
+    public AtomicBoolean running = new AtomicBoolean(false);
   }
 
   private static class FilterRule {
@@ -1096,7 +1125,7 @@ public class Application
   }
 
   public interface HandlerCallback {
-    JSResponse execute(JSRequest req) 
+    JSResponse execute(JSRequest req)
       throws Exception;
   }
 
@@ -1120,7 +1149,7 @@ public class Application
       }
     }
 
-    public JSResponse execute(Context cx) 
+    public JSResponse execute(Context cx)
       throws Exception {
       if (matchingFilters.isEmpty()) {
 	return handler.execute(request);
@@ -1164,7 +1193,7 @@ public class Application
     }
   }
 
-  private class JMXBean 
+  private class JMXBean
     extends javax.management.StandardEmitterMBean
     implements org.esxx.jmx.ApplicationMXBean {
 
@@ -1213,11 +1242,11 @@ public class Application
     @Override public Script getScript() {
       return this;
     }
-    
+
     @Override public Object exec(Context cx, Scriptable scope) {
       URI old_location = setCurrentLocation(uri);
 
-      try { 
+      try {
 	return super.getScript().exec(cx, scope);
       }
       finally {
@@ -1233,15 +1262,15 @@ public class Application
   // private class ESXXModuleScriptProvider
   //   implements ModuleScriptProvider {
 
-  //   @Override public ModuleScript getModuleScript(Context cx, 
-  // 						  String module_id, 
-  // 						  Scriptable paths) 
+  //   @Override public ModuleScript getModuleScript(Context cx,
+  // 						  String module_id,
+  // 						  Scriptable paths)
   //     throws IOException {
-      
+
   //   }
   // }
 
-  
+
   private ESXX esxx;
   private JMXBean jmxBean;
   private URI baseURI;
@@ -1282,7 +1311,7 @@ public class Application
   private boolean gotFilters = false;
 
   private Document xml;
-  private LinkedHashMap<String, ESXXScript> scriptList 
+  private LinkedHashMap<String, ESXXScript> scriptList
     = new LinkedHashMap<String, ESXXScript>();
 
   private RequestMatcher soapMatcher = new RequestMatcher();

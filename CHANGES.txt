@@ -152,6 +152,9 @@
 
 	* The current set of workloads can now be inspected using JMX.
 
+	* Timer handles can now run in 'fixed-delay' or 'fixed-rate'
+	mode, specified by the 'mode' attribute. Default is 'fixed-rate'.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
