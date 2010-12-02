@@ -199,9 +199,7 @@ public class JDBCHandler
 	String meta    = null;
 
 	for (int i = args.length - 1; i >= 1; --i) {
-	  if (args[i] != Context.getUndefinedValue()) {
-	    ++batches;
-	  }
+	  ++batches;
 	}
 
 	if (args.length > 1 && args[1] instanceof Scriptable) {
