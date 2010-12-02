@@ -179,7 +179,7 @@ public class JSESXX
 	throw Context.reportRuntimeError("Invalid argument: " + args[0]);
       }
 
-      Application.ESXXScript es = app.resolveScript(cx, uri, null);
+      Application.ESXXScript es = app.resolveScript(cx, uri, true);
       es.exec(cx, scope);
     }
 

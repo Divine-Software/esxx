@@ -513,27 +513,23 @@ public class Application
     includePath = paths;
   }
 
-  public URI resolveURI(Context cx, URI file, URI base) {
+  public URI resolveURI(Context cx, URI file, boolean relative) {
     URI uri = null;
     InputStream is = null;
 
-    // If base is null and if location is set, resolve files relative
-    // the current JS file. Then try to resolve files relative the working
-    // directory. Finally, try the include path.
+    if (relative) {
+      URI base = getCurrentLocation();
 
-    if (base == null) {
-      base = getCurrentLocation();
+      if (base == null) {
+	base = getWorkingDirectory();
+      }
+      
+      try {
+	uri = base.resolve(file);
+	is  = esxx.openCachedURI(uri);
+      }
+      catch (IOException ignored) {}
     }
-
-    if (base == null) {
-      base = getWorkingDirectory();
-    }
-
-    try {
-      uri = base.resolve(file);
-      is  = esxx.openCachedURI(uri);
-    }
-    catch (IOException ignored) {}
 
     if (is == null) {
       // Failed to resolve URL relative the current file's
@@ -557,10 +553,10 @@ public class Application
     return uri;
   }
 
-  public ESXXScript resolveScript(Context cx, URI file, URI base)
+  public ESXXScript resolveScript(Context cx, URI file, boolean relative)
     throws IOException {
 
-    URI uri = resolveURI(cx, file, base);
+    URI uri = resolveURI(cx, file, relative);
     InputStream is = esxx.openCachedURI(uri);
 
     try {
@@ -786,9 +782,13 @@ public class Application
       URI[] include_path = esxx.getIncludePath();
       includePath = cx.newArray(applicationScope, include_path.length);
 
+      // Always add baseURI to default include path list
+      includePath.put(0, includePath, cx.newObject(applicationScope, "URI",
+						   new Object[] { baseURI }));
+
       for (int i = 0; i < include_path.length; ++i) {
-	includePath.put(i, includePath, cx.newObject(applicationScope, "URI",
-						     new Object[] { include_path[i] }));
+	includePath.put(i + 1, includePath, cx.newObject(applicationScope, "URI",
+							 new Object[] { include_path[i] }));
       }
 
       // Make the JSESXX object available as "esxx" in the global
@@ -800,7 +800,7 @@ public class Application
       Require require = new Require(cx, applicationScope, new ModuleScriptProvider() {
 	  public ModuleScript getModuleScript(Context cx, String id, Scriptable paths)
 	    throws IOException {
-	    return resolveScript(cx, URI.create(id + ".js"), baseURI);
+	    return resolveScript(cx, URI.create(id + ".js"), false);
 	  }
 	}, false);
 
@@ -911,7 +911,7 @@ public class Application
     }
 
     try {
-      resolveScript(cx, new URI(href), baseURI);
+      resolveScript(cx, new URI(href), true);
     }
     catch (URISyntaxException ex) {
       throw new ESXXException("<?esxx-include?> attribute 'href' is invalid: " +
@@ -1258,18 +1258,6 @@ public class Application
 
     static final long serialVersionUID = 991981776646286974L;
   }
-
-  // private class ESXXModuleScriptProvider
-  //   implements ModuleScriptProvider {
-
-  //   @Override public ModuleScript getModuleScript(Context cx,
-  // 						  String module_id,
-  // 						  Scriptable paths)
-  //     throws IOException {
-
-  //   }
-  // }
-
 
   private ESXX esxx;
   private JMXBean jmxBean;
