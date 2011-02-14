@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.HashMap;
+import java.util.regex.Pattern;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPConstants;
@@ -241,11 +242,13 @@ public class JSRequest
       ScriptableObject.putProperty(headers, name, value);
     }
 
+    static private Pattern cookieSeparator = Pattern.compile("\\s*;\\s*");
+    static private Pattern valueSeparator  = Pattern.compile("\\s*=\\s*");
 
     private void handleCookieHeader(String hdr, String value) {
       if (hdr.equals("Cookie")) {
-	for (String cookie : value.split(";")) {
-	  String[] parts = cookie.split("=", 2);
+	for (String cookie : cookieSeparator.split(value)) {
+	  String[] parts = valueSeparator.split(cookie, 2);
 	  String cn = parts[0];
 	  String cv = parts.length < 2 || parts[1] == null ? "" : parts[1];
 
