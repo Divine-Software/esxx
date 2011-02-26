@@ -42,12 +42,12 @@
       <exclude name="org/json/*.java"/>
     </javac>
     <copy todir="${classes.dir}/rsrc">
-      <fileset dir="rsrc" excludes="*~ *.xslt *.css"/>
+      <fileset dir="rsrc" excludes="*~ *.xslt *.css *.properties"/>
     </copy>
     <copy todir="${classes.dir}/rsrc">
-      <fileset dir="rsrc" includes="*.xslt *.css"/>
+      <fileset dir="rsrc" includes="*.xslt *.css *.properties"/>
       <filterset>
-	<filter token="CPACK_PACKAGE_VERSION" value="${version}" />
+	<filter token="VERSION" value="${version}" />
       </filterset>
     </copy>
   </target>
