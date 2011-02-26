@@ -61,6 +61,7 @@ public class JSRequest
       accept  = cx.newObject(scope);
       query   = cx.newObject(scope);
       args    = null;
+      params  = cx.newObject(scope);
 
       acceptValueOf = new FunctionObject("valueOf", acceptValueOfMethod, accept);
 
@@ -169,6 +170,15 @@ public class JSRequest
     }
 
 
+    public Scriptable jsGet_params() {
+      return params;
+    }
+
+    public void jsSet_params(Scriptable params) {
+      this.params = params;
+    }
+
+
     public Scriptable jsGet_log() {
       return logger;
     }
@@ -207,6 +217,7 @@ public class JSRequest
     private Scriptable accept;
     private Scriptable query;
     private Scriptable args;
+    private Scriptable params;
 
     private Scriptable logger;
 
