@@ -10,9 +10,9 @@ fi
 pkg_file=$1
 pkg_mode=$2
 
-RPM_SRV=martin@blom.org
-DEB_SRV=martin@blom.org
-IPS_SRV=lcs@192.168.1.102
+RPM_SRV=${RPM_SRV:-"martin@blom.org"}
+DEB_SRV=${DEB_SRV:-"martin@blom.org"}
+IPS_SRV=${IPS_SRV:-"lcs@192.168.1.102"}
 
 case ${pkg_mode} in
     test)

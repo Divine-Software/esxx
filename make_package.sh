@@ -61,7 +61,7 @@ case $(uname) in
 	export PKG_REPO=http://localhost:11111
 
 	# Start a private package server
-	/usr/lib/pkg.depotd -d depot -p 11111 &
+	/usr/lib/pkg.depotd -d depot -p 11111 --set-property publisher.prefix=esxx.org &
 	pid=$!
 	sleep 2
 
