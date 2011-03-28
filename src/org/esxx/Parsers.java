@@ -100,7 +100,9 @@ class Parsers {
 			  external_uris, err, cx, scope);
     }
     finally {
-      is.close();
+      if (!(parser instanceof BinaryParser)) {
+	is.close();
+      }
     }
   }
 
@@ -117,7 +119,7 @@ class Parsers {
   private HashMap<String, Parser> parserMap = new HashMap<String, Parser>();
 
 
-  /** A Parser that reads raw bytes and returns a ByteBuffer Java object. */
+  /** A Parser that returns the InputStream as-is. */
   private static class BinaryParser
     implements Parser {
     public Object parse(String mime_type, HashMap<String,String> mime_params,
@@ -125,11 +127,7 @@ class Parsers {
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException, org.xml.sax.SAXException {
-      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-
-      IO.copyStream(is, bos);
-
-      return java.nio.ByteBuffer.wrap(bos.toByteArray());
+      return is;
     }
   }
 

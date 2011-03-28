@@ -158,6 +158,10 @@
 	* Added 'params' member to ESXX.JSRequest. Store whatever you
 	wish here.
 
+	* The application/octet-stream parser now returns the data as
+	a Java InputStream instead of ByteBuffer, in order to handle
+	large files.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 
