@@ -61,6 +61,9 @@
 
     <one-jar destfile="${build.dir}/${ant.project.name}-small.jar">
       <main jar="${build.dir}/main.jar"/>
+      <lib>
+        <fileset dir="${lib.dir}/exe-embedded" includes="*.jar" />
+      </lib>
     </one-jar>
 
     <one-jar destfile="${build.dir}/${ant.project.name}.jar">
@@ -68,6 +71,7 @@
       <lib>
         <fileset dir="${lib.dir}/core" includes="*.jar" />
         <fileset dir="${lib.dir}/exe" includes="*.jar" />
+        <fileset dir="${lib.dir}/exe-embedded" includes="*.jar" />
       </lib>
     </one-jar>
   </target>
