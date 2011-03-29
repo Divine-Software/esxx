@@ -159,8 +159,9 @@
 	wish here.
 
 	* The application/octet-stream parser now returns the data as
-	a Java InputStream instead of ByteBuffer, in order to handle
-	large files.
+	a Java InputStream instead of ByteBuffer per default, in order to
+	handle large files. The 'x-format' parameter can be set to
+	'stream' or 'buffer' to select behaviour.
 
 0.9.20090521
 	* Added the XKCD example from the Wiki.

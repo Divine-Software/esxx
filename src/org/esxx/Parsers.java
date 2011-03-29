@@ -95,15 +95,19 @@ class Parsers {
       }
     }
 
+    Object result = null;
+
     try {
-      return parser.parse(mime_type, mime_params, is, is_uri,
-			  external_uris, err, cx, scope);
+      result = parser.parse(mime_type, mime_params, is, is_uri,
+			    external_uris, err, cx, scope);
     }
     finally {
-      if (!(parser instanceof BinaryParser)) {
+      if (result != is) {
 	is.close();
       }
     }
+
+    return result;
   }
 
   /** The interface all parsers must implement */
@@ -119,7 +123,7 @@ class Parsers {
   private HashMap<String, Parser> parserMap = new HashMap<String, Parser>();
 
 
-  /** A Parser that returns the InputStream as-is. */
+  /** A Parser that returns the InputStream as-is, or loads it into a ByteBuffer */
   private static class BinaryParser
     implements Parser {
     public Object parse(String mime_type, HashMap<String,String> mime_params,
@@ -127,7 +131,19 @@ class Parsers {
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException, org.xml.sax.SAXException {
-      return is;
+      String format = mime_params.get("x-format");
+
+      if (format == null || format.equals("stream")) {
+	return is;
+      }
+      else if (format.equals("buffer")) {
+	ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	IO.copyStream(is, bos);
+	return java.nio.ByteBuffer.wrap(bos.toByteArray());
+      }
+      else {
+	throw new IOException("Invalid value in param 'x-format=" + format + "'");
+      }
     }
   }
 
@@ -439,7 +455,7 @@ class Parsers {
 	js   = false;
       }
       else {
-	throw new IOException("No support for param 'x-format=" + fmt + "'");
+	throw new IOException("Invalid value in param 'x-format=" + fmt + "'");
       }
 
       if (prc == null) {
