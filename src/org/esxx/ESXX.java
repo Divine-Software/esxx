@@ -1010,7 +1010,7 @@ public class ESXX {
 	applicationCache.filterEntries(new LRUCache.EntryFilter<String, Application>() {
 	    public boolean isStale(String key, Application app, long created) {
 	      for (URI uri : app.getExternalURIs()) {
-		if (getLastModified(uri) > created) {
+		if (checkTag(uri)) {
 		  getLogger().logp(Level.FINE, null, null, uri + " modification detected");
 		  return true;
 		}
@@ -1024,7 +1024,7 @@ public class ESXX {
 	stylesheetCache.filterEntries(new LRUCache.EntryFilter<String, Stylesheet>() {
 	    public boolean isStale(String key, Stylesheet xslt, long created) {
 	      for (URI uri : xslt.getExternalURIs()) {
-		if (getLastModified(uri) > created) {
+		if (checkTag(uri)) {
 		  getLogger().logp(Level.FINE, null, null, uri + " modification detected");
 		  return true;
 		}
@@ -1038,7 +1038,7 @@ public class ESXX {
 	schemaCache.filterEntries(new LRUCache.EntryFilter<String, Schema>() {
 	    public boolean isStale(String key, Schema sch, long created) {
 	      for (URI uri : sch.getExternalURIs()) {
-		if (getLastModified(uri) > created) {
+		if (checkTag(uri)) {
 		  getLogger().logp(Level.FINE, null, null, uri + " modification detected");
 		  return true;
 		}
@@ -1051,7 +1051,7 @@ public class ESXX {
 	getLogger().logp(Level.FINEST, null, null, "Finished checking for modified resources");
       }
 
-      private long getLastModified(URI uri) {
+      private boolean checkTag(URI uri) {
 	URLConnection uc = null;
 
 	try {
@@ -1070,10 +1070,33 @@ public class ESXX {
 	    uc.connect();
 	  }
 
-	  return uc.getLastModified();
+	  String new_tag = uc.getHeaderField("ETag");
+
+	  if (new_tag == null) {
+	    new_tag = Long.toString(uc.getLastModified());
+	  }
+
+	  String old_tag = tagMap.get(uri);
+
+	  if (old_tag == null) {
+	    // Not previously present
+	    tagMap.put(uri, new_tag);
+	    old_tag = new_tag;
+	  }
+
+	  if (old_tag.equals(new_tag)) {
+	    // No modification
+	    return false;
+	  }
+	  else {
+	    // File updated
+	    tagMap.put(uri, new_tag);
+	    return true;
+	  }
 	}
 	catch (IOException ex) {
-	  return 0;
+	  // Assume nothing has changed
+	  return false;
 	}
 	finally {
 	  if (uc != null) {
@@ -1081,6 +1104,8 @@ public class ESXX {
 	  }
 	}
       }
+
+      private Map<URI, String> tagMap = new HashMap<URI, String>();
     }
 
 
