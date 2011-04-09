@@ -2,8 +2,14 @@
 testRunner.add(new TestCase({
   name: "testmod-uri-jdbc-h2",
 
-  setUp: function() {
+  init: function() {
     this.db = new URI("jdbc:h2:mem:testmod-uri-jdbc");
+
+    // Test server connectivity
+    this.db.query("select 0");
+  },
+
+  setUp: function() {
     this.db.query("create table test (id identity, string varchar, number int)");
   },
 

@@ -8,17 +8,23 @@
  *
  */
 
+java.lang.Class.forName("com.mysql.jdbc.Driver").newInstance();
+
 testRunner.add(new TestCase({
   name: "testmod-uri-jdbc-mysql",
 
-  setUp: function() {
-    java.lang.Class.forName("com.mysql.jdbc.Driver").newInstance();
-
+  init: function() {
     this.db = new URI("jdbc:mysql://localhost/esxx_test");
     this.db.params = [{ name: "user",              value: "esxx_test" },
 		      { name: "password",          value: "esxx_test" },
 		      { name: "allowMultiQueries", value: "true"      }
 		     ];
+
+    // Test server connectivity
+    this.db.query("select 0");
+  },
+
+  setUp: function() {
 
     this.db.query("drop table if exists test");
     this.db.query("create table test (id bigint auto_increment primary key, " +

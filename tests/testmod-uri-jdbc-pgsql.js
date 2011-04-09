@@ -8,17 +8,22 @@
  *
  */
 
+java.lang.Class.forName("org.postgresql.Driver");
+
 testRunner.add(new TestCase({
   name: "testmod-uri-jdbc-pgsql",
 
-  setUp: function() {
-    java.lang.Class.forName("org.postgresql.Driver");
-
+  init: function() {
     this.db = new URI("jdbc:postgresql:esxx_test");
     this.db.params = [{ name: "user",              value: "esxx_test" },
 		      { name: "password",          value: "esxx_test" },
 		     ];
 
+    // Test server connectivity
+    this.db.query("select 0");
+  },
+
+  setUp: function() {
     this.db.query("drop table if exists test");
     this.db.query("create table test (id serial primary key, " +
 				      "string varchar(20), number int)");

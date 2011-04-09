@@ -2,10 +2,10 @@
 var Assert = require("esxx/Assert");
 
 function TestCase(props) {
-  // Copy test.*, name, setUp, tearDown
+  // Copy test.*, name, init, setUp, tearDown
 
   for (let i in props) {
-    if (/^(test.*|name|setUp|tearDown)$/.test(i)) {
+    if (/^(test.*|name|init|setUp|tearDown)$/.test(i)) {
       this[i] = props[i];
     }
   }
@@ -50,7 +50,21 @@ function TestRunner.prototype.run() {
   let tc_passed = 0;
 
   function run_tc(tc) {
-    out.println("Running testcase " + tc.name + ":")
+    try {
+      if (typeof tc.init === "function") {
+	tc.init();
+      }
+      else if (tc.init) {
+	throw tc.init;
+      }
+    }
+    catch (ex) {
+      out.println(" Ignoring testcase " + tc.name + ": " + ex);
+      out.println("");
+      return;
+    }
+
+    out.println(" Running testcase " + tc.name + ":")
 
     ++testcases;
 
@@ -59,7 +73,7 @@ function TestRunner.prototype.run() {
 
     for (let v in tc) {
       if (/^test.*/.test(v) && typeof tc[v] === "function") {
-	out.print(" Running " + v + "() ... ");
+	out.print("  Running " + v + "() ... ");
 
 	try {
 	  ++tests;
@@ -71,7 +85,7 @@ function TestRunner.prototype.run() {
 	  try {
             tc[v]();
 
-            out.println("OK");
+            out.println(" OK");
 	    ++passed;
 	  }
 	  finally {
@@ -81,19 +95,20 @@ function TestRunner.prototype.run() {
 	  }
 	}
 	catch (ex if ex instanceof Assert.Failed) {
-          out.println("FAILED in " + ex.test);
-          err.println(ex.reason);
-          err.println(ex.comment);
+          out.println(" FAILED in " + ex.test);
+          err.println(" " + ex.reason);
+          err.println(" " + ex.comment);
 	}
 	catch (ex) {
-          out.println("FAILED");
-          err.println("Unknown exception caught: " + ex);
+          out.println(" FAILED");
+          err.println(" Unknown exception caught: " + ex);
 	}
       }
     }
 
-    out.println(passed + " out of " + tests + " tests ("
-		+ (100 * passed / tests) + "%) passed for testcase " + tc.name);
+    out.println(" " + passed + " out of " + tests + " tests ("
+	        + Math.round(10000 * passed / tests) / 100  
+		+ "%) passed for testcase " + tc.name);
     out.println("");
 
     if (tests === passed) {
@@ -121,12 +136,13 @@ function TestRunner.prototype.run() {
       }
 
       out.println("Testsuite " + this.tests[i].name + (trc ? " PASSED" : " FAILED"));
+      out.println("");
     }
   }
 
   out.println("TestRunner " + (tc_passed === testcases ? "PASSED: " : "FAILED: ")
 	      + tc_passed + " out of " + testcases + " testcases ("
-	      + (100 * tc_passed / testcases) + "%) passed");
+	      + Math.round(10000 * tc_passed / testcases) / 100 + "%) passed");
 
   return rc ? 0 : 10;
 }
