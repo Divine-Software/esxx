@@ -27,13 +27,13 @@ testRunner.add(new TestCase({
 			      $result: "res", $entry: "ent" });
 
     Assert.that(one.entry.length() == 1, "INSERT did not generate one single entry")
-    Assert.that(one..identity.length() == 1, "INSERT did not generate one single identity")
+    Assert.that(one..scope_identity.length() == 1, "INSERT did not generate one single scope_identity")
 
     Assert.areEqual(one.@updateCount, 1, "updateCount is not 1");
-    Assert.areEqual(one.entry.identity, 1, "IDENTITY of first INSERT was not 1");
+    Assert.areEqual(one.entry.scope_identity, 1, "SCOPE_IDENTITY of first INSERT was not 1");
 
     Assert.areEqual(two.@updateCount, 2, "updateCount is not 2");
-    Assert.areEqual(two.ent.identity, 3, "IDENTITY of second INSERT was not 3");
+    Assert.areEqual(two.ent.scope_identity, 3, "SCOPE_IDENTITY of second INSERT was not 3");
     Assert.areEqual(two.localName(), "res", "result element name is not 'res'");
   },
 
@@ -49,13 +49,13 @@ testRunner.add(new TestCase({
 			    );
 
     Assert.that(one.entry.length() == 1, "INSERT did not generate one single entry")
-    Assert.that(one..identity.length() == 1, "INSERT did not generate one single identity")
+    Assert.that(one..scope_identity.length() == 1, "INSERT did not generate one single scope_identity")
 
     Assert.areEqual(one.@updateCount, 1, "updateCount is not 1");
-    Assert.areEqual(one.entry.identity, 1, "IDENTITY of first INSERT was not 1");
+    Assert.areEqual(one.entry.scope_identity, 1, "SCOPE_IDENTITY of first INSERT was not 1");
 
     Assert.areEqual(two.@updateCount, 2, "updateCount is not 2");
-    Assert.areEqual(two.entry.identity, 3, "IDENTITY of second INSERT was not 3");
+    Assert.areEqual(two.entry.scope_identity, 3, "SCOPE_IDENTITY of second INSERT was not 3");
   },
 
   testQuerySelect: function() {
