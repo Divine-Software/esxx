@@ -403,6 +403,10 @@ public class QueryCache {
 
 	  sql = db.prepareStatement(parsed_query);
 	  pmd = sql.getParameterMetaData();
+
+	  ESXX.getInstance().getLogger().log(java.util.logging.Level.WARNING,
+					     "RETURN_GENERATED_KEYS caused query " +
+					     "to be parsed twice: " + parsed_query);
 	}
 
       }
