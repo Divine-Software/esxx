@@ -106,7 +106,7 @@ public class MIMEParser {
     private static final int XML_PART    = 4;
     private static final int HTML_PART   = 5;	// Only used if processing HTML
     private static final int RFC822_PART = 6;
-    private static final int BASE64_PART = 7;
+    private static final int RAW_PART    = 7;
 
 
     public String convertMessage(InputStream is)
@@ -183,8 +183,9 @@ public class MIMEParser {
 	part.setHeader("Content-Type", ct);
       }
 
+      String encoding  = forceRawEncoding(element, part);
       int    part_type;
-      Object content   = part.getContent();
+      Object content   = encoding != null ? part.getInputStream() : part.getContent();
 
       String base_type = content_type.getBaseType().toLowerCase();
       String charset   = content_type.getParameter("charset");
@@ -217,7 +218,10 @@ public class MIMEParser {
       else {
 	content_stream = (InputStream) content;
 
-	if (base_type.endsWith("/xml") || base_type.endsWith("+xml")) {
+	if (encoding != null) {
+	  part_type = RAW_PART;
+	}
+	else if (base_type.endsWith("/xml") || base_type.endsWith("+xml")) {
 	  part_type = XML_PART;
 	}
 	else if (procHTML && base_type.equals("text/html")) {
@@ -227,12 +231,12 @@ public class MIMEParser {
 	  part_type = STRING_PART;
 	}
 	else {
-	  part_type = BASE64_PART;
+	  part_type = RAW_PART;
+	  encoding  = "base64";
 	}
       }
 
-      convertHeaders(element, part, part.getAllHeaders(),
-		     part_type == BASE64_PART ? "base64" : null);
+      convertHeaders(element, part, part.getAllHeaders(), encoding);
 
       Element body = document.createElementNS(documentNS, documentPrefix + "Body");
       element.appendChild(body);
@@ -368,11 +372,15 @@ public class MIMEParser {
 	  break;
 	}
 
-	case BASE64_PART: {
-	  convertBase64Part(body, content_stream);
+	case RAW_PART: {
+	  convertRawPart(body, content_stream, encoding);
 	  break;
 	}
       }
+    }
+
+    protected String forceRawEncoding(Element element, Part part) {
+      return null;
     }
 
     private void convertHeaders(Element element,
@@ -409,6 +417,11 @@ public class MIMEParser {
  	    decodeMIMEParams(cd.getParameterList());
 	    convertResourceHeader(element, "Content-Disposition",
 				  cd.getDisposition(),  cd.getParameterList());
+	    continue;
+	  }
+	  else if (name.equalsIgnoreCase("Content-Transfer-Encoding")) {
+	    // Remove all Content-Transfer-Encoding headers. If we're
+	    // forcing an encoding, we add a header explicitly below.
 	    continue;
 	  }
 	  else if (name.equalsIgnoreCase("From")) {
@@ -486,23 +499,15 @@ public class MIMEParser {
 	  // Treat header as plain header then
 	}
 
-	String value = decodeMIMEValue(hdr.getValue());
+	convertPlainHeader(element, name, decodeMIMEValue(hdr.getValue()));
+      }
 
-	if (name.equalsIgnoreCase("Content-Transfer-Encoding")) {
-	  if (forced_encoding != null) {
-	    value = forced_encoding;
-	  }
-	  else {
-	    // Remove Content-Transfer-Encoding unless we're forcing
-	    // an encoding by continuing here
-	    continue;
-	  }
-	}
-
-	convertPlainHeader(element, name, value);
+      // Finally, if we're forcing an encoding, add the
+      // Content-Transfer-Encoding header now
+      if (forced_encoding != null) {
+	convertPlainHeader(element, "Content-Transfer-Encoding", forced_encoding);
       }
     }
-
 
     protected void convertPlainHeader(Element element, String name, String value)
       throws MessagingException {
@@ -599,18 +604,19 @@ public class MIMEParser {
       element.appendChild(adopted);
     }
 
-    protected void convertBase64Part(Element element, InputStream is)
+    protected void convertRawPart(Element element, InputStream is, String encoding)
       throws IOException, MessagingException {
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      Base64.OutputStream b64os = new Base64.OutputStream(bos, Base64.ENCODE);
+      OutputStream          eos = MimeUtility.encode(bos, encoding);
+
       byte[] buffer = new byte[4096];
       int bytes_read;
 
       while ((bytes_read = is.read(buffer)) != -1) {
-	b64os.write(buffer, 0, bytes_read);
+	eos.write(buffer, 0, bytes_read);
       }
 
-      b64os.close();
+      eos.close();
       element.setTextContent(bos.toString("US-ASCII"));
     }
 
