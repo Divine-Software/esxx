@@ -472,8 +472,8 @@ public class MIMEParser {
 	  }
 	  else {
 	    // Remove Content-Transfer-Encoding unless we're forcing
-	    // an encoding by returning here
-	    return;
+	    // an encoding by continuing here
+	    continue;
 	  }
 	}
 
