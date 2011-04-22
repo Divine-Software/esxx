@@ -23,10 +23,9 @@ import java.util.*;
 import java.util.regex.*;
 import javax.mail.*;
 import javax.mail.internet.*;
-import org.htmlcleaner.CleanerProperties;
-import org.htmlcleaner.HtmlCleaner;
-import org.htmlcleaner.NSDomSerializer;
-import org.htmlcleaner.TagNode;
+import nu.validator.htmlparser.common.*;
+import nu.validator.htmlparser.dom.*;
+import org.xml.sax.*;
 import org.w3c.dom.*;
 import org.w3c.dom.ls.*;
 import org.w3c.dom.bootstrap.*;
@@ -289,37 +288,36 @@ public class MIMEParser {
 
 	case HTML_PART: {
 	  // We can only arrive here if we're processing HTML parts
-
-	  HtmlCleaner       hc = new HtmlCleaner();
-	  CleanerProperties hp = hc.getProperties();
-	  TagNode           tn;
-
-	  hp.setHyphenReplacementInComment("\u2012\u2012");
-	  //	  hp.setOmitDoctypeDeclaration(false);
-	  hp.setOmitDoctypeDeclaration(true); // Or we get an XML parser error :-(
-
-	  if (content_stream != null) {
-	    tn = hc.clean(content_stream, charset);
-	  }
-	  else {
-	    tn = hc.clean((String) content);
-	  }
-
-	  // Update content type
-	  replaceContentTypeElement(element, "text/x-html+xml");
-
 	  try {
-	    Document doc = new NSDomSerializer(hp, true).createDOM(tn);
+	    HtmlDocumentBuilder hdb = new HtmlDocumentBuilder(XmlViolationPolicy.ALTER_INFOSET);
+
+	    hdb.setHtml4ModeCompatibleWithXhtml1Schemata(true);
+	    hdb.setIgnoringComments(false);
+	    hdb.setMappingLangToXmlLang(true);
+	    hdb.setScriptingEnabled(false);
+
+	    hdb.setEntityResolver(new EntityResolver() {
+		  @Override public InputSource resolveEntity(String publicId, String systemId) {
+		    return new InputSource(new StringReader(" ")); // Fake almost empty doc
+		  }
+	      });
+
+	    Document doc = hdb.parse(content_stream != null
+				     ? new InputSource(content_stream)
+				     : new InputSource(new StringReader((String) content)));
 
 	    if (stripJS) {
 	      stripJS(doc.getDocumentElement());
 	    }
 
+	    // Update content type
+	    replaceContentTypeElement(element, "text/x-html+xml");
+
 	    convertDOMPart(body, doc);
 	  }
-	  catch (javax.xml.parsers.ParserConfigurationException ex) {
+	  catch (Exception ex) {
 	    ex.printStackTrace();
-	    throw new IOException("Failed to serialize HTML to XML: " + ex.getMessage(), ex);
+	    throw new IOException("Failed to parse HTML: " + ex.getMessage(), ex);
 	  }
 	  break;
 	}
