@@ -44,11 +44,11 @@ public class MIMEParser {
       // Make "mail.mime.decodeparameters" true if unspecified. Note
       // that this property is a System property and not a
       // Session.getInstance() parameter.
- 
+
       Properties p = System.getProperties();
       p.setProperty("mail.mime.decodeparameters",
 		    p.getProperty("mail.mime.decodeparameters", "true"));
- 
+
       this.session = Session.getInstance(p);
 
       this.xmtpMode    = xmtp;
@@ -307,10 +307,10 @@ public class MIMEParser {
 
 	  // Update content type
 	  replaceContentTypeElement(element, "text/x-html+xml");
-	  
+
 	  try {
 	    Document doc = new NSDomSerializer(hp, true).createDOM(tn);
-	    
+
 	    if (stripJS) {
 	      stripJS(doc.getDocumentElement());
 	    }
@@ -330,8 +330,8 @@ public class MIMEParser {
 	    LSParser parser = domImplementationLS.createLSParser(
 	      DOMImplementationLS.MODE_SYNCHRONOUS, null);
 	    parser.getDomConfig().setParameter("resource-resolver", new LSResourceResolver() {
-		    public LSInput resolveResource(String type, String ns_uri, 
-						   String public_id, String system_id, 
+		    public LSInput resolveResource(String type, String ns_uri,
+						   String public_id, String system_id,
 						   String base_uri) {
 			// Never resolve anything external
 			LSInput res = domImplementationLS.createLSInput();
@@ -382,6 +382,9 @@ public class MIMEParser {
 				Enumeration<?> headers,
 				String forced_encoding)
       throws MessagingException {
+      boolean got_from = false, got_sender = false, got_replyto = false;
+      boolean got_to = false, got_cc = false, got_bcc = false, got_newsgroups = false;
+
       while (headers.hasMoreElements()) {
 	Header hdr  = (Header) headers.nextElement();
 	String name = hdr.getName();
@@ -411,39 +414,60 @@ public class MIMEParser {
 	    continue;
 	  }
 	  else if (name.equalsIgnoreCase("From")) {
-	    // Clean up often misspelled and misformatted header
-	    convertAddressHeader(element, "From", message.getFrom());
+	    // Clean up often misspelled and misformatted header (once)
+	    if (!got_from) {
+	      convertAddressHeader(element, "From", message.getFrom());
+	      got_from = true;
+	    }
 	    continue;
 	  }
 	  else if (name.equalsIgnoreCase("Sender")) {
-	    // Clean up often misspelled and misformatted header
-	    convertAddressHeader(element, "Sender", new Address[] { message.getSender() });
+	    // Clean up often misspelled and misformatted header (once)
+	    if (!got_sender) {
+	      convertAddressHeader(element, "Sender", new Address[] { message.getSender() });
+	      got_sender = true;
+	    }
 	    continue;
 	  }
 	  else if (name.equalsIgnoreCase("Reply-To")) {
-	    // Clean up often misspelled and misformatted header
-	    convertAddressHeader(element, "Reply-To", message.getReplyTo());
+	    // Clean up often misspelled and misformatted header (once)
+	    if (!got_replyto) {
+	      convertAddressHeader(element, "Reply-To", message.getReplyTo());
+	      got_replyto = true;
+	    }
 	    continue;
 	  }
 	  else if (name.equalsIgnoreCase("To")) {
-	    // Clean up often misspelled and misformatted header
-	    convertAddressHeader(element, "To", message.getRecipients(Message.RecipientType.TO));
+	    // Clean up often misspelled and misformatted header (once)
+	    if (!got_to) {
+	      convertAddressHeader(element, "To", message.getRecipients(Message.RecipientType.TO));
+	      got_to = true;
+	    }
 	    continue;
 	  }
 	  else if (name.equalsIgnoreCase("Cc")) {
-	    // Clean up often misspelled and misformatted header
-	    convertAddressHeader(element, "Cc", message.getRecipients(Message.RecipientType.CC));
+	    // Clean up often misspelled and misformatted header (once)
+	    if (!got_cc) {
+	      convertAddressHeader(element, "Cc", message.getRecipients(Message.RecipientType.CC));
+	      got_cc = true;
+	    }
 	    continue;
 	  }
 	  else if (name.equalsIgnoreCase("Bcc")) {
-	    // Clean up often misspelled and misformatted header
-	    convertAddressHeader(element, "Bcc", message.getRecipients(Message.RecipientType.BCC));
+	    // Clean up often misspelled and misformatted header (once)
+	    if (!got_bcc) {
+	      convertAddressHeader(element, "Bcc", message.getRecipients(Message.RecipientType.BCC));
+	      got_bcc = true;
+	    }
 	    continue;
 	  }
 	  else if (name.equalsIgnoreCase("Newsgroups")) {
-	    // Clean up often misspelled and misformatted header
-	    convertAddressHeader(element, "Newsgroups",
-				 message.getRecipients(MimeMessage.RecipientType.NEWSGROUPS));
+	    // Clean up often misspelled and misformatted header (once)
+	    if (!got_newsgroups) {
+	      convertAddressHeader(element, "Newsgroups",
+				   message.getRecipients(MimeMessage.RecipientType.NEWSGROUPS));
+	      got_newsgroups = true;
+	    }
 	    continue;
 	  }
 	  else if (name.equalsIgnoreCase("Date")) {
@@ -531,24 +555,17 @@ public class MIMEParser {
 
     protected void convertAddressHeader(Element element, String name, Address[] addresses)
       throws MessagingException {
-      Element e = document.createElementNS(documentNS, documentPrefix + makeXMLName(name));
 
-      StringBuilder sb = new StringBuilder();
       for (Address a : addresses) {
-	if (sb.length() != 0) sb.append(",\r\n    ");
+	Element e = document.createElementNS(documentNS, documentPrefix + makeXMLName(name));
+	String  v = (a instanceof InternetAddress
+		     ? ((InternetAddress) a).toUnicodeString()
+		     : a.toString());
 
-	if (a instanceof InternetAddress) {
-	  sb.append(((InternetAddress) a).toUnicodeString());
-	}
-	else {
-	  sb.append(a.toString());
-	}
+	// Nuke all obviously illegal characters
+	e.setTextContent(nonXMLChars.matcher(v).replaceAll(""));
+	element.appendChild(e);
       }
-
-      // Nuke all obviously illegal characters
-      String value = nonXMLChars.matcher(sb.toString()).replaceAll("");
-      e.setTextContent(value);
-      element.appendChild(e);
     }
 
     protected void convertTextPart(Element element, String content)
@@ -615,11 +632,11 @@ public class MIMEParser {
       return new String(chars);
     }
 
-    // private java.util.regex.Pattern controlChars = 
+    // private java.util.regex.Pattern controlChars =
     // 	java.util.regex.Pattern.compile("\\p{Cntrl}");
 
     // XML 1.0 Characters looks kind of like this
-    private java.util.regex.Pattern nonXMLChars = 
+    private java.util.regex.Pattern nonXMLChars =
       java.util.regex.Pattern.compile("[^\t\n\r\\x20-\uD7FF\uE000-\uFFFD]");
 
     private String decodeMIMEValue(String value) {
@@ -643,7 +660,7 @@ public class MIMEParser {
       // world is not strict ...
       for (Enumeration<?> e = params.getNames(); e.hasMoreElements(); ) {
 	String name = (String) e.nextElement();
-	
+
 	params.set(name, decodeMIMEValue(params.get(name)));
       }
     }
@@ -661,9 +678,9 @@ public class MIMEParser {
       }
     }
 
-    private Pattern forbiddenURL 
+    private Pattern forbiddenURL
       = Pattern.compile("(about|javascript|livescript|mocha|vbscript):");
-    
+
 
     private List<Node> nodeReferences(NodeList nl) {
       // Convert NodeList into something that doesn't change when
@@ -673,7 +690,7 @@ public class MIMEParser {
       for (int i = 0; i < nl.getLength(); ++i) {
     	list.add(nl.item(i));
       }
-      
+
       return list;
     }
 
