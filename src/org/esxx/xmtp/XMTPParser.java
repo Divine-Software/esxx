@@ -184,11 +184,25 @@ public class XMTPParser {
 	    }
 	    else if (name.equals("From")) {
 	      // Clean up often misspelled and misformatted header
-	      ((MimeMessage) part).setFrom(convertAddressHeader(xr)[0] /* Only one allowed */);
+	      Address[] address = convertAddressHeader(xr);
+
+	      if (address.length == 1) {
+		((MimeMessage) part).setFrom(address[0] /* Only one allowed */);
+	      }
+	      else if (address.length != 0) {
+		throw new XMLStreamException("From header may only contain a single address");
+	      }
 	    }
 	    else if (name.equals("Sender")) {
 	      // Clean up often misspelled and misformatted header
-	      ((MimeMessage) part).setSender(convertAddressHeader(xr)[0] /* Only one allowed */);
+	      Address[] address = convertAddressHeader(xr);
+
+	      if (address.length == 1) {
+		((MimeMessage) part).setSender(address[0] /* Only one allowed */);
+	      }
+	      else if (address.length != 0) {
+		throw new XMLStreamException("Sender header may only contain a single address");
+	      }
 	    }
 	    else if (name.equals("Reply-To")) {
 	      // Clean up often misspelled and misformatted header
