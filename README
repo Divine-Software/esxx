@@ -69,24 +69,28 @@ Requirements
 ************
 
 * Java 6
-* A web server supporting FastCGI, such as Apache or Lighttpd (not
-  strictly required, but strongly recommended for production)
+* A web server supporting FastCGI or AJP, such as Apache or Lighttpd
+ (not strictly required, but strongly recommended for production)
 
 These required components are distributed with ESXX, packaged using
 One-JAR:
 
 * Commons CLI
 * H2
-* HtmlCleaner
 * HttpClient plus dependencies
 * JFast
+* JLine
 * JavaMail
+* Jetty
+* Jing
+* OAuth
 * Rhino
 * Saxon
+* Validator.nu HTML parser
 
 You will probably want a external database to, like PostgreSQL or
-MySQL, since you can't use H2 in embedded mode when running multiple
-ESXX front-ends).
+MySQL, although you can use H2 in embedded/auto server mode when
+running multiple ESXX front-ends).
 
 
 How it works

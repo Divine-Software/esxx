@@ -163,6 +163,8 @@
 	handle large files. The 'x-format' parameter can be set to
 	'stream' or 'buffer' to select behaviour.
 
+	* Switched from HtmlCleaner to the Validator.nu HTML 5 parser.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

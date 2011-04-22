@@ -9,9 +9,10 @@ This product includes software developed at The Apache Software
 Foundation (http://www.apache.org/): Commons CLI and Commons
 HttpClient, licensed under the Apache License, version 2.0.
 
-This product includes software developed by the HtmlCleaner team
-(http://htmlcleaner.sourceforge.net/): HtmlCleaner, licensed under the
-BSD License.
+This product includes software developed by the Henri Sivonen, Mozilla
+Foundation, Apple Computer, Inc. and Opera Software ASA
+(http://about.validator.nu/htmlparser/): The Validator.nu HTML Parser,
+licensed under a BSD-like License.
 
 This product includes software developed by Sun Microsystems,
 Inc. (http://www.sun.com/): JavaMail, licensed under some weired

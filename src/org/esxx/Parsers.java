@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.StringReader;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -43,13 +44,13 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.util.SharedFileInputStream;
-import org.htmlcleaner.CleanerProperties;
-import org.htmlcleaner.HtmlCleaner;
-import org.htmlcleaner.NSDomSerializer;
-import org.htmlcleaner.TagNode;
+import nu.validator.htmlparser.common.*;
+import nu.validator.htmlparser.dom.*;
 import org.json.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 
 class Parsers {
   public Parsers() {
@@ -187,23 +188,29 @@ class Parsers {
 			InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
-      throws IOException, javax.xml.parsers.ParserConfigurationException  {
-      String            cs = mime_params.get("charset");
-      HtmlCleaner       hc = new HtmlCleaner();
-      CleanerProperties hp = hc.getProperties();
-      TagNode           tn;
+      throws IOException  {
+      try {
+	HtmlDocumentBuilder hdb = new HtmlDocumentBuilder(XmlViolationPolicy.ALTER_INFOSET);
 
-      hp.setHyphenReplacementInComment("\u2012\u2012");
-      hp.setUseCdataForScriptAndStyle(false);
+	hdb.setHtml4ModeCompatibleWithXhtml1Schemata(true);
+	hdb.setIgnoringComments(false);
+	hdb.setMappingLangToXmlLang(true);
+	hdb.setScriptingEnabled(false);
 
-      if (cs != null) {
-	tn = hc.clean(is, cs);
+	hdb.setEntityResolver(new EntityResolver() {
+	    @Override public InputSource resolveEntity(String publicId, String systemId) {
+	      return new InputSource(new StringReader(" ")); // Fake almost empty doc
+	    }
+	  });
+
+	InputSource source = new InputSource(is);
+	source.setEncoding(mime_params.get("charset"));
+
+	return ESXX.domToE4X(hdb.parse(source), cx, scope);
       }
-      else {
-	tn = hc.clean(is);
+      catch (org.xml.sax.SAXException ex) {
+	throw new IOException("Failed to parse HTML document" + ex.getMessage(), ex);
       }
-
-      return ESXX.domToE4X(new NSDomSerializer(hp, true).createDOM(tn), cx, scope);
     }
   }
 
