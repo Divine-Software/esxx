@@ -320,10 +320,23 @@ public class XMTPParser {
 
       ContentType content_type = new ContentType(part.getContentType());
 
-      String base_type = content_type.getBaseType().toLowerCase();
-      String prim_type = content_type.getPrimaryType().toLowerCase();
+      String base_type  = content_type.getBaseType().toLowerCase();
+      String prim_type  = content_type.getPrimaryType().toLowerCase();
+      String encoding[] = part.getHeader("Content-Transfer-Encoding");
 
-      if (prim_type.equals("multipart")) {
+      if (encoding != null &&
+	  encoding.length >= 1 &&
+	  encoding[0].equalsIgnoreCase("base64") && // Xcerion workaround for old mails with
+						    // stale Content-Transfer-Encoding header
+	  !encoding[0].isEmpty()) {
+	// Encoded content; dump to disk and add a DataHandler for it
+	EncodedDataSource ds = new EncodedDataSource(xr,
+						     part.getFileName(),
+						     part.getContentType(),
+						     encoding[0]);
+	part.setDataHandler(new DataHandler(ds));
+      }
+      else if (prim_type.equals("multipart")) {
 	part.setContent(convertMultiPartBody(xr, content_type),
 			part.getContentType());
       }
@@ -341,7 +354,7 @@ public class XMTPParser {
 	XMLEventReader        er = XMLInputFactory.newInstance().createXMLEventReader(xr);
 
 	javax.xml.stream.events.XMLEvent peek = er.peek();
-	if (peek.isStartElement() && 
+	if (peek.isStartElement() &&
 	    peek.asStartElement().getName().equals(
               new javax.xml.namespace.QName(MIMEParser.MIME_NAMESPACE, "Body"))) {
 	  er.nextEvent();
@@ -400,7 +413,7 @@ public class XMTPParser {
 	    tr.setOutputProperty(OutputKeys.MEDIA_TYPE, "text/html");
 
 	    Node node = dr.getNode().getFirstChild();
-	    
+
 	    while (node.getNodeType() != Node.ELEMENT_NODE) {
 		node = node.getNextSibling();
 
@@ -435,20 +448,8 @@ public class XMTPParser {
 	}
       }
       else {
-	String encoding[] = part.getHeader("Content-Transfer-Encoding");
-
-	if (encoding != null && encoding.length >= 1 && !encoding[0].isEmpty()) {
-	  // Encoded content; dump to disk and add a DataHandler for it
-	  EncodedDataSource ds = new EncodedDataSource(xr,
-						       part.getFileName(),
-						       part.getContentType(),
-						       encoding[0]);
-	  part.setDataHandler(new DataHandler(ds));
-	}
-	else {
-	  throw new XMLStreamException("Unsupported Content-Type/Content-Transfer-Encoding " +
-				       "combination");
-	}
+	throw new XMLStreamException("Unsupported Content-Type/Content-Transfer-Encoding " +
+				     "combination");
       }
     }
 
@@ -555,6 +556,11 @@ public class XMTPParser {
 	    throw new XMLStreamException("Failed to write " + encoding + "-encoded data to disk: " +
 					 ex.getMessage(), ex);
 	  }
+	}
+
+	@Override public String toString() {
+	  return "[EncodedDataSource: " + name + ", " + contentType
+	    + " (" + encoding + "): " + tempFile + "]";
 	}
 
 	@Override
