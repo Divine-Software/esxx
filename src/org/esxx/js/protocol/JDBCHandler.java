@@ -377,9 +377,13 @@ public class JDBCHandler
 
       object = JS.unwrap(object);
 
-      // System.out.println("resolveParam " + batch + " " + param + " " + length 
-      // 			 + " from " + params + " => " + object + " "
-      // 			 + (object != null ? object.getClass() : "null.class"));
+      if (object == Context.getUndefinedValue()) {
+	throw ScriptRuntime.notFoundError(ScriptRuntime.toObjectOrNull(cx, params), param);
+      }
+
+      // System.out.println("resolveParam " + batch + " " + param + " " + length
+      //			 + " from " + params + " => " + object + " "
+      //			 + (object != null ? object.getClass() : "null.class"));
 
       if (object instanceof Iterable) {
 	for (Object o : ((Iterable) object)) {
