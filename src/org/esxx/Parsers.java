@@ -40,6 +40,7 @@ import javax.imageio.stream.FileCacheImageInputStream;
 import javax.mail.Header;
 import javax.mail.Session;
 import javax.mail.internet.ContentDisposition;
+import javax.mail.internet.ContentType;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
@@ -75,20 +76,19 @@ class Parsers {
     parserMap.put("text/xml",                            new XMLParser());
   }
 
-  public Object parse(String mime_type, HashMap<String,String> mime_params,
-		      InputStream is, final URI is_uri,
+  public Object parse(ContentType ct, InputStream is, final URI is_uri,
 		      Collection<URI> external_uris,
 		      PrintWriter err,
 		      Context cx, Scriptable scope)
     throws Exception {
     // Read-only accesses; no syncronization required
-    Parser parser = parserMap.get(mime_type);
+    Parser parser = parserMap.get(ct.getBaseType());
 
     if (parser == null) {
-      if (mime_type.endsWith("+xml")) {
+      if (ct.getBaseType().endsWith("+xml")) {
 	parser = parserMap.get("application/xml");
       }
-      else if (mime_type.startsWith("image/")) {
+      else if (ct.match("image/*")) {
 	parser = parserMap.get("image/*");
       }
       else {
@@ -99,7 +99,7 @@ class Parsers {
     Object result = null;
 
     try {
-      result = parser.parse(mime_type, mime_params, is, is_uri,
+      result = parser.parse(ct, is, is_uri,
 			    external_uris, err, cx, scope);
     }
     finally {
@@ -113,8 +113,7 @@ class Parsers {
 
   /** The interface all parsers must implement */
   private interface Parser {
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, URI is_uri,
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws Exception;
@@ -127,12 +126,11 @@ class Parsers {
   /** A Parser that returns the InputStream as-is, or loads it into a ByteBuffer */
   private static class BinaryParser
     implements Parser {
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, URI is_uri,
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException, org.xml.sax.SAXException {
-      String format = mime_params.get("x-format");
+      String format = ct.getParameter("x-format");
 
       if (format == null || format.equals("stream")) {
 	return is;
@@ -151,12 +149,11 @@ class Parsers {
   /** A Parser that reads characters and returns a string. */
   private static class StringParser
     implements Parser {
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, URI is_uri,
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException {
-      String cs = mime_params.get("charset");
+      String cs = ct.getParameter("charset");
 
       if (cs == null) {
 	cs = "UTF-8";
@@ -171,8 +168,7 @@ class Parsers {
   /** A Parser that parses XML and returns an E4X XML Node. */
   private static class XMLParser
     implements Parser {
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, URI is_uri,
+    public Object parse(ContentType ct,	InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException, org.xml.sax.SAXException {
@@ -184,8 +180,7 @@ class Parsers {
   /** A Parser that parses HTML and returns XHTML as an E4X XML Node. */
   private static class HTMLParser
     implements Parser {
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, URI is_uri,
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException  {
@@ -204,7 +199,7 @@ class Parsers {
 	  });
 
 	InputSource source = new InputSource(is);
-	source.setEncoding(mime_params.get("charset"));
+	source.setEncoding(ct.getParameter("charset"));
 
 	return ESXX.domToE4X(hdb.parse(source), cx, scope);
       }
@@ -217,12 +212,11 @@ class Parsers {
   /** A Parser that parses HTML Form submissions and returns a JavaScript Object. */
   private static class FormParser
     implements Parser {
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, URI is_uri,
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException {
-      String cs = mime_params.get("charset");
+      String cs = ct.getParameter("charset");
 
       if (cs == null) {
 	cs = "UTF-8";
@@ -251,8 +245,7 @@ class Parsers {
 		    p.getProperty("mail.mime.encodefilename", "true"));
     }
 
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, URI is_uri,
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws Exception {
@@ -262,7 +255,7 @@ class Parsers {
 
 	// Add required MIME header and stream data to a temporary file
 	FileOutputStream fos = new FileOutputStream(temp);
-	fos.write(("Content-Type: " + ESXX.combineMIMEType(mime_type, mime_params) 
+	fos.write(("Content-Type: " + ct
 		   + "\r\n\r\n").getBytes());
 	IO.copyStream(is, fos);
 	fos.close();
@@ -295,16 +288,15 @@ class Parsers {
 
 	  if (filename == null) {
 	    // Not a file, so parse it
-	    HashMap<String,String> params = new HashMap<String,String>();
-	    String ct = ESXX.parseMIMEType(mbp.getContentType(), params);
+	    String part_ct = mbp.getContentType();
 
 	    // Default content-type is text/plain for
 	    // multipart/form-data parts
-	    if (ct == null) {
-	      ct = "text/plain";
+	    if (part_ct == null) {
+	      part_ct = "text/plain";
 	    }
 
-	    value = esxx.parseStream(ct, params, mbp.getInputStream(), temp.toURI(),
+	    value = esxx.parseStream(part_ct, mbp.getInputStream(), temp.toURI(),
 				     null, err, cx, scope);
 	    value = Context.javaToJS(value, scope);
 	  }
@@ -352,12 +344,11 @@ class Parsers {
   /** A Parser that parses JSON and returns a JavaScript Array or Object. */
   private static class JSONParser
     implements Parser {
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, URI is_uri,
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException {
-      String cs = mime_params.get("charset");
+      String cs = ct.getParameter("charset");
 
       if (cs == null) {
 	cs = "UTF-8";
@@ -429,8 +420,7 @@ class Parsers {
   /** A Parser that parses emails and returns an E4X XML Node. */
   private static class MIMEParser
     implements Parser {
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, URI is_uri,
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException, org.xml.sax.SAXException {
@@ -439,9 +429,9 @@ class Parsers {
       boolean html;
       boolean js;
 
-      String fmt = mime_params.get("x-format");
-      String prc = mime_params.get("x-process-html");
-      String sjs = mime_params.get("x-strip-js");
+      String fmt = ct.getParameter("x-format");
+      String prc = ct.getParameter("x-process-html");
+      String sjs = ct.getParameter("x-strip-js");
 
       if (fmt == null || fmt.equals("esxx")) {
 	xmtp = false;
@@ -511,20 +501,19 @@ class Parsers {
   /** A Parser that parses images and returns a BufferedImage Java object. */
   private static class ImageParser
     implements Parser {
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, URI is_uri,
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException {
-      if (mime_type.equals("image/*")) {
+      if (ct.getBaseType().equals("image/*")) {
 	return ImageIO.read(is);
       }
       else {
-	Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType(mime_type);
+	Iterator<ImageReader> readers = ImageIO.getImageReadersByMIMEType(ct.getBaseType());
 
 	if (readers.hasNext()) {
 	  ImageReader reader = readers.next();
-	  String      index  = mime_params.get("x-index");
+	  String      index  = ct.getParameter("x-index");
 
 	  reader.setInput(new FileCacheImageInputStream(is, null));
 	  return reader.read(index != null ? Integer.parseInt(index) : 0);
@@ -539,13 +528,12 @@ class Parsers {
   /** A Parser that parses XML Schemas and returns a JavaScript ESXX.Schema object. */
   private static class SchemaParser
     implements Parser {
-    public Object parse(String mime_type, HashMap<String,String> mime_params,
-			InputStream is, URI is_uri,
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope) {
       // NB: If the schema is already loaded into the schema cache
       // (with key 'is_uri'), the 'is' argument will be left unused.
-      return org.esxx.js.JSSchema.newJSSchema(cx, scope, is_uri, is, mime_type);
+      return org.esxx.js.JSSchema.newJSSchema(cx, scope, is_uri, is, ct.getBaseType());
     }
   }
 }

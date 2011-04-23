@@ -21,6 +21,7 @@ package org.esxx.js.protocol;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import javax.mail.internet.ContentType;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -38,8 +39,7 @@ public class DATAHandler
   }
 
   @Override
-  public Object load(Context cx, Scriptable thisObj,
-		     String type, HashMap<String,String> params)
+  public Object load(Context cx, Scriptable thisObj, ContentType ct)
     throws Exception {
     URI         uri = jsuri.getURI();
     String specific = uri.getRawSchemeSpecificPart();
@@ -62,16 +62,16 @@ public class DATAHandler
       uri_type = uri_type.substring(0, uri_type.lastIndexOf(';'));
     }
 
-    if (type == null) {
+    if (ct == null) {
       if (uri_type.length() == 0) {
 	uri_type = "text/plain;charset=US-ASCII";
       }
 
-      type = ESXX.parseMIMEType(uri_type, params);
+      ct = new ContentType(uri_type);
     }
 
     InputStream is;
-    String charset = params.get("charset");
+    String charset = ct.getParameter("charset");
 
     if (charset == null) {
       charset = "UTF-8";
@@ -83,14 +83,13 @@ public class DATAHandler
       is = new Base64.InputStream(is, Base64.DECODE);
     }
 
-    Object result  = ESXX.getInstance().parseStream(type, params,
-						    is, uri,
+    Object result  = ESXX.getInstance().parseStream(ct, is, uri,
 						    null,
 						    null, //js_esxx.jsGet_debug(),
 						    cx, thisObj);
 
     if (result == null) {
-      return super.load(cx, thisObj, type, params);
+      return super.load(cx, thisObj, ct);
     }
     else {
       return result;
@@ -99,26 +98,15 @@ public class DATAHandler
 
   @Override
   public Object save(Context cx, Scriptable thisObj,
-		     Object data, String type, HashMap<String,String> params)
+		     Object data, ContentType ct)
     throws Exception {
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    Response response = new Response(0, type, data, null);
-
-    response.writeResult(bos);
-
-    if (type == null) {
-      type = ESXX.parseMIMEType(response.getContentType(true), params);
-    }
+    ct = ESXX.getInstance().serializeObject(data, ct, bos);
 
     String b64 = Base64.encodeBytes(bos.toByteArray(), Base64.DONT_BREAK_LINES);
 
-    // Attach parameters
-    for (java.util.Map.Entry<String, String> p : params.entrySet()) {
-      type = type + "; " + p.getKey() + "\"" + p.getValue() + "\"";
-    }
-
     // Replace URI and return result as a string
-    URI uri = new URI("data", type + ";base64," + b64, null);
+    URI uri = new URI("data", ct + ";base64," + b64, null);
     jsuri.setURI(uri);
 
     return null;

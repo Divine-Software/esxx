@@ -23,6 +23,7 @@ import java.io.FileOutputStream;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.regex.Pattern;
+import javax.mail.internet.ContentType;
 import org.esxx.*;
 import org.esxx.js.*;
 import org.esxx.util.StringUtil;
@@ -44,63 +45,49 @@ public class FILEHandler
   }
 
   @Override
-  public Object load(Context cx, Scriptable thisObj,
-		     String type, HashMap<String,String> params)
+  public Object load(Context cx, Scriptable thisObj, ContentType ct)
     throws Exception {
     File file = new File(jsuri.getURI());
 
-    if (type == null) {
-      type = ESXX.fileTypeMap.getContentType(file);
+    if (ct == null) {
+      ct = new ContentType(ESXX.fileTypeMap.getContentType(file));
     }
 
-    if ((type.equals("text/xml") || type.equals("application/xml"))
+    if ((ct.match("text/xml") || ct.match("application/xml"))
 	&& file.exists() && file.isDirectory()) {
-      type = "application/vnd.esxx.directory+xml";
+      ct = new ContentType("application/vnd.esxx.directory+xml");
     }
 
-    if (type.equals("application/vnd.esxx.directory+xml")) {
+    if (ct.match("application/vnd.esxx.directory+xml")) {
       Document result = createDirectoryListing(file);
 
       return ESXX.domToE4X(result, cx, thisObj);
     }
 
-    return super.load(cx, thisObj, type, params);
+    return super.load(cx, thisObj, ct);
   }
 
   @Override
   public Object save(Context cx, Scriptable thisObj,
-		     Object data, String type, HashMap<String,String> params)
+		     Object data, ContentType ct)
     throws Exception {
     File file = new File(jsuri.getURI());
 
-    Response.writeObject(data, type, params, new FileOutputStream(file));
+    Response.writeObject(data, ct, new FileOutputStream(file));
     return ESXX.domToE4X(createDirectoryEntry(file), cx, thisObj);
   }
 
   @Override
   public Object append(Context cx, Scriptable thisObj,
-		       Object data, String type, HashMap<String,String> params)
+		       Object data, ContentType ct)
     throws Exception {
     File file = new File(jsuri.getURI());
 
-    if (file.exists() && file.isDirectory()) {
-      String filename = params.get("name");
-
-      if (filename == null) {
-	throw Context.reportRuntimeError("append() to a directory reqires the 'name' parameter");
-      }
-
-      file = new File(file, filename);
-
-      if (!file.createNewFile()) {
-	throw Context.reportRuntimeError("Failed to create " + file);
-      }
-
-      Response.writeObject(data, type, params, new FileOutputStream(file));
+    if (file.isDirectory()) {
+      file = File.createTempFile("esxx", null, file);
     }
-    else {
-      Response.writeObject(data, type, params, new FileOutputStream(file, true));
-    }
+
+    Response.writeObject(data, ct, new FileOutputStream(file, true));
 
     return ESXX.domToE4X(createDirectoryEntry(file), cx, thisObj);
   }
@@ -113,7 +100,7 @@ public class FILEHandler
 
   @Override
   public Object remove(Context cx, Scriptable thisObj,
-		       String type, HashMap<String,String> params)
+		       ContentType ct)
     throws Exception {
     File file = new File(jsuri.getURI());
 

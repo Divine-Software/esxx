@@ -28,8 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.HashMap;
 import java.util.regex.Pattern;
+import javax.mail.internet.ContentType;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPConstants;
@@ -183,8 +183,8 @@ public class JSRequest
       return logger;
     }
 
-    public Object jsGet_contentType() {
-      return contentType;
+    public String jsGet_contentType() {
+      return contentType.toString();
     }
 
     public long jsGet_contentLength() {
@@ -224,9 +224,8 @@ public class JSRequest
     private Object message;
 
     private String soapAction;
-    private String contentType;
+    private ContentType contentType;
     private long contentLength = -1;
-    private HashMap<String,String> contentTypeParams;
 
     private Scriptable acceptValueOf;
     static private java.lang.reflect.Method acceptValueOfMethod;
@@ -358,8 +357,12 @@ public class JSRequest
     public void handleContentHeader(String name, String value) {
       if (name.startsWith("Content-") && !value.isEmpty()) {
 	if (name.equals("Content-Type")) {
-	  contentTypeParams = new HashMap<String,String>();
-	  contentType       = ESXX.parseMIMEType(value, contentTypeParams);
+	  try {
+	    contentType = new ContentType(value);
+	  }
+	  catch (javax.mail.internet.ParseException ex) {
+	    throw new ESXXException(400, "Invalid Content-Type header: " + ex.getMessage(), ex);
+	  }
 	}
 	else if (name.equals("Content-Length")) {
 	  contentLength = Long.parseLong(value);
@@ -404,7 +407,7 @@ public class JSRequest
       else if (contentType != null && contentLength > 0) {
 	try {
 	  ESXX esxx = ESXX.getInstance();
-	  return esxx.parseStream(contentType, contentTypeParams, request.getInputStream(), 
+	  return esxx.parseStream(contentType, request.getInputStream(), 
 				  URI.create("urn:x-esxx:incoming-request-entity"),
 				  null,
 				  new java.io.PrintWriter(request.getErrorWriter()),

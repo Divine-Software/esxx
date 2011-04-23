@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-
+import javax.mail.internet.ContentType;
 import org.esxx.ESXX;
 import org.esxx.Application;
 import org.esxx.util.StringUtil;
@@ -237,82 +237,77 @@ public class JSURI
 				       Object[] args, Function funObj)
     throws Exception {
     JSURI  js_this = checkInstance(thisObj);
-    String type    = null;
-    HashMap<String,String> params = new HashMap<String,String>();
+    ContentType ct = null;
 
     if (args.length >= 1 && args[0] != Context.getUndefinedValue()) {
-      type = ESXX.parseMIMEType(Context.toString(args[0]), params);
+      ct = new ContentType(Context.toString(args[0]));
     }
 
-    return js_this.protocolHandler.load(cx, thisObj, type, params);
+    return js_this.protocolHandler.load(cx, thisObj, ct);
   }
 
   public static Object jsFunction_save(Context cx, Scriptable thisObj,
 				       Object[] args, Function funObj)
     throws Exception {
     JSURI  js_this = checkInstance(thisObj);
-    String type    = null;
-    HashMap<String,String> params = new HashMap<String,String>();
+    ContentType ct = null;
 
     if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
       throw Context.reportRuntimeError("Missing save() argument");
     }
 
     if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
-      type = ESXX.parseMIMEType(Context.toString(args[1]), params);
+      ct = new ContentType(Context.toString(args[1]));
     }
 
-    return js_this.protocolHandler.save(cx, thisObj, args[0], type, params);
+    return js_this.protocolHandler.save(cx, thisObj, args[0], ct);
   }
 
   public static Object jsFunction_append(Context cx, Scriptable thisObj,
 					 Object[] args, Function funObj)
     throws Exception {
     JSURI  js_this = checkInstance(thisObj);
-    String type    = null;
-    HashMap<String,String> params = new HashMap<String,String>();
+    ContentType ct = null;
 
     if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
       throw Context.reportRuntimeError("Missing append() argument");
     }
 
     if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
-      type = ESXX.parseMIMEType(Context.toString(args[1]), params);
+      ct = new ContentType(Context.toString(args[1]));
     }
 
-    return js_this.protocolHandler.append(cx, thisObj, args[0], type, params);
+    return js_this.protocolHandler.append(cx, thisObj, args[0], ct);
   }
 
   public static Object jsFunction_modify(Context cx, Scriptable thisObj,
 					 Object[] args, Function funObj)
     throws Exception {
     JSURI  js_this = checkInstance(thisObj);
-    String type    = null;
-    HashMap<String,String> params = new HashMap<String,String>();
+    ContentType ct = null;
 
     if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
       throw Context.reportRuntimeError("Missing append() argument");
     }
 
     if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
-      type = ESXX.parseMIMEType(Context.toString(args[1]), params);
+      ct = new ContentType(Context.toString(args[1]));
     }
 
-    return js_this.protocolHandler.modify(cx, thisObj, args[0], type, params);
+    return js_this.protocolHandler.modify(cx, thisObj, args[0], ct);
   }
 
   public static Object jsFunction_remove(Context cx, Scriptable thisObj,
 					 Object[] args, Function funObj)
     throws Exception {
     JSURI  js_this = checkInstance(thisObj);
-    String type    = null;
-    HashMap<String,String> params = new HashMap<String,String>();
+    ContentType ct = null;
 
     if (args.length >= 1 && args[0] != Context.getUndefinedValue()) {
-      type = ESXX.parseMIMEType(Context.toString(args[0]), params);
+      ct = new ContentType(Context.toString(args[0]));
     }
 
-    return js_this.protocolHandler.remove(cx, thisObj, type, params);
+    return js_this.protocolHandler.remove(cx, thisObj, ct);
   }
 
   public static Object jsFunction_query(Context cx, Scriptable thisObj,

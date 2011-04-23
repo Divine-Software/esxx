@@ -37,6 +37,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.activation.FileTypeMap;
 import javax.activation.MimetypesFileTypeMap;
+import javax.mail.internet.ContentType;
 import org.esxx.cache.*;
 import org.esxx.jmx.WorkloadInfo;
 import org.esxx.saxon.*;
@@ -368,7 +369,7 @@ public class ESXX {
 		      else {
 			new_cx.removeThreadLocal(Workload.class);
 		      }
-		      
+
 		      workload.close();
 		      workloadSet.remove(workload);
 		      // thread.setName(old_name);
@@ -660,13 +661,45 @@ public class ESXX {
       return temp;
     }
 
-    public Object parseStream(String mime_type, HashMap<String,String> mime_params,
-			      InputStream is, URI is_uri,
+    public Object parseStream(String mime_type, InputStream is, URI is_uri,
 			      Collection<URI> external_uris,
 			      PrintWriter err,
 			      Context cx, Scriptable scope)
       throws Exception {
-      return parsers.parse(mime_type, mime_params, is, is_uri, external_uris, err, cx, scope);
+      try {
+	return parseStream( new ContentType(mime_type), is, is_uri, external_uris, err, cx, scope);
+      }
+      catch (javax.mail.internet.ParseException ex) {
+	throw new IOException("Invalid Content-Type: " + ex.getMessage(), ex);
+      }
+    }
+
+    public Object parseStream(ContentType ct, InputStream is, URI is_uri,
+			      Collection<URI> external_uris,
+			      PrintWriter err,
+			      Context cx, Scriptable scope)
+      throws Exception {
+      return parsers.parse(ct, is, is_uri, external_uris, err, cx, scope);
+    }
+
+    public ContentType serializeObject(Object data, ContentType ct, OutputStream os)
+      throws IOException {
+      try {
+	Response response = new Response(0, ct != null ? ct.toString() : null, data, null);
+
+	response.writeResult(os);
+
+	if (ct == null) {
+	  ct = new ContentType(response.getContentType(true));
+	}
+
+	return ct;
+      }
+      catch (javax.mail.internet.ParseException ex) {
+	// (This should never happen, unless Response.getContentType() is broken)
+	throw new ESXXException("Invalid Content-Type from Response.getContentType(): "
+				+ ex.getMessage(), ex);
+      }
     }
 
     public Application getCachedApplication(final Context cx, final Request request)
@@ -1271,7 +1304,7 @@ public class ESXX {
 	return thread;
       }
 
-      public Object getResult() 
+      public Object getResult()
 	throws InterruptedException, ExecutionException {
 	return future.get();
       }
@@ -1316,7 +1349,7 @@ public class ESXX {
     }
 
 
-    private class WorkloadJMXBean 
+    private class WorkloadJMXBean
       extends javax.management.StandardEmitterMBean
       implements org.esxx.jmx.WorkloadMXBean {
 
@@ -1335,12 +1368,12 @@ public class ESXX {
 
 	for (Workload w : workloads) {
 	  synchronized (w) {
-	    infos.add(new WorkloadInfo(w.getName(), new Date(w.getExpires()), 
+	    infos.add(new WorkloadInfo(w.getName(), new Date(w.getExpires()),
 				       w.getThread().getName(),
 				       w.isTimedOut(), w.isDone()));
 	  }
 	}
-	
+
 	return infos;
       }
     }

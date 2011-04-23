@@ -29,6 +29,7 @@ import java.nio.channels.*;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import javax.mail.internet.ContentType;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
 import org.json.*;
@@ -122,15 +123,15 @@ public class Response  {
 
   public void writeResult(OutputStream out)
     throws IOException {
-    HashMap<String,String> mime_params = new HashMap<String,String>();
-    String mime_type = ESXX.parseMIMEType(guessContentType(), mime_params);
-
-    writeObject(resultObject, mime_type, mime_params, out);
+    try {
+      writeObject(resultObject, new ContentType(guessContentType()), out);
+    }
+    catch (javax.mail.internet.ParseException ex) {
+      throw new IOException("Invalid content-type: " + ex.getMessage(), ex);
+    }
   }
 
-  public static void writeObject(Object object,
-				 String mime_type, HashMap<String,String> mime_params,
-				 OutputStream out)
+  public static void writeObject(Object object, ContentType ct, OutputStream out)
     throws IOException {
 
     if (object == null) {
@@ -144,7 +145,7 @@ public class Response  {
     if (object instanceof Node) {
       ESXX esxx = ESXX.getInstance();
 
-      if ("message/rfc822".equals(mime_type)) {
+      if (ct.match("message/rfc822")) {
 	try {
 	  String xml = esxx.serializeNode((Node) object);
 	  org.esxx.xmtp.XMTPParser xmtpp = new org.esxx.xmtp.XMTPParser();
@@ -181,8 +182,8 @@ public class Response  {
       }
     }
     else if (object instanceof Scriptable) {
-      if ("application/x-www-form-urlencoded".equals(mime_type)) {
-	String cs = mime_params.get("charset");
+      if (ct.match("application/x-www-form-urlencoded")) {
+	String cs = ct.getParameter("charset");
 
 	if (cs == null) {
 	  cs = "UTF-8";
@@ -225,7 +226,7 @@ public class Response  {
     }
     else if (object instanceof Reader) {
       // Write stream as-is, using the specified charset (if present)
-      String cs = mime_params.get("charset");
+      String cs = ct.getParameter("charset");
 
       if (cs == null) {
 	cs = "UTF-8";
@@ -237,7 +238,7 @@ public class Response  {
     }
     else if (object instanceof String) {
       // Write string as-is, using the specified charset (if present)
-      String cs = mime_params.get("charset");
+      String cs = ct.getParameter("charset");
 
       if (cs == null) {
 	cs = "UTF-8";
@@ -248,10 +249,10 @@ public class Response  {
       ow.flush();
     }
     else if (object instanceof RenderedImage) {
-      Iterator<ImageWriter> i = ImageIO.getImageWritersByMIMEType(mime_type);
+      Iterator<ImageWriter> i = ImageIO.getImageWritersByMIMEType(ct.getBaseType());
 
       if (!i.hasNext()) {
-	throw new ESXXException("No ImageWriter available for " + mime_type);
+	throw new ESXXException("No ImageWriter available for " + ct.getBaseType());
       }
 
       ImageWriter writer = i.next();

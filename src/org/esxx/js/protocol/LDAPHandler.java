@@ -22,6 +22,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Properties;
+import javax.mail.internet.ContentType;
 import javax.naming.NamingEnumeration;
 import javax.naming.directory.*;
 import org.esxx.*;
@@ -39,17 +40,16 @@ public class LDAPHandler
   }
 
   @Override
-  public Object load(Context cx, Scriptable thisObj,
-		     String type, HashMap<String,String> params)
+  public Object load(Context cx, Scriptable thisObj, ContentType ct)
     throws Exception {
     ESXX esxx = ESXX.getInstance();
 
     // Default ldap: load() media type is XML
-    if (type == null) {
-      type = "text/xml";
+    if (ct == null) {
+      ct = xmlContentType;
     }
 
-    if (!type.equals("text/xml")) {
+    if (!ct.match("text/xml")) {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' can only load 'text/xml'.");
     }

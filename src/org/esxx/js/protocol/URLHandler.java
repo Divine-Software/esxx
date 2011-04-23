@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
+import javax.mail.internet.ContentType;
 import org.esxx.*;
 import org.esxx.js.*;
 import org.mozilla.javascript.*;
@@ -35,8 +36,7 @@ public class URLHandler
   }
 
   @Override
-  public Object load(Context cx, Scriptable thisObj,
-		     String type, HashMap<String,String> params)
+  public Object load(Context cx, Scriptable thisObj, ContentType ct)
     throws Exception {
     ESXX        esxx = ESXX.getInstance();
     URL          url = jsuri.getURI().toURL();
@@ -46,27 +46,25 @@ public class URLHandler
     uc.setDoOutput(false);
     uc.connect();
 
-    String      ct = uc.getContentType();
     InputStream is = uc.getInputStream();
 
-    if (type == null) {
-      if (ct != null) {
-	type = ESXX.parseMIMEType(ct, params);
+    if (ct == null) {
+      if (uc.getContentType() != null) {
+	ct = new ContentType(uc.getContentType());
       }
       else {
-	type = "application/octet-stream";
+	ct = binaryContentType;
       }
     }
 
     //    JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
-    Object result  = esxx.parseStream(type, params,
-				      is, jsuri.getURI(),
+    Object result  = esxx.parseStream(ct, is, jsuri.getURI(),
 				      null,
 				      null, //js_esxx.jsGet_debug(),
 				      cx, thisObj);
 
     if (result == null) {
-      return super.load(cx, thisObj, type, params);
+      return super.load(cx, thisObj, ct);
     }
     else {
       return result;

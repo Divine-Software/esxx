@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.security.cert.X509Certificate;
 import java.util.*;
 import java.util.regex.Pattern;
+import javax.mail.internet.ContentType;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -77,10 +78,9 @@ public class HTTPHandler
   }
 
   @Override
-    public Object load(Context cx, Scriptable thisObj,
-		       String type, HashMap<String,String> params)
+    public Object load(Context cx, Scriptable thisObj, ContentType ct)
     throws Exception {
-    Result result = sendRequest(cx, thisObj, type, params, new HttpGet(jsuri.getURI()));
+    Result result = sendRequest(cx, thisObj, ct, new HttpGet(jsuri.getURI()));
 
     if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
@@ -91,13 +91,13 @@ public class HTTPHandler
 
   @Override
     public Object save(Context cx, Scriptable thisObj,
-		       Object data, String type, HashMap<String,String> params)
+		       Object data, ContentType ct)
     throws Exception {
     HttpPut put = new HttpPut(jsuri.getURI());
 
-    attachObject(data, type, params, put, cx);
+    attachObject(data, ct, put, cx);
 
-    Result result = sendRequest(cx, thisObj, null, null, put);
+    Result result = sendRequest(cx, thisObj, null, put);
 
     if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
@@ -108,13 +108,13 @@ public class HTTPHandler
 
   @Override
     public Object append(Context cx, Scriptable thisObj,
-			 Object data, String type, HashMap<String,String> params)
+			 Object data, ContentType ct)
     throws Exception {
     HttpPost post = new HttpPost(jsuri.getURI());
 
-    attachObject(data, type, params, post, cx);
+    attachObject(data, ct, post, cx);
 
-    Result result = sendRequest(cx, thisObj, null, null, post);
+    Result result = sendRequest(cx, thisObj, null, post);
 
     if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
@@ -125,7 +125,7 @@ public class HTTPHandler
 
   @Override
     public Object modify(Context cx, Scriptable thisObj,
-			 Object data, String type, HashMap<String,String> params)
+			 Object data, ContentType ct)
     throws Exception {
     HttpPost patch = new HttpPost(jsuri.getURI()) {
 	@Override public String getMethod() {
@@ -133,9 +133,9 @@ public class HTTPHandler
 	}
       };
 
-    attachObject(data, type, params, patch, cx);
+    attachObject(data, ct, patch, cx);
 
-    Result result = sendRequest(cx, thisObj, null, null, patch);
+    Result result = sendRequest(cx, thisObj, null, patch);
 
     if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
@@ -146,9 +146,9 @@ public class HTTPHandler
 
   @Override
     public Object remove(Context cx, Scriptable thisObj,
-			 String type, HashMap<String,String> params)
+			 ContentType ct)
     throws Exception {
-    Result result = sendRequest(cx, thisObj, type, params, new HttpDelete(jsuri.getURI()));
+    Result result = sendRequest(cx, thisObj, ct, new HttpDelete(jsuri.getURI()));
 
     if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
@@ -168,11 +168,8 @@ public class HTTPHandler
     final String method   = Context.toString(args[0]);
     Scriptable   headers  = null;
     Object       send_obj = null;
-    String       send_ct  = null;
-    String       recv_ct  = null;
-
-    HashMap<String,String> send_params = new HashMap<String,String>();
-    HashMap<String,String> recv_params = new HashMap<String,String>();
+    ContentType  send_ct  = null;
+    ContentType  recv_ct  = null;
 
     if (args.length >= 2) {
       if (!(args[1] instanceof Scriptable)) {
@@ -187,11 +184,11 @@ public class HTTPHandler
     }
 
     if (args.length >= 4) {
-      send_ct = ESXX.parseMIMEType(Context.toString(args[3]), send_params);
+      send_ct = new ContentType(Context.toString(args[3]));
     }
 
     if (args.length >= 5) {
-      recv_ct = ESXX.parseMIMEType(Context.toString(args[4]), recv_params);
+      recv_ct = new ContentType(Context.toString(args[4]));
     }
 
     HttpPost req = new HttpPost(jsuri.getURI()) {
@@ -210,10 +207,10 @@ public class HTTPHandler
     }
 
     if (send_obj != null && send_obj != Context.getUndefinedValue()) {
-      attachObject(send_obj, send_ct, send_params, req, cx);
+      attachObject(send_obj, send_ct, req, cx);
     }
 
-    Result result = sendRequest(cx, thisObj, recv_ct, recv_params, req);
+    Result result = sendRequest(cx, thisObj, recv_ct, req);
 
     return makeJSResponse(cx, thisObj, result);
   }
@@ -299,7 +296,7 @@ public class HTTPHandler
   }
 
   private Result sendRequest(Context cx, Scriptable thisObj,
-			     String type, HashMap<String,String> params,
+			     ContentType ct,
 			     final HttpUriRequest msg)
     throws Exception {
     // Add HTTP headers
@@ -313,34 +310,26 @@ public class HTTPHandler
     HttpResponse response = getHttpClient().execute(msg);
     HttpEntity   entity   = response.getEntity();
 
-    if (params == null) {
-      params = new HashMap<String,String>();
-    }
-
     try {
       Result result  = new Result();
       result.status  = response.getStatusLine().getStatusCode();
       result.headers = response.getAllHeaders();
 
       if (entity != null && entity.getContentLength() != 0) {
-	if (type == null) {
+	if (ct == null) {
 	  Header hdr = entity.getContentType();
-	  type = hdr == null ? "application/octet-stream" : hdr.getValue();
+	  result.contentType = hdr == null ? "application/octet-stream" : hdr.getValue();
 
-	  result.contentType = type;
-	  type = ESXX.parseMIMEType(type, params);
+	  ct = new ContentType(result.contentType);
 	}
 	else {
-	  result.contentType = ESXX.combineMIMEType(type, params);
+	  result.contentType = ct.toString();
 	}
 
-	ESXX   esxx    = ESXX.getInstance();
-	//	JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
-	result.object  =  esxx.parseStream(type, params,
-					   entity.getContent(), jsuri.getURI(),
-					   null,
-					   null,//js_esxx.jsGet_debug(),
-					   cx, thisObj);
+	result.object = ESXX.getInstance().parseStream(ct, entity.getContent(), jsuri.getURI(),
+						       null,
+						       null,//js_esxx.jsGet_debug(),
+						       cx, thisObj);
       }
 
       return result;
@@ -352,18 +341,16 @@ public class HTTPHandler
     }
   }
 
-  private void attachObject(Object data, String type, HashMap<String,String> params,
+  private void attachObject(Object data, ContentType ct,
 			    HttpEntityEnclosingRequest request, Context cx)
     throws IOException {
     // FIXME: This may store the data three times in memory -- If
     // there were a way to turn the Object into an InputStream
     // instead, we would not have this problem.
-    Response response = new Response(0, ESXX.combineMIMEType(type, params), data, null);
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    response.writeResult(bos);
+    ct = ESXX.getInstance().serializeObject(data, ct, bos);
     ByteArrayEntity bae = new ByteArrayEntity(bos.toByteArray());
-    bae.setContentType(response.getContentType(true));
-    // request.setHeader("Content-Type", response.getContentType(true));
+    bae.setContentType(ct.toString());
     request.setEntity(bae);
   }
 

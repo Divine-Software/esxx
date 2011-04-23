@@ -20,6 +20,7 @@ package org.esxx.js.protocol;
 
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import javax.mail.internet.ContentType;
 import org.esxx.js.JSURI;
 import org.mozilla.javascript.*;
 
@@ -29,36 +30,35 @@ public class ProtocolHandler {
       this.jsuri = jsuri;
     }
 
-    public Object load(Context cx, Scriptable thisObj,
-		       String type, HashMap<String,String> params)
+    public Object load(Context cx, Scriptable thisObj, ContentType ct)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support load().");
     }
 
     public Object save(Context cx, Scriptable thisObj,
-		       Object data, String type, HashMap<String,String> params)
+		       Object data, ContentType ct)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support save().");
     }
 
     public Object append(Context cx, Scriptable thisObj,
-			 Object data, String type, HashMap<String,String> params)
+			 Object data, ContentType ct)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support append().");
     }
 
     public Object modify(Context cx, Scriptable thisObj,
-			 Object data, String type, HashMap<String,String> params)
+			 Object data, ContentType ct)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support modify().");
     }
 
     public Object remove(Context cx, Scriptable thisObj,
-			 String type, HashMap<String,String> params)
+			 ContentType ct)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support delete().");
@@ -71,4 +71,17 @@ public class ProtocolHandler {
     }
 
     protected JSURI jsuri;
+
+    protected static ContentType xmlContentType;
+    protected static ContentType binaryContentType;
+
+    static {
+      try {
+	xmlContentType    = new ContentType("text/xml");
+	binaryContentType = new ContentType("application/octet-stream");
+      }
+      catch (Exception ex) {
+	throw new RuntimeException("Unable to create static content-types", ex);
+      }
+    }
 }

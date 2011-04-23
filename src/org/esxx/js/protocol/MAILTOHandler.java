@@ -19,6 +19,7 @@
 package org.esxx.js.protocol;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -42,7 +43,7 @@ public class MAILTOHandler
 
   @Override
   public Object save(Context cx, Scriptable thisObj,
-		     Object data, String type, HashMap<String,String> params)
+		     Object data, ContentType ct)
     throws Exception {
     ESXX        esxx = ESXX.getInstance();
     Properties props = jsuri.getParams(cx, jsuri.getURI());
@@ -52,11 +53,7 @@ public class MAILTOHandler
     String[] to_query = specific.split("\\?", 2);
     String   to       = StringUtil.decodeURI(to_query[0], false);
 
-    if (type == null) {
-      type = "text/plain";
-    }
-
-    if (type.equals("message/rfc822")) {
+    if (ct != null && ct.match("message/rfc822")) {
       Message msg;
 
       if (data instanceof String) {
@@ -151,19 +148,15 @@ public class MAILTOHandler
 	}
       }
 
-      if (type.equals("text/plain")) {
-	msg.setText(data.toString());
-      }
-      else if (type.equals("text/xml")) {
-	if (data instanceof Scriptable) {
-	  data = esxx.serializeNode(ESXX.e4xToDOM((Scriptable) data));
-	}
-
-	msg.setDataHandler(new javax.activation.DataHandler(
-          new javax.mail.util.ByteArrayDataSource((String) data, type)));
+      if (data instanceof String) {
+	msg.setText((String) data);
       }
       else {
-	msg.setContent(data, type);
+	ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	ct = ESXX.getInstance().serializeObject(data, ct, bos);
+	
+	msg.setDataHandler(new javax.activation.DataHandler(
+	    new javax.mail.util.ByteArrayDataSource(bos.toByteArray(), ct.toString())));
       }
 
       msg.setHeader("X-Mailer", "ESXX Application Server");

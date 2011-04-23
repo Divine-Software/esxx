@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import javax.mail.internet.ContentType;
 import org.esxx.*;
 import org.esxx.dbref.QueryBuilder;
 import org.esxx.js.JSURI;
@@ -63,9 +64,9 @@ public class JDBCHandler
   }
 
   @Override public Object load(Context cx, Scriptable thisObj,
-			       String type, HashMap<String,String> type_params)
+			       ContentType ct)
     throws URISyntaxException {
-    ensureTypeIsXML(type);
+    ensureTypeIsXML(ct);
 
     QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
     List<String>        args    = new ArrayList<String>();
@@ -79,7 +80,7 @@ public class JDBCHandler
   }
 
   @Override public Object save(final Context cx, Scriptable thisObj,
-			       final Object data, String type, HashMap<String,String> type_params)
+			       final Object data, ContentType ct)
     throws URISyntaxException {
 
     if (!(data instanceof ScriptableObject)) {
@@ -112,7 +113,7 @@ public class JDBCHandler
   }
 
   @Override public Object append(Context cx, Scriptable thisObj,
-				 Object data, String type, HashMap<String,String> type_params)
+				 Object data, ContentType ct)
     throws URISyntaxException {
 
     if (!(data instanceof ScriptableObject)) {
@@ -138,7 +139,7 @@ public class JDBCHandler
   }
 
   @Override public Object modify(Context cx, Scriptable thisObj,
-				 Object data, String type, HashMap<String,String> type_params)
+				 Object data, ContentType ct)
     throws URISyntaxException {
 
     if (!(data instanceof ScriptableObject)) {
@@ -165,9 +166,9 @@ public class JDBCHandler
   }
 
   @Override public Object remove(Context cx, Scriptable thisObj,
-				 String type, HashMap<String,String> type_params)
+				 ContentType ct)
     throws URISyntaxException {
-    ensureTypeIsXML(type);
+    ensureTypeIsXML(ct);
 
     QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
     List<String>        args    = new ArrayList<String>();
@@ -237,13 +238,9 @@ public class JDBCHandler
     }
   }
 
-  private void ensureTypeIsXML(String type) {
-    // Default media type is XML
-    if (type == null) {
-      type = "text/xml";
-    }
-
-    if (!type.equals("text/xml")) {
+  private void ensureTypeIsXML(ContentType ct) {
+    // Default media type is XML, so do allow null
+    if (ct != null && !ct.match("text/xml")) {
       throw Context.reportRuntimeError("Type must be 'text/xml'");
     }
   }
