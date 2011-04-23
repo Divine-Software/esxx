@@ -330,6 +330,11 @@ public class HTTPHandler
 						       null,
 						       null,//js_esxx.jsGet_debug(),
 						       cx, thisObj);
+
+	if (result.object instanceof java.io.InputStream) {
+	  // Do not consume content yet
+	  entity = null;
+	}
       }
 
       return result;
