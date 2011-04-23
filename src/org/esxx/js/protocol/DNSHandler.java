@@ -43,19 +43,11 @@ public class DNSHandler
     super(jsuri);
   }
 
-  @Override public Object load(Context cx, Scriptable thisObj, ContentType ct)
+  @Override public Object load(Context cx, Scriptable thisObj, ContentType recv_ct)
     throws Exception {
+    recv_ct = ensureRecvTypeIsXML(recv_ct);
+
     ESXX esxx = ESXX.getInstance();
-
-    // Default dns: load() media type is XML
-    if (ct == null) {
-      ct = xmlContentType;
-    }
-
-    if (!ct.match("text/xml")) {
-      throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
-				       "' can only load 'text/xml'.");
-    }
 
     try {
       String query = jsuri.getURI().getQuery();

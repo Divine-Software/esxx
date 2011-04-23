@@ -40,19 +40,12 @@ public class LDAPHandler
   }
 
   @Override
-  public Object load(Context cx, Scriptable thisObj, ContentType ct)
+  public Object load(Context cx, Scriptable thisObj, ContentType recv_ct)
     throws Exception {
     ESXX esxx = ESXX.getInstance();
 
     // Default ldap: load() media type is XML
-    if (ct == null) {
-      ct = xmlContentType;
-    }
-
-    if (!ct.match("text/xml")) {
-      throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
-				       "' can only load 'text/xml'.");
-    }
+    recv_ct = ensureRecvTypeIsXML(recv_ct);
 
     Properties p = jsuri.getParams(cx, jsuri.getURI());
     Scriptable a = jsuri.getAuth(cx, jsuri.getURI(), null, null);

@@ -45,49 +45,53 @@ public class FILEHandler
   }
 
   @Override
-  public Object load(Context cx, Scriptable thisObj, ContentType ct)
+  public Object load(Context cx, Scriptable thisObj, ContentType recv_ct)
     throws Exception {
     File file = new File(jsuri.getURI());
 
-    if (ct == null) {
-      ct = new ContentType(ESXX.fileTypeMap.getContentType(file));
+    if (recv_ct == null) {
+      recv_ct = new ContentType(ESXX.fileTypeMap.getContentType(file));
     }
 
-    if ((ct.match("text/xml") || ct.match("application/xml"))
+    if ((recv_ct.match("text/xml") || recv_ct.match("application/xml"))
 	&& file.exists() && file.isDirectory()) {
-      ct = new ContentType("application/vnd.esxx.directory+xml");
+      recv_ct = new ContentType("application/vnd.esxx.directory+xml");
     }
 
-    if (ct.match("application/vnd.esxx.directory+xml")) {
+    if (recv_ct.match("application/vnd.esxx.directory+xml")) {
       Document result = createDirectoryListing(file);
 
       return ESXX.domToE4X(result, cx, thisObj);
     }
 
-    return super.load(cx, thisObj, ct);
+    return super.load(cx, thisObj, recv_ct);
   }
 
   @Override
   public Object save(Context cx, Scriptable thisObj,
-		     Object data, ContentType ct)
+		     Object data, ContentType send_ct, ContentType recv_ct)
     throws Exception {
+    recv_ct = ensureRecvTypeIsXML(recv_ct);
+
     File file = new File(jsuri.getURI());
 
-    Response.writeObject(data, ct, new FileOutputStream(file));
+    Response.writeObject(data, send_ct, new FileOutputStream(file));
     return ESXX.domToE4X(createDirectoryEntry(file), cx, thisObj);
   }
 
   @Override
   public Object append(Context cx, Scriptable thisObj,
-		       Object data, ContentType ct)
+		       Object data, ContentType send_ct, ContentType recv_ct)
     throws Exception {
+    recv_ct = ensureRecvTypeIsXML(recv_ct);
+
     File file = new File(jsuri.getURI());
 
     if (file.isDirectory()) {
       file = File.createTempFile("esxx", null, file);
     }
 
-    Response.writeObject(data, ct, new FileOutputStream(file, true));
+    Response.writeObject(data, send_ct, new FileOutputStream(file, true));
 
     return ESXX.domToE4X(createDirectoryEntry(file), cx, thisObj);
   }
@@ -100,8 +104,12 @@ public class FILEHandler
 
   @Override
   public Object remove(Context cx, Scriptable thisObj,
-		       ContentType ct)
+		       ContentType recv_ct)
     throws Exception {
+    if (recv_ct != null) {
+      throw Context.reportRuntimeError("Receive Content-Type cannot be specified");
+    }
+
     File file = new File(jsuri.getURI());
 
     return new Boolean(file.delete());

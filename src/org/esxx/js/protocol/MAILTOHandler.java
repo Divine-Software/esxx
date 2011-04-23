@@ -43,8 +43,13 @@ public class MAILTOHandler
 
   @Override
   public Object save(Context cx, Scriptable thisObj,
-		     Object data, ContentType ct)
+		     Object data, ContentType send_ct, ContentType recv_ct)
     throws Exception {
+
+    if (recv_ct != null) {
+      throw Context.reportRuntimeError("Receive Content-Type cannot be specified");
+    }
+
     ESXX        esxx = ESXX.getInstance();
     Properties props = jsuri.getParams(cx, jsuri.getURI());
     Session  session = Session.getInstance(props);
@@ -53,7 +58,7 @@ public class MAILTOHandler
     String[] to_query = specific.split("\\?", 2);
     String   to       = StringUtil.decodeURI(to_query[0], false);
 
-    if (ct != null && ct.match("message/rfc822")) {
+    if (send_ct != null && send_ct.match("message/rfc822")) {
       Message msg;
 
       if (data instanceof String) {
@@ -153,10 +158,10 @@ public class MAILTOHandler
       }
       else {
 	ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	ct = ESXX.getInstance().serializeObject(data, ct, bos);
+	send_ct = ESXX.getInstance().serializeObject(data, send_ct, bos);
 	
 	msg.setDataHandler(new javax.activation.DataHandler(
-	    new javax.mail.util.ByteArrayDataSource(bos.toByteArray(), ct.toString())));
+	    new javax.mail.util.ByteArrayDataSource(bos.toByteArray(), send_ct.toString())));
       }
 
       msg.setHeader("X-Mailer", "ESXX Application Server");

@@ -165,6 +165,9 @@
 
 	* Switched from HtmlCleaner to the Validator.nu HTML 5 parser.
 
+	* URI methods save, append and modify may now optionally
+	specify the received content type.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

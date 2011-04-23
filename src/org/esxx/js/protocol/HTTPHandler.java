@@ -78,9 +78,9 @@ public class HTTPHandler
   }
 
   @Override
-    public Object load(Context cx, Scriptable thisObj, ContentType ct)
+    public Object load(Context cx, Scriptable thisObj, ContentType recv_ct)
     throws Exception {
-    Result result = sendRequest(cx, thisObj, ct, new HttpGet(jsuri.getURI()));
+    Result result = sendRequest(cx, thisObj, recv_ct, new HttpGet(jsuri.getURI()));
 
     if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
@@ -91,13 +91,13 @@ public class HTTPHandler
 
   @Override
     public Object save(Context cx, Scriptable thisObj,
-		       Object data, ContentType ct)
+		       Object data, ContentType send_ct, ContentType recv_ct)
     throws Exception {
     HttpPut put = new HttpPut(jsuri.getURI());
 
-    attachObject(data, ct, put, cx);
+    attachObject(data, send_ct, put, cx);
 
-    Result result = sendRequest(cx, thisObj, null, put);
+    Result result = sendRequest(cx, thisObj, recv_ct, put);
 
     if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
@@ -108,13 +108,13 @@ public class HTTPHandler
 
   @Override
     public Object append(Context cx, Scriptable thisObj,
-			 Object data, ContentType ct)
+			 Object data, ContentType send_ct, ContentType recv_ct)
     throws Exception {
     HttpPost post = new HttpPost(jsuri.getURI());
 
-    attachObject(data, ct, post, cx);
+    attachObject(data, send_ct, post, cx);
 
-    Result result = sendRequest(cx, thisObj, null, post);
+    Result result = sendRequest(cx, thisObj, recv_ct, post);
 
     if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
@@ -125,7 +125,7 @@ public class HTTPHandler
 
   @Override
     public Object modify(Context cx, Scriptable thisObj,
-			 Object data, ContentType ct)
+			 Object data, ContentType send_ct, ContentType recv_ct)
     throws Exception {
     HttpPost patch = new HttpPost(jsuri.getURI()) {
 	@Override public String getMethod() {
@@ -133,9 +133,9 @@ public class HTTPHandler
 	}
       };
 
-    attachObject(data, ct, patch, cx);
+    attachObject(data, send_ct, patch, cx);
 
-    Result result = sendRequest(cx, thisObj, null, patch);
+    Result result = sendRequest(cx, thisObj, recv_ct, patch);
 
     if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);
@@ -146,9 +146,9 @@ public class HTTPHandler
 
   @Override
     public Object remove(Context cx, Scriptable thisObj,
-			 ContentType ct)
+			 ContentType recv_ct)
     throws Exception {
-    Result result = sendRequest(cx, thisObj, ct, new HttpDelete(jsuri.getURI()));
+    Result result = sendRequest(cx, thisObj, recv_ct, new HttpDelete(jsuri.getURI()));
 
     if (result.status < 200 || result.status >= 300) {
       throw new JavaScriptException(makeJSResponse(cx, thisObj, result), null, 0);

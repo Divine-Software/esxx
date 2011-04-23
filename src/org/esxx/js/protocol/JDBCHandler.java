@@ -64,9 +64,9 @@ public class JDBCHandler
   }
 
   @Override public Object load(Context cx, Scriptable thisObj,
-			       ContentType ct)
+			       ContentType recv_ct)
     throws URISyntaxException {
-    ensureTypeIsXML(ct);
+    recv_ct = ensureRecvTypeIsXML(recv_ct);
 
     QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
     List<String>        args    = new ArrayList<String>();
@@ -80,12 +80,14 @@ public class JDBCHandler
   }
 
   @Override public Object save(final Context cx, Scriptable thisObj,
-			       final Object data, ContentType ct)
+			       final Object data, ContentType send_ct, ContentType recv_ct)
     throws URISyntaxException {
 
     if (!(data instanceof ScriptableObject)) {
       throw Context.reportRuntimeError("Object must be a JavaScript object");
     }
+
+    recv_ct = ensureRecvTypeIsXML(recv_ct);
 
     List<String> columns = new ArrayList<String>();
 
@@ -113,12 +115,14 @@ public class JDBCHandler
   }
 
   @Override public Object append(Context cx, Scriptable thisObj,
-				 Object data, ContentType ct)
+				 Object data, ContentType send_ct, ContentType recv_ct)
     throws URISyntaxException {
 
     if (!(data instanceof ScriptableObject)) {
       throw Context.reportRuntimeError("Object must be a JavaScript object");
     }
+
+    recv_ct = ensureRecvTypeIsXML(recv_ct);
 
     List<String> columns = new ArrayList<String>();
 
@@ -139,12 +143,14 @@ public class JDBCHandler
   }
 
   @Override public Object modify(Context cx, Scriptable thisObj,
-				 Object data, ContentType ct)
+				 Object data, ContentType send_ct, ContentType recv_ct)
     throws URISyntaxException {
 
     if (!(data instanceof ScriptableObject)) {
       throw Context.reportRuntimeError("Object must be a JavaScript object");
     }
+
+    recv_ct = ensureRecvTypeIsXML(recv_ct);
 
     List<String> columns = new ArrayList<String>();
 
@@ -166,9 +172,10 @@ public class JDBCHandler
   }
 
   @Override public Object remove(Context cx, Scriptable thisObj,
-				 ContentType ct)
+				 ContentType recv_ct)
     throws URISyntaxException {
-    ensureTypeIsXML(ct);
+
+    recv_ct = ensureRecvTypeIsXML(recv_ct);
 
     QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
     List<String>        args    = new ArrayList<String>();
@@ -235,13 +242,6 @@ public class JDBCHandler
     }
     catch (SQLException ex) {
       throw Context.reportRuntimeError("SQL query failed: " + ex.getMessage());
-    }
-  }
-
-  private void ensureTypeIsXML(ContentType ct) {
-    // Default media type is XML, so do allow null
-    if (ct != null && !ct.match("text/xml")) {
-      throw Context.reportRuntimeError("Type must be 'text/xml'");
     }
   }
 

@@ -39,7 +39,7 @@ public class DATAHandler
   }
 
   @Override
-  public Object load(Context cx, Scriptable thisObj, ContentType ct)
+  public Object load(Context cx, Scriptable thisObj, ContentType recv_ct)
     throws Exception {
     URI         uri = jsuri.getURI();
     String specific = uri.getRawSchemeSpecificPart();
@@ -62,16 +62,16 @@ public class DATAHandler
       uri_type = uri_type.substring(0, uri_type.lastIndexOf(';'));
     }
 
-    if (ct == null) {
+    if (recv_ct == null) {
       if (uri_type.length() == 0) {
 	uri_type = "text/plain;charset=US-ASCII";
       }
 
-      ct = new ContentType(uri_type);
+      recv_ct = new ContentType(uri_type);
     }
 
     InputStream is;
-    String charset = ct.getParameter("charset");
+    String charset = recv_ct.getParameter("charset");
 
     if (charset == null) {
       charset = "UTF-8";
@@ -83,13 +83,13 @@ public class DATAHandler
       is = new Base64.InputStream(is, Base64.DECODE);
     }
 
-    Object result  = ESXX.getInstance().parseStream(ct, is, uri,
+    Object result  = ESXX.getInstance().parseStream(recv_ct, is, uri,
 						    null,
 						    null, //js_esxx.jsGet_debug(),
 						    cx, thisObj);
 
     if (result == null) {
-      return super.load(cx, thisObj, ct);
+      return super.load(cx, thisObj, recv_ct);
     }
     else {
       return result;
@@ -98,15 +98,15 @@ public class DATAHandler
 
   @Override
   public Object save(Context cx, Scriptable thisObj,
-		     Object data, ContentType ct)
+		     Object data, ContentType send_ct, ContentType recv_ct)
     throws Exception {
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    ct = ESXX.getInstance().serializeObject(data, ct, bos);
+    send_ct = ESXX.getInstance().serializeObject(data, send_ct, bos);
 
     String b64 = Base64.encodeBytes(bos.toByteArray(), Base64.DONT_BREAK_LINES);
 
     // Replace URI and return result as a string
-    URI uri = new URI("data", ct + ";base64," + b64, null);
+    URI uri = new URI("data", send_ct + ";base64," + b64, null);
     jsuri.setURI(uri);
 
     return null;

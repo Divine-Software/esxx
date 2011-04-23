@@ -237,77 +237,92 @@ public class JSURI
 				       Object[] args, Function funObj)
     throws Exception {
     JSURI  js_this = checkInstance(thisObj);
-    ContentType ct = null;
+    ContentType recv_ct = null;
 
     if (args.length >= 1 && args[0] != Context.getUndefinedValue()) {
-      ct = new ContentType(Context.toString(args[0]));
+      recv_ct = new ContentType(Context.toString(args[0]));
     }
 
-    return js_this.protocolHandler.load(cx, thisObj, ct);
+    return js_this.protocolHandler.load(cx, thisObj, recv_ct);
   }
 
   public static Object jsFunction_save(Context cx, Scriptable thisObj,
 				       Object[] args, Function funObj)
     throws Exception {
     JSURI  js_this = checkInstance(thisObj);
-    ContentType ct = null;
+    ContentType send_ct = null;
+    ContentType recv_ct = null;
 
     if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
       throw Context.reportRuntimeError("Missing save() argument");
     }
 
     if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
-      ct = new ContentType(Context.toString(args[1]));
+      send_ct = new ContentType(Context.toString(args[1]));
     }
 
-    return js_this.protocolHandler.save(cx, thisObj, args[0], ct);
+    if (args.length >= 3 && args[2] != Context.getUndefinedValue()) {
+      recv_ct = new ContentType(Context.toString(args[2]));
+    }
+
+    return js_this.protocolHandler.save(cx, thisObj, args[0], send_ct, recv_ct);
   }
 
   public static Object jsFunction_append(Context cx, Scriptable thisObj,
 					 Object[] args, Function funObj)
     throws Exception {
     JSURI  js_this = checkInstance(thisObj);
-    ContentType ct = null;
+    ContentType send_ct = null;
+    ContentType recv_ct = null;
 
     if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
       throw Context.reportRuntimeError("Missing append() argument");
     }
 
     if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
-      ct = new ContentType(Context.toString(args[1]));
+      send_ct = new ContentType(Context.toString(args[1]));
     }
 
-    return js_this.protocolHandler.append(cx, thisObj, args[0], ct);
+    if (args.length >= 3 && args[2] != Context.getUndefinedValue()) {
+      recv_ct = new ContentType(Context.toString(args[2]));
+    }
+
+    return js_this.protocolHandler.append(cx, thisObj, args[0], send_ct, recv_ct);
   }
 
   public static Object jsFunction_modify(Context cx, Scriptable thisObj,
 					 Object[] args, Function funObj)
     throws Exception {
     JSURI  js_this = checkInstance(thisObj);
-    ContentType ct = null;
+    ContentType send_ct = null;
+    ContentType recv_ct = null;
 
     if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
       throw Context.reportRuntimeError("Missing append() argument");
     }
 
     if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
-      ct = new ContentType(Context.toString(args[1]));
+      send_ct = new ContentType(Context.toString(args[1]));
     }
 
-    return js_this.protocolHandler.modify(cx, thisObj, args[0], ct);
+    if (args.length >= 3 && args[2] != Context.getUndefinedValue()) {
+      recv_ct = new ContentType(Context.toString(args[2]));
+    }
+
+    return js_this.protocolHandler.modify(cx, thisObj, args[0], send_ct, recv_ct);
   }
 
   public static Object jsFunction_remove(Context cx, Scriptable thisObj,
 					 Object[] args, Function funObj)
     throws Exception {
     JSURI  js_this = checkInstance(thisObj);
-    ContentType ct = null;
+    ContentType recv_ct = null;
 
     if (args.length >= 1 && args[0] != Context.getUndefinedValue()) {
-      ct = new ContentType(Context.toString(args[0]));
+      recv_ct = new ContentType(Context.toString(args[0]));
     }
 
-    return js_this.protocolHandler.remove(cx, thisObj, ct);
+    return js_this.protocolHandler.remove(cx, thisObj, recv_ct);
   }
 
   public static Object jsFunction_query(Context cx, Scriptable thisObj,

@@ -30,35 +30,35 @@ public class ProtocolHandler {
       this.jsuri = jsuri;
     }
 
-    public Object load(Context cx, Scriptable thisObj, ContentType ct)
+    public Object load(Context cx, Scriptable thisObj, ContentType recv_ct)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support load().");
     }
 
     public Object save(Context cx, Scriptable thisObj,
-		       Object data, ContentType ct)
+		       Object data, ContentType send_ct, ContentType recv_ct)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support save().");
     }
 
     public Object append(Context cx, Scriptable thisObj,
-			 Object data, ContentType ct)
+			 Object data, ContentType send_ct, ContentType recv_ct)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support append().");
     }
 
     public Object modify(Context cx, Scriptable thisObj,
-			 Object data, ContentType ct)
+			 Object data, ContentType send_ct, ContentType recv_ct)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support modify().");
     }
 
     public Object remove(Context cx, Scriptable thisObj,
-			 ContentType ct)
+			 ContentType recv_ct)
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support delete().");
@@ -68,6 +68,18 @@ public class ProtocolHandler {
       throws Exception {
       throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
 				       "' does not support query().");
+    }
+
+    protected ContentType ensureRecvTypeIsXML(ContentType ct) {
+      if (ct == null) {
+	ct = xmlContentType;
+      }
+      else if (!ct.match(xmlContentType)) {
+	throw Context.reportRuntimeError("URI protocol '" + jsuri.getURI().getScheme() +
+					 "' can only return 'text/xml'.");
+      }
+
+      return ct;
     }
 
     protected JSURI jsuri;

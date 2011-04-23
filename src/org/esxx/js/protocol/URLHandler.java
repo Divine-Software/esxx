@@ -36,7 +36,7 @@ public class URLHandler
   }
 
   @Override
-  public Object load(Context cx, Scriptable thisObj, ContentType ct)
+  public Object load(Context cx, Scriptable thisObj, ContentType recv_ct)
     throws Exception {
     ESXX        esxx = ESXX.getInstance();
     URL          url = jsuri.getURI().toURL();
@@ -48,23 +48,23 @@ public class URLHandler
 
     InputStream is = uc.getInputStream();
 
-    if (ct == null) {
+    if (recv_ct == null) {
       if (uc.getContentType() != null) {
-	ct = new ContentType(uc.getContentType());
+	recv_ct = new ContentType(uc.getContentType());
       }
       else {
-	ct = binaryContentType;
+	recv_ct = binaryContentType;
       }
     }
 
     //    JSESXX js_esxx = JSGlobal.getJSESXX(cx, thisObj);
-    Object result  = esxx.parseStream(ct, is, jsuri.getURI(),
+    Object result  = esxx.parseStream(recv_ct, is, jsuri.getURI(),
 				      null,
 				      null, //js_esxx.jsGet_debug(),
 				      cx, thisObj);
 
     if (result == null) {
-      return super.load(cx, thisObj, ct);
+      return super.load(cx, thisObj, recv_ct);
     }
     else {
       return result;
