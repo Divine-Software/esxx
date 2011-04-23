@@ -34,7 +34,7 @@ import org.w3c.dom.Element;
 
 public class FILEHandler
   extends URLHandler {
-  public FILEHandler(JSURI jsuri) 
+  public FILEHandler(JSURI jsuri)
     throws URISyntaxException {
     super(jsuri);
     // Make sure we're not accessing compromised paths
@@ -75,7 +75,8 @@ public class FILEHandler
 
     File file = new File(jsuri.getURI());
 
-    Response.writeObject(data, send_ct, new FileOutputStream(file));
+    send_ct = ESXX.getInstance().serializeObject(data, send_ct,
+						 new FileOutputStream(file), true);
     return ESXX.domToE4X(createDirectoryEntry(file), cx, thisObj);
   }
 
@@ -91,8 +92,8 @@ public class FILEHandler
       file = File.createTempFile("esxx", null, file);
     }
 
-    Response.writeObject(data, send_ct, new FileOutputStream(file, true));
-
+    send_ct = ESXX.getInstance().serializeObject(data, send_ct,
+						 new FileOutputStream(file, true), true);
     return ESXX.domToE4X(createDirectoryEntry(file), cx, thisObj);
   }
 
@@ -132,8 +133,8 @@ public class FILEHandler
   public static Document createDirectoryEntry(File f) {
     ESXX     esxx     = ESXX.getInstance();
     Document document = esxx.createDocument("tmp");
-    
-    document.replaceChild(createDirectoryEntry(document, f), 
+
+    document.replaceChild(createDirectoryEntry(document, f),
 			  document.getDocumentElement());
     return document;
   }
@@ -166,10 +167,10 @@ public class FILEHandler
 
   /** Return a Pattern that can be used to find illegal URI encoding
    *  sequences in file URIs.
-   * 
+   *
    *  @return A Pattern matching illegal URIs.
    */
-  
+
   private static Pattern getURISlashPattern() {
     String fileSeparators = System.getProperty("file.separator");
 
@@ -181,7 +182,7 @@ public class FILEHandler
       try {
 	String c = fileSeparators.substring(i, i + 1);
 	String enc = StringUtil.encodeURI(c, false);
-	slashPattern = slashPattern 
+	slashPattern = slashPattern
       		       + "|(" + enc.toLowerCase() + ")" +
       		       "|(" + enc.toUpperCase() + ")";
       }

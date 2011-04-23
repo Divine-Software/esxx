@@ -348,7 +348,7 @@ public class HTTPHandler
     // there were a way to turn the Object into an InputStream
     // instead, we would not have this problem.
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    ct = ESXX.getInstance().serializeObject(data, ct, bos);
+    ct = ESXX.getInstance().serializeObject(data, ct, bos, true);
     ByteArrayEntity bae = new ByteArrayEntity(bos.toByteArray());
     bae.setContentType(ct.toString());
     request.setEntity(bae);

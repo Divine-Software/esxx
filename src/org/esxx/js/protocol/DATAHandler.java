@@ -101,7 +101,7 @@ public class DATAHandler
 		     Object data, ContentType send_ct, ContentType recv_ct)
     throws Exception {
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    send_ct = ESXX.getInstance().serializeObject(data, send_ct, bos);
+    send_ct = ESXX.getInstance().serializeObject(data, send_ct, bos, true);
 
     String b64 = Base64.encodeBytes(bos.toByteArray(), Base64.DONT_BREAK_LINES);
 

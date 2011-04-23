@@ -682,7 +682,8 @@ public class ESXX {
       return parsers.parse(ct, is, is_uri, external_uris, err, cx, scope);
     }
 
-    public ContentType serializeObject(Object data, ContentType ct, OutputStream os)
+    public ContentType serializeObject(Object data, ContentType ct,
+				       OutputStream os, boolean close)
       throws IOException {
       try {
 	Response response = new Response(0, ct != null ? ct.toString() : null, data, null);
@@ -699,6 +700,17 @@ public class ESXX {
 	// (This should never happen, unless Response.getContentType() is broken)
 	throw new ESXXException("Invalid Content-Type from Response.getContentType(): "
 				+ ex.getMessage(), ex);
+      }
+      finally {
+	try {
+	  if (close) {
+	    os.close();
+	  }
+	  else {
+	    os.flush();
+	  }
+	}
+	catch (IOException ignored) {}
       }
     }
 

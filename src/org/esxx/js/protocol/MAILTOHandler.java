@@ -77,7 +77,7 @@ public class MAILTOHandler
 	throw new ESXXException("Unsupported data type: " + data.getClass().getSimpleName());
       }
 
-      LinkedList<InternetAddress> recipients = 
+      LinkedList<InternetAddress> recipients =
 	new LinkedList<InternetAddress>(Arrays.asList(InternetAddress.parse(to)));
 
       // Scan remaining headers for 'to' attributes
@@ -158,8 +158,8 @@ public class MAILTOHandler
       }
       else {
 	ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	send_ct = ESXX.getInstance().serializeObject(data, send_ct, bos);
-	
+	send_ct = ESXX.getInstance().serializeObject(data, send_ct, bos, true);
+
 	msg.setDataHandler(new javax.activation.DataHandler(
 	    new javax.mail.util.ByteArrayDataSource(bos.toByteArray(), send_ct.toString())));
       }
