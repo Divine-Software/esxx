@@ -91,6 +91,9 @@ class Parsers {
       else if (ct.match("image/*")) {
 	parser = parserMap.get("image/*");
       }
+      else if (ct.match("text/*")) {
+	parser = parserMap.get("text/plain");
+      }
       else {
 	parser = parserMap.get("application/octet-stream");
       }
