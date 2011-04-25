@@ -84,13 +84,23 @@ public class RequestMatcher {
 //	    // Put unnamed groups, incl. a faked group 0
 //	    ScriptableObject.putProperty(res.params, 0, uri);
 	    for (int i = 0; i <= r.numGroups; ++i) {
+	      Object value = m.group(group + i);
+
+	      if (value == null) {
+		value = Context.getUndefinedValue();
+	      }
+
 	      ScriptableObject.putProperty(res.params, i, m.group(group + i));
 	    }
 
 	    // Put named groups
 	    for (Map.Entry<String,Integer> e : r.namedGroups.entrySet()) {
 	      String  name = e.getKey();
-	      String value = m.group(group + e.getValue());
+	      Object value = m.group(group + e.getValue());
+
+	      if (value == null) {
+		value = Context.getUndefinedValue();
+	      }
 
 	      ScriptableObject.putProperty(res.params, name, value);
 	    }
