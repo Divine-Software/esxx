@@ -184,7 +184,7 @@ public class JSRequest
     }
 
     public String jsGet_contentType() {
-      return contentType.toString();
+      return contentType.getBaseType();
     }
 
     public long jsGet_contentLength() {
