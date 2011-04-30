@@ -18,21 +18,21 @@
 
 package org.esxx;
 
-import org.esxx.util.IO;
-import org.esxx.util.StringUtil;
-
+import au.com.bytecode.opencsv.CSVReader;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.io.StringReader;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -47,6 +47,9 @@ import javax.mail.internet.MimeMultipart;
 import javax.mail.util.SharedFileInputStream;
 import nu.validator.htmlparser.common.*;
 import nu.validator.htmlparser.dom.*;
+import org.esxx.util.IO;
+import org.esxx.util.JS;
+import org.esxx.util.StringUtil;
 import org.json.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
@@ -71,6 +74,7 @@ class Parsers {
     parserMap.put("image/*",                             new ImageParser());
     parserMap.put("message/rfc822",                      new MIMEParser());
     parserMap.put("multipart/form-data",                 new MultipartFormParser());
+    parserMap.put("text/csv",                            new CSVParser());
     parserMap.put("text/html",                           new HTMLParser());
     parserMap.put("text/plain",                          new StringParser());
     parserMap.put("text/xml",                            new XMLParser());
@@ -114,6 +118,11 @@ class Parsers {
     return result;
   }
 
+  public static String getParameter(ContentType ct, String name, String def) {
+    String value = ct.getParameter(name);
+    return value == null ? def : value;
+  }
+
   /** The interface all parsers must implement */
   private interface Parser {
     public Object parse(ContentType ct, InputStream is, URI is_uri,
@@ -133,9 +142,9 @@ class Parsers {
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException, org.xml.sax.SAXException {
-      String format = ct.getParameter("x-format");
+      String format = getParameter(ct, "x-format", "stream");
 
-      if (format == null || format.equals("stream")) {
+      if (format.equals("stream")) {
 	return is;
       }
       else if (format.equals("buffer")) {
@@ -156,15 +165,60 @@ class Parsers {
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException {
-      String cs = ct.getParameter("charset");
-
-      if (cs == null) {
-	cs = "UTF-8";
-      }
+      String cs = getParameter(ct, "charset", "UTF-8");
 
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
       IO.copyStream(is, bos);
       return bos.toString(cs);
+    }
+  }
+
+  /** A Parser that parses CSV files and returns a JavaScript Array of Arrays. */
+  private static class CSVParser
+    implements Parser {
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope)
+      throws IOException {
+      String cs        = getParameter(ct, "charset", "UTF-8");
+      String header    = getParameter(ct, "header", "absent");
+      String separator = getParameter(ct, "x-separator", ",");
+      String quote     = getParameter(ct, "x-quote", "\"");
+      String escape    = getParameter(ct, "x-escape", "\\");
+
+      if (!header.equals("present") && !header.equals("absent")) {
+	throw new IOException("Invalid value in param 'header=" + header + "'");
+      }
+
+      if ("none".equals(separator)) separator = "";
+      if ("none".equals(quote))     quote     = "";
+      if ("none".equals(escape))    escape    = "";
+
+      if (separator.length() > 1 || quote.length() > 1 || escape.length() > 1) {
+	throw new IOException("x-separator, x-quote and x-escape values must be " +
+			      "empty or a single character");
+      }
+
+      CSVReader csv = new CSVReader(new InputStreamReader(is, cs),
+				    separator.isEmpty() ? '\0' : separator.charAt(0),
+				    quote.isEmpty()     ? '\0' : quote.charAt(0),
+				    escape.isEmpty()    ? '\0' : escape.charAt(0));
+      
+      List<String[]> values = csv.readAll();
+      String[] headers = header.equals("present") && !values.isEmpty() ? values.remove(0) : null;
+
+      Scriptable res = cx.newArray(scope, values.size());
+
+      if (headers != null) {
+	res.put("headers", res, JS.toJSArray(cx, scope, headers));
+      }
+
+      int i = 0;
+      for (String[] value : values) {
+	res.put(i++, res, JS.toJSArray(cx, scope, value));
+      }
+
+      return res;
     }
   }
 
@@ -219,11 +273,7 @@ class Parsers {
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException {
-      String cs = ct.getParameter("charset");
-
-      if (cs == null) {
-	cs = "UTF-8";
-      }
+      String cs = getParameter(ct, "charset", "UTF-8");
 
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
       IO.copyStream(is, bos);
@@ -351,11 +401,7 @@ class Parsers {
 			Collection<URI> external_uris,
 			PrintWriter err, Context cx, Scriptable scope)
       throws IOException {
-      String cs = ct.getParameter("charset");
-
-      if (cs == null) {
-	cs = "UTF-8";
-      }
+      String cs = getParameter(ct, "charset", "UTF-8");
 
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
       IO.copyStream(is, bos);
@@ -432,11 +478,11 @@ class Parsers {
       boolean html;
       boolean js;
 
-      String fmt = ct.getParameter("x-format");
+      String fmt = getParameter(ct, "x-format", "esxx");
       String prc = ct.getParameter("x-process-html");
       String sjs = ct.getParameter("x-strip-js");
 
-      if (fmt == null || fmt.equals("esxx")) {
+      if (fmt.equals("esxx")) {
 	xmtp = false;
 	ns   = false;
 	html = true;

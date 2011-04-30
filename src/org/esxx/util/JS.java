@@ -290,18 +290,31 @@ public abstract class JS {
     object = unwrap(object);
 
     // Convert to "primitive" types
-    if (object instanceof org.mozilla.javascript.xml.XMLObject) {
-      object = ESXX.e4xToDOM((Scriptable) object);
-    }
-    else if (object instanceof Scriptable) {
-      if (((Scriptable) object).getClassName().equals("Date")) {
-	object = Context.jsToJava(object, Date.class);
+    if (object instanceof Scriptable) {
+      Scriptable js = (Scriptable) object;
+
+      if (js instanceof org.mozilla.javascript.xml.XMLObject) {
+	if (!"XMLList".equals(js.getClassName()) || !js.has(1, js)) {
+	  object = ESXX.e4xToDOM(js);
+	}
+      }
+      else if ("Date".equals(js.getClassName())) {
+	object = Context.jsToJava(js, Date.class);
       }
     }
 
     return object;
   }
 
+  public static Scriptable toJSArray(Context cx, Scriptable scope, Object[] array) {
+    Object[] plain = new Object[array.length];
+
+    for (int i = 0; i < plain.length; ++i) {
+      plain[i] = array[i];
+    }
+
+    return cx.newArray(scope, plain);
+  }
 
   public static class JSFilenameFilter
     implements FilenameFilter {

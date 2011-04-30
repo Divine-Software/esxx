@@ -168,6 +168,8 @@
 	* URI methods save, append and modify may now optionally
 	specify the received content type.
 
+	* Added a CSV parser and serialized (text/csv).
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

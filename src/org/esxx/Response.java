@@ -18,10 +18,7 @@
 
 package org.esxx;
 
-import org.esxx.util.IO;
-import org.esxx.util.JS;
-import org.esxx.util.StringUtil;
-
+import au.com.bytecode.opencsv.CSVWriter;
 import java.awt.image.RenderedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -29,9 +26,14 @@ import java.nio.channels.*;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import javax.mail.internet.ContentType;
+import java.util.TreeMap;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
+import javax.mail.internet.ContentType;
+import org.esxx.util.IO;
+import org.esxx.util.JS;
+import org.esxx.util.KeyValueWrapper;
+import org.esxx.util.StringUtil;
 import org.json.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Node;
@@ -87,7 +89,7 @@ public class Response  {
     return buffered;
   }
 
-  public long getContentLength() 
+  public long getContentLength()
     throws IOException {
     if (!buffered) {
       throw new IllegalStateException("getContentLength() only works on buffered responses");
@@ -95,7 +97,7 @@ public class Response  {
 
     if (contentLength == -1) {
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      
+
       writeResult(bos);
       setResult(bos.toByteArray());
       contentLength = bos.size();
@@ -169,11 +171,11 @@ public class Response  {
 	    });
 	}
 	catch (javax.xml.stream.XMLStreamException ex) {
-	  throw new ESXXException("Failed to serialize Node as message/rfc822:" + ex.getMessage(), 
+	  throw new ESXXException("Failed to serialize Node as message/rfc822:" + ex.getMessage(),
 				  ex);
 	}
 	catch (javax.mail.MessagingException ex) {
-	  throw new ESXXException("Failed to serialize Node as message/rfc822:" + ex.getMessage(), 
+	  throw new ESXXException("Failed to serialize Node as message/rfc822:" + ex.getMessage(),
 				  ex);
 	}
       }
@@ -183,13 +185,12 @@ public class Response  {
     }
     else if (object instanceof Scriptable) {
       if (ct.match("application/x-www-form-urlencoded")) {
-	String cs = ct.getParameter("charset");
-
-	if (cs == null) {
-	  cs = "UTF-8";
-	}
+	String cs = Parsers.getParameter(ct, "charset", "UTF-8");
 
 	object = StringUtil.encodeFormVariables(cs, (Scriptable) object);
+      }
+      else if (ct.match("text/csv")) {
+	object = jsToCSV(ct, (Scriptable) object);
       }
       else {
 	object = jsToJSON(object).toString();
@@ -226,24 +227,14 @@ public class Response  {
     }
     else if (object instanceof Reader) {
       // Write stream as-is, using the specified charset (if present)
-      String cs = ct.getParameter("charset");
-
-      if (cs == null) {
-	cs = "UTF-8";
-      }
-
+      String cs = Parsers.getParameter(ct, "charset", "UTF-8");
       Writer ow = new OutputStreamWriter(out, cs);
 
       IO.copyReader((Reader) object, ow);
     }
     else if (object instanceof String) {
       // Write string as-is, using the specified charset (if present)
-      String cs = ct.getParameter("charset");
-
-      if (cs == null) {
-	cs = "UTF-8";
-      }
-
+      String cs = Parsers.getParameter(ct, "charset", "UTF-8");
       Writer ow = new OutputStreamWriter(out, cs);
       ow.write((String) object);
       ow.flush();
@@ -338,6 +329,77 @@ public class Response  {
     }
   }
 
+  static private Object jsToCSV(ContentType ct, Scriptable object)
+    throws IOException {
+    Context cx = Context.getCurrentContext();
+
+    String separator = Parsers.getParameter(ct, "x-separator", ",");
+    String quote     = Parsers.getParameter(ct, "x-quote", "\"");
+    String escape    = Parsers.getParameter(ct, "x-escape", "\"");
+
+    if ("none".equals(separator)) separator = "";
+    if ("none".equals(quote))     quote     = "";
+    if ("none".equals(escape))    escape    = "";
+
+    if (separator.length() > 1 || quote.length() > 1 || escape.length() > 1) {
+      throw new IOException("x-separator, x-quote and x-escape values must be " +
+			    "empty or a single character");
+    }
+
+    KeyValueWrapper             rows = new KeyValueWrapper(object);
+    TreeMap<String, Integer> columns = new TreeMap<String, Integer>();
+
+    // Find all possible colunms
+    for (Object r : rows.getValues(cx)) {
+      KeyValueWrapper row = new KeyValueWrapper(r);
+
+      for (Object c : row.getKeys()) {
+	columns.put(StringUtil.toSortable(c), null);
+      }
+    }
+
+    // "Sort" them
+    int cnt = 0;
+    for (Map.Entry<String, Integer> e : columns.entrySet()) {
+      e.setValue(cnt++);
+    }
+
+    // Write lines
+    StringWriter sw = new StringWriter();
+    CSVWriter csv = new CSVWriter(sw,
+				  separator.isEmpty() ? '\0' : separator.charAt(0),
+				  quote.isEmpty()     ? '\0' : quote.charAt(0),
+				  escape.isEmpty()    ? '\0' : escape.charAt(0));
+
+    Object headers = rows.getValue(cx, "headers");
+
+    if (headers != Context.getUndefinedValue()) {
+      writeCSVRow(cx, csv, columns, headers);
+    }
+
+    for (Object k : rows.getKeys()) {
+      if (!"headers".equals(k.toString())) {
+	writeCSVRow(cx, csv, columns, rows.getValue(cx, k));
+      }
+    }
+
+    return sw.toString();
+  }
+
+  static private void writeCSVRow(Context cx, CSVWriter csv,
+				  TreeMap<String, Integer> columns, Object r) {
+    KeyValueWrapper row = new KeyValueWrapper(r);
+    String[]     fields = new String[columns.size()];
+
+    for (Object c : row.getKeys()) {
+      int idx = columns.get(StringUtil.toSortable(c));
+      // System.out.println("Column " + Context.toString(c) + " has index " + idx);
+      // System.out.println(Context.toString(row.getValue(cx, c)));
+      fields[idx] = Context.toString(row.getValue(cx, c));
+    }
+
+    csv.writeNext(fields);
+  }
 
   private int httpStatus;
   private String contentType;

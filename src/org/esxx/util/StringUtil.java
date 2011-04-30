@@ -377,4 +377,23 @@ public abstract class StringUtil {
     }
     return utf8Length;
   }
+
+  public static String toSortable(Object o) {
+    if (o instanceof Number) {
+      long n;
+
+      if (o instanceof Float || o instanceof Double) {
+	n = Double.doubleToLongBits(((Number) o).doubleValue());
+	n ^= n < 0 ? 0xffffffffffffffffL : 0x8000000000000000L;
+      }
+      else {
+	n = ((Number) o).longValue();
+      }
+
+      return String.format(java.util.Locale.ROOT, "%016x", n);
+    }
+    else {
+      return o.toString();
+    }
+  }
 }

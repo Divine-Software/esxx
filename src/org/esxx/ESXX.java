@@ -1406,6 +1406,7 @@ public class ESXX {
 	super();
 
 	addIfMissing("css",   "text/css");
+	addIfMissing("csv",   "text/csv");
 	addIfMissing("eml",   "message/rfc822");
 	addIfMissing("esxx",  "application/vnd.esxx.webapp+xml");
 	addIfMissing("gif",   "image/gif");
