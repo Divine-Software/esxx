@@ -7,7 +7,6 @@
 	<classpathentry kind="lib" path="lib/core/commons-codec.jar"/>
 	<classpathentry kind="lib" path="lib/core/commons-logging.jar"/>
 	<classpathentry kind="lib" path="lib/core/h2.jar"/>
-	<classpathentry kind="lib" path="lib/core/htmlcleaner.jar"/>
 	<classpathentry kind="lib" path="lib/core/httpclient.jar"/>
 	<classpathentry kind="lib" path="lib/core/httpcore.jar"/>
 	<classpathentry kind="lib" path="lib/core/js.jar"/>
@@ -17,7 +16,6 @@
 	<classpathentry kind="lib" path="lib/core/saxon9.jar"/>
 	<classpathentry kind="lib" path="lib/exe/commons-cli.jar"/>
 	<classpathentry kind="lib" path="lib/exe/jfast.jar"/>
-	<classpathentry kind="lib" path="lib/exe/mail.jar"/>
 	<classpathentry kind="lib" path="lib/exe/jetty-ajp.jar"/>
 	<classpathentry kind="lib" path="lib/exe/jetty-continuation.jar"/>
 	<classpathentry kind="lib" path="lib/exe/jetty-http.jar"/>
@@ -29,5 +27,7 @@
 	<classpathentry kind="lib" path="lib/gae/appengine-api.jar"/>
 	<classpathentry kind="lib" path="lib/exe/jline.jar"/>
 	<classpathentry kind="lib" path="lib/core/jing.jar"/>
+	<classpathentry kind="lib" path="lib/exe-embedded/mail.jar"/>
+	<classpathentry kind="lib" path="lib/core/htmlparser.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
