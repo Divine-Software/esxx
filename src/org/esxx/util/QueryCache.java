@@ -232,9 +232,10 @@ public class QueryCache {
 
 	  if (res == null) {
 	    if (numConnections < maxConnections) {
-	      // Break out and create a new connection
+	      // Create a new connection
+	      res = new PooledConnection(uri, props);
+	      // Increase connection count on success
 	      ++numConnections;
-	      break;
 	    }
 	    else {
 	      try {
@@ -249,10 +250,6 @@ public class QueryCache {
 	  }
 
 	} while (res == null);
-      }
-
-      if (res == null) {
-	res = new PooledConnection(uri, props);
       }
 
       return res;
