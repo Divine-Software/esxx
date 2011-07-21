@@ -184,6 +184,10 @@ public class JSRequest
     }
 
     public String jsGet_contentType() {
+      if (contentType == null) {
+	return null;
+      }
+
       return contentType.getBaseType();
     }
 
