@@ -683,8 +683,12 @@ public class MIMEParser {
     }
 
     private Pattern forbiddenURL
-      = Pattern.compile("(about|javascript|livescript|mocha|vbscript):");
+      = Pattern.compile("(about|javascript|livescript|mocha|vbscript):",
+			Pattern.CASE_INSENSITIVE);
 
+    private Pattern forbiddenTags
+      = Pattern.compile("script|meta|link|iframe|frameset|frame|layer|object|embed|applet",
+			Pattern.CASE_INSENSITIVE);
 
     private List<Node> nodeReferences(NodeList nl) {
       // Convert NodeList into something that doesn't change when
@@ -723,8 +727,8 @@ public class MIMEParser {
     private void stripJS(Element elem) {
       String name = nodeName(elem);
 
-      if ("script".equalsIgnoreCase(name)) {
-	// All script tags goes -- obviously
+      if (forbiddenTags.matcher(name).matches()) {
+	// All forbidden tags goes -- obviously
 	elem.getParentNode().removeChild(elem);
 	return;
       }
