@@ -44,7 +44,7 @@
     <real>0.10000000149011612</real>
     
     <key>CFBundleIdentifier</key>
-    <string>org.esxx.ESXX.</string>
+    <string>org.esxx.ESXX</string>
 
     <key>CFBundleGetInfoString</key>
     <string>@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@, Copyright © 2007-2009 @CPACK_PACKAGE_VENDOR@</string>
