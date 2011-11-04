@@ -22,6 +22,18 @@ import java.util.logging.*;
 
 public class SyslogHandler
   extends Handler {
+    public static synchronized void setDefaultIdent(String syslog_ident) {
+      defaultSyslogIdent = syslog_ident;
+    }
+
+    public static synchronized void setDefaultFacility(int facility) {
+      defaultFacility = facility;
+    }
+
+    public static synchronized Logger createLogger(String logger_name,
+						   Level logger_level ) {
+      return createLogger(logger_name, logger_level, null, -1);
+    }
 
     /** A static utility method that returns a Logger for the given
      *  name. If no handlers are configured for this logger, it is set
@@ -29,11 +41,18 @@ public class SyslogHandler
      *  TrivialFormatter (however, the console handler will include
      *  the log level on each line, while the syslog handler will
      *  not).
+     *
+     *  @param logger_name   The name of the java.util.logging logger
+     *  @param Level         The Logger level
+     *  @param syslog_ident  The 'ident' string (program name) used for Syslog.
+     *                       May be null.
+     *  @param facility      The Syslog facility. May be -1.
      */
 
     public static synchronized Logger createLogger(String logger_name,
 						   Level logger_level,
-						   String syslog_ident) {
+						   String syslog_ident,
+						   int facility) {
       Logger logger = Logger.getLogger(logger_name);
 
       if (logger.getHandlers().length == 0) {
@@ -47,7 +66,7 @@ public class SyslogHandler
 	  ch.setLevel(Level.ALL);
 	  ch.setFormatter(getTrivialFormatter(true));
 
-	  logger.addHandler(new SyslogHandler(syslog_ident));
+	  logger.addHandler(new SyslogHandler(syslog_ident, facility));
 	  logger.addHandler(ch);
 
 	  logger.setUseParentHandlers(false);
@@ -79,12 +98,13 @@ public class SyslogHandler
 
 
     public SyslogHandler() {
-      this(Thread.currentThread().getName());
+      this(null, Syslog.LOG_DAEMON);
     }
 
-    public SyslogHandler(String ident) {
+    public SyslogHandler(String ident, int facility) {
       try {
-	syslog = new Syslog(ident, 0, Syslog.LOG_DAEMON);
+	syslog = new Syslog(ident != null ? ident : defaultSyslogIdent, 0,
+			    facility != -1 ? facility : defaultFacility);
       }
       catch (Syslog.SyslogException ex) {
 	throw new UnsupportedOperationException(ex);
@@ -122,10 +142,10 @@ public class SyslogHandler
       else if (priority >= Level.WARNING.intValue()) {
 	priority = Syslog.LOG_WARNING;
       }
-      else if (priority >= (Level.WARNING.intValue() + Level.INFO.intValue()) / 2) {
+      else if (priority >= Level.INFO.intValue()) {
 	priority = Syslog.LOG_NOTICE;
       }
-      else if (priority >= Level.INFO.intValue()) {
+      else if (priority >= Level.CONFIG.intValue()) {
 	priority = Syslog.LOG_INFO;
       }
       else {
@@ -159,4 +179,7 @@ public class SyslogHandler
     }
 
     private Syslog syslog;
+
+    private static String defaultSyslogIdent = "java";
+    private static int defaultFacility = Syslog.LOG_DAEMON;
 }

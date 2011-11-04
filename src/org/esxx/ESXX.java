@@ -276,7 +276,7 @@ public class ESXX {
 
     public synchronized Logger getLogger() {
       if (logger == null) {
-	logger = SyslogHandler.createLogger(ESXX.class.getName(), Level.CONFIG, "esxx");
+	logger = SyslogHandler.createLogger(ESXX.class.getName(), Level.CONFIG, "esxx", -1);
       }
 
       return logger;

@@ -445,7 +445,7 @@ public class Application
     if (logger == null) {
       logger = SyslogHandler.createLogger(Application.class.getName() + "." + getAppName(),
 					  Level.ALL,
-					  "esxx");
+					  "esxx", -1);
     }
 
     return logger;
