@@ -147,6 +147,25 @@ public class Application
     }
   }
 
+  public synchronized JSResponse executeMainOnce(Context cx, JSRequest req)
+    throws Exception {
+    JSResponse jsres = null;
+
+    if (!mainExecuted) {
+      Object[] args = req.getRequest().getMainArgs(new Object[] { req });
+      Object   res  = JS.callJSMethod(null, "main", args, "Program entry" , cx, getJSGlobal(), false);
+
+      if (res != null && res != Context.getUndefinedValue()) {
+	jsres = wrapResult(cx, res);
+      }
+
+      // If all went well, don't call main() ever again
+      mainExecuted = true;
+    }
+
+    return jsres;
+  }
+
   public JSResponse executeSOAPAction(Context cx, JSRequest req,
 				      String soap_action, String path_info)
     throws Exception {
@@ -189,7 +208,7 @@ public class Application
       String method = soap_body.getLocalName();
 
       try {
-	result = JS.callJSMethod(object, method, args, "SOAP handler", cx, applicationScope);
+	result = JS.callJSMethod(object, method, args, "SOAP handler", cx, applicationScope, true);
 
 	// Don't wrap result yet, but do check for null/undefined
 	if (result == null || result == Context.getUndefinedValue()) {
@@ -523,7 +542,7 @@ public class Application
       if (base == null) {
 	base = getWorkingDirectory();
       }
-      
+
       try {
 	uri = base.resolve(file);
 	is  = esxx.openCachedURI(uri);
@@ -1284,6 +1303,7 @@ public class Application
 
   private int enterCount = 0;
   private boolean terminated = false;
+  private boolean mainExecuted = false;
 
   private long invocations;
   private long executionTime;

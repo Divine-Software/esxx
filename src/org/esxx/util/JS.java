@@ -64,12 +64,13 @@ public abstract class JS {
       method = expr.substring(dot + 1);
     }
 
-    return callJSMethod(object, method, args, identifier, cx, scope);
+    return callJSMethod(object, method, args, identifier, cx, scope, true);
   }
 
   public static Object callJSMethod(String object_expr, String method,
 				    Object[] args, String identifier,
-				    Context cx, Scriptable scope) {
+				    Context cx, Scriptable scope,
+				    boolean throw_if_not_found) {
     Scriptable object = evaluateObjectExpr(object_expr, scope);
     String     function_name = object == scope ? method : object_expr + "." + method;
 
@@ -80,7 +81,12 @@ public abstract class JS {
     Object m = ScriptableObject.getProperty(object, method);
 
     if (m == Scriptable.NOT_FOUND) {
-      throw new ESXXException(identifier + " method " + function_name + " not found");
+      if (throw_if_not_found) {
+	throw new ESXXException(identifier + " method " + function_name + " not found");
+      }
+      else {
+	return null;
+      }
     }
 
     if (!(m instanceof Function)) {

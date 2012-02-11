@@ -111,6 +111,10 @@ public class JSRequest
       args = uri_params;
     }
 
+    public Request getRequest() {
+      return request;
+    }
+
     static public Object jsConstructor(Context cx,
 				       java.lang.Object[] args,
 				       Function ctorObj,

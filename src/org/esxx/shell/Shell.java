@@ -15,9 +15,9 @@ import java.sql.SQLException;
 public class Shell
   implements Runnable {
 
-  public Shell(Context cx, Application app) {
-    this.cx  = cx;
-    this.app = app;
+  public Shell(Context cx, Scriptable scope) {
+    this.cx    = cx;
+    this.scope = scope;
   }
 
   public void run() {
@@ -37,7 +37,7 @@ public class Shell
 	  }
 
 	  private Completor helpCompletor = new HelpCompletor(Shell.this);
-	  private Completor propCompletor = new PropertyCompletor(app.getJSGlobal());
+	  private Completor propCompletor = new PropertyCompletor(scope);
 	});
 
       console.setAutoprintThreshhold(150);
@@ -99,7 +99,7 @@ public class Shell
 	  line_counter = 1;
 	}
 	else if (cx.stringIsCompilableUnit(statement)) {
-	  evaluateString(cx, app, statement);
+	  evaluateString(cx, scope, statement);
 	  sb.setLength(0);
 	  line_counter = 1;
 	}
@@ -110,9 +110,8 @@ public class Shell
     }
   }
 
-  private void evaluateString(Context cx, Application app, String statement) {
+  private void evaluateString(Context cx, Scriptable scope, String statement) {
     Object result;
-    Scriptable scope = app.getJSGlobal();
 
     try {
       result = cx.evaluateString(scope,
@@ -232,5 +231,5 @@ public class Shell
   private static URI helpURI;
 
   private Context cx;
-  private Application app;
+  private Scriptable scope;
 }

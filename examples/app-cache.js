@@ -2,7 +2,9 @@
 var started  = new Date();
 var firstrun = true;
 
-esxx.log.info("Loaded.");
+function main(req) {
+  esxx.log.info("Loaded on trigger " + req.requestURI);
+}
 
 function handleExit() {
   esxx.log.info("Unloaded.");

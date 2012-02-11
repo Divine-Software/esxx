@@ -35,20 +35,4 @@ public class ShellRequest
     URI shell_init = URI.create("esxx-rsrc:shell_init.js");
     super.initRequest(shell_init, null);
   }
-
-  public Handler getHandler() {
-    if (scriptHandler == null) {
-      scriptHandler = new Handler() {
-	  @Override public Object handleRequest(Context cx, Request req, Application app) {
-	    new Shell(cx, app).run();
-	    return 0;
-	  }
-	};
-    }
-
-    return scriptHandler;
-  }
-
-  private Handler scriptHandler;
-  private String[] commandLine;
 }

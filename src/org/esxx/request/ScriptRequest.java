@@ -39,19 +39,8 @@ public class ScriptRequest
 		null);
   }
 
-  public Handler getHandler() {
-    if (scriptHandler == null) {
-      scriptHandler = new Handler() {
-	  @Override public Object handleRequest(Context cx, Request req, Application app)
-	    throws Exception {
-	    return JS.callJSMethod("main", commandLine, //js_cmdline, 
-				   "Program entry" , 
-				   cx, app.getJSGlobal());
-	  }
-	};
-    }
-
-    return scriptHandler;
+  @Override public Object[] getMainArgs(Object[] suggested) {
+    return commandLine;
   }
 
   public Integer handleResponse(Response response)
@@ -107,6 +96,5 @@ public class ScriptRequest
     }
   }
 
-  private Handler scriptHandler;
   private String[] commandLine;
 }

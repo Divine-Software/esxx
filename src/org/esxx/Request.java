@@ -94,8 +94,8 @@ public abstract class Request {
       return quickResponse;
     }
 
-    public Handler getHandler() {
-      return null;
+    public Object[] getMainArgs(Object[] suggested) {
+      return suggested;
     }
 
     public synchronized Logger getReqLogger() {

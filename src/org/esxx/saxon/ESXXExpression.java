@@ -65,7 +65,7 @@ public class ESXXExpression
       args[i] = contvertToJS(v, context, cx, scope);
     }
 
-    Object result = JS.callJSMethod(object, method, args, "XSLT Stylesheet", cx, scope);
+    Object result = JS.callJSMethod(object, method, args, "XSLT Stylesheet", cx, scope, true);
 
     if (result instanceof NativeArray) {
       result = cx.getElements((NativeArray) result);

@@ -40,7 +40,6 @@ class Worker {
     throws Exception {
     long start_time = System.currentTimeMillis();
     Application app = esxx.getCachedApplication(cx, request);
-    JSGlobal global = app.getJSGlobal();
 
     try {
       //     if (app.isDebuggerActivated()) {
@@ -49,17 +48,15 @@ class Worker {
       // 							      app.getAppName());
       //     }
 
-      JSResponse result;
-
       // Create a Request object
-      JSRequest jsreq = (JSRequest) JSESXX.newObject(cx, global, "Request", 
+      JSRequest jsreq = (JSRequest) JSESXX.newObject(cx, app.getJSGlobal(), "Request", 
 						     new Object[] { request });
+      JSResponse result = null;
 
       try {
-	if (request.getHandler() != null) {
-	  result = app.wrapResult(cx, request.getHandler().handleRequest(cx, request, app));
-	}
-	else if (app.hasHandlers()) {
+	result = app.executeMainOnce(cx, jsreq);
+
+	if (app.hasHandlers()) {
 	  // Execute the SOAP or HTTP handler (if available)
 	  String request_method = request.getRequestMethod();
 	  String soap_action    = jsreq.jsGet_soapAction();
@@ -73,7 +70,7 @@ class Worker {
 	    result = app.executeHTTPMethod(cx, jsreq, request_method, request.getPathInfo());
 	  }
 	}
-	else {
+	else if (result == null) {
 	  // No handlers; the document is the result
 
 	  result = app.wrapResult(cx, app.getMainDocument());
@@ -94,7 +91,7 @@ class Worker {
 
       if (response.getResult() instanceof Node) {
 	try {
-	  handleTransformation(request, response, result, app, cx, global);
+	  handleTransformation(cx, request, response, result, app);
 	}
 	catch (Exception ex) {
 	  // Invoke error handler on XSLT errors as well
@@ -103,7 +100,7 @@ class Worker {
 	  response.unwrapResult();
 
 	  if (response.getResult() instanceof Node) {
-	    handleTransformation(request, response, result, app, cx, global);
+	    handleTransformation(cx, request, response, result, app);
 	  }
 	}
       }
@@ -122,9 +119,8 @@ class Worker {
       + "End ESXX Request Log";
   }
 
-  private void handleTransformation(Request request, Response response,
-				    JSResponse js_response, Application app,
-				    Context cx, Scriptable scope)
+  private void handleTransformation(Context cx, Request request, Response response,
+				    JSResponse js_response, Application app)
     throws IOException, SaxonApiException {
     ESXX           esxx = ESXX.getInstance();
     String content_type = response.getContentType(true);
@@ -202,7 +198,7 @@ class Worker {
 	}
 
 	// Make current scope available to ESXXExpression and begin transformation
-	cx.putThreadLocal(ESXXExpression.class, scope);
+	cx.putThreadLocal(ESXXExpression.class, app.getJSGlobal());
 	tr.transform();
       }
       finally {
