@@ -1,10 +1,10 @@
 
-java.lang.Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
-
 testRunner.add(new TestCase({
   name: "testmod-uri-jdbc-derby",
 
   init: function() {
+    java.lang.Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
+
     this.db = new URI("jdbc:derby:memory:testmod-uri-jdbc;create=true");
 
     // Test server connectivity

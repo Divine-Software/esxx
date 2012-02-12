@@ -8,12 +8,12 @@
  *
  */
 
-java.lang.Class.forName("org.postgresql.Driver");
-
 testRunner.add(new TestCase({
   name: "testmod-uri-jdbc-pgsql",
 
   init: function() {
+    java.lang.Class.forName("org.postgresql.Driver");
+
     this.db = new URI("jdbc:postgresql:esxx_test");
     this.db.params = [{ name: "user",              value: "esxx_test" },
 		      { name: "password",          value: "esxx_test" },

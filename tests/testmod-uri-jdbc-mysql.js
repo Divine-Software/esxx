@@ -8,12 +8,12 @@
  *
  */
 
-java.lang.Class.forName("com.mysql.jdbc.Driver").newInstance();
-
 testRunner.add(new TestCase({
   name: "testmod-uri-jdbc-mysql",
 
   init: function() {
+    java.lang.Class.forName("com.mysql.jdbc.Driver").newInstance();
+
     this.db = new URI("jdbc:mysql://localhost/esxx_test");
     this.db.params = [{ name: "user",              value: "esxx_test" },
 		      { name: "password",          value: "esxx_test" },
