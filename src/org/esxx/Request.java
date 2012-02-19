@@ -95,7 +95,7 @@ public abstract class Request {
     }
 
     public Object[] getMainArgs(Object[] suggested) {
-      return suggested;
+      return null;
     }
 
     public synchronized Logger getReqLogger() {

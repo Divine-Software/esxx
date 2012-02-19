@@ -35,4 +35,9 @@ public class ShellRequest
     URI shell_init = URI.create("esxx-rsrc:shell_init.js");
     super.initRequest(shell_init, null);
   }
+
+  @Override public Object[] getMainArgs(Object[] suggested) {
+    // Force main() to be called as init handler
+    return suggested;
+  }
 }

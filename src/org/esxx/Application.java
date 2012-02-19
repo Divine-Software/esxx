@@ -147,20 +147,34 @@ public class Application
     }
   }
 
-  public synchronized JSResponse executeMainOnce(Context cx, JSRequest req)
+  public synchronized JSResponse executeInitOnce(Context cx, JSRequest req)
     throws Exception {
     JSResponse jsres = null;
 
-    if (!mainExecuted) {
-      Object[] args = req.getRequest().getMainArgs(new Object[] { req });
-      Object   res  = JS.callJSMethod(null, "main", args, "Program entry" , cx, getJSGlobal(), false);
+    if (!initExecuted) {
+      Object args[]  = { req };
+      String handler = getInitHandlerFunction();
 
-      if (res != null && res != Context.getUndefinedValue()) {
-	jsres = wrapResult(cx, res);
+      if (handler == null) {
+	// No init handler defined; check if the Request demands
+	// main() as init handler instead
+	args = req.getRequest().getMainArgs(args);
+
+	if (args != null) {
+	  handler = "main";
+	}
       }
 
-      // If all went well, don't call main() ever again
-      mainExecuted = true;
+      if (handler != null) {
+	Object res = JS.callJSMethod(handler, args, "Init handler", cx, getJSGlobal());
+
+	if (res != null && res != Context.getUndefinedValue()) {
+	  jsres = wrapResult(cx, res);
+	}
+      }
+
+      // If all went well, don't call the init handler ever again
+      initExecuted = true;
     }
 
     return jsres;
@@ -619,6 +633,10 @@ public class Application
     return errorHandler;
   }
 
+  public String getInitHandlerFunction() {
+    return initHandler;
+  }
+
   public String getExitHandlerFunction() {
     return exitHandler;
   }
@@ -749,6 +767,9 @@ public class Application
 	  }
 	  else if (name.equals("error")) {
 	    handleErrorHandler(e);
+	  }
+	  else if (name.equals("init")) {
+	    handleInitHandler(e);
 	  }
 	  else if (name.equals("exit")) {
 	    handleExitHandler(e);
@@ -1012,6 +1033,21 @@ public class Application
     errorHandler = handler;
   }
 
+  private void handleInitHandler(Element e) {
+    String handler = e.getAttributeNS(null, "handler").trim();
+
+    if (initHandler != null) {
+      throw new ESXXException("Init handler already defined as '" + initHandler + "'");
+    }
+
+    if (handler.endsWith(")")) {
+      throw new ESXXException("<init> attribute 'handler' value " +
+			      "should not include parentheses");
+    }
+
+    initHandler = handler;
+  }
+
   private void handleExitHandler(Element e) {
     String handler = e.getAttributeNS(null, "handler").trim();
 
@@ -1026,6 +1062,7 @@ public class Application
 
     exitHandler = handler;
   }
+
 
   private void handleStylesheet(Element e) {
     String media_type = e.getAttributeNS(null, "media-type").trim();
@@ -1303,7 +1340,7 @@ public class Application
 
   private int enterCount = 0;
   private boolean terminated = false;
-  private boolean mainExecuted = false;
+  private boolean initExecuted = false;
 
   private long invocations;
   private long executionTime;
@@ -1326,6 +1363,7 @@ public class Application
   private RequestMatcher requestMatcher = new RequestMatcher();
   private RequestMatcher xsltMatcher = new RequestMatcher();
   private String errorHandler;
+  private String initHandler;
   private String exitHandler;
 
   private List<FilterRule> filters = new LinkedList<FilterRule>();

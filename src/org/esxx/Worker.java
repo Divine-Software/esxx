@@ -54,7 +54,7 @@ class Worker {
       JSResponse result = null;
 
       try {
-	result = app.executeMainOnce(cx, jsreq);
+	result = app.executeInitOnce(cx, jsreq);
 
 	if (app.hasHandlers()) {
 	  // Execute the SOAP or HTTP handler (if available)

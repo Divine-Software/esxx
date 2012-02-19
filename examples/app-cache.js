@@ -2,7 +2,7 @@
 var started  = new Date();
 var firstrun = true;
 
-function main(req) {
+function handleInit(req) {
   esxx.log.info("Loaded on trigger " + req.requestURI);
 }
 
