@@ -23,6 +23,10 @@ import java.util.logging.*;
 
 public class TrivialFormatter 
   extends Formatter {
+  public TrivialFormatter() {
+    this(true);
+  }
+
   public TrivialFormatter(boolean include_level) {
     super();
     includeLevel = include_level;
