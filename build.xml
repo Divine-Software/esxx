@@ -74,6 +74,11 @@
         <fileset dir="${lib.dir}/exe-embedded" includes="*.jar" />
       </lib>
     </one-jar>
+
+    <jar jarfile="${build.dir}/esxx-logging.jar" basedir="${classes.dir}">
+      <include name="org/esxx/util/Syslog*.class"/>
+      <include name="org/esxx/util/TrivialFormatter.class"/>
+    </jar>
   </target>
 
   <target name="jee-compile" depends="compile" description="compile jee">
