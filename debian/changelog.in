@@ -1,4 +1,4 @@
-esxx (@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@-1) unstable; urgency=low
+esxx (@PACKAGE_VERSION@-@PACKAGE_RELEASE@) unstable; urgency=low
 
   * ESXX release.
 

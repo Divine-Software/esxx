@@ -79,7 +79,7 @@
     <template>
       <common_name>
         <loctext xml:lang='C'>
-          @CPACK_PACKAGE_DESCRIPTION_SUMMARY@
+          @PACKAGE_DESCRIPTION_SUMMARY@
         </loctext>
       </common_name>
       

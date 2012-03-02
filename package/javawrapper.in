@@ -4,9 +4,9 @@ set -e
 
 JAVA=java
 JVMARGS=
-ESXX_PATH=${ESXX_PATH:-"@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@:@SHARE_INSTALL_PREFIX@/@PROJECT_NAME@/site"}
+ESXX_PATH=${ESXX_PATH:-"@datadir@:@datadir@/site"}
 ARGS=()
-LIBS=$(echo @SHARE_INSTALL_PREFIX@/@PROJECT_NAME@/{lib,site/lib}/*.jar | tr ' ' '|')
+LIBS=$(echo @datadir@/{lib,site/lib}/*.jar | tr ' ' '|')
 RUNAS=
 PID=
 
@@ -14,8 +14,8 @@ if [ ! -z "${JAVA_HOME}" ]; then
     JAVA=${JAVA_HOME}/bin/java
 fi
 
-if [ -f @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@ ]; then
-    . @SYSCONF_INSTALL_DIR@/@CONFDIR@/@PROJECT_NAME@
+if [ -f @confdir@/@PACKAGE_NAME@ ]; then
+    . @confdir@/@PACKAGE_NAME@
 fi
 
 
@@ -25,7 +25,7 @@ while `[ $# -gt 0 ]` ; do
     case "$arg" in
 	-\? | --help)
 	    echo "Usage: $0 [OPTIONS...]"
-	    echo "  -u, --user=<user>                     Execute @PROJECT_NAME@.jar as 'user'"
+	    echo "  -u, --user=<user>                     Execute @PACKAGE_NAME@.jar as 'user'"
 	    echo "  -p, --pidfile=</path/to/file>         Fork and write PID to file"
 	    echo "  -j, --jvmargs=<JVM args>              Extra arguments for Java"
 	    echo
@@ -72,11 +72,11 @@ if [ -z "${PID}" ]; then
     ${RUNAS} ${JAVA} ${JVMARGS} \
         -Desxx.app.include_path="${ESXX_PATH}" \
 	-Done-jar.class.path=${LIBS} \
-	-jar @SBIN_INSTALL_DIR@/@PROJECT_NAME@.jar "${ARGS[@]}"
+	-jar @sbindir@/@PACKAGE_NAME@.jar "${ARGS[@]}"
 else
     ${RUNAS} ${JAVA} ${JVMARGS} \
         -Desxx.app.include_path="${ESXX_PATH}" \
 	-Done-jar.class.path=${LIBS} \
-	-jar @SBIN_INSTALL_DIR@/@PROJECT_NAME@.jar "${ARGS[@]}" > /dev/null 2> /dev/null &
+	-jar @sbindir@/@PACKAGE_NAME@.jar "${ARGS[@]}" > /dev/null 2> /dev/null &
     echo $! > "${PID}"
 fi

@@ -1,0 +1,165 @@
+<?xml version="1.0"?>
+
+<project>
+  <!-- Install dirs -->
+  <property name="DESTDIR" value="" />
+  <property file="install.properties" />
+
+  <filterset id="installdirs">
+    <filter token="prefix"         value="${prefix}" />
+    <filter token="exec_prefix"    value="${exec_prefix}" />
+    <filter token="bindir"         value="${bindir}" />
+    <filter token="sbindir"        value="${sbindir}" />
+    <filter token="libexecdir"     value="${libexecdir}" />
+    <filter token="datarootdir"    value="${datarootdir}" />
+    <filter token="datadir"        value="${datadir}" />
+    <filter token="sysconfdir"     value="${sysconfdir}" />
+    <filter token="confdir"        value="${confdir}" />
+    <filter token="sharedstatedir" value="${sharedstatedir}" />
+    <filter token="localstatedir"  value="${localstatedir}" />
+    <filter token="includedir"     value="${includedir}" />
+    <filter token="docdir"         value="${docdir}" />
+    <filter token="infodir"        value="${infodir}" />
+    <filter token="htmldir"        value="${htmldir}" />
+    <filter token="dvidir"         value="${dvidir}" />
+    <filter token="pdfdir"         value="${pdfdir}" />
+    <filter token="psdir"          value="${psdir}" />
+    <filter token="libdir"         value="${libdir}" />
+    <filter token="lispdir"        value="${lispdir}" />
+    <filter token="localedir"      value="${localedir}" />
+    <filter token="mandir"         value="${mandir}" />
+  </filterset>
+
+  <!-- OS conditions -->
+  <condition property="isLinux">
+    <os name="Linux"/>
+  </condition>
+
+  <condition property="isMacOSX">
+    <and>
+      <os family="mac" />
+      <os family="unix" />
+    </and>
+  </condition>
+  
+  <condition property="isSunOS">
+    <os name="SunOS"/>
+  </condition>
+
+  <condition property="isUNIX">
+    <os family="unix" />
+  </condition>
+
+  <condition property="isWindows">
+    <os family="windows" />
+  </condition>
+
+  <target name="generate-build-files" description="Generate build files">
+    <copy todir="debian" overwrite="true">
+      <fileset dir="debian" />
+      <globmapper from="*.in" to="*" />
+      <filterset refid="installdirs" />
+      <filterset filtersfile="build.properties" />
+    </copy>
+  </target>
+
+  <target name="generate-install-files" depends="init" description="Generate install files">
+    <copy todir="${build.dir}/package" overwrite="true">
+      <fileset dir="package" excludes="*.in" />
+    </copy>
+
+    <copy todir="${build.dir}/package" overwrite="true">
+      <fileset dir="package" />
+      <globmapper from="*.in" to="*" />
+      <filterset refid="installdirs" />
+      <filterset filtersfile="build.properties"/>
+    </copy>
+  </target>
+
+  <target name="install" description="Install files"
+	  depends="generate-install-files, jar, 
+		   install-windows, install-unix, 
+		   install-mac, install-sunos, install-linux">
+    <!-- Modules and libs -->
+    <copy todir="${DESTDIR}${datadir}">
+      <fileset dir="share"/>
+    </copy>
+
+    <!-- Documentation -->
+    <copy todir="${DESTDIR}${docdir}">
+      <fileset dir="." includes="examples/**"/>
+      <fileset dir="." includes="CHANGES.txt LICENSE.* README NOTICE" />
+    </copy>
+  </target>
+
+  <target name="install-windows" description="Install Windows-specific files" if="isWindows">
+    <!-- Fat executable JAR -->
+    <copy todir="${DESTDIR}${sbindir}">
+      <fileset file="${build.dir}/${ant.project.name}.jar" />
+    </copy>
+
+    <!-- Wrappers -->
+    <copy todir="${DESTDIR}${exec_prefix}">
+      <fileset dir="${build.dir}/package" includes="*.bat"/>
+    </copy>
+  </target>
+
+  <target name="install-unix" description="Install UNIX-specific files" if="isUNIX">
+    <!-- Small executable JAR and wrappers-->
+    <copy todir="${DESTDIR}${sbindir}">
+      <fileset file="${build.dir}/${ant.project.name}-small.jar" />
+      <globmapper from="*-small.jar" to="*.jar"/>
+    </copy>
+
+    <copy todir="${DESTDIR}${sbindir}">
+      <fileset file="${build.dir}/package/javawrapper" />
+      <globmapper from="javawrapper" to="${ant.project.name}"/>
+    </copy>
+
+    <copy todir="${DESTDIR}${bindir}">
+      <fileset file="${build.dir}/package/jswrapper" />
+      <globmapper from="jswrapper" to="${ant.project.name}-js"/>
+    </copy>
+
+    <!-- Support JARs -->
+    <copy todir="${DESTDIR}${datadir}/lib">
+      <fileset dir="${lib.dir}/core" includes="*.jar" />
+      <fileset dir="${lib.dir}/exe" includes="*.jar" />
+    </copy>
+
+    <!-- Config files -->
+    <copy todir="${DESTDIR}${confdir}">
+      <fileset dir="${build.dir}/package/" includes="config, config-*"/>
+      <globmapper from="config*" to="${ant.project.name}*"/>
+    </copy>
+  </target>
+
+  <target name="install-mac" description="Install MacOSX-specific files" if="isMacOSX">
+    <!-- launchd config file -->
+    <copy todir="${DESTDIR}/Library/LaunchDaemons">
+      <fileset file="${build.dir}/package/org.esxx.ESXX.plist" />
+    </copy>
+  </target>
+
+  <target name="install-sunos" description="Install SunOS-specific files" if="isSunOS">
+    <!-- svc method -->
+    <copy todir="${DESTDIR}/lib/svc/method">
+      <fileset file="${build.dir}/package/svc-method" />
+      <globmapper from="svc-method" to="${ant.project.name}" />
+    </copy>
+
+    <!-- svc manifest -->
+    <copy todir="${DESTDIR}/var/svc/manifest/network">
+      <fileset file="${build.dir}/package/svc-manifest.xml" />
+      <globmapper from="svc-manifest.xml" to="${ant.project.name}.xml" />
+    </copy>
+  </target>
+
+  <target name="install-linux" description="Install Linux-specific files" if="isLinux">
+    <!-- Init scripts -->
+    <copy todir="${DESTDIR}${sysconfdir}/init.d">
+      <fileset dir="${build.dir}/package/" includes="initscript, initscript-*"/>
+      <globmapper from="initscript*" to="${ant.project.name}*"/>
+    </copy>
+  </target>
+</project>

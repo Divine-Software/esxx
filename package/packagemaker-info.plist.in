@@ -5,10 +5,10 @@
 <plist version="1.0">
   <dict>
     <key>IFMajorVersion</key>
-    <integer>@CPACK_PACKAGE_VERSION_MAJOR@</integer>
+    <integer>@PACKAGE_VERSION_MAJOR@</integer>
     
     <key>IFMinorVersion</key>
-    <integer>@CPACK_PACKAGE_VERSION_MINOR@</integer>
+    <integer>@PACKAGE_VERSION_MINOR@</integer>
     
     <key>IFPkgFlagAllowBackRev</key>
     <true/>
@@ -47,10 +47,10 @@
     <string>org.esxx.ESXX</string>
 
     <key>CFBundleGetInfoString</key>
-    <string>@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@, Copyright © 2007-2009 @CPACK_PACKAGE_VENDOR@</string>
+    <string>@PACKAGE_VERSION@, Copyright © 2007-2009 @PACKAGE_VENDOR@</string>
     
     <key>CFBundleShortVersionString</key>
-    <string>@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@</string>
+    <string>@PACKAGE_VERSION@</string>
 
   </dict>
 </plist>

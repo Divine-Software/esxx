@@ -198,7 +198,7 @@
       <body>
 	<div id="bg1">
 	  <div id="header">
-	    <h1><a href="http://esxx.org/">ESXX<sup>@VERSION@ &#946;</sup></a></h1>
+	    <h1><a href="http://esxx.org/">ESXX<sup>@PACKAGE_VERSION@ &#946;</sup></a></h1>
 	    <h2>A Divine Software&#8482; production</h2>
 	  </div>
 	</div>

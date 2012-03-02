@@ -1,22 +1,23 @@
 <?xml version="1.0"?>
 
 <project name="esxx" default="compile">
-  <taskdef name="one-jar" classname="com.simontuffs.onejar.ant.OneJarTask" 
+  <taskdef name="one-jar" classname="com.simontuffs.onejar.ant.OneJarTask"
            classpath="lib/one-jar-ant-task-0.96b.jar" onerror="report"/>
-
 
   <description>esxx build file</description>
 
-  <property name="src.dir"     location="src"/>
-  <property name="jee.dir"     location="jee"/>
-  <property name="build.dir"   location="build"/>
-  <property name="classes.dir" location="${build.dir}/classes"/>
+  <!-- Build dirs -->
+  <property name="src.dir"      location="src"/>
+  <property name="jee.dir"      location="jee"/>
+  <property name="build.dir"    location="build"/>
+  <property name="classes.dir"  location="${build.dir}/classes"/>
   <property name="jeebuild.dir" location="${build.dir}/jee"/>
-  <property name="lib.dir"     location="lib"/>
-
-  <property name="version" value="src"/>
+  <property name="lib.dir"      location="lib"/>
 
   <property name="build.compiler" value="modern"/>
+
+  <!-- Installation targets and properties -->
+  <import file="install.xml"/>
 
   <path id="classpath">
     <pathelement path="${classes.dir}"/>
@@ -33,11 +34,11 @@
   <target name="compile" depends="init, ragel" description="compile everything">
     <!-- Don't use -Xlint on the json code -->
     <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath"
-           debug="true" deprecation="true" target="1.6">
+           debug="true" deprecation="true" target="1.6" includeantruntime="false">
       <include name="org/json/*.java"/>
     </javac>
     <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath"
-           debug="true" deprecation="true" target="1.6">
+           debug="true" deprecation="true" target="1.6" includeantruntime="false">
       <compilerarg value="-Xlint"/>
       <exclude name="org/json/*.java"/>
     </javac>
@@ -46,9 +47,7 @@
     </copy>
     <copy todir="${classes.dir}/rsrc">
       <fileset dir="rsrc" includes="*.xslt *.css *.properties"/>
-      <filterset>
-	<filter token="VERSION" value="${version}" />
-      </filterset>
+      <filterset filtersfile="build.properties" />
     </copy>
   </target>
 
@@ -117,7 +116,7 @@
     </war>
   </target>
 
-  <uptodate property="dbreference.uptodate" 
+  <uptodate property="dbreference.uptodate"
 	    srcfile="${src.dir}/org/esxx/dbref/DBReference.rl"
 	    targetfile="${src.dir}/org/esxx/dbref/DBReference.java" />
 

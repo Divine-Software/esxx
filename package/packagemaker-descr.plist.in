@@ -5,10 +5,10 @@
 <plist version="1.4">
   <dict>
     <key>IFPkgDescriptionTitle</key>
-    <string>@CPACK_PACKAGE_NAME@</string>
+    <string>@PACKAGE_NAME@</string>
     
     <key>IFPkgDescriptionVersion</key>
-    <string>@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@.@CPACK_PACKAGE_VERSION_PATCH@</string>
+    <string>@PACKAGE_VERSION@</string>
     
     <key>IFPkgDescriptionDescription</key>
     <string>@PACKAGE_DESCRIPTION@</string>

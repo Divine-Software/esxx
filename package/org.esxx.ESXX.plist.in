@@ -8,7 +8,7 @@
 
     <key>ProgramArguments</key>
     <array>
-      <string>@SBIN_INSTALL_DIR@/@PROJECT_NAME@</string>
+      <string>@sbindir@/@PACKAGE_NAME@</string>
       <string>--bind</string>
       <string>7654</string>
     </array>

@@ -1,13 +1,13 @@
-Source: esxx
+Source: @PACKAGE_NAME@
 Section: web
 Priority: extra
-Maintainer: Martin Blom <martin@blom.org>
+Maintainer: @PACKAGE_CONTACT@
 Build-Depends: debhelper (>= 5), cmake, sun-java6-jdk, ant
 Standards-Version: 3.8.0
-Homepage: http://esxx.org/
+Homepage: @PACKAGE_URL@
 
-Package: esxx
+Package: @PACKAGE_NAME@
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: @CPACK_PACKAGE_DESCRIPTION_SUMMARY@
+Description: @PACKAGE_DESCRIPTION_SUMMARY@
  @PACKAGE_DESCRIPTION@

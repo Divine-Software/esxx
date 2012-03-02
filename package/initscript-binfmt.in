@@ -1,27 +1,27 @@
 #!/bin/bash
 #
-# @PROJECT_NAME@-binfmt This shell script enables @PROJECT_NAME@
+# @PACKAGE_NAME@-binfmt This shell script enables @PACKAGE_NAME@
 #   (@PACKAGE_DESCRIPTION_SUMMARY@) to directly execute .js files.
 #
 # chkconfig: 2345 66 34
 # description: @PACKAGE_DESCRIPTION@
 #
-# processname: @PROJECT_NAME@-binfmt
+# processname: @PACKAGE_NAME@-binfmt
 
 ### BEGIN INIT INFO
-# Provides: @PROJECT_NAME@-binfmt
+# Provides: @PACKAGE_NAME@-binfmt
 # Required-Start: $local_fs
 # Required-Stop: $local_fs
 # Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
-# Short-Description: enable or disable direct .js execution by @PROJECT_NAME@
+# Short-Description: enable or disable direct .js execution by @PACKAGE_NAME@
 # Description: @PACKAGE_DESCRIPTION@
 ### END INIT INFO
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
-prog=@PROJECT_NAME@-js
-absprog=@BIN_INSTALL_DIR@/${prog}
+prog=@PACKAGE_NAME@-js
+absprog=@bindir@/${prog}
 
 register=/proc/sys/fs/binfmt_misc/register
 js_entry=/proc/sys/fs/binfmt_misc/ExecutableJS
