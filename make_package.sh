@@ -41,9 +41,9 @@ case $(uname) in
 	cp root/usr/share/doc/esxx/README      rsrc/ReadMe.txt
 
 	mkdir pkg
-	cp package/osx-uninstall.sh "pkg/Uninstall ESXX.sh"
+	cp package/osx-uninstall.sh "pkg/Uninstall ESXX.command"
+	chmod 755 "pkg/Uninstall ESXX.command"
 
-	export LANG=en_US.UTF-8
 	$packagemaker -build \
 	    -p pkg/${package_full_name}.pkg \
 	    -f root \

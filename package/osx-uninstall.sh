@@ -2,85 +2,82 @@
 
 set -e
 
+B="\033[1m"
+N="\033[0m"
+PKGID=org.esxx.ESXX
+SYSDIRS='^(Library|Library/LaunchDaemons|etc|etc/default|private|private/etc|private/etc/defaults|private/var|usr|usr/bin|usr/sbin|usr/share|usr/share/doc|)$'
+
+function quit {
+    local rc="$1"
+    local msg="$2"
+    echo -e "${B}${msg}${N}"
+    echo "Press any key to exit."
+    read -s -n 1
+    exit ${rc}
+}
+
+echo
+
 if [ ${UID} -ne 0 ]; then
-    echo "${0} must be executed as root"
-    exit 10
+    echo -e -n "${B}${0} must be executed as root.\nPress 'y' to proceed using 'sudo'. ${N}"
+    read -s -n 1 sume
+    echo
+
+    if [ "${sume}" != "y" ]; then
+	quit 5 "Aborted."
+    else
+	exec sudo "${0}"
+	quit 10 "sudo failed."
+    fi
 fi
 
 cd /
 
-B="\033[1m"
-N="\033[0m"
-RECEIPTS=/Library/Receipts
-SYSDIRS='^(\.|\./Library|\./Library/LaunchDaemons|\./etc|\./etc/default|\./private|\./private/etc|\./private/etc/defaults|\./usr|\./usr/bin|\./usr/sbin|\./usr/share|\./usr/share/doc|)$'
-
-candidates=$(find ${RECEIPTS} -type d -name 'esxx*' -maxdepth 1)
-
-echo -e "${B}The following installed ESXX packages were found in $RECEIPTS:${N}"
-echo
-cnt=1;
-for c in ${candidates}; do
-    echo "${cnt}: ${c}"
-    ((++cnt))
-done
-echo -e -n "${B}Please select one to be uninstalled or 'q' to quit: ${N}"
-read id
-
-if [ "${id}" == "q" ]; then
-    exit 5
+if [ "$(pkgutil --pkgs=${PKGID})" != "${PKGID}" ]; then
+    quit 5 "${PKGID} does not appear to be installed."
 fi
 
-cnt=1;
-for c in ${candidates}; do
-    if ((cnt == id)); then
-	candidate="${c}"
-	break
-    fi
-    ((++cnt))
-done
+echo -e "${B}${PKGID} will be uninstalled.${N}"
+pkgutil --pkg-info ${PKGID}
 
-if [ -z "${candidate}" ]; then
-    echo -e "${B}No package with ID ${id}${N}"
-    exit 5
-fi
+files=$(pkgutil --only-files --files ${PKGID})
+dirs=$(pkgutil --only-dirs --files ${PKGID} | grep -E -v "${SYSDIRS}" | sort -r)
 
-echo -e "${B}${candidate} will be uninstalled.${N}"
-files=$(lsbom -sflbc "${candidate}/Contents/Archive.bom")
-dirs=$(lsbom -sd "${candidate}/Contents/Archive.bom" | grep -E -v "${SYSDIRS}" | sort -r)
 echo
-
 echo "${files}"
+echo
 echo -e -n "${B}The files listed above will be removed. Press 'y' to proceed. ${N}"
-read -n 1 rmfiles
+read -s -n 1 rmfiles
 echo
 
 if [ "${rmfiles}" != "y" ]; then
-    echo -e "${B} Aborted.${N}"
-    exit 5
+    quit 5 "Aborted."
 fi
 
-set +e
-
 # Remove files
+set +e
 rm ${files}
+set -e
 
 echo
 echo "${dirs}"
-
+echo
 echo -e -n "${B}The directories listed above will be removed, if non-empty. Press 'y' to proceed. ${N}"
-read -n 1 rmdirs
+read -s -n 1 rmdirs
 echo
 
 if [ "${rmdirs}" != "y" ]; then
-    echo -e "${B} Aborted.${N}"
-    exit 5
+    quit 5 "Aborted."
 fi
 
 # Remove (empty) directories
 set +e
 rmdir ${dirs}
+set -e
 
 # Remove receipt
-rm -r "${candidate}"
+echo
+pkgutil --forget ${PKGID}
+echo
 
-echo -e "${B}ESXX removal completed.${N}"
+quit 0 "ESXX removal completed."
