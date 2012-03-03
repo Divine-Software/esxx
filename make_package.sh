@@ -61,48 +61,46 @@ case $(uname) in
 	    ${SOURCE}/${package_full_name}.dmg
 	;;
     SunOS)
+	ant -buildfile ${SOURCE}/build.xml -Dbuild.dir=${BUILD} \
+	    -Dprefix=/usr -Dsysconfdir=/etc -Dconfdir=/etc/default -Dlocalstatedir=/var -Dsharedstatedir=/var \
+	    -DDESTDIR=${BUILD}/root generate-build-files install
+
+	# Fetch various version variables
+	. version
+
 	export PKG_REPO=http://localhost:11111
 
 	# Start a private package server
-	/usr/lib/pkg.depotd -d depot -p 11111 --set-property publisher.prefix=esxx.org &
+	/usr/lib/pkg.depotd -d ${BUILD}/depot -p 11111 --set-property publisher.prefix=esxx.org &
 	pid=$!
 	sleep 2
 
 	test -d /proc/$pid
 
-	$(pkgsend open ${package_name}@${package_major}.${package_minor}.${package_patch}-1)
+	$(pkgsend open ${package_name}@${package_version}-${package_release})
 	pkgsend add set name=description value="${package_summary}"
 	pkgsend add set name=info.classification \
 	    value="org.opensolaris.category.2008:Web Services/Application and Web Servers"
 
-	pkgsend add license ${package_license_file} license=${package_license}
+	pkgsend add license root/usr/share/doc/esxx/LICENSE.txt license=${package_license}
 	pkgsend add depend type=require fmri=SUNWj6rt
 	pkgsend add depend type=require fmri=SUNWbash
 	pkgsend add depend type=require fmri=SUNWsudo
 
-	umask 0002
-	make install DESTDIR=root
-	chown -R root:sys root
-	chown -R root:bin root/lib
-	chown -R root:bin root/usr/bin
-	chown -R root:bin root/usr/share/esxx
-	chown -R root:bin root/usr/share/doc/esxx
-
-	# These two config files need special treatment
-	pkgsend add file root/etc/default/esxx path=etc/default/esxx preserve=renamenew \
-	    mode=644 owner=root group=sys
-	pkgsend add file root/etc/default/esxx-js path=etc/default/esxx-js preserve=renamenew \
-	    mode=644 owner=root group=sys
-	rm root/etc/default/esxx*
+	# These  config files need special treatment
+	(cd root && for file in etc/default/*; do
+		pkgsend add file ${file} path=${file} preserve=renamenew \
+		    mode=644 owner=root group=sys
+	    done)
+	rm root/etc/default/*
 
 	# Add the remaining files
-	(cd root && tar cf ../root.tar *)
-	pkgsend import root.tar
+	pkgsend import root
 
 	pkgsend close
 
-	fmri=$(pkgrecv -s ${PKG_REPO} -n | grep esxx)
-	pkgrecv  -s ${PKG_REPO} -d ips ${fmri}
+	fmri=$(pkgrecv -s ${PKG_REPO} --newest | grep esxx)
+	pkgrecv  -s ${PKG_REPO} -d ips --raw ${fmri}
 	(cd ips && tar cfz \
 	    ${SOURCE}/${package_full_name}.ips.tgz *)
 
