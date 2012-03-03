@@ -11,6 +11,8 @@ BuildArch:	noarch
 Requires:	bash, sudo, java >= 1.6.0
 Source:		%{name}-%{version}.tar.gz
 
+%define 	ant_flags -Dprefix=@prefix@ -Dexec_prefix=@exec_prefix@ -Dbindir=@bindir@ -Dsbindir=@sbindir@ -Dlibexecdir=@libexecdir@ -Ddatarootdir=@datarootdir@ -Ddatadir=@datadir@ -Dsysconfdir=@sysconfdir@ -Dconfdir=@confdir@ -Dsharedstatedir=@sharedstatedir@ -Dlocalstatedir=@localstatedir@ -Dincludedir=@includedir@ -Ddocdir=@docdir@ -Dinfodir=@infodir@ -Dhtmldir=@htmldir@ -Ddvidir=@dvidir@ -Dpdfdir=@pdfdir@ -Dpsdir=@psdir@ -Dlibdir=@libdir@ -Dlispdir=@lispdir@ -Dlocaledir=@localedir@ -Dmandir=@mandir@
+
 %description
 @PACKAGE_DESCRIPTION@
 
@@ -19,11 +21,11 @@ rm -rf %{buildroot}
 %setup -q
 
 %build
-./run_cmake.sh
+ant %{ant_flags} generate-install-files
   
 %install
-make install DESTDIR=%{buildroot}
-find %{buildroot} -type f -printf '/%%P\n' > %{name}-{%version}.files
+ant %{ant_flags} -DDESTDIR=%{buildroot} install
+find %{buildroot} -type f -printf '/%%P\n' | grep -v ^/etc/sysconfig > %{name}-{%version}.files
 
 %clean
 rm -rf %{buildroot}

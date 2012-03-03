@@ -11,16 +11,8 @@ umask 022
 
 SOURCE=$(cd $(dirname $0) && pwd)
 BUILD=$(mktemp -d -t esxx-build.XXXXXX)
-ANT="ant -buildfile ${SOURCE}/build.xml -Dbuild.dir=${BUILD}
-         -Dprefix=/usr -Dsysconfdir=/etc -Dlocalstatedir=/var -Dsharedstatedir=/var"
 
 cd ${BUILD}
-
-# Configure
-${ANT} generate-install-files
-
-# Fetch various version variables
-. package/version
 
 # Build package
 case $(uname) in
@@ -33,8 +25,13 @@ case $(uname) in
 	ln -s private/etc root/etc
 	ln -s private/var root/var
 
-	${ANT} -DDESTDIR=${BUILD}/root install
+	ant -buildfile ${SOURCE}/build.xml -Dbuild.dir=${BUILD} \
+	    -Dprefix=/usr -Dsysconfdir=/etc -Dlocalstatedir=/var -Dsharedstatedir=/var \
+	    -DDESTDIR=${BUILD}/root generate-build-files install
 	rm root/etc root/var
+
+	# Fetch various version variables
+	. version
 
 	mkdir rsrc
 	cp root/usr/share/doc/esxx/LICENSE.txt rsrc/License.txt
@@ -72,7 +69,6 @@ case $(uname) in
 	sleep 2
 
 	test -d /proc/$pid
-
 
 	$(pkgsend open ${package_name}@${package_major}.${package_minor}.${package_patch}-1)
 	pkgsend add set name=description value="${package_summary}"
@@ -118,7 +114,8 @@ case $(uname) in
 	if [ -f /etc/debian_version ]; then
 	    # Assume we're on Debian. Create the config files in ${SOURCE}/debian first.
 	    cd ${SOURCE}
-	    ${ANT} generate-build-files
+	    ant -Dprefix=/usr -Dsysconfdir=/etc -Dconfdir=/etc/default -Dlocalstatedir=/var -Dsharedstatedir=/var \
+		generate-build-files
 
 	    set +e
 	    dpkg-buildpackage
@@ -127,12 +124,22 @@ case $(uname) in
 	    dh_clean
 	    rm debian/control debian/changelog
 	    rm -r builddir
-	else
+	elif [ -f /etc/redhat-release ]; then
+	    # Assume RedHat
+	    ant -buildfile ${SOURCE}/build.xml -Dbuild.dir=${BUILD} \
+		-Dprefix=/usr -Dsysconfdir=/etc -Dconfdir=/etc/sysconfig -Dlocalstatedir=/var -Dsharedstatedir=/var \
+		generate-build-files
+
+	    # Fetch various version variables
+	    . version
+
 	    mkdir -p rpmroot/{BUILD,SPECS,SRPMS,RPMS/noarch} ${package_full_name}
 	    cp -r ${SOURCE}/* ${package_full_name}/
-	    tar cfz ${package_full_name}.tar.gz ${package_full_name} esxx.spec
+	    tar cfz ${package_full_name}.tar.gz esxx.spec ${package_full_name}
 	    rpmbuild -tb --define "_topdir ${BUILD}/rpmroot" ${package_full_name}.tar.gz
 	    cp ${BUILD}/rpmroot/RPMS/noarch/${package_full_name}-*.rpm ${SOURCE}
+	else
+	    echo "Unknown Linux variant"
 	fi
 	;;
 esac

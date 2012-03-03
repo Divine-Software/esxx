@@ -55,8 +55,8 @@
   </condition>
 
   <target name="generate-build-files" description="Generate build files">
-    <copy todir="debian" overwrite="true">
-      <fileset dir="debian" />
+    <copy todir="${build.dir}" overwrite="true">
+      <fileset dir="." includes="esxx.spec.in version.in debian/*.in"/>
       <globmapper from="*.in" to="*" />
       <filterset refid="installdirs" />
       <filterset filtersfile="build.properties" />
