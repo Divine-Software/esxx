@@ -2,22 +2,25 @@
 
 set -e
 
-if [ $UID -ne 0 ]; then
-    echo "$0 must be executed as root"
-    exit 10
-fi
+#if [ $UID -ne 0 ]; then
+#    echo "$0 must be executed as root"
+#    exit 10
+#fi
+
+umask 022
 
 SOURCE=$(cd $(dirname $0) && pwd)
 BUILD=$(mktemp -d -t esxx-build.XXXXXX)
+ANT="ant -buildfile ${SOURCE}/build.xml -Dbuild.dir=${BUILD}
+         -Dprefix=/usr -Dsysconfdir=/etc -Dlocalstatedir=/var -Dsharedstatedir=/var"
 
 cd ${BUILD}
 
-# Configure CMake
-${SOURCE}/run_cmake.sh
+# Configure
+${ANT} generate-install-files
 
 # Fetch various version variables
 . package/version
-package_full_name="${package_name}-${package_major}.${package_minor}.${package_patch}"
 
 # Build package
 case $(uname) in
@@ -25,19 +28,22 @@ case $(uname) in
 	export JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Home
     	packagemaker=/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker
 
-	# OSX uses a symlink for /etc -- we must too
-	mkdir -p root/private/etc
+	# OSX uses a symlink for /etc and /var -- we must too
+	mkdir -p root/private/{etc,var}
 	ln -s private/etc root/etc
-	make install DESTDIR=root
-	rm root/etc
+	ln -s private/var root/var
+
+	${ANT} -DDESTDIR=${BUILD}/root install
+	rm root/etc root/var
 
 	mkdir rsrc
-	cp ${SOURCE}/LICENSE.txt rsrc/License.txt
-	cp ${SOURCE}/README rsrc/ReadMe.txt
+	cp root/usr/share/doc/esxx/LICENSE.txt rsrc/License.txt
+	cp root/usr/share/doc/esxx/README      rsrc/ReadMe.txt
 
 	mkdir pkg
-	cp ${SOURCE}/package/osx-uninstall.sh "pkg/Uninstall ESXX.sh"
-	
+	cp package/osx-uninstall.sh "pkg/Uninstall ESXX.sh"
+
+	export LANG=en_US.UTF-8
 	$packagemaker -build \
 	    -p pkg/${package_full_name}.pkg \
 	    -f root \
@@ -110,9 +116,10 @@ case $(uname) in
 
     Linux)
 	if [ -f /etc/debian_version ]; then
-	    # Assume we're on Debian.  CMake has already been run,
-	    # creating the config files in ${SOURCE}/debian.
+	    # Assume we're on Debian. Create the config files in ${SOURCE}/debian first.
 	    cd ${SOURCE}
+	    ${ANT} generate-build-files
+
 	    set +e
 	    dpkg-buildpackage
 

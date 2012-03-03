@@ -64,11 +64,11 @@
   </target>
 
   <target name="generate-install-files" depends="init" description="Generate install files">
-    <copy todir="${build.dir}/package" overwrite="true">
+    <copy todir="${build.dir}/package">
       <fileset dir="package" excludes="*.in" />
     </copy>
 
-    <copy todir="${build.dir}/package" overwrite="true">
+    <copy todir="${build.dir}/package">
       <fileset dir="package" />
       <globmapper from="*.in" to="*" />
       <filterset refid="installdirs" />
@@ -90,6 +90,9 @@
       <fileset dir="." includes="examples/**"/>
       <fileset dir="." includes="CHANGES.txt LICENSE.* README NOTICE" />
     </copy>
+
+    <!-- Fixup permissions in examples -->
+    <chmod dir="${DESTDIR}${docdir}/examples" includes="**/*.js" perm="ugo+rx" />
   </target>
 
   <target name="install-windows" description="Install Windows-specific files" if="isWindows">
@@ -110,16 +113,19 @@
       <fileset file="${build.dir}/${ant.project.name}-small.jar" />
       <globmapper from="*-small.jar" to="*.jar"/>
     </copy>
+    <chmod file="${DESTDIR}${sbindir}/${ant.project.name}.jar" perm="755" />
 
     <copy todir="${DESTDIR}${sbindir}">
       <fileset file="${build.dir}/package/javawrapper" />
       <globmapper from="javawrapper" to="${ant.project.name}"/>
     </copy>
+    <chmod file="${DESTDIR}${sbindir}/${ant.project.name}" perm="755" />
 
     <copy todir="${DESTDIR}${bindir}">
       <fileset file="${build.dir}/package/jswrapper" />
       <globmapper from="jswrapper" to="${ant.project.name}-js"/>
     </copy>
+    <chmod file="${DESTDIR}${bindir}/${ant.project.name}-js" perm="755" />
 
     <!-- Support JARs -->
     <copy todir="${DESTDIR}${datadir}/lib">
