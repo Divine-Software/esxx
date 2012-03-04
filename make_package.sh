@@ -77,7 +77,7 @@ case $(uname) in
 
 	test -d /proc/$pid
 
-	$(pkgsend open ${package_name}@${package_version}-${package_release})
+	$(pkgsend open ${package_name}@${package_version}-${package_build})
 	pkgsend add set name=description value="${package_summary}"
 	pkgsend add set name=info.classification \
 	    value="org.opensolaris.category.2008:Web Services/Application and Web Servers"

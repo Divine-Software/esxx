@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?define UpgradeCode="{EA1068E6-3983-4466-9095-CBDF928F2127}" ?>
+  <?define PackageVersion="@PACKAGE_VERSION_MAJOR@.@PACKAGE_VERSION_MINOR@.@PACKAGE_BUILD@.@PACKAGE_VERSION_PATCH@" ?>
+
+  <Product Id="*" Name="@PACKAGE_DESCRIPTION_SUMMARY@" Language="1033" Version="$(var.PackageVersion)" Manufacturer="@PACKAGE_VENDOR@" UpgradeCode="$(var.UpgradeCode)">
+    <Package Description='@PACKAGE_DESCRIPTION_SUMMARY@' Comments='@PACKAGE_DESCRIPTION@' Manufacturer="@PACKAGE_VENDOR@" InstallerVersion="300" Compressed="yes" InstallScope="perMachine"/>
+    <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
+
+    <Upgrade Id="$(var.UpgradeCode)">
+      <UpgradeVersion OnlyDetect="yes" Minimum="$(var.PackageVersion)" IncludeMinimum="no" Property="NEWER_VERSION_FOUND" />
+      <UpgradeVersion Minimum="0.0.0.0" IncludeMinimum="yes" Maximum="$(var.PackageVersion)" IncludeMaximum="no" Property="OLDER_VERSION_FOUND" />
+    </Upgrade>    
+
+    <InstallExecuteSequence>
+      <RemoveExistingProducts After="InstallInitialize"/>
+    </InstallExecuteSequence>
+
+  	<UIRef Id="WixUI_InstallDir" />
+    <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
+<!--
+    <Icon Id="SuperFormIcon.ico" SourceFile="$(var.ResourcesDir)\Exclam.ico" />
+    <Property Id="ARPPRODUCTICON" Value="SuperFormIcon.ico" />
+-->
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLLOCATION" Name="@PACKAGE_NAME@" />
+      </Directory>
+    </Directory>
+
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLLOCATION" />
+
+    <Feature Id="ESXXFeature" Title="@PACKAGE_DESCRIPTION_SUMMARY@" Level="1">
+      <ComponentGroupRef Id="ESXXFiles" />
+    </Feature>
+  </Product>
+</Wix>

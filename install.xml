@@ -56,11 +56,30 @@
 
   <target name="generate-build-files" description="Generate build files">
     <copy todir="${build.dir}" overwrite="true">
-      <fileset dir="." includes="esxx.spec.in version.in debian/*.in"/>
+      <fileset dir="." includes="*.in debian/*.in"/>
       <globmapper from="*.in" to="*" />
       <filterset refid="installdirs" />
       <filterset filtersfile="build.properties" />
     </copy>
+  	
+  	<!-- LICENSE.rtf -->
+    <copy file="LICENSE.txt" tofile="${build.dir}/LICENSE.rtf" overwrite="true">
+      <filterchain>
+      	<tokenfilter>
+          <filetokenizer/>
+            <replaceregex pattern="^" replace="{\\\\rtf1\\\\ansi\\\\deff0{\\\\fonttbl{\\\\f0\\\\fnil\\\\fcharset0 Courier New;}}\\\\viewkind4\\\\uc1\\\\pard\\\\lang1031\\\\f0\\\\fs15" />
+      	</tokenfilter>
+      	<tokenfilter>
+          <linetokenizer/>
+            <replaceregex pattern="$" replace="\\\\par" />
+      	</tokenfilter>
+      	<tokenfilter>
+          <filetokenizer/>
+          <replaceregex pattern="$" replace="}" />
+      	</tokenfilter>
+      </filterchain>
+    </copy>
+
   </target>
 
   <target name="generate-install-files" depends="init" description="Generate install files">
@@ -85,10 +104,9 @@
       <fileset dir="share"/>
     </copy>
 
-    <!-- Documentation -->
+    <!-- Examples -->
     <copy todir="${DESTDIR}${docdir}">
       <fileset dir="." includes="examples/**"/>
-      <fileset dir="." includes="CHANGES.txt LICENSE.* README NOTICE" />
     </copy>
 
     <!-- Fixup permissions in examples -->
@@ -104,6 +122,12 @@
     <!-- Wrappers -->
     <copy todir="${DESTDIR}${exec_prefix}">
       <fileset dir="${build.dir}/package" includes="*.bat"/>
+    </copy>
+
+  	<!-- Documentation, with .txt extensions -->
+    <copy todir="${DESTDIR}${docdir}">
+      <fileset dir="." includes="CHANGES.txt LICENSE.* README NOTICE" />
+      <regexpmapper from="^((.*)\.txt|(.*))$$" to="\2\3.txt"/>
     </copy>
   </target>
 
@@ -137,6 +161,11 @@
     <copy todir="${DESTDIR}${confdir}">
       <fileset dir="${build.dir}/package/" includes="config, config-*"/>
       <globmapper from="config*" to="${ant.project.name}*"/>
+    </copy>
+  	
+    <!-- Documentation -->
+    <copy todir="${DESTDIR}${docdir}">
+      <fileset dir="." includes="CHANGES.txt LICENSE.* README NOTICE" />
     </copy>
   </target>
 

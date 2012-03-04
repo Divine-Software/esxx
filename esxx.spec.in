@@ -3,7 +3,7 @@ Buildroot:      %{_tmppath}/%{name}-%{version}-root
 Summary:        @PACKAGE_DESCRIPTION_SUMMARY@
 Name:           @PACKAGE_NAME@
 Version:        @PACKAGE_VERSION_MAJOR@.@PACKAGE_VERSION_MINOR@.@PACKAGE_VERSION_PATCH@
-Release:        @PACKAGE_RELEASE@
+Release:        @PACKAGE_BUILD@
 License:        @PACKAGE_LICENSE@
 Group:          System Environment/Daemons
 Vendor:         @PACKAGE_VENDOR@
