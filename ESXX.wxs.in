@@ -8,32 +8,53 @@
     <Package Description='@PACKAGE_DESCRIPTION_SUMMARY@' Comments='@PACKAGE_DESCRIPTION@' Manufacturer="@PACKAGE_VENDOR@" InstallerVersion="300" Compressed="yes" InstallScope="perMachine"/>
     <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
 
-    <Upgrade Id="$(var.UpgradeCode)">
-      <UpgradeVersion OnlyDetect="yes" Minimum="$(var.PackageVersion)" IncludeMinimum="no" Property="NEWER_VERSION_FOUND" />
-      <UpgradeVersion Minimum="0.0.0.0" IncludeMinimum="yes" Maximum="$(var.PackageVersion)" IncludeMaximum="no" Property="OLDER_VERSION_FOUND" />
-    </Upgrade>    
+    <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
 
-    <InstallExecuteSequence>
-      <RemoveExistingProducts After="InstallInitialize"/>
-    </InstallExecuteSequence>
-
-  	<UIRef Id="WixUI_InstallDir" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLLOCATION" />
+    <UIRef Id="WixUI_FeatureTree" />
     <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
-<!--
-    <Icon Id="SuperFormIcon.ico" SourceFile="$(var.ResourcesDir)\Exclam.ico" />
-    <Property Id="ARPPRODUCTICON" Value="SuperFormIcon.ico" />
--->
+
+    <Icon Id="favicon.ico" SourceFile="classes\rsrc\favicon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="favicon.ico" />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
-        <Directory Id="INSTALLLOCATION" Name="@PACKAGE_NAME@" />
+        <Directory Id="INSTALLLOCATION" Name="@PACKAGE_FULL_NAME@" />
+      </Directory>
+
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="@PACKAGE_FULL_NAME@"/>
       </Directory>
     </Directory>
 
-    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLLOCATION" />
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="{7672173D-A384-4977-B1E3-8B2DAB6AEA30}">
+        <Shortcut Id="ApplicationStartMenuShortcut1" 
+                  Name="@PACKAGE_FULL_NAME@ FastCGI Server" 
+                  Description="Start @PACKAGE_FULL_NAME@ in FastCGI server mode"
+		  Icon="favicon.ico"
+                  Target="[INSTALLLOCATION]start-fastcgi.bat"
+                  WorkingDirectory="INSTALLLOCATION"/>
+        <Shortcut Id="ApplicationStartMenuShortcut2" 
+                  Name="@PACKAGE_FULL_NAME@ HTTP Server" 
+                  Description="Start @PACKAGE_FULL_NAME@ in HTTP server mode, serving the examples directory"
+		  Icon="favicon.ico"
+                  Target="[INSTALLLOCATION]start-http.bat"
+                  WorkingDirectory="INSTALLLOCATION"
+		  Arguments="-r doc/examples"/>
+        <RegistryValue Root="HKCU" Key="Software\Microsoft\@PACKAGE_FULL_NAME@" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+      </Component>
+    </DirectoryRef>
 
-    <Feature Id="ESXXFeature" Title="@PACKAGE_DESCRIPTION_SUMMARY@" Level="1">
+    <Feature Id="ESXX" Title="@PACKAGE_DESCRIPTION_SUMMARY@" Level="1" AllowAdvertise="no">
       <ComponentGroupRef Id="ESXXFiles" />
+
+      <Feature Id="StartMenu" Title="Start Menu Shortcuts" 
+	       Description="Install shortcuts to the FastCGI and HTTP server examples in the Start Menu." 
+	       Level="1" AllowAdvertise="no">
+	<ComponentRef Id="ApplicationShortcut" />
+      </Feature>
     </Feature>
   </Product>
 </Wix>
