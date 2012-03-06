@@ -30,6 +30,9 @@
     <UIRef Id="WixUI_FeatureTree" />
     <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
 
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLLOCATION]"
+		 After="CostFinalize" />
+
     <Icon Id="favicon.ico" SourceFile="classes\rsrc\favicon.ico" />
     <Property Id="ARPPRODUCTICON" Value="favicon.ico" />
 
@@ -59,6 +62,7 @@
                   Target="[INSTALLLOCATION]start-http.bat"
                   WorkingDirectory="INSTALLLOCATION"
 		  Arguments="-r doc/examples"/>
+	<Environment Id="ESXXHomeEnv" Action="set" Part="all" Name="ESXX_HOME" Value="[INSTALLLOCATION]" System="yes" />
         <RegistryValue Root="HKCU" Key="Software\Microsoft\@PACKAGE_FULL_NAME@" Name="installed" 
 		       Type="integer" Value="1" KeyPath="yes"/>
         <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
