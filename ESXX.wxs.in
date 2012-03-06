@@ -8,6 +8,17 @@
     <Package Description='@PACKAGE_DESCRIPTION_SUMMARY@' Comments='@PACKAGE_DESCRIPTION@' Manufacturer="@PACKAGE_VENDOR@" InstallerVersion="300" Compressed="yes" InstallScope="perMachine"/>
     <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
 
+    <Property Id="JAVA_CURRENT_VERSION">
+      <RegistrySearch Id="JRE_CURRENT_VERSION_REGSEARCH" 
+		      Root="HKLM" Key="SOFTWARE\JavaSoft\Java Runtime Environment" Name="CurrentVersion" 
+		      Type="raw" />
+    </Property>
+
+    <Condition Message="@PACKAGE_FULL_NAME@ requires Java Runtime Environment version 1.6,
+			but it could not be found. Please install Oracle JRE 1.6 or later first.">
+      Installed OR (JAVA_CURRENT_VERSION >= "1.6")
+    </Condition>
+
     <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
 
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLLOCATION" />
