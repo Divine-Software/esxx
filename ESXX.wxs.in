@@ -4,17 +4,17 @@
   <?define UpgradeCode="{EA1068E6-3983-4466-9095-CBDF928F2127}" ?>
   <?define PackageVersion="@PACKAGE_VERSION_MAJOR@.@PACKAGE_VERSION_MINOR@.@PACKAGE_BUILD@.@PACKAGE_VERSION_PATCH@" ?>
 
-  <Product Id="*" Name="@PACKAGE_DESCRIPTION_SUMMARY@" Language="1033" 
-	   Version="$(var.PackageVersion)" Manufacturer="@PACKAGE_VENDOR@" 
+  <Product Id="*" Name="@PACKAGE_DESCRIPTION_SUMMARY@" Language="1033"
+	   Version="$(var.PackageVersion)" Manufacturer="@PACKAGE_VENDOR@"
 	   UpgradeCode="$(var.UpgradeCode)">
     <Package Description="@PACKAGE_DESCRIPTION_SUMMARY@" Comments="@PACKAGE_DESCRIPTION@"
-	     Manufacturer="@PACKAGE_VENDOR@" InstallerVersion="300" 
+	     Manufacturer="@PACKAGE_VENDOR@" InstallerVersion="300"
 	     Compressed="yes" InstallScope="perMachine"/>
     <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
 
     <Property Id="JAVA_CURRENT_VERSION">
-      <RegistrySearch Id="JRE_CURRENT_VERSION_REGSEARCH" 
-		      Root="HKLM" Key="SOFTWARE\JavaSoft\Java Runtime Environment" Name="CurrentVersion" 
+      <RegistrySearch Id="JRE_CURRENT_VERSION_REGSEARCH"
+		      Root="HKLM" Key="SOFTWARE\JavaSoft\Java Runtime Environment" Name="CurrentVersion"
 		      Type="raw" />
     </Property>
 
@@ -48,22 +48,21 @@
 
     <DirectoryRef Id="ApplicationProgramsFolder">
       <Component Id="ApplicationShortcut" Guid="{7672173D-A384-4977-B1E3-8B2DAB6AEA30}">
-        <Shortcut Id="ApplicationStartMenuShortcut1" 
-                  Name="@PACKAGE_FULL_NAME@ FastCGI Server" 
+        <Shortcut Id="ApplicationStartMenuShortcut1"
+                  Name="@PACKAGE_FULL_NAME@ FastCGI Server"
                   Description="Start @PACKAGE_FULL_NAME@ in FastCGI server mode"
 		  Icon="favicon.ico"
                   Target="[INSTALLLOCATION]start-fastcgi.bat"
                   WorkingDirectory="INSTALLLOCATION"/>
-        <Shortcut Id="ApplicationStartMenuShortcut2" 
-                  Name="@PACKAGE_FULL_NAME@ HTTP Server" 
+        <Shortcut Id="ApplicationStartMenuShortcut2"
+                  Name="@PACKAGE_FULL_NAME@ HTTP Server"
                   Description="Start @PACKAGE_FULL_NAME@ in HTTP server mode,
 			       serving the examples directory"
 		  Icon="favicon.ico"
                   Target="[INSTALLLOCATION]start-http.bat"
                   WorkingDirectory="INSTALLLOCATION"
 		  Arguments="-r doc/examples"/>
-	<Environment Id="ESXXHomeEnv" Action="set" Part="all" Name="ESXX_HOME" Value="[INSTALLLOCATION]" System="yes" />
-        <RegistryValue Root="HKCU" Key="Software\Microsoft\@PACKAGE_FULL_NAME@" Name="installed" 
+        <RegistryValue Root="HKCU" Key="Software\Microsoft\@PACKAGE_FULL_NAME@" Name="installed"
 		       Type="integer" Value="1" KeyPath="yes"/>
         <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
       </Component>
@@ -71,12 +70,26 @@
 
     <Feature Id="ESXX" Title="@PACKAGE_DESCRIPTION_SUMMARY@" Level="1" AllowAdvertise="no">
       <ComponentGroupRef Id="ESXXFiles" />
+      <Component Id="Environment" Directory="INSTALLLOCATION" Guid="{472EC70D-2955-47bd-84EB-BB70E3B47C78}">
+	<Environment Id="ESXXHomeEnv" Action="set" Part="all"  Name="ESXX_HOME" Value="[INSTALLLOCATION]" System="yes" />
+	<CreateFolder/>
+      </Component>
 
-      <Feature Id="StartMenu" Title="Start Menu Shortcuts" 
+      <Feature Id="ESXXStartMenu" Title="Start Menu Shortcuts"
 	       Description="Install shortcuts to the FastCGI and
-			    HTTP server examples in the Start Menu." 
+			    HTTP server examples in the Start Menu."
 	       Level="1" AllowAdvertise="no">
 	<ComponentRef Id="ApplicationShortcut" />
+      </Feature>
+
+      <Feature Id="ESXXPath" Title="Add @PACKAGE_FULL_NAME@ to system PATH"
+	       Description="Makes the @PACKAGE_FULL_NAME@ programs and scripts
+			    directly available in the console."
+	       Level="1" AllowAdvertise="no">
+	<Component Id="Path" Directory="INSTALLLOCATION" Guid="{A11AB11E-0CA6-4ffb-9064-52D7C11A6CC5}">
+	  <Environment Id="PATH" Action="set" Part="last" Name="PATH" Value="%ESXX_HOME%" System="yes" />
+	  <CreateFolder/>
+	</Component>
       </Feature>
     </Feature>
   </Product>
