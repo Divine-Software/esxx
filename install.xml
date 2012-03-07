@@ -62,7 +62,7 @@
       <filterset filtersfile="build.properties" />
     </copy>
   	
-  	<!-- LICENSE.rtf -->
+    <!-- LICENSE.rtf -->
     <copy file="LICENSE.txt" tofile="${build.dir}/LICENSE.rtf" overwrite="true">
       <filterchain>
       	<tokenfilter>
