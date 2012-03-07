@@ -67,7 +67,9 @@
       <filterchain>
       	<tokenfilter>
           <filetokenizer/>
-            <replaceregex pattern="^" replace="{\\\\rtf1\\\\ansi\\\\deff0{\\\\fonttbl{\\\\f0\\\\fnil\\\\fcharset0 Courier New;}}\\\\viewkind4\\\\uc1\\\\pard\\\\lang1031\\\\f0\\\\fs15" />
+            <!--replaceregex pattern="^" replace="{\\\\rtf1\\\\ansi\\\\deff0{\\\\fonttbl{\\\\f0\\\\fnil\\\\fcharset0 Courier New;}}\\\\viewkind4\\\\uc1\\\\pard\\\\lang1031\\\\f0\\\\fs15" /-->
+            <replaceregex pattern="^" replace="{\\\\rtf1\\\\ansi\\\\deff0{\\\\fonttbl{\\\\f0\\\\fnil\\\\fcharset0 MS Mincho;}}\\\\viewkind4\\\\uc1\\\\pard\\\\lang1031\\\\f0\\\\fs16" />
+
       	</tokenfilter>
       	<tokenfilter>
           <linetokenizer/>
