@@ -7,10 +7,10 @@ if [ $# -ne 1 ]; then
     exit 10
 fi
 
-#if [ $UID -ne 0 ]; then
-#    echo "$0 must be executed as root"
-#    exit 10
-#fi
+if [ $UID -ne 0 ]; then
+    echo "$0 must be executed as root"
+    exit 10
+fi
 
 umask 022
 
