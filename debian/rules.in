@@ -9,7 +9,7 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-ANT_FLAGS = -Dprefix=@prefix@ -Dexec_prefix=@exec_prefix@ -Dbindir=@bindir@ -Dsbindir=@sbindir@ -Dlibexecdir=@libexecdir@ -Ddatarootdir=@datarootdir@ -Ddatadir=@datadir@ -Dsysconfdir=@sysconfdir@ -Dconfdir=@confdir@ -Dsharedstatedir=@sharedstatedir@ -Dlocalstatedir=@localstatedir@ -Dincludedir=@includedir@ -Ddocdir=@docdir@ -Dinfodir=@infodir@ -Dhtmldir=@htmldir@ -Ddvidir=@dvidir@ -Dpdfdir=@pdfdir@ -Dpsdir=@psdir@ -Dlibdir=@libdir@ -Dlispdir=@lispdir@ -Dlocaledir=@localedir@ -Dmandir=@mandir@
+ant_flags = -Dprefix=@prefix@ -Dexec_prefix=@exec_prefix@ -Dbindir=@bindir@ -Dsbindir=@sbindir@ -Dlibexecdir=@libexecdir@ -Ddatarootdir=@datarootdir@ -Ddatadir=@datadir@ -Dsysconfdir=@sysconfdir@ -Dconfdir=@confdir@ -Dsharedstatedir=@sharedstatedir@ -Dlocalstatedir=@localstatedir@ -Dincludedir=@includedir@ -Ddocdir=@docdir@ -Dinfodir=@infodir@ -Dhtmldir=@htmldir@ -Ddvidir=@dvidir@ -Dpdfdir=@pdfdir@ -Dpsdir=@psdir@ -Dlibdir=@libdir@ -Dlispdir=@lispdir@ -Dlocaledir=@localedir@ -Dmandir=@mandir@
 
 
 builddir/Makefile:
@@ -24,7 +24,7 @@ build-stamp:  builddir/Makefile
 	dh_testdir
 
 	# Add here commands to compile the package.
-	ant $(ant_flags) generate-install-files
+	ant $(ant_flags)
 
 	touch $@
 

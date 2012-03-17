@@ -109,24 +109,33 @@ case $(uname) in
 
 	fmri=$(pkgrecv -s ${PKG_REPO} --newest | grep esxx)
 	pkgrecv  -s ${PKG_REPO} -d ips --raw ${fmri}
-	(cd ips && tar cfz \
-	    ${OLD_PWD}/${package_full_name}.ips.tgz *)
-
 	kill $pid
 	sleep 1
+
+	# Copy built packages
+	(cd ips && tar cfz \
+	    ${OLD_PWD}/${package_full_name}.ips.tgz *)
 	;;
 
     Linux)
 	if [ -f /etc/debian_version ]; then
 	    # Assume we're on Debian. Create the config files in ${SOURCE}/debian first.
+	    cd ${SOURCE}
+
 	    ant -buildfile ${SOURCE}/build.xml -Dbuild.dir=${SOURCE} \
 		-Dprefix=/usr -Dsysconfdir=/etc -Dconfdir=/etc/default -Dlocalstatedir=/var -Dsharedstatedir=/var \
 		generate-build-files
 
-	    cd ${SOURCE}
+	    # Fetch various version variables
+	    . version
 
+	    # Build
 	    set +e
 	    dpkg-buildpackage
+
+	    # Copy built packages
+	    cd ${BUILD}
+	    cp ${package_name}_${package_version}-${package_build}* ${OLD_PWD}
 
 	elif [ -f /etc/redhat-release ]; then
 	    # Assume RedHat
@@ -136,11 +145,14 @@ case $(uname) in
 
 	    # Fetch various version variables
 	    . version
-
+	    
+	    # Build
 	    mkdir -p rpmroot/{BUILD,SPECS,SRPMS,RPMS/noarch} ${package_full_name}
 	    mv ${SOURCE} ${package_full_name}
 	    tar cfz ${package_full_name}.tar.gz esxx.spec ${package_full_name}
 	    rpmbuild -tb --define "_topdir ${BUILD}/rpmroot" ${package_full_name}.tar.gz
+
+	    # Copy built packages
 	    cp ${BUILD}/rpmroot/RPMS/noarch/${package_full_name}-*.rpm ${OLD_PWD}
 	else
 	    echo "Unknown Linux variant"
