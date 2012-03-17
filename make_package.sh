@@ -2,6 +2,11 @@
 
 set -e
 
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <commit>"
+    exit 10
+fi
+
 #if [ $UID -ne 0 ]; then
 #    echo "$0 must be executed as root"
 #    exit 10
@@ -9,10 +14,13 @@ set -e
 
 umask 022
 
-SOURCE=$(cd $(dirname $0) && pwd)
+COMMIT="$1"
+OLD_PWD=$(cd $(dirname $0) && pwd)
 BUILD=$(mktemp -d -t esxx-build.XXXXXX)
-
+SOURCE=${BUILD}/source
 cd ${BUILD}
+git clone --local --no-checkout ${OLD_PWD} source
+(cd source && git checkout "${COMMIT}")
 
 # Build package
 case $(uname) in
@@ -49,16 +57,16 @@ case $(uname) in
 	    -d package/packagemaker-descr.plist \
 	    -ds
 
-	rm -f ${SOURCE}/${package_full_name}.dmg
+	rm -f ${OLD_PWD}/${package_full_name}.dmg
 
 	hdiutil create -size 32m image.dmg -srcfolder pkg -format UDRW \
 	    -volname "${package_full_name}"
 
 	hdiutil convert image.dmg -format UDZO -imagekey zlib-level=9 \
-	    -o ${SOURCE}/${package_full_name}.dmg
+	    -o ${OLD_PWD}/${package_full_name}.dmg
 
 	hdiutil internet-enable -yes \
-	    ${SOURCE}/${package_full_name}.dmg
+	    ${OLD_PWD}/${package_full_name}.dmg
 	;;
     SunOS)
 	ant -buildfile ${SOURCE}/build.xml -Dbuild.dir=${BUILD} \
@@ -102,7 +110,7 @@ case $(uname) in
 	fmri=$(pkgrecv -s ${PKG_REPO} --newest | grep esxx)
 	pkgrecv  -s ${PKG_REPO} -d ips --raw ${fmri}
 	(cd ips && tar cfz \
-	    ${SOURCE}/${package_full_name}.ips.tgz *)
+	    ${OLD_PWD}/${package_full_name}.ips.tgz *)
 
 	kill $pid
 	sleep 1
@@ -111,17 +119,15 @@ case $(uname) in
     Linux)
 	if [ -f /etc/debian_version ]; then
 	    # Assume we're on Debian. Create the config files in ${SOURCE}/debian first.
-	    cd ${SOURCE}
-	    ant -Dprefix=/usr -Dsysconfdir=/etc -Dconfdir=/etc/default -Dlocalstatedir=/var -Dsharedstatedir=/var \
+	    ant -buildfile ${SOURCE}/build.xml -Dbuild.dir=${SOURCE} \
+		-Dprefix=/usr -Dsysconfdir=/etc -Dconfdir=/etc/default -Dlocalstatedir=/var -Dsharedstatedir=/var \
 		generate-build-files
+
+	    cd ${SOURCE}
 
 	    set +e
 	    dpkg-buildpackage
 
-	    cd ${SOURCE}
-	    dh_clean
-	    rm debian/control debian/changelog
-	    rm -r builddir
 	elif [ -f /etc/redhat-release ]; then
 	    # Assume RedHat
 	    ant -buildfile ${SOURCE}/build.xml -Dbuild.dir=${BUILD} \
@@ -132,15 +138,15 @@ case $(uname) in
 	    . version
 
 	    mkdir -p rpmroot/{BUILD,SPECS,SRPMS,RPMS/noarch} ${package_full_name}
-	    cp -r ${SOURCE}/* ${package_full_name}/
+	    mv ${SOURCE} ${package_full_name}
 	    tar cfz ${package_full_name}.tar.gz esxx.spec ${package_full_name}
 	    rpmbuild -tb --define "_topdir ${BUILD}/rpmroot" ${package_full_name}.tar.gz
-	    cp ${BUILD}/rpmroot/RPMS/noarch/${package_full_name}-*.rpm ${SOURCE}
+	    cp ${BUILD}/rpmroot/RPMS/noarch/${package_full_name}-*.rpm ${OLD_PWD}
 	else
 	    echo "Unknown Linux variant"
 	fi
 	;;
 esac
 
-cd ${SOURCE}
-rm -r ${BUILD}
+cd ${OLD_PWD}
+echo rm -r ${BUILD}

@@ -9,15 +9,13 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-
-
+ANT_FLAGS = -Dprefix=@prefix@ -Dexec_prefix=@exec_prefix@ -Dbindir=@bindir@ -Dsbindir=@sbindir@ -Dlibexecdir=@libexecdir@ -Ddatarootdir=@datarootdir@ -Ddatadir=@datadir@ -Dsysconfdir=@sysconfdir@ -Dconfdir=@confdir@ -Dsharedstatedir=@sharedstatedir@ -Dlocalstatedir=@localstatedir@ -Dincludedir=@includedir@ -Ddocdir=@docdir@ -Dinfodir=@infodir@ -Dhtmldir=@htmldir@ -Ddvidir=@dvidir@ -Dpdfdir=@pdfdir@ -Dpsdir=@psdir@ -Dlibdir=@libdir@ -Dlispdir=@lispdir@ -Dlocaledir=@localedir@ -Dmandir=@mandir@
 
 
 builddir/Makefile:
 	dh_testdir
 	# Add here commands to configure the package.
 	mkdir -p builddir
-	cd builddir && ../run_cmake.sh
 
 
 build: build-stamp
@@ -26,8 +24,7 @@ build-stamp:  builddir/Makefile
 	dh_testdir
 
 	# Add here commands to compile the package.
-	#$(MAKE) -C builddir
-	#docbook-to-man debian/esxx.sgml > esxx.1
+	ant $(ant_flags) generate-install-files
 
 	touch $@
 
@@ -49,8 +46,7 @@ install: build
 	dh_installdirs
 
 	# Add here commands to install the package into debian/esxx.
-	$(MAKE) -C builddir DESTDIR=$(CURDIR)/debian/esxx install
-
+	ant $(ant_flags) -DDESTDIR=$(CURDIR)/debian/esxx install
 
 # Build architecture-independent files here.
 binary-indep: install
