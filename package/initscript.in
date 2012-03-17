@@ -108,7 +108,7 @@ else
       RETVAL=1
       echo -n " failed"
     else
-      start-stop-daemon --stop --quiet --name java \
+      start-stop-daemon --stop --quiet \
 	                --pidfile $pidfile --retry $timeout
       RETVAL=$?
       if [ $RETVAL -eq 0 ]; then
