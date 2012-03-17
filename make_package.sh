@@ -19,8 +19,7 @@ OLD_PWD=$(cd $(dirname $0) && pwd)
 BUILD=$(mktemp -d -t esxx-build.XXXXXX)
 SOURCE=${BUILD}/source
 cd ${BUILD}
-git clone --local --no-checkout ${OLD_PWD} source
-(cd source && git checkout "${COMMIT}")
+git archive --remote ${OLD_PWD} --prefix source/ "${COMMIT}" | tar xf -
 
 # Build package
 case $(uname) in
