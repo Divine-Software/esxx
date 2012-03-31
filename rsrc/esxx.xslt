@@ -71,7 +71,7 @@
 		<img src="http://api.flattr.com/button/button-static-50x60.png" 
 		     title="Flattr this" border="0" class="right"/>
 	      </a>
-	      <p>Do you suspect this error is because of a bug in ESXX? If so, please accept our apologies and make sure you're using the <a href="http://esxx.org/download.html">latest stable version</a>. If you already are, please <a href="https://github.com/LeviticusMB/esxx/issues">file a bug</a>.</p>
+	      <p>Do you suspect this error is because of a bug in ESXX? If so, please accept our apologies and make sure you're using the <a href="http://esxx.org/download.html">latest stable version</a>. If you already are, please file a <a href="https://github.com/LeviticusMB/esxx/issues">bug report</a>.</p>
 	      <p>PS. Flattery <i>does</i> work.</p>
 	    </li>
 
