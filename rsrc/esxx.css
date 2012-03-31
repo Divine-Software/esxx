@@ -335,27 +335,16 @@ img.right {
 }
 
 
-/* Donations */
-
-#donations  {
+#eoc  {
 	clear: both;
-	padding-top: 3em; /* Room for table head and cation */
-	height: 51px; /* Size of paypal button */
 	padding-bottom: 20px;
-}
-
-#donations table {
-	position: absolute;
-	bottom: 0px;
-	right: 0px;
-	width: 100%; 
-	text-align:center;
 }
 
 
 /* Footer */
 
 #footer {
+	clear: both;
 }
 
 #footer p {

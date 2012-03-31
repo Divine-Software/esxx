@@ -15,10 +15,10 @@
 
   <xsl:variable name="menu">
     <ul>
-      <li><a href="http://developer.berlios.de/projects/esxx/">BerliOS</a></li>
+      <li><a href="https://github.com/LeviticusMB/esxx">github</a></li>
       <li><a href="http://openfacts2.berlios.de/wikien/index.php/BerliosProject:ESXX">Wiki</a></li>
       <li><a href="http://openfacts2.berlios.de/wikien/index.php/BerliosProject:ESXX_-_Tutorials">Tutorials</a></li>
-      <li><a href="http://developer.berlios.de/bugs/?group_id=9645">Bug tracker</a></li>
+      <li><a href="https://github.com/LeviticusMB/esxx/issues">Bug tracker</a></li>
       <li><a href="mailto:martin@blom.org?subject=ESXX%20Support%20Request">Get help</a></li>
     </ul>
   </xsl:variable>
@@ -66,7 +66,13 @@
 	  <ul>
 	    <li>
 	      <h2>Need fix?</h2>
-	      <p>Do you suspect this error is because of a bug in ESXX? If so, please accept our apologies and make sure you're using the <a href="http://developer.berlios.de/project/showfiles.php?group_id=9645">latest stable version</a>.</p>
+	      <a href="http://flattr.com/thing/1327/ESXX-Friendly-Server-side-JavaScript" 
+		 target="_blank">
+		<img src="http://api.flattr.com/button/button-static-50x60.png" 
+		     title="Flattr this" border="0" class="right"/>
+	      </a>
+	      <p>Do you suspect this error is because of a bug in ESXX? If so, please accept our apologies and make sure you're using the <a href="http://esxx.org/download.html">latest stable version</a>. If you already are, please <a href="https://github.com/LeviticusMB/esxx/issues">file a bug</a>.</p>
+	      <p>PS. Flattery <i>does</i> work.</p>
 	    </li>
 
 	    <li>
@@ -244,9 +250,7 @@
 		  <xsl:apply-templates select="x:post" />
 		</div>
 
-		<div id="donations">
-		  <xsl:call-template name="donations" />
-		</div>
+		<div id="eoc"/>
 	      </div>
 	    </div>
 	  </div>
@@ -276,125 +280,6 @@
       </div>
     </div>
   </xsl:template>
-
-  <!-- Donation table -->
-  <xsl:template name="donations">
-<table summary="Donation options">
-<caption>Encourage further development by making a donation!</caption>
-<thead><tr>
-<td>&#8364; 10</td>
-<td>&#8364; 50</td>
-<td>&#8364; 100</td>
-<td>&#8364; 500</td>
-<td>&#8364; 1000</td>
-<td>&#8364; 5000</td>
-</tr></thead>
-<tbody><tr>
-<td>
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post"><div>
-<input type="hidden" name="cmd" value="_xclick" />
-<input type="hidden" name="business" value="martin@blom.org" />
-<input type="hidden" name="item_name" value="ESXX" />
-<input type="hidden" name="amount" value="8" />
-<input type="hidden" name="no_shipping" value="1" />
-<input type="hidden" name="logo_custom" value="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" />
-<input type="hidden" name="no_note" value="1" />
-<input type="hidden" name="currency_code" value="EUR" />
-<input type="hidden" name="tax" value="2" />
-<input type="hidden" name="lc" value="US" />
-<input type="hidden" name="bn" value="PP-BuyNowBF" />
-<input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" name="submit" alt="PayPal - The safer, easier way to pay online!" />
-<img alt="" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
-</div></form>
-</td>
-<td>
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post"><div>
-<input type="hidden" name="cmd" value="_xclick" />
-<input type="hidden" name="business" value="martin@blom.org" />
-<input type="hidden" name="item_name" value="ESXX" />
-<input type="hidden" name="amount" value="40" />
-<input type="hidden" name="no_shipping" value="1" />
-<input type="hidden" name="logo_custom" value="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" />
-<input type="hidden" name="no_note" value="1" />
-<input type="hidden" name="currency_code" value="EUR" />
-<input type="hidden" name="tax" value="10" />
-<input type="hidden" name="lc" value="US" />
-<input type="hidden" name="bn" value="PP-BuyNowBF" />
-<input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" name="submit" alt="PayPal - The safer, easier way to pay online!" />
-<img alt="" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
-</div></form>
-</td>
-<td>
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post"><div>
-<input type="hidden" name="cmd" value="_xclick" />
-<input type="hidden" name="business" value="martin@blom.org" />
-<input type="hidden" name="item_name" value="ESXX" />
-<input type="hidden" name="amount" value="80" />
-<input type="hidden" name="no_shipping" value="1" />
-<input type="hidden" name="logo_custom" value="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" />
-<input type="hidden" name="no_note" value="1" />
-<input type="hidden" name="currency_code" value="EUR" />
-<input type="hidden" name="tax" value="20" />
-<input type="hidden" name="lc" value="US" />
-<input type="hidden" name="bn" value="PP-BuyNowBF" />
-<input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" name="submit" alt="PayPal - The safer, easier way to pay online!" />
-<img alt="" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
-</div></form>
-</td>
-<td>
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post"><div>
-<input type="hidden" name="cmd" value="_xclick" />
-<input type="hidden" name="business" value="martin@blom.org" />
-<input type="hidden" name="item_name" value="ESXX" />
-<input type="hidden" name="amount" value="400" />
-<input type="hidden" name="no_shipping" value="1" />
-<input type="hidden" name="logo_custom" value="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" />
-<input type="hidden" name="no_note" value="1" />
-<input type="hidden" name="currency_code" value="EUR" />
-<input type="hidden" name="tax" value="100" />
-<input type="hidden" name="lc" value="US" />
-<input type="hidden" name="bn" value="PP-BuyNowBF" />
-<input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" name="submit" alt="PayPal - The safer, easier way to pay online!" />
-<img alt="" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
-</div></form>
-</td>
-<td>
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post"><div>
-<input type="hidden" name="cmd" value="_xclick" />
-<input type="hidden" name="business" value="martin@blom.org" />
-<input type="hidden" name="item_name" value="ESXX" />
-<input type="hidden" name="amount" value="800" />
-<input type="hidden" name="no_shipping" value="1" />
-<input type="hidden" name="logo_custom" value="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" />
-<input type="hidden" name="no_note" value="1" />
-<input type="hidden" name="currency_code" value="EUR" />
-<input type="hidden" name="tax" value="200" />
-<input type="hidden" name="lc" value="US" />
-<input type="hidden" name="bn" value="PP-BuyNowBF" />
-<input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" name="submit" alt="PayPal - The safer, easier way to pay online!" />
-<img alt="" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
-</div></form>
-</td>
-<td>
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post"><div>
-<input type="hidden" name="cmd" value="_xclick" />
-<input type="hidden" name="business" value="martin@blom.org" />
-<input type="hidden" name="item_name" value="ESXX" />
-<input type="hidden" name="amount" value="4000" />
-<input type="hidden" name="no_shipping" value="1" />
-<input type="hidden" name="logo_custom" value="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" />
-<input type="hidden" name="no_note" value="1" />
-<input type="hidden" name="currency_code" value="EUR" />
-<input type="hidden" name="tax" value="1000" />
-<input type="hidden" name="lc" value="US" />
-<input type="hidden" name="bn" value="PP-BuyNowBF" />
-<input type="image" src="https://www.paypal.com/en_US/i/btn/btn_donateCC_LG.gif" name="submit" alt="PayPal - The safer, easier way to pay online!" />
-<img alt="" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
-</div></form>
-</td>
-</tr></tbody></table>
-  </xsl:template>
-
 
   <!-- my:date formats a date string as "Month NNth, year" -->
   <xsl:function name="my:date">
