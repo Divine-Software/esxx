@@ -122,11 +122,6 @@ public abstract class StringUtil {
   public static String makeXMLName(String s, String replacement) {
     StringBuilder sb = new StringBuilder();
 
-    // Add an underscore if first char is NameChar but not NameStartChar
-    if(s.length() == 0 || (!isNameStartChar(s.charAt(0)) && isNameChar(s.charAt(0)))) {
-      sb.append('_');
-    }
-
     for (int i = 0; i < s.length(); ++i) {
       if (!isNameChar(s.charAt(i))) {
 	sb.append(replacement);
@@ -136,7 +131,14 @@ public abstract class StringUtil {
       }
     }
 
-    return sb.toString();
+    String name = sb.toString();
+
+    // Add an underscore if first char is NameChar but not NameStartChar
+    if(name.length() == 0 || (!isNameStartChar(name.charAt(0)) && isNameChar(name.charAt(0)))) {
+      name = "_" + name;
+    }
+
+    return name;
   }
 
   private static boolean isNameStartChar(char ch) {
