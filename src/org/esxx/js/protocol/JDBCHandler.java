@@ -379,7 +379,7 @@ public class JDBCHandler
       object = JS.unwrap(object);
 
       if (object == Context.getUndefinedValue()) {
-	throw ScriptRuntime.notFoundError(ScriptRuntime.toObjectOrNull(cx, params), param);
+	throw ScriptRuntime.undefReadError(ScriptRuntime.toObjectOrNull(cx, params), param);
       }
 
       // System.out.println("resolveParam " + batch + " " + param + " " + length
