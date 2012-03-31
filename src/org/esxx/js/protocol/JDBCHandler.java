@@ -341,6 +341,10 @@ public class JDBCHandler
     }
 
     @Override public int getParamLength(int batch, String param) {
+      if (batch >= batches.length) {
+	throw Context.reportRuntimeError("No parameter object for batch " + batch + ", param " + param);
+      }
+
       Object params = batches[batch];
       Object object = ScriptRuntime.getObjectElem(params, param, cx);
       int    length;
