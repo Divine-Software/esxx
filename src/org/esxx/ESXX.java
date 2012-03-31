@@ -153,7 +153,7 @@ public class ESXX {
       // Make sure all threads we create ourselves have a valid Context
       ThreadFactory tf = new ThreadFactory() {
 	  public Thread newThread(final Runnable r) {
-	    return new Thread() {
+	    return new Thread("ESXX-Worker-" + cnt.incrementAndGet()) {
 	      @Override public void run() {
 		contextFactory.call(new ContextAction() {
 		    @Override public Object run(Context cx) {
@@ -164,6 +164,8 @@ public class ESXX {
 	      }
 	    };
 	  }
+
+	  private java.util.concurrent.atomic.AtomicInteger cnt = new java.util.concurrent.atomic.AtomicInteger();
 	};
 
       int worker_threads = Integer.parseInt(p.getProperty("esxx.worker_threads", "-1"));
