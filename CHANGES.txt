@@ -170,6 +170,9 @@
 
 	* Added a CSV parser and serialized (text/csv).
 
+	* The JDBC URI scheme now attach columns that begin with '@'
+	as an attribute to the previous element.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

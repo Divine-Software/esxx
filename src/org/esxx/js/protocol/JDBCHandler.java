@@ -426,6 +426,7 @@ public class JDBCHandler
 
       if (rs != null) {
 	String[]          labels = null;
+	boolean[]         isattr = null;
 	StringBuilder     names  = new StringBuilder();
 	StringBuilder     types  = new StringBuilder();
 	StringBuilder     flags  = new StringBuilder();
@@ -436,9 +437,13 @@ public class JDBCHandler
 
 	ResultSetMetaData rmd = rs.getMetaData();
 	labels = new String[rmd.getColumnCount() + 1];
+	isattr = new boolean[rmd.getColumnCount() + 1];
 
 	for (int i = 1; i < labels.length; ++i) {
-	  labels[i] = StringUtil.makeXMLName(rmd.getColumnLabel(i).toLowerCase(), "");
+	  String label = rmd.getColumnLabel(i);
+
+	  labels[i] = StringUtil.makeXMLName(label.toLowerCase(), "");
+	  isattr[i] = !label.isEmpty() && label.charAt(0) == '@';
 
 	  // Add a metadata element, if requested
 	  if (meta != null) {
@@ -461,8 +466,9 @@ public class JDBCHandler
 	      break;
 	    }
 
+	    child.setAttributeNS(null, "nodeType", isattr[i] ? "attribute" : "element");
 	    child.setAttributeNS(null, "name", name);
-	    child.setAttributeNS(null, "label", rmd.getColumnLabel(i));
+	    child.setAttributeNS(null, "label", label);
 	    child.setAttributeNS(null, "type", typeToString.get(rmd.getColumnType(i)));
 	    child.setAttributeNS(null, "className", rmd.getColumnClassName(i));
 
@@ -495,6 +501,7 @@ public class JDBCHandler
 
 	while (rs.next()) {
 	  Element row = doc.createElementNS(null, entryElem);
+	  Element child = null;
 
 	  for (int i = 1; i < labels.length; ++i) {
 	    String value  = rs.getString(i);
@@ -503,10 +510,20 @@ public class JDBCHandler
 	      value = value.toLowerCase();
 	    }
 
-	    Element child = XML.addChild(row, labels[i], value);
+	    if (isattr[i]) {
+	      if (child != null) {
+		child.setAttributeNS(null, labels[i], value);
+	      }
+	      else {
+		throw Context.reportRuntimeError("No previous element to attach attribute " + labels[i] + " to");
+	      }
+	    }
+	    else {
+	      child = XML.addChild(row, labels[i], value);
 
-	    if (value == null) {
-	      child.setAttributeNS(null, "isNull", "true");
+	      if (value == null) {
+		child.setAttributeNS(null, "isNull", "true");
+	      }
 	    }
 	  }
 
