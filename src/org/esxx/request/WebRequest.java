@@ -258,13 +258,6 @@ public abstract class WebRequest
       code     = 404;
       subtitle = "Not Found";
     }
-    
-    if (ex instanceof ESXXException ||
-	ex instanceof FileNotFoundException ||
-	ex instanceof javax.xml.transform.TransformerException) {
-      // Don't print stack trace
-      ex = null;
-    }
 
     return createErrorResponse(code, title, subtitle, message, ex);
   }
@@ -287,6 +280,11 @@ public abstract class WebRequest
 
 	message = message + " [" + re.sourceName() + ", line " + re.lineNumber()
 	  + ", column " + re.columnNumber() + ": " + re.lineSource() + "]";
+      }
+      else if (ex instanceof ESXXException ||
+	       ex instanceof FileNotFoundException ||
+	       ex instanceof javax.xml.transform.TransformerException) {
+	// Don't print stack trace
       }
       else {
 	StringWriter sw = new StringWriter();
