@@ -283,7 +283,8 @@ public abstract class WebRequest
       }
       else if (ex instanceof ESXXException ||
 	       ex instanceof FileNotFoundException ||
-	       ex instanceof javax.xml.transform.TransformerException) {
+	       ex instanceof javax.xml.transform.TransformerException ||
+	       ex instanceof net.sf.saxon.s9api.SaxonApiException) {
 	// Don't print stack trace
       }
       else {
