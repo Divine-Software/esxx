@@ -46,11 +46,11 @@ public abstract class StringUtil {
 
       if (m.start(1) != -1) {
 	// Match on group 1, which is our parameter pattern; append a single '?'
-	m.appendReplacement(s, resolver.resolveParam(g.substring(1, g.length() - 1)));
+	m.appendReplacement(s, Matcher.quoteReplacement(resolver.resolveParam(g.substring(1, g.length() - 1))));
       }
       else {
 	// Match on quoted strings, which we just copy as-is
-	m.appendReplacement(s, g);
+	m.appendReplacement(s, Matcher.quoteReplacement(g));
       }
     }
 
