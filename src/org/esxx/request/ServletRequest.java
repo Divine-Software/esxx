@@ -42,31 +42,36 @@ public class ServletRequest
 
   @SuppressWarnings("unchecked")
   public void initRequest(URI fs_root_uri, URI path_translated) {
-    StringBuffer request_url  = sreq.getRequestURL();
-    String       query_string = sreq.getQueryString();
+    try {
+      StringBuffer request_url  = sreq.getRequestURL();
+      String       query_string = sreq.getQueryString();
 
-    if (query_string != null) {
-      request_url.append('?');
-      request_url.append(query_string);
+      if (query_string != null) {
+	request_url.append('?');
+	request_url.append(query_string);
+      }
+
+      URI full_request_uri = new URI(request_url.toString());
+
+      Properties p = createCGIEnvironment(sreq.getMethod(),
+					  sreq.getProtocol(),
+					  full_request_uri,
+					  sreq.getLocalAddr(), sreq.getLocalPort(),
+					  sreq.getRemoteAddr(), sreq.getRemotePort(),
+					  fs_root_uri);
+
+      // Add request headers
+      for (Enumeration<?> e = sreq.getHeaderNames(); e.hasMoreElements(); ) {
+	String h = (String) e.nextElement();
+	p.setProperty(ESXX.httpToCGI(h), sreq.getHeader(h));
+      }
+
+      super.initRequest(sreq.getMethod(), full_request_uri, path_translated,
+			p, fs_root_uri, true);
     }
-
-    URI full_request_uri = URI.create(request_url.toString());
-
-    Properties p = createCGIEnvironment(sreq.getMethod(),
-					sreq.getProtocol(),
-					full_request_uri,
-					sreq.getLocalAddr(), sreq.getLocalPort(),
-					sreq.getRemoteAddr(), sreq.getRemotePort(),
-					fs_root_uri);
-
-    // Add request headers
-    for (Enumeration<?> e = sreq.getHeaderNames(); e.hasMoreElements(); ) {
-      String h = (String) e.nextElement();
-      p.setProperty(ESXX.httpToCGI(h), sreq.getHeader(h));
+    catch (URISyntaxException ex) {
+      throw new ESXXException(400, "Malformed request URI: " + ex.getMessage(), ex);
     }
-
-    super.initRequest(sreq.getMethod(), full_request_uri, path_translated,
-		      p, fs_root_uri, true);
   }
 
   public Integer handleResponse(Response response)
