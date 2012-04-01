@@ -173,6 +173,10 @@
 	* The JDBC URI scheme now attach columns that begin with '@'
 	as an attribute to the previous element.
 
+	* Added ESXX.Stylesheet. The parser now returns such an object
+	for text/xsl and application/xslt+xml resources. API is a
+	subset of client-side JS XSLTProcessor.
+
 0.9.20090521
 	* Added the XKCD example from the Wiki.
 

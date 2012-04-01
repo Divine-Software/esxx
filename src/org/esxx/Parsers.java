@@ -71,6 +71,7 @@ class Parsers {
     parserMap.put("application/x-www-form-urlencoded",   new FormParser());
     parserMap.put("application/x-xsd+xml",               schema_parser);
     parserMap.put("application/xml",                     new XMLParser());
+    parserMap.put("application/xslt+xml",                new StylesheetParser());
     parserMap.put("image/*",                             new ImageParser());
     parserMap.put("message/rfc822",                      new MIMEParser());
     parserMap.put("multipart/form-data",                 new MultipartFormParser());
@@ -78,6 +79,7 @@ class Parsers {
     parserMap.put("text/html",                           new HTMLParser());
     parserMap.put("text/plain",                          new StringParser());
     parserMap.put("text/xml",                            new XMLParser());
+    parserMap.put("text/xsl",                            new StylesheetParser());
   }
 
   public Object parse(ContentType ct, InputStream is, final URI is_uri,
@@ -583,6 +585,18 @@ class Parsers {
       // NB: If the schema is already loaded into the schema cache
       // (with key 'is_uri'), the 'is' argument will be left unused.
       return org.esxx.js.JSSchema.newJSSchema(cx, scope, is_uri, is, ct.getBaseType());
+    }
+  }
+
+  /** A Parser that parses XSLT stylesheets and returns a JavaScript ESXX.Stylesheet object. */
+  private static class StylesheetParser
+    implements Parser {
+    public Object parse(ContentType ct, InputStream is, URI is_uri,
+			Collection<URI> external_uris,
+			PrintWriter err, Context cx, Scriptable scope) {
+      // NB: If the stylesheet is already loaded into the stylesheet cache
+      // (with key 'is_uri'), the 'is' argument will be left unused.
+      return org.esxx.js.JSStylesheet.newJSStylesheet(cx, scope, is_uri, is);
     }
   }
 }

@@ -24,6 +24,8 @@ import org.esxx.saxon.ESXXExpression;
 import java.io.*;
 import java.net.URI;
 import java.util.Properties;
+import java.util.Map;
+import java.util.HashMap;
 import javax.xml.transform.dom.*;
 import org.mozilla.javascript.*;
 import org.w3c.dom.Document;
@@ -134,110 +136,28 @@ class Worker {
       response.setResult(esxx.serializeNode(node) +
 			 "<!--" + getDebugLogForComment(request) + "-->");
       response.setContentType(content_type);
-      return;
     }
+    else {
+      Map<QName, Object> params = new HashMap<QName, Object>();
+      Scriptable jsparams = js_response.jsGet_params();
 
+      for (Object o : jsparams.getIds()) {
+	if (o instanceof String) {
+	  params.put(new QName((String) o), jsparams.get((String) o, jsparams));
+	}
+      }
 
-    long start_time = System.currentTimeMillis();
-    Stylesheet xslt = esxx.getCachedStylesheet(stylesheet);
-
-    try {
-      XsltExecutable  xe = xslt.getExecutable();
-      XsltTransformer tr = xe.load();
       ByteArrayOutputStream os = new ByteArrayOutputStream();
       Serializer s = new Serializer();
       s.setOutputStream(os);
 
-      // Remove this code when upgrading to Saxon 9.1 (?)
-      Properties op = xe.getUnderlyingCompiledStylesheet().getOutputProperties();
-      s.setOutputProperty(BYTE_ORDER_MARK,        op.getProperty("byte-order-mark"));
-      s.setOutputProperty(CDATA_SECTION_ELEMENTS, op.getProperty("cdata-section-elements"));
-      s.setOutputProperty(DOCTYPE_PUBLIC,         op.getProperty("doctype-public"));
-      s.setOutputProperty(DOCTYPE_SYSTEM,         op.getProperty("doctype-system"));
-      s.setOutputProperty(ENCODING,               op.getProperty("encoding"));
-      s.setOutputProperty(ESCAPE_URI_ATTRIBUTES,  op.getProperty("escape-uri-attributes"));
-      s.setOutputProperty(INCLUDE_CONTENT_TYPE,   op.getProperty("include-content-type"));
-      s.setOutputProperty(INDENT,                 op.getProperty("indent"));
-      s.setOutputProperty(MEDIA_TYPE,             op.getProperty("media-type", content_type));
-      s.setOutputProperty(METHOD,                 op.getProperty("method"));
-      //    s.setOutputProperty(NORMALIZATION_FORM,     op.getProperty("normalization-form"));
-      s.setOutputProperty(OMIT_XML_DECLARATION,   op.getProperty("omit-xml-declaration"));
-      s.setOutputProperty(STANDALONE,             op.getProperty("standalone"));
-      s.setOutputProperty(UNDECLARE_PREFIXES,     op.getProperty("undeclare-prefixes"));
-      s.setOutputProperty(USE_CHARACTER_MAPS,     op.getProperty("use-character-maps"));
-      s.setOutputProperty(VERSION,                op.getProperty("version"));
+      Stylesheet.transform(cx, app.getJSGlobal(), 
+			   esxx.getCachedStylesheet(stylesheet, null), params,
+			   node, true, getDebugLogForComment(request),
+			   s);
 
-      // This is sad, but Saxon can only transform the DOM Document Element node.
-      org.w3c.dom.DOMImplementation di = node.getOwnerDocument().getImplementation();
-      Document doc = di.createDocument(null, "dummy", null);
-      Node adopted = doc.adoptNode(node);
-      if (adopted == null) {
-	// Ugh ...
-	adopted = doc.importNode(node, true);
-      }
-      //    doc.appendChild(adopted);
-      doc.replaceChild(adopted, doc.getDocumentElement());
-
-      // Append the debug output while we're at it, and let the
-      // stylesheet decide if it should be output or not.
-      doc.appendChild(doc.createComment(getDebugLogForComment(request)));
-
-      tr.setSource(new DOMSource(doc));
-      tr.setDestination(s);
-
-      try {
-	// Set stylesheet params
-	Scriptable params = js_response.jsGet_params();
-
-	for (Object o : params.getIds()) {
-	  if (o instanceof String) {
-	    XdmValue xv = javaToXDM(params.get((String) o, params));
-
-	    tr.setParameter(new QName((String) o), xv);
-	  }
-	}
-
-	// Make current scope available to ESXXExpression and begin transformation
-	cx.putThreadLocal(ESXXExpression.class, app.getJSGlobal());
-	tr.transform();
-      }
-      finally {
-	cx.removeThreadLocal(ESXXExpression.class);
-      }
-
-      response.setContentType(s.getOutputProperty(MEDIA_TYPE));
+      response.setContentType(ESXX.coalesce(s.getOutputProperty(MEDIA_TYPE), content_type));
       response.setResult(os);
-    }
-    finally {
-      xslt.logUsage(start_time);
-    }
-  }
-
-  private XdmValue javaToXDM(Object o) {
-    if (o instanceof JSURI) {
-      o = ((JSURI) o).jsGet_javaURI();
-    }
-    else if (o instanceof org.mozilla.javascript.xml.XMLObject) {
-      o = ESXX.e4xToDOM((Scriptable) o);
-    }
-
-    if (o instanceof java.math.BigDecimal) {
-      return new XdmAtomicValue((java.math.BigDecimal) o);
-    }
-    else if (o instanceof Boolean) {
-      return new XdmAtomicValue((Boolean) o);
-    }
-    else if (o instanceof Double) {
-      return new XdmAtomicValue((Double) o);
-    }
-    else if (o instanceof URI) {
-      return new XdmAtomicValue((URI) o);
-    }
-    else if (o instanceof Node) {
-      return esxx.getSaxonDocumentBuilder().wrap(o);
-    }
-    else {
-      return new XdmAtomicValue(Context.toString(o));
     }
   }
 

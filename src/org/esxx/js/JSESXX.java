@@ -21,7 +21,6 @@ package org.esxx.js;
 import org.esxx.ESXX;
 import org.esxx.ESXXException;
 import org.esxx.Application;
-import org.esxx.Schema;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -68,6 +67,7 @@ public class JSESXX
 	ScriptableObject.defineClass(constructor, JSRequest.class);
 	ScriptableObject.defineClass(constructor, JSResponse.class);
 	ScriptableObject.defineClass(constructor, JSSchema.class);
+	ScriptableObject.defineClass(constructor, JSStylesheet.class);
       }
       catch (Exception ex) {
 	throw new ESXXException("Failed to define Logger, Request and Response classes");
