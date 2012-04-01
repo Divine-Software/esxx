@@ -99,7 +99,7 @@ public class JSSchema
     return "Schema";
   }
 
-  public void jsFunction_validate(Scriptable o)
+  public void jsFunction_validate(Object o)
     throws IOException {
     ESXX esxx = ESXX.getInstance();
 
@@ -109,7 +109,7 @@ public class JSSchema
       node = (org.w3c.dom.Node) o;
     }
     else {
-      node = ESXX.e4xToDOM(o);
+      node = ESXX.e4xToDOM((Scriptable) o);
     }
 
     Schema schema = esxx.getCachedSchema(schemaURI, null, mimeType);
