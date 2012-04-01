@@ -766,13 +766,13 @@ public class ESXX {
       applicationCache.remove(app.getFilename());
     }
 
-    public Stylesheet getCachedStylesheet(final URI uri)
+    public Stylesheet getCachedStylesheet(final URI uri, final InputStream is)
       throws IOException {
       try {
 	return stylesheetCache.add(uri.toString(), new LRUCache.ValueFactory<String, Stylesheet>() {
 	    public Stylesheet create(String key, long expires)
 	      throws IOException {
-	      return new Stylesheet(uri);
+	      return new Stylesheet(uri, is);
 	    }
 	  }, 0);
       }

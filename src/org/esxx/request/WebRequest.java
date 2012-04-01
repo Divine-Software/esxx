@@ -327,7 +327,7 @@ public abstract class WebRequest
   private String renderHTML(Document doc, OutputStream dst) {
     try {
       ESXX       esxx = ESXX.getInstance();
-      Stylesheet xslt = esxx.getCachedStylesheet(new URI("esxx-rsrc:esxx.xslt"));
+      Stylesheet xslt = esxx.getCachedStylesheet(new URI("esxx-rsrc:esxx.xslt"), null);
 
       XsltExecutable  xe = xslt.getExecutable();
       XsltTransformer tr = xe.load();

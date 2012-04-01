@@ -32,9 +32,14 @@ import org.esxx.util.URIResolver;
 
 public class Stylesheet 
   implements org.esxx.cache.Cached {
-  public Stylesheet(final URI uri) 
+  public Stylesheet(final URI uri, InputStream is) 
     throws IOException {
     esxx = ESXX.getInstance();
+
+    if (is == null) {
+      is = esxx.openCachedURI(uri);
+    }
+
     this.uri = uri;
     started  = new Date();
 
@@ -71,7 +76,7 @@ public class Stylesheet
 	  }
 	});
 
-      xslt = compiler.compile(new StreamSource(esxx.openCachedURI(uri), uri.toString()));
+      xslt = compiler.compile(new StreamSource(is, uri.toString()));
     }
     catch (net.sf.saxon.s9api.SaxonApiException ex) {
       String system_id = null;
