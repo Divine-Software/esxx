@@ -543,6 +543,16 @@ public class ESXX {
     }
 
 
+  public static <T> T coalesce(T ...objects) {
+    for (T obj : objects) {
+      if (obj != null) {
+	return obj;
+      }
+    }
+
+    return null;
+  }
+
     public URI[] getIncludePath() {
       return includePath;
     }
