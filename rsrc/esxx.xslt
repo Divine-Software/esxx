@@ -136,7 +136,7 @@
 	      <tr>
 		<td>Name</td>
 		<td>Last Modified</td>
-		<td>Size</td>
+		<td class="filesize">Size</td>
 		<td>Type</td>
 	      </tr>
 	    </thead>
@@ -145,7 +145,7 @@
 		<tr>
 		  <td><a href='..'>Parent Directory</a></td>
 		  <td>&#160;</td>
-		  <td>&#160;</td>
+		  <td class="filesize">&#160;</td>
 		  <td>&#160;</td>
 		</tr>
 	      </xsl:if>
@@ -171,7 +171,7 @@
       <tr>
 	<td><a href="{../@requestURI}{name}/"><xsl:value-of select="name" />/</a></td>
 	<td><xsl:value-of select="my:format-java-date(lastModified)" /></td>
-	<td>&#160;</td>
+	<td class="filesize">&#160;</td>
 	<td>Directory</td>
       </tr>
     </xsl:if>
@@ -182,7 +182,7 @@
       <tr>
 	<td><a href="{../@requestURI}{name}"><xsl:value-of select="name" /></a></td>
 	<td><xsl:value-of select="my:format-java-date(lastModified)" /></td>
-	<td><xsl:value-of select="length" /></td>
+	<td class="filesize"><xsl:value-of select="length" /></td>
 	<td><xsl:value-of select="type" /></td>
       </tr>
     </xsl:if>

@@ -71,6 +71,11 @@ pre.stacktrace {
 	font-size: 10px;
 }
 
+td.filesize {
+       text-align: right;
+       padding-right: 1em;
+}
+
 ul, ol {
 	margin-left: 3em;
 }
