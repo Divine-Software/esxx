@@ -55,7 +55,7 @@ public class URIResolver
     throws TransformerException {
     try {
       URI uri = getURI(href, base);
-      return new javax.xml.transform.stream.StreamSource(getIS(uri));
+      return new javax.xml.transform.stream.StreamSource(getIS(uri), uri.toString());
     }
     catch (IOException ex) {
       throw new TransformerException("Failed to resolve resource " + href + ": " + ex.getMessage(),
@@ -92,7 +92,11 @@ public class URIResolver
       throw new IOException("System ID missing");
     }
 
-    return new InputSource(getIS(getURI(systemId, null)));
+    //    return new InputSource(getIS(getURI(systemId, null)));
+    URI uri = getURI(systemId, null);
+    InputSource result = new InputSource(getIS(uri));
+    result.setSystemId(uri.toString());
+    return result;
   }
 
   private URI getURI(String uri, String base_uri) 
