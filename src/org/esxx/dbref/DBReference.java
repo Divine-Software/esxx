@@ -1,5 +1,5 @@
 
-// line 1 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 1 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 /*
      ESXX - The friendly ECMAscript/XML Application Server
      Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
@@ -29,7 +29,7 @@ import java.util.LinkedList;
 import java.util.HashMap;
 
 
-// line 192 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 192 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 
 
 public class DBReference {
@@ -49,7 +49,7 @@ public class DBReference {
   }
 
   public enum Scope {
-    SCALAR, ROW, DISTINCT, ALL;
+    SCALAR, COLUMN, ROW, DISTINCT, ALL;
   }
 
   public static class Filter {
@@ -144,8 +144,8 @@ public class DBReference {
     return columns;
   }
 
-  public Scope getScope() {
-    return scope;
+  public Scope getScope(Scope defaultScope) {
+    return scope == null ? defaultScope : scope;
   }
 
   public Filter getFilter() {
@@ -189,15 +189,15 @@ public class DBReference {
     int eof = pe;
 
     
-// line 193 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
+// line 193 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.java"
 	{
 	cs = dbpath_start;
 	top = 0;
 	}
 
-// line 351 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 351 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
     
-// line 201 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
+// line 201 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.java"
 	{
 	int _klen;
 	int _trans = 0;
@@ -277,13 +277,13 @@ case 1:
 			switch ( _dbpath_actions[_acts++] )
 			{
 	case 0:
-// line 41 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 41 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     wordOffset = 0;
   }
 	break;
 	case 1:
-// line 45 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 45 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     byte b = data[p - 1];
 
@@ -295,53 +295,53 @@ case 1:
   }
 	break;
 	case 2:
-// line 55 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 55 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     appendWordByte((byte) encoded);
   }
 	break;
 	case 3:
-// line 59 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 59 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = 0;
   }
 	break;
 	case 4:
-// line 64 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 64 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - '0';
   }
 	break;
 	case 5:
-// line 69 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 69 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - 'a' + 10;
   }
 	break;
 	case 6:
-// line 74 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 74 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - 'A' + 10;
   }
 	break;
 	case 7:
-// line 79 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 79 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     table = getWord();
   }
 	break;
 	case 8:
-// line 83 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 83 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     columns.add(getWord());
   }
 	break;
 	case 9:
-// line 87 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 87 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     String s = getWord();
 
@@ -355,7 +355,7 @@ case 1:
   }
 	break;
 	case 10:
-// line 99 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 99 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     {
     if (top == stack.length) {
@@ -367,14 +367,14 @@ case 1:
   }
 	break;
 	case 11:
-// line 103 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 103 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     popFilter();
     {cs = stack[--top];_goto_targ = 2; if (true) continue _goto;}
   }
 	break;
 	case 12:
-// line 108 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 108 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey   = getWord();
     tmpValue = "";
@@ -382,7 +382,7 @@ case 1:
   }
 	break;
 	case 13:
-// line 114 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 114 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey = getWord();
     tmpValue = "";
@@ -390,13 +390,13 @@ case 1:
   }
 	break;
 	case 14:
-// line 120 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 120 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpValue = getWord();
   }
 	break;
 	case 15:
-// line 124 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 124 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     if (paramRequired) {
       requiredParams.put(tmpKey, tmpValue);
@@ -407,46 +407,46 @@ case 1:
   }
 	break;
 	case 16:
-// line 160 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 160 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.AND); }
 	break;
 	case 17:
-// line 161 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 161 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.OR);  }
 	break;
 	case 18:
-// line 162 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 162 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.NOT); }
 	break;
 	case 19:
-// line 164 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 164 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.LT); }
 	break;
 	case 20:
-// line 165 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 165 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.LE); }
 	break;
 	case 21:
-// line 166 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 166 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.EQ); }
 	break;
 	case 22:
-// line 167 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 167 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.NE); }
 	break;
 	case 23:
-// line 168 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 168 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.GT); }
 	break;
 	case 24:
-// line 169 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 169 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ pushFilter(Filter.Op.GE); }
 	break;
 	case 25:
-// line 171 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 171 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{ addLiteral(getWord());   }
 	break;
-// line 450 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
+// line 450 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.java"
 			}
 		}
 	}
@@ -468,7 +468,7 @@ case 4:
 	while ( __nacts-- > 0 ) {
 		switch ( _dbpath_actions[__acts++] ) {
 	case 1:
-// line 45 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 45 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     byte b = data[p - 1];
 
@@ -480,46 +480,46 @@ case 4:
   }
 	break;
 	case 2:
-// line 55 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 55 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     appendWordByte((byte) encoded);
   }
 	break;
 	case 4:
-// line 64 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 64 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - '0';
   }
 	break;
 	case 5:
-// line 69 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 69 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - 'a' + 10;
   }
 	break;
 	case 6:
-// line 74 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 74 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     ++charOffset;
     encoded = encoded * 16 + data[p - 1] - 'A' + 10;
   }
 	break;
 	case 7:
-// line 79 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 79 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     table = getWord();
   }
 	break;
 	case 8:
-// line 83 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 83 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     columns.add(getWord());
   }
 	break;
 	case 9:
-// line 87 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 87 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     String s = getWord();
 
@@ -533,7 +533,7 @@ case 4:
   }
 	break;
 	case 12:
-// line 108 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 108 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey   = getWord();
     tmpValue = "";
@@ -541,7 +541,7 @@ case 4:
   }
 	break;
 	case 13:
-// line 114 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 114 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpKey = getWord();
     tmpValue = "";
@@ -549,13 +549,13 @@ case 4:
   }
 	break;
 	case 14:
-// line 120 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 120 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     tmpValue = getWord();
   }
 	break;
 	case 15:
-// line 124 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 124 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 	{
     if (paramRequired) {
       requiredParams.put(tmpKey, tmpValue);
@@ -565,7 +565,7 @@ case 4:
     }
   }
 	break;
-// line 569 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
+// line 569 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.java"
 		}
 	}
 	}
@@ -575,7 +575,7 @@ case 5:
 	break; }
 	}
 
-// line 352 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 352 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 
     if (cs < dbpath_first_final) {
       throw new ParseException(new String(data, "UTF-8"),
@@ -623,7 +623,7 @@ case 5:
   }
 
   
-// line 627 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.java"
+// line 627 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.java"
 private static byte[] init__dbpath_actions_0()
 {
 	return new byte [] {
@@ -934,7 +934,7 @@ static final int dbpath_en_filter_comp = 29;
 static final int dbpath_en_main = 66;
 
 
-// line 399 "/home/martin/source/esxx/src/org/esxx/dbref/DBReference.rl"
+// line 399 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 
   private int charOffset = 0;
 
@@ -954,7 +954,7 @@ static final int dbpath_en_main = 66;
 
   private String table;
   private List<String> columns = new LinkedList<String>();
-  private Scope scope = Scope.ALL;
+  private Scope scope;
   private Filter filter;
   private Map<String,String> optionalParams = new HashMap<String,String>();
   private Map<String,String> requiredParams = new HashMap<String,String>();

@@ -208,7 +208,7 @@ public class DBReference {
   }
 
   public enum Scope {
-    SCALAR, ROW, DISTINCT, ALL;
+    SCALAR, COLUMN, ROW, DISTINCT, ALL;
   }
 
   public static class Filter {
@@ -303,8 +303,8 @@ public class DBReference {
     return columns;
   }
 
-  public Scope getScope() {
-    return scope;
+  public Scope getScope(Scope defaultScope) {
+    return scope == null ? defaultScope : scope;
   }
 
   public Filter getFilter() {
@@ -415,7 +415,7 @@ public class DBReference {
 
   private String table;
   private List<String> columns = new LinkedList<String>();
-  private Scope scope = Scope.ALL;
+  private Scope scope;
   private Filter filter;
   private Map<String,String> optionalParams = new HashMap<String,String>();
   private Map<String,String> requiredParams = new HashMap<String,String>();

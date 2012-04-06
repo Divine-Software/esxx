@@ -108,6 +108,7 @@ public class QueryBuilder {
 
   public String getSelectQuery(List<String> args, Map<String, String> unhandled_params)
     throws URISyntaxException {
+    DBReference.Scope scope = dbref.getScope(DBReference.Scope.ALL);
 
     args.clear();
     unhandled_params.clear();
@@ -119,17 +120,17 @@ public class QueryBuilder {
     String offset  = unhandled_params.remove("offset");
     String count   = unhandled_params.remove("count");
 
-    if (dbref.getScope() == DBReference.Scope.SCALAR &&
+    if ((scope == DBReference.Scope.SCALAR || scope == DBReference.Scope.COLUMN) &&
 	dbref.getColumns().size() != 1) {
       throw new URISyntaxException(uri.toString(),
-				   "Scalar scope only works with one single column");
+				   "Scalar and column scopes only works with one single column");
     }
 
     QueryBuffer qb = new QueryBuffer(uri.getSchemeSpecificPart());
 
     qb.append("SELECT ");
 
-    if (dbref.getScope() == DBReference.Scope.DISTINCT) {
+    if (scope == DBReference.Scope.DISTINCT) {
       qb.append("DISTINCT ");
     }
 
@@ -153,9 +154,9 @@ public class QueryBuilder {
     return qb.toString();
   }
 
-  public String getInsertQuery(Iterable<String> columns,
-			       Map<String, String> unhandled_params)
+  public String getInsertQuery(Iterable<String> columns, Map<String, String> unhandled_params)
     throws URISyntaxException {
+    DBReference.Scope scope = dbref.getScope(DBReference.Scope.ROW);
 
     unhandled_params.clear();
     unhandled_params.putAll(dbref.getOptionalParams());
@@ -170,8 +171,8 @@ public class QueryBuilder {
       columns = dbref.getColumns();
     }
 
-    if (dbref.getScope() != DBReference.Scope.ALL) {
-      throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
+    if (scope != DBReference.Scope.ROW && scope != DBReference.Scope.ALL) {
+      throw new URISyntaxException(uri.toString(), scope.toString().toLowerCase() +
 				   " is not a valid scope when inserting");
     }
 
@@ -193,6 +194,7 @@ public class QueryBuilder {
   public String getUpdateQuery(Iterable<String> columns,
 			       List<String> args, Map<String, String> unhandled_params)
     throws URISyntaxException {
+    DBReference.Scope scope = dbref.getScope(DBReference.Scope.ROW);
 
     args.clear();
     unhandled_params.clear();
@@ -208,8 +210,8 @@ public class QueryBuilder {
       columns = dbref.getColumns();
     }
 
-    if (dbref.getScope() == DBReference.Scope.DISTINCT) {
-      throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
+    if (scope != DBReference.Scope.SCALAR && scope != DBReference.Scope.ROW && scope != DBReference.Scope.ALL) {
+      throw new URISyntaxException(uri.toString(), scope.toString().toLowerCase() +
 				   " is not a valid scope when updating");
     }
 
@@ -233,20 +235,16 @@ public class QueryBuilder {
 
   public String getDeleteQuery(List<String> args, Map<String, String> unhandled_params)
     throws URISyntaxException {
+    DBReference.Scope scope = dbref.getScope(DBReference.Scope.ALL);
 
     args.clear();
     unhandled_params.clear();
     unhandled_params.putAll(dbref.getOptionalParams());
     unhandled_params.putAll(dbref.getRequiredParams());
 
-    switch (dbref.getScope()) {
-    case SCALAR:
-    case DISTINCT:
-      throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
+    if (scope != DBReference.Scope.ALL) {
+      throw new URISyntaxException(uri.toString(), scope.toString().toLowerCase() +
 				   " is not a valid scope when deleting");
-    case ROW:
-    case ALL:
-      break;
     }
 
     if (!dbref.getColumns().isEmpty()) {
@@ -272,6 +270,7 @@ public class QueryBuilder {
   public String getMergeQuery(Iterable<String> columns, ColumnGetter cg,
 			      List<String> args, Map<String, String> unhandled_params)
     throws URISyntaxException {
+    DBReference.Scope scope = dbref.getScope(DBReference.Scope.ROW);
 
     unhandled_params.clear();
     unhandled_params.putAll(dbref.getOptionalParams());
@@ -294,8 +293,8 @@ public class QueryBuilder {
       columns = dbref.getColumns();
     }
 
-    if (dbref.getScope() != DBReference.Scope.ALL) {
-      throw new URISyntaxException(uri.toString(), dbref.getScope().toString().toLowerCase() +
+    if (scope != DBReference.Scope.ROW && scope != DBReference.Scope.ALL) {
+      throw new URISyntaxException(uri.toString(), scope.toString().toLowerCase() +
 				   " is not a valid scope when merging");
     }
 
