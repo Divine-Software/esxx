@@ -68,7 +68,9 @@ public class Stylesheet
       compiler.setErrorListener(new ErrorListener() {
 	  public void error(TransformerException ex)
 	    throws TransformerException {
-	    cause[0] = ex;
+	    if (cause[0] == null) {
+	      cause[0] = ex;
+	    }
 	    // 	    esxx.getLogger().logp(Level.SEVERE, uri.toString(), null,
 	    // 				  ex.getMessageAndLocation(), ex);
 	    throw ex;
@@ -76,7 +78,9 @@ public class Stylesheet
 
 	  public void fatalError(TransformerException ex)
 	    throws TransformerException {
-	    cause[0] = ex;
+	    if (cause[0] == null) {
+	      cause[0] = ex;
+	    }
 	    // 	    esxx.getLogger().logp(Level.SEVERE, uri.toString(), null,
 	    // 				  ex.getMessage(), ex);
 	    throw ex;
