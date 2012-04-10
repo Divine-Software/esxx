@@ -90,9 +90,9 @@ case $(uname) in
 	    value="org.opensolaris.category.2008:Web Services/Application and Web Servers"
 
 	pkgsend add license root/usr/share/doc/esxx/LICENSE.txt license=${package_license}
-	pkgsend add depend type=require fmri=SUNWj6rt
-	pkgsend add depend type=require fmri=SUNWbash
-	pkgsend add depend type=require fmri=SUNWsudo
+	pkgsend add depend type=require fmri=runtime/java
+	pkgsend add depend type=require fmri=shell/bash
+	pkgsend add depend type=require fmri=security/sudo
 
 	# These  config files need special treatment
 	(cd root && for file in etc/default/*; do
