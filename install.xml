@@ -184,6 +184,7 @@
       <fileset file="${build.dir}/package/svc-method" />
       <globmapper from="svc-method" to="${ant.project.name}" />
     </copy>
+    <chmod file="${DESTDIR}/lib/svc/method/${ant.project.name}" perm="755" />
 
     <!-- svc manifest -->
     <copy todir="${DESTDIR}/var/svc/manifest/network">
