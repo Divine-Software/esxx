@@ -32,7 +32,7 @@ import javax.imageio.ImageWriter;
 import javax.mail.internet.ContentType;
 import org.esxx.util.IO;
 import org.esxx.util.JS;
-import org.esxx.util.KeyValueWrapper;
+import org.esxx.util.PropertyBag;
 import org.esxx.util.StringUtil;
 import org.json.*;
 import org.mozilla.javascript.*;
@@ -346,14 +346,14 @@ public class Response  {
 			    "empty or a single character");
     }
 
-    KeyValueWrapper             rows = new KeyValueWrapper(object);
+    PropertyBag                 rows = PropertyBag.get(cx, object);
     TreeMap<String, Integer> columns = new TreeMap<String, Integer>();
 
     // Find all possible colunms
     for (Object r : rows.getValues(cx)) {
-      KeyValueWrapper row = new KeyValueWrapper(r);
+      PropertyBag row = PropertyBag.get(cx, r);
 
-      for (Object c : row.getKeys()) {
+      for (Object c : row.getKeys(cx)) {
 	columns.put(StringUtil.toSortable(c), null);
       }
     }
@@ -371,16 +371,8 @@ public class Response  {
 				  quote.isEmpty()     ? '\0' : quote.charAt(0),
 				  escape.isEmpty()    ? '\0' : escape.charAt(0));
 
-    Object headers = rows.getValue(cx, "headers");
-
-    if (headers != Context.getUndefinedValue()) {
-      writeCSVRow(cx, csv, columns, headers);
-    }
-
-    for (Object k : rows.getKeys()) {
-      if (!"headers".equals(k.toString())) {
-	writeCSVRow(cx, csv, columns, rows.getValue(cx, k));
-      }
+    for (Object k : rows.getKeys(cx)) {
+      writeCSVRow(cx, csv, columns, rows.getValue(cx, k));
     }
 
     return sw.toString();
@@ -388,13 +380,12 @@ public class Response  {
 
   static private void writeCSVRow(Context cx, CSVWriter csv,
 				  TreeMap<String, Integer> columns, Object r) {
-    KeyValueWrapper row = new KeyValueWrapper(r);
-    String[]     fields = new String[columns.size()];
+    PropertyBag row = PropertyBag.get(cx, r);
+    String[] fields = new String[columns.size()];
 
-    for (Object c : row.getKeys()) {
+    for (Object c : row.getKeys(cx)) {
       int idx = columns.get(StringUtil.toSortable(c));
-      // System.out.println("Column " + Context.toString(c) + " has index " + idx);
-      // System.out.println(Context.toString(row.getValue(cx, c)));
+
       fields[idx] = Context.toString(row.getValue(cx, c));
     }
 
