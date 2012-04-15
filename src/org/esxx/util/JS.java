@@ -292,7 +292,7 @@ public abstract class JS {
     return object;
   }
 
-  public static Object toJavaObject(Object object) {
+  public static Object toJavaObject(Object object, boolean single_list_is_node) {
     object = unwrap(object);
 
     // Convert to "primitive" types
@@ -300,7 +300,7 @@ public abstract class JS {
       Scriptable js = (Scriptable) object;
 
       if (js instanceof org.mozilla.javascript.xml.XMLObject) {
-	if (!"XMLList".equals(js.getClassName()) || !js.has(1, js)) {
+	if (!"XMLList".equals(js.getClassName()) || (single_list_is_node && !js.has(1, js))) {
 	  object = ESXX.e4xToDOM(js);
 	}
       }

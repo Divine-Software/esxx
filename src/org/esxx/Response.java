@@ -107,7 +107,7 @@ public class Response  {
   }
 
   public void unwrapResult() {
-    resultObject = JS.toJavaObject(resultObject);
+    resultObject = JS.toJavaObject(resultObject, true);
   }
 
   public Map<String, String> headers() {
@@ -141,7 +141,7 @@ public class Response  {
     }
 
     // Unwrap wrapped objects
-    object = JS.toJavaObject(object);
+    object = JS.toJavaObject(object, true);
 
     // Convert complex types to primitive types
     if (object instanceof Node) {
@@ -331,7 +331,8 @@ public class Response  {
 
   static private Object jsToCSV(ContentType ct, Scriptable object)
     throws IOException {
-    Context cx = Context.getCurrentContext();
+    Context       cx = Context.getCurrentContext();
+    Scriptable scope = object;
 
     String separator = Parsers.getParameter(ct, "x-separator", ",");
     String quote     = Parsers.getParameter(ct, "x-quote", "\"");
@@ -346,14 +347,14 @@ public class Response  {
 			    "empty or a single character");
     }
 
-    PropertyBag                 rows = PropertyBag.get(cx, object);
+    PropertyBag                 rows = PropertyBag.create(cx, scope, object);
     TreeMap<String, Integer> columns = new TreeMap<String, Integer>();
 
     // Find all possible colunms
-    for (Object r : rows.getValues(cx)) {
-      PropertyBag row = PropertyBag.get(cx, r);
+    for (Object r : rows.getValues()) {
+      PropertyBag row = PropertyBag.create(cx, scope, r);
 
-      for (Object c : row.getKeys(cx)) {
+      for (Object c : row.getKeys()) {
 	columns.put(StringUtil.toSortable(c), null);
       }
     }
@@ -371,22 +372,22 @@ public class Response  {
 				  quote.isEmpty()     ? '\0' : quote.charAt(0),
 				  escape.isEmpty()    ? '\0' : escape.charAt(0));
 
-    for (Object k : rows.getKeys(cx)) {
-      writeCSVRow(cx, csv, columns, rows.getValue(cx, k));
+    for (Object k : rows.getKeys()) {
+      writeCSVRow(cx, scope, csv, columns, rows.getValue(k));
     }
 
     return sw.toString();
   }
 
-  static private void writeCSVRow(Context cx, CSVWriter csv,
+  static private void writeCSVRow(Context cx, Scriptable scope, CSVWriter csv,
 				  TreeMap<String, Integer> columns, Object r) {
-    PropertyBag row = PropertyBag.get(cx, r);
+    PropertyBag row = PropertyBag.create(cx, scope, r);
     String[] fields = new String[columns.size()];
 
-    for (Object c : row.getKeys(cx)) {
+    for (Object c : row.getKeys()) {
       int idx = columns.get(StringUtil.toSortable(c));
 
-      fields[idx] = Context.toString(row.getValue(cx, c));
+      fields[idx] = Context.toString(row.getValue(c));
     }
 
     csv.writeNext(fields);

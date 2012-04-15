@@ -28,63 +28,102 @@ import org.esxx.ESXX;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.Wrapper;
 import org.mozilla.javascript.xml.XMLObject;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-public abstract class PropertyBag {
+public abstract class PropertyBag
+  implements Wrapper {
 
   @SuppressWarnings({"unchecked"})
-  public static PropertyBag get(Context cx, Object obj) {
-    // Unwrap wrapped Java objects
-    obj = org.esxx.util.JS.unwrap(obj);
+  public static PropertyBag create(Context cx, Scriptable scope, Object original) {
+    Object obj = org.esxx.util.JS.toJavaObject(original, false);
 
     if (obj instanceof Scriptable) {
-      return new PropertyBag.JS(cx, (Scriptable) obj);
+      // Also XMLList -- but not XML, which is now a Node object
+      return new PropertyBag.JS(cx, scope, original, (Scriptable) obj);
+    }
+    else if (obj instanceof Node) {
+      if (obj instanceof Element) {
+	PropertyBag pb = new PropertyBag.XML(cx, scope, original, (Element) obj);
+
+	if (pb.getKeys().size() > 0) {
+	  return pb;
+	}
+      }
+
+      // If not an element or no child elements, fall back to a scalar string bag
+      Scriptable e4x = ESXX.domToE4X((Node) obj, cx, scope);
+      return new PropertyBag.Scalar(cx, scope, original, ScriptRuntime.toString(e4x));
     }
     else if (obj instanceof java.util.Map) {
-      return new PropertyBag.Map((java.util.Map<Object, Object>) obj);
+      return new PropertyBag.Map(cx, scope, original, (java.util.Map<Object, Object>) obj);
     }
     else if (obj instanceof Iterable) {
-      return new PropertyBag.Array((Iterable) obj);
+      return new PropertyBag.Array(cx, scope, original, (Iterable) obj);
     }
     else {
-      return new PropertyBag.Scalar(obj);
+      return new PropertyBag.Scalar(cx, scope, original, obj);
     }
   }
 
-  public abstract Collection<Object> getKeys(Context cx);
-  public abstract Collection<Object> getValues(Context cx);
-  public abstract Object getValue(Context cx, Object key);
+  protected PropertyBag(Context cx, Scriptable scope, Object original) {
+    this.cx       = cx;
+    this.scope    = scope;
+    wrappedObject = original;
+  }
+
+  @Override /* Wrapper */ public Object unwrap() {
+    return wrappedObject;
+  }
+
+  public Object getValue(Object key) {
+    Object result = getRawValue(key);
+
+    if (result instanceof XMLObject &&
+	"XMLList".equals(((XMLObject) result).getClassName()) &&
+	!((XMLObject) result).has(0, ((XMLObject) result))) {
+      // Empty XMLList -> undefined
+      result = Context.getUndefinedValue();
+    }
+
+    return result;
+  }
+
+  public Object getDefinedValue(Object key) {
+    Object result = getValue(key);
+
+    if (result == Context.getUndefinedValue()) {
+      throw ScriptRuntime.undefReadError(ScriptRuntime.toObjectOrNull(cx, unwrap()), key);
+    }
+
+    return result;
+  }
+
+  public abstract Collection<Object> getKeys();
+  public abstract Collection<Object> getValues();
+  public abstract Object getRawValue(Object key);
+
+  protected Context cx;
+  protected Scriptable scope;
+  private Object wrappedObject;
 
   protected Collection<Object> keys;
   protected Collection<Object> values;
+
 
   // JavaScript facade
 
   private static class JS
     extends PropertyBag {
-    public JS(Context cx, Scriptable o) {
+    public JS(Context cx, Scriptable scope, Object original, Scriptable o) {
+      super(cx, scope, original);
+
       object = o;
     }
 
-    @Override public Collection<Object> getKeys(Context cx) {
-      if (keys == null) {
-	if (object instanceof XMLObject && !"XMLList".equals(object.getClassName())) {
-	  // For XML element nodes, use child element names as keys
-	  Node node = ESXX.e4xToDOM(object);
-
-	  if (node.getNodeType() == Node.ELEMENT_NODE) {
-	    keys = new LinkedHashSet<Object>();
-
-	    for (Node child = node.getFirstChild(); child != null; child = child.getNextSibling()) {
-	      if (child.getNodeType() == Node.ELEMENT_NODE) {
-		keys.add(child.getNodeName());
-	      }
-	    }
-	  }
-	}
-      }
-
+    @Override public Collection<Object> getKeys() {
       if (keys == null) {
 	keys = Arrays.asList(object.getIds());
       }
@@ -92,11 +131,11 @@ public abstract class PropertyBag {
       return keys;
     }
 
-    @Override public Collection<Object> getValues(Context cx) {
+    @Override public Collection<Object> getValues() {
       if (values == null) {
-	values = new ArrayList<Object>(getKeys(cx).size());
+	values = new ArrayList<Object>(getKeys().size());
 
-	for (Object key : getKeys(cx)) {
+	for (Object key : getKeys()) {
 	  values.add(ScriptRuntime.getObjectElem(object, key, cx));
 	}
       }
@@ -104,22 +143,74 @@ public abstract class PropertyBag {
       return values;
     }
 
-    @Override public Object getValue(Context cx, Object key) {
+    @Override public Object getRawValue(Object key) {
       return ScriptRuntime.getObjectElem(object, key, cx);
     }
 
     private Scriptable object;
   }
 
+  // XML facade
+
+  private static class XML
+    extends PropertyBag {
+    public XML(Context cx, Scriptable scope, Object original, Element e) {
+      super(cx, scope, original);
+
+      this.elem  = e;
+    }
+
+    @Override public Collection<Object> getKeys() {
+      if (keys == null) {
+	keys = new LinkedHashSet<Object>();
+
+	// For XML bags, child element names are the keys
+	for (Node child = elem.getFirstChild(); child != null; child = child.getNextSibling()) {
+	  if (child.getNodeType() == Node.ELEMENT_NODE) {
+	    keys.add(child.getNodeName());
+	  }
+	}
+      }
+
+      return keys;
+    }
+
+    @Override public Collection<Object> getValues() {
+      if (values == null) {
+	values = new ArrayList<Object>(getKeys().size());
+
+	for (Object key : getKeys()) {
+	  values.add(getValue(key));
+	}
+      }
+
+      return values;
+    }
+
+    @Override public Object getRawValue(Object key) {
+      if (key instanceof String && ((String) key).substring(0, 1).equals("$")) {
+	// Secondary keys are attributes for XML bags
+	key = "@" + ((String) key).substring(1);
+      }
+
+      Scriptable e4x = ESXX.domToE4X(elem, cx, scope);
+      return ScriptRuntime.getObjectElem(e4x, key, cx);
+    }
+
+    private Element elem;
+  }
+
   // Map facade
 
   private static class Map
     extends PropertyBag {
-    public Map(java.util.Map<Object, Object> m) {
-      map  = m;
+    public Map(Context cx, Scriptable scope, Object original, java.util.Map<Object, Object> m) {
+      super(cx, scope, original);
+
+      map = m;
     }
 
-    @Override public Collection<Object> getKeys(Context cx) {
+    @Override public Collection<Object> getKeys() {
       if (keys == null) {
 	keys = map.keySet();
       }
@@ -127,7 +218,7 @@ public abstract class PropertyBag {
       return keys;
     }
 
-    @Override public Collection<Object> getValues(Context cx) {
+    @Override public Collection<Object> getValues() {
       if (values == null) {
 	values = map.values();
       }
@@ -135,7 +226,7 @@ public abstract class PropertyBag {
       return values;
     }
 
-    @Override public Object getValue(Context cx, Object key) {
+    @Override public Object getRawValue(Object key) {
       if (map.containsKey(key)) {
 	return map.get(key);
       }
@@ -147,11 +238,13 @@ public abstract class PropertyBag {
     private java.util.Map<Object, Object> map;
   }
 
-  // Array facade
+  // Array/Iterable facade
 
   private static class Array
     extends PropertyBag {
-    public Array(Iterable iter) {
+    public Array(Context cx, Scriptable scope, Object original, Iterable iter) {
+      super(cx, scope, original);
+
       if (iter instanceof Collection) {
 	values = new ArrayList<Object>((Collection<?>) iter);
       }
@@ -164,7 +257,7 @@ public abstract class PropertyBag {
       }
     }
 
-    @Override public Collection<Object> getKeys(Context cx) {
+    @Override public Collection<Object> getKeys() {
       if (keys == null) {
 	keys  = new ArrayList<Object>(values.size());
 
@@ -176,12 +269,16 @@ public abstract class PropertyBag {
       return keys;
     }
 
-    @Override public Collection<Object> getValues(Context cx) {
+    @Override public Collection<Object> getValues() {
       return values;
     }
 
-    @Override public Object getValue(Context cx, Object key) {
+    @Override public Object getRawValue(Object key) {
       try {
+	if (!(key instanceof Number)) {
+	  key = Integer.parseInt(Context.toString(key));
+	}
+
 	return ((List) values).get(((Number) key).intValue());
       }
       catch (Exception ignored) {
@@ -194,21 +291,27 @@ public abstract class PropertyBag {
 
   private static class Scalar
     extends PropertyBag {
-    public Scalar(Object obj) {
+    public Scalar(Context cx, Scriptable scope, Object original, Object obj) {
+      super(cx, scope, original);
+
       keys   = Arrays.asList((Object)new Integer(0));
       values = Arrays.asList(obj);
     }
 
-    @Override public Collection<Object> getKeys(Context cx) {
+    @Override public Collection<Object> getKeys() {
       return keys;
     }
 
-    @Override public Collection<Object> getValues(Context cx) {
+    @Override public Collection<Object> getValues() {
       return values;
     }
 
-    @Override public Object getValue(Context cx, Object key) {
+    @Override public Object getRawValue(Object key) {
       try {
+	if (!(key instanceof Number)) {
+	  key = Integer.parseInt(Context.toString(key));
+	}
+
 	return ((List) values).get(((Number) key).intValue());
       }
       catch (Exception ignored) {
