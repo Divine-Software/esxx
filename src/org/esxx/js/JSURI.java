@@ -29,6 +29,7 @@ import java.lang.reflect.InvocationTargetException;
 import javax.mail.internet.ContentType;
 import org.esxx.ESXX;
 import org.esxx.Application;
+import org.esxx.util.PropertyBag;
 import org.esxx.util.StringUtil;
 import org.esxx.js.protocol.ProtocolHandler;
 import org.mozilla.javascript.*;
@@ -76,7 +77,7 @@ public class JSURI
     this.uri = uri;
   }
 
-  static public Object jsConstructor(Context cx,
+  static public Object jsConstructor(final Context cx,
 				     java.lang.Object[] args,
 				     Function ctorObj,
 				     boolean inNewExpr)
@@ -85,7 +86,7 @@ public class JSURI
     URI uri = null;
     String uri_string = null;
     String uri_relative = null;
-    Scriptable params = null;
+    Object params = null;
 
     if (args.length < 1 || args[0] == Context.getUndefinedValue()) {
       throw Context.reportRuntimeError("Missing argument");
@@ -108,43 +109,34 @@ public class JSURI
       }
     }
 
-    // Third argument can only by params
+    // Third argument can only be params
     if (args.length >= 3 && args[2] != Context.getUndefinedValue()) {
-      params = (Scriptable) args[2];
+      params = args[2];
     }
 
     // Second argument can be relative URI or params
     if (args.length >= 2 && args[1] != Context.getUndefinedValue()) {
-      if (args[1] instanceof Scriptable) {
+      if (args[1] instanceof String) {
+	// args[1] should be resolved against args[0]
+	uri_relative = Context.toString(args[1]);
+      }
+      else {
 	if (params != null) {
 	  throw Context.reportRuntimeError("Expected a String as second argument.");
 	}
 
-	params = (Scriptable) args[1];
-      }
-      else {
-	// args[1] should be resolved against args[0]
-	uri_relative = Context.toString(args[1]);
+	params = args[1];
       }
     }
 
     if (params != null) {
       // Replace {...} patterns in string arguments if params was supplied
-      final Scriptable final_params = params;
+      final PropertyBag bag = PropertyBag.create(cx, ctorObj, params);
 
       StringUtil.ParamResolver resolver = new StringUtil.ParamResolver() {
 	  public String resolveParam(String param) {
-	    Object obj;
-
 	    try {
-	      obj = final_params.get(Integer.parseInt(param), final_params);
-	    }
-	    catch (NumberFormatException ex) {
-	      obj = final_params.get(param, final_params);
-	    }
-
-	    try {
-	      String value = Context.toString(obj);
+	      String value = ScriptRuntime.toString(bag.getDefinedValue(param));
 	      return StringUtil.encodeURI(value, false /* == encodeURIComponent() */);
 	    }
 	    catch (URISyntaxException ex) {

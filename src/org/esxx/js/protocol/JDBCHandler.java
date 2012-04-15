@@ -33,11 +33,7 @@ import javax.mail.internet.ContentType;
 import org.esxx.*;
 import org.esxx.dbref.QueryBuilder;
 import org.esxx.js.JSURI;
-import org.esxx.util.JS;
-import org.esxx.util.QueryCache;
-import org.esxx.util.QueryHandler;
-import org.esxx.util.StringUtil;
-import org.esxx.util.XML;
+import org.esxx.util.*;
 import org.mozilla.javascript.*;
 import org.mozilla.javascript.xml.XMLObject;
 import org.w3c.dom.Document;
@@ -345,25 +341,9 @@ public class JDBCHandler
 	throw Context.reportRuntimeError("No parameter object for batch " + batch + ", param " + param);
       }
 
-      Object params = batches[batch];
-      Object object = ScriptRuntime.getObjectElem(params, param, cx);
-      int    length;
-
-      object = JS.unwrap(object);
-
-      if (object instanceof Iterable) {
-	Iterator i = ((Iterable) object).iterator();
-
-	for (length = 0; i.hasNext(); i.next()) {
-	  ++length;
-	}
-      }
-      else if (object instanceof NativeObject || object instanceof NativeArray) {
-	length = ((Scriptable) object).getIds().length;
-      }
-      else {
-	length = 1;
-      }
+      PropertyBag params = PropertyBag.create(cx, jsThis, batches[batch]);
+      PropertyBag object = PropertyBag.create(cx, jsThis, params.getValue(param));
+      int         length = object.getKeys().size();
 
       // System.out.println("getParamLength " + batch + " " + param
       // 			 + " from " + params + " => " + object + " length " + length);
@@ -373,49 +353,22 @@ public class JDBCHandler
 
     @Override public void resolveParam(int batch, String param, int length,
 				       Collection<Object> result) {
-      Object params = batches[batch];
-      Object object = ScriptRuntime.getObjectElem(params, param, cx);
-
-      object = JS.unwrap(object);
-
-      if (object == Context.getUndefinedValue()) {
-	throw ScriptRuntime.undefReadError(ScriptRuntime.toObjectOrNull(cx, params), param);
-      }
+      PropertyBag params = PropertyBag.create(cx, jsThis, batches[batch]);
+      PropertyBag object = PropertyBag.create(cx, jsThis, params.getDefinedValue(param));
 
       // System.out.println("resolveParam " + batch + " " + param + " " + length
       //			 + " from " + params + " => " + object + " "
       //			 + (object != null ? object.getClass() : "null.class"));
 
-      if (object instanceof Iterable) {
-	for (Object o : ((Iterable) object)) {
-	  result.add(o);
-	}
-      }
-      else if (object instanceof NativeObject || object instanceof NativeArray) {
-	Scriptable jsobj = (Scriptable) object;
-
-	for (Object id : jsobj.getIds()) {
-	  Object o = ScriptRuntime.getObjectElem(jsobj, id, cx);
-
-	  if (o instanceof XMLObject) {
-	    o = o.toString();
-	  }
-	  else {
-	    o = JS.toJavaObject(o);
-	  }
-
-	  result.add(o);
-	}
-      }
-      else {
-	if (object instanceof XMLObject) {
-	  object = object.toString();
+      for (Object o : object.getValues()) {
+	if (o instanceof XMLObject) {
+	  o = o.toString();
 	}
 	else {
-	  object = JS.toJavaObject(object);
+	  o = JS.toJavaObject(o, true);
 	}
 
-	result.add(object);
+	result.add(o);
       }
     }
 
