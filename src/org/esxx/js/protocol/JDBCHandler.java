@@ -69,25 +69,21 @@ public class JDBCHandler
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getSelectQuery(args, params);
 
-    Scriptable s = createParamObject(cx, thisObj, args, null, null, params);
+    Map<Object, Object> qparams = createParamObject(args, null, null, params);
     ensureRequiredParamsHandled(builder, params);
 
-    return this.query(cx, thisObj, new Object[] { query, s });
+    return this.query(cx, thisObj, new Object[] { query, qparams });
   }
 
-  @Override public Object save(final Context cx, Scriptable thisObj,
-			       final Object data, ContentType send_ct, ContentType recv_ct)
+  @Override public Object save(Context cx, Scriptable thisObj,
+			       Object data, ContentType send_ct, ContentType recv_ct)
     throws URISyntaxException {
-
-    if (!(data instanceof ScriptableObject)) {
-      throw Context.reportRuntimeError("Object must be a JavaScript object");
-    }
-
     recv_ct = ensureRecvTypeIsXML(recv_ct);
 
+    final PropertyBag qdata = PropertyBag.create(cx, thisObj, data);
     List<String> columns = new ArrayList<String>();
 
-    for (Object c : ((ScriptableObject) data).getIds()) {
+    for (Object c : qdata.getKeys()) {
       if (c instanceof String) {
 	columns.add((String) c);
       }
@@ -95,7 +91,7 @@ public class JDBCHandler
 
     QueryBuilder.ColumnGetter cg = new QueryBuilder.ColumnGetter() {
 	public Object get(String key) {
-	  return ScriptRuntime.getObjectElem(data, key, cx);
+	  return qdata.getValue(key);
 	}
       };
 
@@ -104,25 +100,21 @@ public class JDBCHandler
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getMergeQuery(columns, cg, args, params);
 
-    Scriptable s = createParamObject(cx, thisObj, args, columns, data, params);
+    Map<Object, Object> qparams = createParamObject(args, columns, qdata, params);
     ensureRequiredParamsHandled(builder, params);
 
-    return this.query(cx, thisObj, new Object[] { query, data });
+    return this.query(cx, thisObj, new Object[] { query, qparams });
   }
 
   @Override public Object append(Context cx, Scriptable thisObj,
 				 Object data, ContentType send_ct, ContentType recv_ct)
     throws URISyntaxException {
-
-    if (!(data instanceof ScriptableObject)) {
-      throw Context.reportRuntimeError("Object must be a JavaScript object");
-    }
-
     recv_ct = ensureRecvTypeIsXML(recv_ct);
 
+    PropertyBag qdata = PropertyBag.create(cx, thisObj, data);
     List<String> columns = new ArrayList<String>();
 
-    for (Object c : ((ScriptableObject) data).getIds()) {
+    for (Object c : qdata.getKeys()) {
       if (c instanceof String) {
 	columns.add((String) c);
       }
@@ -132,25 +124,21 @@ public class JDBCHandler
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getInsertQuery(columns, params);
 
-    Scriptable s = createParamObject(cx, thisObj, null, columns, data, params);
+    Map<Object, Object> qparams = createParamObject(null, columns, qdata, params);
     ensureRequiredParamsHandled(builder, params);
 
-    return this.query(cx, thisObj, new Object[] { query, s });
+    return this.query(cx, thisObj, new Object[] { query, qparams });
   }
 
   @Override public Object modify(Context cx, Scriptable thisObj,
 				 Object data, ContentType send_ct, ContentType recv_ct)
     throws URISyntaxException {
-
-    if (!(data instanceof ScriptableObject)) {
-      throw Context.reportRuntimeError("Object must be a JavaScript object");
-    }
-
     recv_ct = ensureRecvTypeIsXML(recv_ct);
 
+    PropertyBag qdata = PropertyBag.create(cx, thisObj, data);
     List<String> columns = new ArrayList<String>();
 
-    for (Object c : ((ScriptableObject) data).getIds()) {
+    for (Object c : qdata.getKeys()) {
       if (c instanceof String) {
 	columns.add((String) c);
       }
@@ -161,16 +149,15 @@ public class JDBCHandler
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getUpdateQuery(columns, args, params);
 
-    Scriptable s = createParamObject(cx, thisObj, args, columns, data, params);
+    Map<Object, Object> qparams = createParamObject(args, columns, qdata, params);
     ensureRequiredParamsHandled(builder, params);
 
-    return this.query(cx, thisObj, new Object[] { query, s });
+    return this.query(cx, thisObj, new Object[] { query, qparams });
   }
 
   @Override public Object remove(Context cx, Scriptable thisObj,
 				 ContentType recv_ct)
     throws URISyntaxException {
-
     recv_ct = ensureRecvTypeIsXML(recv_ct);
 
     QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
@@ -178,10 +165,10 @@ public class JDBCHandler
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getDeleteQuery(args, params);
 
-    Scriptable s = createParamObject(cx, thisObj, args, null, null, params);
+    Map<Object, Object> qparams = createParamObject(args, null, null, params);
     ensureRequiredParamsHandled(builder, params);
 
-    return this.query(cx, thisObj, new Object[] { query, s });
+    return this.query(cx, thisObj, new Object[] { query, qparams });
   }
 
   @Override public Object query(Context cx, Scriptable thisObj, Object[] args) {
@@ -249,22 +236,21 @@ public class JDBCHandler
     }
   }
 
-  private Scriptable createParamObject(Context cx, Scriptable scope,
-				       List<String> args, List<String> columns, Object data,
-				       Map<String, String> params) {
-    Scriptable s = cx.newObject(scope);
+  private Map<Object, Object> createParamObject(List<String> args, List<String> columns, PropertyBag qdata,
+						Map<String, String> params) {
+    Map<Object, Object> qparams = new HashMap<Object, Object>();
 
     // Add QueryBuilder-generated arguments (integer keys)
     if (args != null) {
       for (int i = 0; i < args.size(); ++i) {
-	s.put(i, s, args.get(i));
+	qparams.put(i, args.get(i));
       }
     }
 
     // Add user-provided arguments (string keys)
     if (columns != null) {
       for (String c : columns) {
-	s.put(c, s, ScriptRuntime.getObjectElem(data, c, cx));
+	qparams.put(c, qdata.getValue(c));
       }
     }
 
@@ -273,11 +259,11 @@ public class JDBCHandler
     String entry  = params.remove("entry");
     String meta   = params.remove("meta");
 
-    if (result != null) s.put("$result", s, result);
-    if (entry != null) s.put("$entry", s, entry);
-    if (meta != null) s.put("$meta", s, meta);
+    if (result != null) qparams.put("$result", result);
+    if (entry != null) qparams.put("$entry", entry);
+    if (meta != null) qparams.put("$meta", meta);
 
-    return s;
+    return qparams;
   }
 
   private URI getJDBCURI() {
