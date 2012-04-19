@@ -81,13 +81,7 @@ public class JDBCHandler
     recv_ct = ensureRecvTypeIsXML(recv_ct);
 
     final PropertyBag qdata = PropertyBag.create(cx, thisObj, data);
-    List<String> columns = new ArrayList<String>();
-
-    for (Object c : qdata.getKeys()) {
-      if (c instanceof String) {
-	columns.add((String) c);
-      }
-    }
+    List<String> columns = getColumns(qdata);
 
     QueryBuilder.ColumnGetter cg = new QueryBuilder.ColumnGetter() {
 	public Object get(String key) {
@@ -112,13 +106,7 @@ public class JDBCHandler
     recv_ct = ensureRecvTypeIsXML(recv_ct);
 
     PropertyBag qdata = PropertyBag.create(cx, thisObj, data);
-    List<String> columns = new ArrayList<String>();
-
-    for (Object c : qdata.getKeys()) {
-      if (c instanceof String) {
-	columns.add((String) c);
-      }
-    }
+    List<String> columns = getColumns(qdata);
 
     QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
     Map<String, String> params  = new HashMap<String, String>();
@@ -136,13 +124,7 @@ public class JDBCHandler
     recv_ct = ensureRecvTypeIsXML(recv_ct);
 
     PropertyBag qdata = PropertyBag.create(cx, thisObj, data);
-    List<String> columns = new ArrayList<String>();
-
-    for (Object c : qdata.getKeys()) {
-      if (c instanceof String) {
-	columns.add((String) c);
-      }
-    }
+    List<String> columns = getColumns(qdata);
 
     QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
     List<String>        args    = new ArrayList<String>();
@@ -234,6 +216,22 @@ public class JDBCHandler
     if (required != null) {
       throw Context.reportRuntimeError("The required parameter '" + required + "' is unknown");
     }
+  }
+
+  private List<String> getColumns(PropertyBag qdata) {
+    List<String> columns = new ArrayList<String>();
+
+    for (Iterator<Object> k = qdata.getKeys().iterator(), v = qdata.getValues().iterator();
+	 k.hasNext() && v.hasNext(); ) {
+      Object key   = k.next();
+      Object value = v.next();
+
+      if (key instanceof String && value != Context.getUndefinedValue()) {
+	columns.add((String) key);
+      }
+    }
+
+    return columns;
   }
 
   private Map<Object, Object> createParamObject(List<String> args, List<String> columns, PropertyBag qdata,
