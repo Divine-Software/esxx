@@ -175,23 +175,14 @@ public class JDBCHandler
 	  ++batches;
 	}
 
-	if (args.length > 1 && args[1] instanceof Scriptable) {
-	  // (Only the first batch, if a Scriptable, may change the element names)
+	if (args.length > 1) {
+	  // (Only the first batch may change the element names)
 
-	  Scriptable s = (Scriptable) args[1];
-	  Object     o;
+	  PropertyBag p = PropertyBag.create(cx, thisObj, args[1]);
 
-	  if ((o = s.get("$result", s)) != Scriptable.NOT_FOUND) {
-	    result = Context.toString(o);
-	  }
-
-	  if ((o = s.get("$entry", s)) != Scriptable.NOT_FOUND) {
-	    entry = Context.toString(o);
-	  }
-
-	  if ((o = s.get("$meta", s)) != Scriptable.NOT_FOUND) {
-	    meta = Context.toString(o);
-	  }
+	  result = JS.toStringOrNull(p.getValue("$result"));
+	  entry  = JS.toStringOrNull(p.getValue("$entry"));
+	  meta   = JS.toStringOrNull(p.getValue("$meta"));
 	}
 
 	Object[] data = new Object[batches];

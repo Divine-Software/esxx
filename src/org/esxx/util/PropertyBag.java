@@ -91,6 +91,16 @@ public abstract class PropertyBag
     return result;
   }
 
+  public Object getValue(Object key, Object default_value) {
+    Object value = getValue(key);
+
+    if (value == Context.getUndefinedValue()) {
+      value = default_value;
+    }
+
+    return value;
+  }
+
   public Object getDefinedValue(Object key) {
     Object result = getValue(key);
 
