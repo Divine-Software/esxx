@@ -208,7 +208,7 @@ public class DBReference {
   }
 
   public enum Scope {
-    SCALAR, COLUMN, ROW, DISTINCT, ALL;
+    SCALAR, COLUMN, ROW, ALL;
   }
 
   public static class Filter {

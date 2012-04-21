@@ -130,10 +130,6 @@ public class QueryBuilder {
 
     qb.append("SELECT ");
 
-    if (scope == DBReference.Scope.DISTINCT) {
-      qb.append("DISTINCT ");
-    }
-
     if (dbref.getColumns().isEmpty()) {
       qb.append("*");
     }
