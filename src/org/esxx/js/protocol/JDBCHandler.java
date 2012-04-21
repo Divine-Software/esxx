@@ -69,7 +69,7 @@ public class JDBCHandler
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getSelectQuery(args, params);
 
-    Map<Object, Object> qparams = createParamObject(args, null, null, params);
+    Map<String, Object> qparams = createParamObject(args, null, null, params);
     ensureRequiredParamsHandled(builder, params);
 
     return this.query(cx, thisObj, new Object[] { query, qparams });
@@ -94,7 +94,7 @@ public class JDBCHandler
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getMergeQuery(columns, cg, args, params);
 
-    Map<Object, Object> qparams = createParamObject(args, columns, qdata, params);
+    Map<String, Object> qparams = createParamObject(args, columns, qdata, params);
     ensureRequiredParamsHandled(builder, params);
 
     return this.query(cx, thisObj, new Object[] { query, qparams });
@@ -112,7 +112,7 @@ public class JDBCHandler
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getInsertQuery(columns, params);
 
-    Map<Object, Object> qparams = createParamObject(null, columns, qdata, params);
+    Map<String, Object> qparams = createParamObject(null, columns, qdata, params);
     ensureRequiredParamsHandled(builder, params);
 
     return this.query(cx, thisObj, new Object[] { query, qparams });
@@ -131,7 +131,7 @@ public class JDBCHandler
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getUpdateQuery(columns, args, params);
 
-    Map<Object, Object> qparams = createParamObject(args, columns, qdata, params);
+    Map<String, Object> qparams = createParamObject(args, columns, qdata, params);
     ensureRequiredParamsHandled(builder, params);
 
     return this.query(cx, thisObj, new Object[] { query, qparams });
@@ -147,7 +147,7 @@ public class JDBCHandler
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getDeleteQuery(args, params);
 
-    Map<Object, Object> qparams = createParamObject(args, null, null, params);
+    Map<String, Object> qparams = createParamObject(args, null, null, params);
     ensureRequiredParamsHandled(builder, params);
 
     return this.query(cx, thisObj, new Object[] { query, qparams });
@@ -225,14 +225,14 @@ public class JDBCHandler
     return columns;
   }
 
-  private Map<Object, Object> createParamObject(List<String> args, List<String> columns, PropertyBag qdata,
+  private Map<String, Object> createParamObject(List<String> args, List<String> columns, PropertyBag qdata,
 						Map<String, String> params) {
-    Map<Object, Object> qparams = new HashMap<Object, Object>();
+    Map<String, Object> qparams = new HashMap<String, Object>();
 
-    // Add QueryBuilder-generated arguments (integer keys)
+    // Add QueryBuilder-generated arguments ("integer" keys)
     if (args != null) {
       for (int i = 0; i < args.size(); ++i) {
-	qparams.put(i, args.get(i));
+	qparams.put(Integer.toString(i), args.get(i));
       }
     }
 
