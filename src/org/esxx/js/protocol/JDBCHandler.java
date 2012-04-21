@@ -349,117 +349,35 @@ public class JDBCHandler
 
     @Override public void handleResult(int set, int uc, ResultSet rs)
       throws SQLException {
-      Document          doc   = ESXX.getInstance().createDocument(resultElem);
-      Element           root  = doc.getDocumentElement();
+      QueryResult qr;
 
-      if (uc != -1) {
-	root.setAttributeNS(null, "updateCount", Integer.toString(uc));
+      if (rs == null) {
+	qr = new QueryResult(set, uc, 0);
       }
-
-      if (rs != null) {
-	String[]          labels = null;
-	boolean[]         isattr = null;
-	StringBuilder     names  = new StringBuilder();
-	StringBuilder     types  = new StringBuilder();
-	StringBuilder     flags  = new StringBuilder();
-	StringBuilder     precs  = new StringBuilder();
-	StringBuilder     scale  = new StringBuilder();
-
-	Element meta = (metaElem != null ? doc.createElementNS(null, metaElem) : null);
-
+      else {
 	ResultSetMetaData rmd = rs.getMetaData();
-	labels = new String[rmd.getColumnCount() + 1];
-	isattr = new boolean[rmd.getColumnCount() + 1];
 
-	for (int i = 1; i < labels.length; ++i) {
-	  String label = rmd.getColumnLabel(i);
+	qr = new QueryResult(set, uc, rmd.getColumnCount());
 
-	  labels[i] = StringUtil.makeXMLName(label.toLowerCase(), "");
-	  isattr[i] = !label.isEmpty() && label.charAt(0) == '@';
-
-	  // Add a metadata element, if requested
-	  if (meta != null) {
-	    Element child = XML.addChild(meta, labels[i], null);
-
-	    String name = rmd.getColumnName(i);
-	    name = addPart(rmd.getTableName(i), name);
-	    name = addPart(rmd.getSchemaName(i), name);
-	    name = addPart(rmd.getCatalogName(i), name);
-
-	    String nullable = "unknown";
-
-	    switch (rmd.isNullable(i)) {
-	    case ResultSetMetaData.columnNullable:
-	      nullable = Boolean.toString(true);
-	      break;
-
-	    case ResultSetMetaData.columnNoNulls:
-	      nullable = Boolean.toString(false);
-	      break;
-	    }
-
-	    child.setAttributeNS(null, "nodeType", isattr[i] ? "attribute" : "element");
-	    child.setAttributeNS(null, "name", name);
-	    child.setAttributeNS(null, "label", label);
-	    child.setAttributeNS(null, "type", typeToString.get(rmd.getColumnType(i)));
-	    child.setAttributeNS(null, "className", rmd.getColumnClassName(i));
-
-	    child.setAttributeNS(null, "columnName", rmd.getColumnName(i));
-	    child.setAttributeNS(null, "tableName", rmd.getTableName(i));
-	    child.setAttributeNS(null, "schemaName", rmd.getSchemaName(i));
-	    child.setAttributeNS(null, "catalogName", rmd.getCatalogName(i));
-
-	    child.setAttributeNS(null, "isAutoIncrement", Boolean.toString(rmd.isAutoIncrement(i)));
-	    child.setAttributeNS(null, "isCaseSensitive", Boolean.toString(rmd.isCaseSensitive(i)));
-	    child.setAttributeNS(null, "isCurrency", Boolean.toString(rmd.isCurrency(i)));
-	    child.setAttributeNS(null, "isDefinitelyWritable", Boolean.toString(rmd.isDefinitelyWritable(i)));
-	    child.setAttributeNS(null, "isNullable", nullable);
-	    child.setAttributeNS(null, "isReadOnly", Boolean.toString(rmd.isReadOnly(i)));
-	    child.setAttributeNS(null, "isSearchable", Boolean.toString(rmd.isSearchable(i)));
-	    child.setAttributeNS(null, "isSigned", Boolean.toString(rmd.isSigned(i)));
-	    child.setAttributeNS(null, "isWritable", Boolean.toString(rmd.isWritable(i)));
-
-	    child.setAttributeNS(null, "precision", Integer.toString(rmd.getPrecision(i)));
-	    child.setAttributeNS(null, "scale", Integer.toString(rmd.getScale(i)));
-	    child.setAttributeNS(null, "displaySize", Integer.toString(rmd.getColumnDisplaySize(i)));
-
-	    meta.appendChild(child);
-	  }
-	}
-
-	if (meta != null) {
-	  root.appendChild(meta);
+	for (int i = 1; i < rmd.getColumnCount() + 1; ++i) {
+	  qr.addMeta(rmd.getColumnLabel(i).toLowerCase(),
+		     metaElem == null ? null : getMetaProps(rmd, i));
 	}
 
 	while (rs.next()) {
-	  Element row = doc.createElementNS(null, entryElem);
-	  Element child = null;
+	  List<Object> row = new ArrayList<Object>(rmd.getColumnCount());
 
-	  for (int i = 1; i < labels.length; ++i) {
-	    String value  = rs.getString(i);
+	  for (int i = 1; i < rmd.getColumnCount() + 1; ++i) {
+	    String value = rs.getString(i);
 
 	    if (rmd.getColumnType(i) == Types.BOOLEAN) {
 	      value = value.toLowerCase();
 	    }
 
-	    if (isattr[i]) {
-	      if (child != null) {
-		child.setAttributeNS(null, labels[i], value);
-	      }
-	      else {
-		throw Context.reportRuntimeError("No previous element to attach attribute " + labels[i] + " to");
-	      }
-	    }
-	    else {
-	      child = XML.addChild(row, labels[i], value);
-
-	      if (value == null) {
-		child.setAttributeNS(null, "isNull", "true");
-	      }
-	    }
+	    row.add(value);
 	  }
 
-	  root.appendChild(row);
+	  qr.addRow(row);
 	}
       }
 
@@ -467,7 +385,60 @@ public class JDBCHandler
 	queryResult = cx.newObject(jsThis, "XMLList", Context.emptyArgs);
       }
 
-      queryResult = ((XMLObject) queryResult).addValues(cx, true, ESXX.domToE4X(doc, cx, jsThis));
+      queryResult = ((XMLObject) queryResult).addValues(cx, true,
+							ESXX.domToE4X(qr.toXML(resultElem, entryElem, metaElem),
+								      cx, jsThis));
+    }
+
+    private static KeyValueList<String, Object> getMetaProps(ResultSetMetaData rmd, int i)
+      throws SQLException {
+      KeyValueList<String, Object> props = new KeyValueList<String, Object>();
+
+      String name = rmd.getColumnName(i);
+      name = addPart(rmd.getTableName(i), name);
+      name = addPart(rmd.getSchemaName(i), name);
+      name = addPart(rmd.getCatalogName(i), name);
+
+      Object nullable = Context.getUndefinedValue();
+
+      switch (rmd.isNullable(i)) {
+	case ResultSetMetaData.columnNullable:
+	  nullable = true;
+	  break;
+
+	case ResultSetMetaData.columnNoNulls:
+	  nullable = false;
+	  break;
+      }
+
+      String label = rmd.getColumnLabel(i);
+
+      props.add("nodeType", !label.isEmpty() && label.charAt(0) == '@' ? "attribute" : "element");
+      props.add("name", name);
+      props.add("label", label);
+      props.add("type", typeToString.get(rmd.getColumnType(i)));
+      props.add("className", rmd.getColumnClassName(i));
+
+      props.add("columnName", rmd.getColumnName(i));
+      props.add("tableName", rmd.getTableName(i));
+      props.add("schemaName", rmd.getSchemaName(i));
+      props.add("catalogName", rmd.getCatalogName(i));
+
+      props.add("isAutoIncrement", rmd.isAutoIncrement(i));
+      props.add("isCaseSensitive", rmd.isCaseSensitive(i));
+      props.add("isCurrency", rmd.isCurrency(i));
+      props.add("isDefinitelyWritable", rmd.isDefinitelyWritable(i));
+      props.add("isNullable", nullable);
+      props.add("isReadOnly", rmd.isReadOnly(i));
+      props.add("isSearchable", rmd.isSearchable(i));
+      props.add("isSigned", rmd.isSigned(i));
+      props.add("isWritable", rmd.isWritable(i));
+
+      props.add("precision", rmd.getPrecision(i));
+      props.add("scale", rmd.getScale(i));
+      props.add("displaySize", rmd.getColumnDisplaySize(i));
+
+      return props;
     }
 
     private static String addPart(String part_name, String name) {
@@ -477,6 +448,98 @@ public class JDBCHandler
       else {
 	return name;
       }
+    }
+
+    private static class QueryResult {
+      public QueryResult(int set, int uc, int cc) {
+	this.set    = set;
+	updateCount = uc;
+
+	columns = new ArrayList<String>(cc);
+	rows    = new ArrayList<List<Object>>();
+      }
+
+      public void addMeta(String column, KeyValueList<String, Object> props) {
+	columns.add(column);
+
+	if (props != null) {
+	  if (colProps == null) {
+	    colProps = new ArrayList<KeyValueList<String, Object>>(columns.size());
+	  }
+
+	  colProps.add(props);
+	}
+      }
+
+      public void addRow(List<Object> row) {
+	rows.add(row);
+      }
+
+      public Element toXML(String resultElem, String entryElem, String metaElem) {
+	Document doc    = ESXX.getInstance().createDocument(resultElem);
+	Element  result = doc.getDocumentElement();
+
+	// Add @updateCount to result element
+
+	if (updateCount != -1) {
+	  result.setAttributeNS(null, "updateCount", Integer.toString(updateCount));
+	}
+
+	// Add a <meta> element, if requested
+
+	if (colProps != null) {
+	  Element meta = XML.addChild(result, metaElem, null);
+
+	  for (int i = 0; i < columns.size(); ++i) {
+	    String  label   = columns.get(i);
+	    String  colname = StringUtil.makeXMLName(label, "");
+	    Element column  = XML.addChild(meta, colname, null);
+
+	    for (Map.Entry<String, Object> e : colProps.get(i)) {
+	      column.setAttributeNS(null, e.getKey(), e.getValue().toString());
+	    }
+	  }
+	}
+
+	// Add rows/entries
+
+	for (List<Object> row : rows) {
+	  Element entry  = XML.addChild(result, entryElem, null);
+	  Element column = null;
+
+	  for (int i = 0; i < columns.size(); ++i) {
+	    String label   = columns.get(i);
+	    String colname = StringUtil.makeXMLName(label, "");
+	    Object ovalue  = row.get(i);
+	    String value   = ovalue == null ? null : ovalue.toString();
+
+	    if (!label.isEmpty() && label.charAt(0) == '@') {
+	      if (column != null) {
+		column.setAttributeNS(null, colname, value);
+	      }
+	      else {
+		throw Context.reportRuntimeError("No previous element to attach attribute " + label + " to");
+	      }
+	    }
+	    else {
+	      column = XML.addChild(entry, colname, value);
+
+	      if (value == null) {
+		column.setAttributeNS(null, "isNull", "true");
+	      }
+	    }
+	  }
+	}
+
+	return result;
+      }
+
+      private int set;
+      private int updateCount;
+
+      private List<String> columns;
+      private List<List<Object>> rows;
+      private List<KeyValueList<String, Object>> colProps;
     }
 
     private Context cx;
