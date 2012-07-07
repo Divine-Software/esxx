@@ -125,6 +125,8 @@
     <copy todir="${DESTDIR}${exec_prefix}">
       <fileset dir="${build.dir}/package" includes="*.bat"/>
     </copy>
+    <copy file="${build.dir}/package/winwrapper.exe" tofile="${DESTDIR}${exec_prefix}/esxx.exe"/>
+    <copy file="${build.dir}/package/winwrapper.exe" tofile="${DESTDIR}${exec_prefix}/esxx-js.exe"/>
 
   	<!-- Documentation, with .txt extensions -->
     <copy todir="${DESTDIR}${docdir}">
