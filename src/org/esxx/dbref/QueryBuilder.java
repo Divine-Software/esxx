@@ -68,6 +68,10 @@ public class QueryBuilder {
     }
   }
 
+  public interface ColumnGetter {
+    public Object get(String key);
+  }
+
   public QueryBuilder(URI uri)
     throws URISyntaxException {
 
@@ -106,9 +110,13 @@ public class QueryBuilder {
     return null;
   }
 
+  public DBReference.Scope getSelectScope() {
+    return dbref.getScope(DBReference.Scope.ALL);
+  }
+
   public String getSelectQuery(List<String> args, Map<String, String> unhandled_params)
     throws URISyntaxException {
-    DBReference.Scope scope = dbref.getScope(DBReference.Scope.ALL);
+    DBReference.Scope scope = getSelectScope();
 
     args.clear();
     unhandled_params.clear();
@@ -150,9 +158,13 @@ public class QueryBuilder {
     return qb.toString();
   }
 
+  public DBReference.Scope getInsertScope() {
+    return dbref.getScope(DBReference.Scope.ROW);
+  }
+
   public String getInsertQuery(Iterable<String> columns, Map<String, String> unhandled_params)
     throws URISyntaxException {
-    DBReference.Scope scope = dbref.getScope(DBReference.Scope.ROW);
+    DBReference.Scope scope = getInsertScope();
 
     unhandled_params.clear();
     unhandled_params.putAll(dbref.getOptionalParams());
@@ -187,10 +199,14 @@ public class QueryBuilder {
     return qb.toString();
   }
 
+  public DBReference.Scope getUpdateScope() {
+    return dbref.getScope(DBReference.Scope.ROW);
+  }
+
   public String getUpdateQuery(Iterable<String> columns,
 			       List<String> args, Map<String, String> unhandled_params)
     throws URISyntaxException {
-    DBReference.Scope scope = dbref.getScope(DBReference.Scope.ROW);
+    DBReference.Scope scope = getUpdateScope();
 
     args.clear();
     unhandled_params.clear();
@@ -206,13 +222,23 @@ public class QueryBuilder {
       columns = dbref.getColumns();
     }
 
+    Iterator<String> iter = columns.iterator();
+
+    if (!i.hasNext()) {
+      throw new URISyntaxException(uri.toString(), "No columns to update");
+    }
+
+    if (scope == DBReference.Scope.SCALAR) {
+      i.next();
+
+      if (i.hasNext()) {
+	throw new URISyntaxException(uri.toString(), "One and only one column is required for scalar scope");
+      }
+    }
+
     if (scope != DBReference.Scope.SCALAR && scope != DBReference.Scope.ROW && scope != DBReference.Scope.ALL) {
       throw new URISyntaxException(uri.toString(), scope.toString().toLowerCase() +
 				   " is not a valid scope when updating");
-    }
-
-    if (!columns.iterator().hasNext()) {
-      throw new URISyntaxException(uri.toString(), "No columns to update");
     }
 
     QueryBuffer qb = new QueryBuffer(uri.getSchemeSpecificPart());
@@ -228,23 +254,26 @@ public class QueryBuilder {
     return qb.toString();
   }
 
+  public DBReference.Scope getDeleteScope() {
+    return dbref.getScope(DBReference.Scope.ALL);
+  }
 
   public String getDeleteQuery(List<String> args, Map<String, String> unhandled_params)
     throws URISyntaxException {
-    DBReference.Scope scope = dbref.getScope(DBReference.Scope.ALL);
+    DBReference.Scope scope = getDeleteScope();
 
     args.clear();
     unhandled_params.clear();
     unhandled_params.putAll(dbref.getOptionalParams());
     unhandled_params.putAll(dbref.getRequiredParams());
 
+    if (!dbref.getColumns().isEmpty()) {
+      throw new URISyntaxException(uri.toString(), "Columns may not be specified when deleting");
+    }
+
     if (scope != DBReference.Scope.ALL) {
       throw new URISyntaxException(uri.toString(), scope.toString().toLowerCase() +
 				   " is not a valid scope when deleting");
-    }
-
-    if (!dbref.getColumns().isEmpty()) {
-      throw new URISyntaxException(uri.toString(), "Columns may not be specified when deleting");
     }
 
     QueryBuffer qb = new QueryBuffer(uri.getSchemeSpecificPart());
@@ -259,14 +288,14 @@ public class QueryBuilder {
     return qb.toString();
   }
 
-  public interface ColumnGetter {
-    public Object get(String key);
+  public DBReference.Scope getMergeScope() {
+    return dbref.getScope(DBReference.Scope.ROW);
   }
 
   public String getMergeQuery(Iterable<String> columns, ColumnGetter cg,
 			      List<String> args, Map<String, String> unhandled_params)
     throws URISyntaxException {
-    DBReference.Scope scope = dbref.getScope(DBReference.Scope.ROW);
+    DBReference.Scope scope = getMergeScope();
 
     unhandled_params.clear();
     unhandled_params.putAll(dbref.getOptionalParams());
@@ -287,6 +316,10 @@ public class QueryBuilder {
     }
     else {
       columns = dbref.getColumns();
+    }
+
+    if (!columns.iterator().hasNext()) {
+      throw new URISyntaxException(uri.toString(), "No columns to merge");
     }
 
     if (scope != DBReference.Scope.ROW && scope != DBReference.Scope.ALL) {

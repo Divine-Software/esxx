@@ -29,4 +29,28 @@ Exceptions
 * ESXXException inherits JavaScriptException, includes HTTP error code
   and is used to throw:
 	* ESXX.SchemaError -> Validation failed
-	* 
+	* URIError > ESXX.SQLError { category, sqlClass, sqlSubclass }
+
+
+   52   		SQL_GRAMMAR_CATEGORIES.add( "07" );
+   53   		SQL_GRAMMAR_CATEGORIES.add( "37" );
+   54   		SQL_GRAMMAR_CATEGORIES.add( "42" );
+   55   		SQL_GRAMMAR_CATEGORIES.add( "65" );
+   56   		SQL_GRAMMAR_CATEGORIES.add( "S0" );
+   57   		SQL_GRAMMAR_CATEGORIES.add( "20" );
+   58   		
+   59   		DATA_CATEGORIES.add("22");
+   60   		DATA_CATEGORIES.add("21");
+   61   		DATA_CATEGORIES.add("02");
+   62   
+   63   		INTEGRITY_VIOLATION_CATEGORIES.add( "23" );
+   64   		INTEGRITY_VIOLATION_CATEGORIES.add( "27" );
+   65   		INTEGRITY_VIOLATION_CATEGORIES.add( "44" );
+   66   
+   67   		CONNECTION_CATEGORIES.add( "08" );
+
+New JDBC query format: db.query({ result: "cars", entry: "car" },
+    	       	       		"select * from cars where id = {id}",
+				req.message);
+
+Only user $result and $entry for backward compatibility -> a hacker may no longer influence the query

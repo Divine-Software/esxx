@@ -68,11 +68,12 @@ public class JDBCHandler
     List<String>        args    = new ArrayList<String>();
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getSelectQuery(args, params);
+    DBReference.Scope   qscope  = builder.getSelectScope();
 
-    Map<String, Object> qparams = createParamObject(args, null, null, params);
+    Object[] query_params createQueryParams(cx, thisObj, DBReference.Scope.ROW, qscope, query, args, null, null, params);
     ensureRequiredParamsHandled(builder, params);
 
-    return this.query(cx, thisObj, new Object[] { query, qparams });
+    return this.query(cx, thisObj, query_params);
   }
 
   @Override public Object save(Context cx, Scriptable thisObj,
@@ -93,11 +94,12 @@ public class JDBCHandler
     List<String>        args    = new ArrayList<String>();
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getMergeQuery(columns, cg, args, params);
+    DBReference.Scope   qscope  = builder.getMergeScope();
 
-    Map<String, Object> qparams = createParamObject(args, columns, qdata, params);
+    Object[] query_params createQueryParams(cx, thisObj, qscope, DBReference.Scope.ALL, query, args, columns, qdata, params);
     ensureRequiredParamsHandled(builder, params);
 
-    return this.query(cx, thisObj, new Object[] { query, qparams });
+    return this.query(cx, thisObj, query_params);
   }
 
   @Override public Object append(Context cx, Scriptable thisObj,
@@ -111,11 +113,12 @@ public class JDBCHandler
     QueryBuilder        builder = new QueryBuilder(jsuri.getURI());
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getInsertQuery(columns, params);
+    DBReference.Scope   qscope  = builder.getInsertScope();
 
-    Map<String, Object> qparams = createParamObject(null, columns, qdata, params);
+    Object[] query_params createQueryParams(cx, thisObj, qscope, DBReference.Scope.ALL, query, null, columns, qdata, params);
     ensureRequiredParamsHandled(builder, params);
 
-    return this.query(cx, thisObj, new Object[] { query, qparams });
+    return this.query(cx, thisObj, query_params);
   }
 
   @Override public Object modify(Context cx, Scriptable thisObj,
@@ -130,11 +133,12 @@ public class JDBCHandler
     List<String>        args    = new ArrayList<String>();
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getUpdateQuery(columns, args, params);
+    DBReference.Scope   qscope  = builder.getUpdateScope();
 
-    Map<String, Object> qparams = createParamObject(args, columns, qdata, params);
+    Object[] query_params createQueryParams(cx, thisObj, qscope, DBReference.Scope.ALL, query, args, columns, qdata, params);
     ensureRequiredParamsHandled(builder, params);
 
-    return this.query(cx, thisObj, new Object[] { query, qparams });
+    return this.query(cx, thisObj, query_params);
   }
 
   @Override public Object remove(Context cx, Scriptable thisObj,
@@ -146,11 +150,12 @@ public class JDBCHandler
     List<String>        args    = new ArrayList<String>();
     Map<String, String> params  = new HashMap<String, String>();
     String              query   = builder.getDeleteQuery(args, params);
+    DBReference.Scope   qscope  = builder.getDeleteScope();
 
-    Map<String, Object> qparams = createParamObject(args, null, null, params);
+    Object[] query_params createQueryParams(cx, thisObj, qscope, DBReference.Scope.ALL, query, args, null, null, params);
     ensureRequiredParamsHandled(builder, params);
 
-    return this.query(cx, thisObj, new Object[] { query, qparams });
+    return this.query(cx, thisObj, query_params);
   }
 
   @Override public Object query(Context cx, Scriptable thisObj, Object[] args) {
@@ -225,8 +230,40 @@ public class JDBCHandler
     return columns;
   }
 
+  private Object[] createQueryParams(Context cx, Scriptable scope,
+				     DBReference.Scope iscope, DBReference.Scope oscope, String query,
+				     List<String> args, List<String> columns, PropertyBag qdata,
+				     Map<String, String> params) {
+    switch (iscope) {
+      case SCALAR: {
+	if (columns.size() != 1) {
+	  throw new IllegalArgumentException(iscope.toString().toLowerCase() + " requires one single column");
+	}
+
+	Map<String, Object> colValue = new TreeMap<String, Object>();
+	colValue.put(columns.get(0), qdata.unwrap());
+	qdata = PropertyBag.create(cx, scope, colValue);
+
+	return new Object[] { query, createParamObject(args, columns, qdata, params, oscope) };
+      }
+
+      case COLUMN:
+	throw new IllegalArgumentException(iscope.toString().toLowerCase() + " is not a valid scope when inserting data");
+
+      case ROW:
+	return new Object[] { query, createParamObject(args, columns, qdata, params, oscope) };
+
+      case ALL: {
+	get all values
+	  create array
+	  populate array
+      }
+    }
+
+  }
+
   private Map<String, Object> createParamObject(List<String> args, List<String> columns, PropertyBag qdata,
-						Map<String, String> params) {
+						Map<String, String> params, DBReference.Scope oscope) {
     Map<String, Object> qparams = new HashMap<String, Object>();
 
     // Add QueryBuilder-generated arguments ("integer" keys)
@@ -251,6 +288,8 @@ public class JDBCHandler
     if (result != null) qparams.put("$result", result);
     if (entry != null) qparams.put("$entry", entry);
     if (meta != null) qparams.put("$meta", meta);
+
+    qparams.put("$scope", oscope);
 
     return qparams;
   }
