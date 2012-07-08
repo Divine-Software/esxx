@@ -137,29 +137,29 @@
 
   <target name="install-unix" description="Install UNIX-specific files" if="isUNIX">
     <!-- Small executable JAR and wrappers-->
+    <!--
     <copy todir="${DESTDIR}${sbindir}">
       <fileset file="${build.dir}/${ant.project.name}-small.jar" />
       <globmapper from="*-small.jar" to="*.jar"/>
     </copy>
     <chmod file="${DESTDIR}${sbindir}/${ant.project.name}.jar" perm="755" />
-
-    <copy todir="${DESTDIR}${sbindir}">
-      <fileset file="${build.dir}/package/javawrapper" />
-      <globmapper from="javawrapper" to="${ant.project.name}"/>
-    </copy>
-    <chmod file="${DESTDIR}${sbindir}/${ant.project.name}" perm="755" />
-
-    <copy todir="${DESTDIR}${bindir}">
-      <fileset file="${build.dir}/package/jswrapper" />
-      <globmapper from="jswrapper" to="${ant.project.name}-js"/>
-    </copy>
-    <chmod file="${DESTDIR}${bindir}/${ant.project.name}-js" perm="755" />
-
+    -->
     <!-- Support JARs -->
+    <!--
     <copy todir="${DESTDIR}${datadir}/lib">
       <fileset dir="${lib.dir}/core" includes="*.jar" />
       <fileset dir="${lib.dir}/exe" includes="*.jar" />
     </copy>
+    -->
+
+    <!-- Fat executable JAR -->
+    <copy file="${build.dir}/${ant.project.name}.jar" todir="${DESTDIR}${sbindir}" />
+
+    <copy file="${build.dir}/package/javawrapper" tofile="${DESTDIR}${sbindir}/${ant.project.name}"/>
+    <chmod file="${DESTDIR}${sbindir}/${ant.project.name}" perm="755" />
+
+    <copy file="${build.dir}/package/jswrapper" tofile="${DESTDIR}${bindir}/${ant.project.name}-js"/>
+    <chmod file="${DESTDIR}${bindir}/${ant.project.name}-js" perm="755" />
 
     <!-- Config files -->
     <copy todir="${DESTDIR}${confdir}">
@@ -175,24 +175,16 @@
 
   <target name="install-mac" description="Install MacOSX-specific files" if="isMacOSX">
     <!-- launchd config file -->
-    <copy todir="${DESTDIR}/Library/LaunchDaemons">
-      <fileset file="${build.dir}/package/org.esxx.ESXX.plist" />
-    </copy>
+    <copy file="${build.dir}/package/org.esxx.ESXX.plist" todir="${DESTDIR}/Library/LaunchDaemons"/>
   </target>
 
   <target name="install-sunos" description="Install SunOS-specific files" if="isSunOS">
     <!-- svc method -->
-    <copy todir="${DESTDIR}/lib/svc/method">
-      <fileset file="${build.dir}/package/svc-method" />
-      <globmapper from="svc-method" to="${ant.project.name}" />
-    </copy>
+    <copy file="${build.dir}/package/svc-method" tofile="${DESTDIR}/lib/svc/method/${ant.project.name}"/>
     <chmod file="${DESTDIR}/lib/svc/method/${ant.project.name}" perm="755" />
 
     <!-- svc manifest -->
-    <copy todir="${DESTDIR}/var/svc/manifest/network">
-      <fileset file="${build.dir}/package/svc-manifest.xml" />
-      <globmapper from="svc-manifest.xml" to="${ant.project.name}.xml" />
-    </copy>
+    <copy file="${build.dir}/package/svc-manifest.xml" tofile="${DESTDIR}/var/svc/manifest/network/${ant.project.name}.xml"/>
   </target>
 
   <target name="install-linux" description="Install Linux-specific files" if="isLinux">
