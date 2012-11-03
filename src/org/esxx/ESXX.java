@@ -66,6 +66,8 @@ public class ESXX {
     /** A string that defines the ESXX XML namespace */
     public static final String NAMESPACE = "http://esxx.org/1.0/";
 
+    public static int THREADS_PER_CORE = 8;
+
     private static ESXX esxx;
 
     public static ESXX getInstance() {
@@ -168,7 +170,8 @@ public class ESXX {
 	  private java.util.concurrent.atomic.AtomicInteger cnt = new java.util.concurrent.atomic.AtomicInteger();
 	};
 
-      int worker_threads = Integer.parseInt(p.getProperty("esxx.worker_threads", "-1"));
+      int default_threads = THREADS_PER_CORE * Runtime.getRuntime().availableProcessors();
+      int  worker_threads = Integer.parseInt(p.getProperty("esxx.worker_threads", Integer.toString(default_threads)));
 
        if (worker_threads == -1) {
 	 // Use an unbounded thread pool
