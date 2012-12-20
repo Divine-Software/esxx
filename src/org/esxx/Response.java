@@ -300,7 +300,7 @@ public class Response  {
 	  array[i] = jsToJSON(array[i]);
 	}
 
-	object = new JSONArray(array).toString();
+	object = new JSONArray(array);
       }
       else if (object instanceof Wrapper) {
 	object = jsToJSON(((Wrapper) object).unwrap());
