@@ -34,11 +34,11 @@
   <target name="compile" depends="init, ragel" description="compile everything">
     <!-- Don't use -Xlint on the json code -->
     <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath"
-           debug="true" deprecation="true" target="1.6" includeantruntime="false">
+           debug="true" deprecation="true" target="1.6" source="1.6" includeantruntime="false">
       <include name="org/json/*.java"/>
     </javac>
     <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath"
-           debug="true" deprecation="true" target="1.6" includeantruntime="false">
+           debug="true" deprecation="true" target="1.6" source="1.6" includeantruntime="false">
       <compilerarg value="-Xlint"/>
       <exclude name="org/json/*.java"/>
     </javac>
@@ -82,7 +82,7 @@
 
   <target name="jee-compile" depends="compile" description="compile jee">
     <javac srcdir="${jee.dir}" destdir="${jeebuild.dir}" classpathref="classpath"
-           debug="true" deprecation="true" target="1.6">
+           debug="true" deprecation="true" target="1.6" source="1.6">
       <compilerarg value="-Xlint"/>
     </javac>
   </target>
