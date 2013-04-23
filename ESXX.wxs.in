@@ -18,9 +18,15 @@
 		      Type="raw" />
     </Property>
 
+    <Property Id="JAVA_CURRENT_VERSION64">
+      <RegistrySearch Id="JRE_CURRENT_VERSION_REGSEARCH64"
+		      Root="HKLM" Key="SOFTWARE\JavaSoft\Java Runtime Environment" Name="CurrentVersion"
+		      Type="raw" Win64="yes" />
+    </Property>
+
     <Condition Message="@PACKAGE_FULL_NAME@ requires Java Runtime Environment version 1.6,
 			but it could not be found. Please install Oracle JRE 1.6 or later first.">
-      Installed OR (JAVA_CURRENT_VERSION >= "1.6")
+      Installed OR (JAVA_CURRENT_VERSION >= "1.6") OR (JAVA_CURRENT_VERSION64 >= "1.6")
     </Condition>
 
     <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed.
