@@ -24,7 +24,6 @@ git archive --remote ${OLD_PWD} --prefix source/ "${COMMIT}" | tar xf -
 # Build package
 case $(uname) in
     Darwin)
-	export JAVA_HOME=/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Home
     	packagemaker=/Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker
 
 	# OSX uses a symlink for /etc and /var -- we must too
