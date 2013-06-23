@@ -64,6 +64,7 @@ public class AsyncServletRequest
       return;
     }
 
+    cont.setTimeout(0);
     cont.suspend(sres);
 
     ServletRequest sr = new AsyncServletRequest(sreq, cont);
