@@ -39,10 +39,10 @@ public class KeyValueWrapper {
       size = -1;
     }
     else if (obj instanceof Iterable) {
-      Collection coll;
+      Collection<Object> coll;
 
       if (obj instanceof Collection) {
-	coll = (Collection<?>) obj;
+	coll = (Collection<Object>) obj;
       }
       else {
 	coll = new ArrayList<Object>();
