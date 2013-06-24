@@ -271,7 +271,7 @@ public class RequestMatcher {
 	    System.out.println(rm.matchRequest("GET", "articles/books", cx, scope));
 	    System.out.println(rm.matchRequest("GET", "articles/", cx, scope));
 	    System.out.println(rm.matchRequest("REPORT", "article(s)/100/hejhopp/12", cx, scope));
-	    System.out.println(rm.matchRequest("DELETE", "gröna/äpplen/10", cx, scope));
+	    System.out.println(rm.matchRequest("DELETE", "gr\u00F6na/\u00C4pplen/10", cx, scope));
 	    return null;
 	  }
 	});
