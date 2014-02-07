@@ -28,16 +28,16 @@ SOFTWARE.
  * The HTTPTokener extends the JSONTokener to provide additional methods
  * for the parsing of HTTP headers.
  * @author JSON.org
- * @version 2008-09-18
+ * @version 2012-11-13
  */
 public class HTTPTokener extends JSONTokener {
 
     /**
      * Construct an HTTPTokener from a string.
-     * @param s A source string.
+     * @param string A source string.
      */
-    public HTTPTokener(String s) {
-        super(s);
+    public HTTPTokener(String string) {
+        super(string);
     }
 
 
@@ -65,7 +65,7 @@ public class HTTPTokener extends JSONTokener {
                 }
                 sb.append(c);
             }
-        } 
+        }
         for (;;) {
             if (c == 0 || Character.isWhitespace(c)) {
                 return sb.toString();
