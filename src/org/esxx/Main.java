@@ -68,6 +68,7 @@ public class Main {
     opt.addOption("r", "http-root",       true,  "Set AJP/FCGI/HTTP root directory (or file)");
 //     opt.addOption("d", "enable-debugger", false, "Enable esxx.debug()");
 //     opt.addOption("D", "start-debugger",  false, "Start debugger");
+    opt.addOption(null,"pg-server",        true, "Expose embedded H2/PostgreSQL on this <port>");
     opt.addOption("?", "help",            false, "Show help");
 
     try {
@@ -147,6 +148,12 @@ public class Main {
 // 									   Integer.MAX_VALUE,
 // 									   Long.MAX_VALUE, 
 // 									   Long.MAX_VALUE));
+
+      String pg_server = cmd.getOptionValue("pg-server");
+
+      if (pg_server != null) {
+        org.h2.tools.Server.createPgServer(new String[] { "-pgPort", pg_server, "-pgAllowOthers" }).start();
+      }
 
       // Default is to serve the current directory
       URI fs_root_uri = ESXX.createFSRootURI(cmd.getOptionValue('r', ""));
