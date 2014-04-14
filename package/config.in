@@ -4,7 +4,7 @@
 
 # Set JAVA variable by default on OSX
 if [ "`uname`" = "Darwin" ]; then
-  JAVA=/System/Library/Frameworks/JavaVM.framework/Versions/1.6/Home/bin/java
+  JAVA="$(/usr/libexec/java_home 2>/dev/null || echo /System/Library/Frameworks/JavaVM.framework/Versions/1.6/Home)/bin/java"
 fi
 
 # Add a custom include directory to the predefined list
