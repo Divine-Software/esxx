@@ -61,7 +61,7 @@ function TestRunner.prototype.run() {
     catch (ex) {
       out.println(" Ignoring testcase " + tc.name + ": " + ex);
       out.println("");
-      return;
+      return false;
     }
 
     out.println(" Running testcase " + tc.name + ":")
