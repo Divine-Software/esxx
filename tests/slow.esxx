@@ -11,16 +11,30 @@ function handler(req) {
 
   req.log.info("New counter value: " + cnt);
 
-  java.lang.Thread.sleep(5000);
+  java.lang.Thread.sleep(70000);
 
   return "Response #" + cnt;
 }
 
+function uriHandler(req) {
+    try {
+        req.log.info("waiting");
+
+        java.lang.Thread.sleep(10000);
+
+        req.log.info("loading");
+        return "RETRIEVED: " + req.scriptURI.load();
+    }
+    finally {
+        req.log.info("exiting");
+    }
+}
 
 ?>
 
 <esxx xmlns="http://esxx.org/1.0/">
     <handlers>
-      <http method="GET" handler="handler" />
+      <http method="GET" uri="/" handler="handler" />
+      <http method="GET" uri="/uri" handler="uriHandler" />
     </handlers>
 </esxx>
