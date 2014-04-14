@@ -93,7 +93,7 @@ testRunner.add(
 
       new TestCase({
 	  name: "XML",
-	  testConstructor: 
+	  testConstructor:
 	  function() {
 	    let text1 = XML();
 	    Assert.areIdentical(text1.nodeKind(), "text");
@@ -169,7 +169,26 @@ testRunner.add(
 	    Assert.areIdentical(XML(d).level1.length(), 1);
 	    Assert.areIdentical(XML(d).level2.length(), 1);
 	  }
-      })
+      }),
+
+      new TestCase({
+	  name: "Filters",
+	  testFilterFunctions:
+	  function() {
+	    let data = <xml>
+		  <entry>
+		    <f1>1.1</f1>
+		    <f2>2.1</f2>
+		  </entry>
+		  <entry>
+		    <f1>2.1</f1>
+		    <f2>2.1</f2>
+		  </entry>
+		</xml>;
+
+	    Assert.areIdentical(xml.entry[1].position(), 2);
+	  },
+      }),
+
     ])
 );
-
