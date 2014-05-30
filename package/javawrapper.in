@@ -57,7 +57,7 @@ while `[ $# -gt 0 ]` ; do
 	    ;;
 	--)
 	    ARGS=( ${ARGS[@]} $@ )
-	    shift $#
+	    shift $(expr $# - 1)
 	    ;;
 
 	*)
