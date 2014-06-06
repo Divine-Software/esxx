@@ -193,5 +193,6 @@
       <fileset dir="${build.dir}/package/" includes="initscript, initscript-*"/>
       <globmapper from="initscript*" to="${ant.project.name}*"/>
     </copy>
+    <chmod dir="${DESTDIR}${sysconfdir}/init.d" includes="*" perm="755"/>
   </target>
 </project>
