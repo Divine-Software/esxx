@@ -136,22 +136,6 @@
   </target>
 
   <target name="install-unix" description="Install UNIX-specific files" if="isUNIX">
-    <!-- Small executable JAR and wrappers-->
-    <!--
-    <copy todir="${DESTDIR}${sbindir}">
-      <fileset file="${build.dir}/${ant.project.name}-small.jar" />
-      <globmapper from="*-small.jar" to="*.jar"/>
-    </copy>
-    <chmod file="${DESTDIR}${sbindir}/${ant.project.name}.jar" perm="755" />
-    -->
-    <!-- Support JARs -->
-    <!--
-    <copy todir="${DESTDIR}${datadir}/lib">
-      <fileset dir="${lib.dir}/core" includes="*.jar" />
-      <fileset dir="${lib.dir}/exe" includes="*.jar" />
-    </copy>
-    -->
-
     <!-- Fat executable JAR -->
     <copy file="${build.dir}/${ant.project.name}.jar" todir="${DESTDIR}${sbindir}" />
 
@@ -188,9 +172,11 @@
   </target>
 
   <target name="install-linux" description="Install Linux-specific files" if="isLinux">
+    <!-- Init script helper -->
+    <copy file="${build.dir}/package/initscript" tofile="${DESTDIR}${sbindir}/${ant.project.name}.init"/>
     <!-- Init scripts -->
     <copy todir="${DESTDIR}${sysconfdir}/init.d">
-      <fileset dir="${build.dir}/package/" includes="initscript, initscript-*"/>
+      <fileset dir="${build.dir}/package/" includes="initscript-*"/>
       <globmapper from="initscript*" to="${ant.project.name}*"/>
     </copy>
     <chmod dir="${DESTDIR}${sysconfdir}/init.d" includes="*" perm="755"/>

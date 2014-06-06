@@ -23,5 +23,5 @@
 ### END INIT INFO
 
 ESXX_INSTANCE=http
-ESXX_OPTIONS="--http 8654 --http-root @docdir@/examples/"
-. @sysconfdir@/init.d/esxx
+ESXX_OPTIONS="--http 8654"
+. @sbindir@/@PACKAGE_NAME@.init
