@@ -145,7 +145,7 @@ case $(uname) in
 	    . version
 	    
 	    # Build
-	    mkdir -p rpmroot/{BUILD,SPECS,SRPMS,RPMS/noarch} ${package_full_name}
+	    mkdir -p rpmroot/{BUILD,SPECS,SRPMS,RPMS/noarch}
 	    mv ${SOURCE} ${package_full_name}
 	    tar cfz ${package_full_name}.tar.gz esxx.spec ${package_full_name}
 	    rpmbuild -tb --define "_topdir ${BUILD}/rpmroot" ${package_full_name}.tar.gz
