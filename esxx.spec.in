@@ -22,7 +22,7 @@ rm -rf %{buildroot}
 
 %build
 ant %{ant_flags} generate-install-files
-  
+
 %install
 ant %{ant_flags} -DDESTDIR=%{buildroot} install
 find %{buildroot} -type f -printf '/%%P\n' | grep -v ^/etc/sysconfig > %{name}-{%version}.files
@@ -32,10 +32,7 @@ rm -rf %{buildroot}
 
 %files -f %{name}-{%version}.files
 %defattr(-,root,root,-)
-%config(noreplace) %{_sysconfdir}/sysconfig/esxx 
-%config(noreplace) %{_sysconfdir}/sysconfig/esxx-js
-%config(noreplace) %{_sysconfdir}/sysconfig/esxx-fcgi
-%config(noreplace) %{_sysconfdir}/sysconfig/esxx-http
+%config(noreplace) %{_sysconfdir}/sysconfig/esxx*
 %dir %attr(755,root,root) %{_docdir}/esxx
 %dir %attr(755,root,root) %{_docdir}/esxx/examples
 %dir %attr(755,root,root) %{_datadir}/esxx
