@@ -186,7 +186,7 @@ testRunner.add(
 		  </entry>
 		</xml>;
 
-	    Assert.areIdentical(xml.entry[1].position(), 2);
+	    Assert.areIdentical(data.entry[1].childIndex(), 1);
 	  },
       }),
 
