@@ -115,7 +115,7 @@
     <chmod dir="${DESTDIR}${docdir}/examples" includes="**/*.js" perm="ugo+rx" />
   </target>
 
-  <target name="install-windows" description="Install Windows-specific files" if="isWindows">
+  <target name="install-windows" description="Install Windows-specific files" if="isWindows" unless="skip-install-windows">
     <!-- Fat executable JAR -->
     <copy todir="${DESTDIR}${sbindir}">
       <fileset file="${build.dir}/${ant.project.name}.jar" />
@@ -135,7 +135,7 @@
     </copy>
   </target>
 
-  <target name="install-unix" description="Install UNIX-specific files" if="isUNIX">
+  <target name="install-unix" description="Install UNIX-specific files" if="isUNIX" unless="skip-install-unix">
     <!-- Fat executable JAR -->
     <copy file="${build.dir}/${ant.project.name}.jar" todir="${DESTDIR}${sbindir}" />
 
@@ -157,12 +157,12 @@
     </copy>
   </target>
 
-  <target name="install-mac" description="Install MacOSX-specific files" if="isMacOSX">
+  <target name="install-mac" description="Install MacOSX-specific files" if="isMacOSX" unless="skip-install-mac">
     <!-- launchd config file -->
     <copy file="${build.dir}/package/org.esxx.ESXX.plist" todir="${DESTDIR}/Library/LaunchDaemons"/>
   </target>
 
-  <target name="install-sunos" description="Install SunOS-specific files" if="isSunOS">
+  <target name="install-sunos" description="Install SunOS-specific files" if="isSunOS" unless="skip-install-sunos">
     <!-- svc method -->
     <copy file="${build.dir}/package/svc-method" tofile="${DESTDIR}/lib/svc/method/${ant.project.name}"/>
     <chmod file="${DESTDIR}/lib/svc/method/${ant.project.name}" perm="755" />
@@ -171,7 +171,7 @@
     <copy file="${build.dir}/package/svc-manifest.xml" tofile="${DESTDIR}/var/svc/manifest/network/${ant.project.name}.xml"/>
   </target>
 
-  <target name="install-linux" description="Install Linux-specific files" if="isLinux">
+  <target name="install-linux" description="Install Linux-specific files" if="isLinux" unless="skip-install-linux">
     <!-- Init script helper -->
     <copy file="${build.dir}/package/initscript" tofile="${DESTDIR}${sbindir}/${ant.project.name}.init"/>
     <!-- Init scripts -->
