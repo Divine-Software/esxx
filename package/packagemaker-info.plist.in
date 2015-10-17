@@ -47,7 +47,7 @@
     <string>org.esxx.ESXX</string>
 
     <key>CFBundleGetInfoString</key>
-    <string>@PACKAGE_VERSION@, Copyright © 2007-2009 @PACKAGE_VENDOR@</string>
+    <string>@PACKAGE_VERSION@, Copyright © 2007-2015 @PACKAGE_VENDOR@</string>
     
     <key>CFBundleShortVersionString</key>
     <string>@PACKAGE_VERSION@</string>

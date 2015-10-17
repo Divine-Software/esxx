@@ -1,4 +1,4 @@
-Copyright 2007-2009 Martin Blom.
+Copyright 2007-2015 Martin Blom.
 
 ESXX is available under the GNU GPL license, version 3 or later.
 

@@ -1,6 +1,6 @@
 /*
      ESXX - The friendly ECMAscript/XML Application Server
-     Copyright (C) 2007-2010 Martin Blom <martin@blom.org>
+     Copyright (C) 2007-2015 Martin Blom <martin@blom.org>
 
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU Lesser General Public License

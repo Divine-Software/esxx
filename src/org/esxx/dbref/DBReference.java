@@ -2,7 +2,7 @@
 // line 1 "/Users/leviticus/source/esxx/src/org/esxx/dbref/DBReference.rl"
 /*
      ESXX - The friendly ECMAscript/XML Application Server
-     Copyright (C) 2007-2008 Martin Blom <martin@blom.org>
+     Copyright (C) 2007-2015 Martin Blom <martin@blom.org>
 
      This program is free software: you can redistribute it and/or
      modify it under the terms of the GNU General Public License
