@@ -72,11 +72,11 @@ if [ -z "${PID}" ]; then
     ${RUNAS} ${JAVA} ${JVMARGS} \
         -Desxx.app.include_path="${ESXX_PATH}" \
 	-Done-jar.class.path=${LIBS} \
-	-jar @sbindir@/@PACKAGE_NAME@.jar "${ARGS[@]}"
+	-jar @libexecdir@/@PACKAGE_NAME@.jar "${ARGS[@]}"
 else
     ${RUNAS} ${JAVA} ${JVMARGS} \
         -Desxx.app.include_path="${ESXX_PATH}" \
 	-Done-jar.class.path=${LIBS} \
-	-jar @sbindir@/@PACKAGE_NAME@.jar "${ARGS[@]}" > /dev/null 2> /dev/null &
+	-jar @libexecdir@/@PACKAGE_NAME@.jar "${ARGS[@]}" > /dev/null 2> /dev/null &
     echo $! > "${PID}"
 fi

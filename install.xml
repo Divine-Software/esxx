@@ -137,10 +137,10 @@
 
   <target name="install-unix" description="Install UNIX-specific files" if="isUNIX" unless="skip-install-unix">
     <!-- Fat executable JAR -->
-    <copy file="${build.dir}/${ant.project.name}.jar" todir="${DESTDIR}${sbindir}" />
+    <copy file="${build.dir}/${ant.project.name}.jar" todir="${DESTDIR}${libexecdir}" />
 
-    <copy file="${build.dir}/package/javawrapper" tofile="${DESTDIR}${sbindir}/${ant.project.name}"/>
-    <chmod file="${DESTDIR}${sbindir}/${ant.project.name}" perm="755" />
+    <copy file="${build.dir}/package/javawrapper" tofile="${DESTDIR}${bindir}/${ant.project.name}"/>
+    <chmod file="${DESTDIR}${bindir}/${ant.project.name}" perm="755" />
 
     <copy file="${build.dir}/package/jswrapper" tofile="${DESTDIR}${bindir}/${ant.project.name}-js"/>
     <chmod file="${DESTDIR}${bindir}/${ant.project.name}-js" perm="755" />
@@ -173,7 +173,7 @@
 
   <target name="install-linux" description="Install Linux-specific files" if="isLinux" unless="skip-install-linux">
     <!-- Init script helper -->
-    <copy file="${build.dir}/package/initscript" tofile="${DESTDIR}${sbindir}/${ant.project.name}.init"/>
+    <copy file="${build.dir}/package/initscript" tofile="${DESTDIR}${libexecdir}/${ant.project.name}.init"/>
     <!-- Init scripts -->
     <copy todir="${DESTDIR}${sysconfdir}/init.d">
       <fileset dir="${build.dir}/package/" includes="initscript-*"/>

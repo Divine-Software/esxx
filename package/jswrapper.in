@@ -23,4 +23,4 @@ fi
 ${JAVA} ${JVMARGS} \
     -Desxx.app.include_path="${ESXX_PATH}" \
     -Done-jar.class.path=${LIBS} \
-    -jar @sbindir@/@PACKAGE_NAME@.jar --script -- "${ARGS[@]}"
+    -jar @libexecdir@/@PACKAGE_NAME@.jar --script -- "${ARGS[@]}"
