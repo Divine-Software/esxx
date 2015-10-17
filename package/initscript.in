@@ -7,7 +7,7 @@ fi
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 prog=@PACKAGE_NAME@-${ESXX_INSTANCE}
-absprog=@sbindir@/@PACKAGE_NAME@
+absprog=@bindir@/@PACKAGE_NAME@
 desc="@PACKAGE_DESCRIPTION_SUMMARY@"
 pidfile=@localstatedir@/run/$prog.pid
 conffile=@confdir@/@PACKAGE_NAME@-${ESXX_INSTANCE}

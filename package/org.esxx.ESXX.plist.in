@@ -8,7 +8,7 @@
 
     <key>ProgramArguments</key>
     <array>
-      <string>@sbindir@/@PACKAGE_NAME@</string>
+      <string>@bindir@/@PACKAGE_NAME@</string>
       <string>--bind</string>
       <string>7654</string>
     </array>

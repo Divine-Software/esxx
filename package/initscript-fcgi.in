@@ -24,4 +24,4 @@
 
 ESXX_INSTANCE=fcgi
 ESXX_OPTIONS="--bind 7654"
-. @sbindir@/@PACKAGE_NAME@.init
+. @libexecdir@/@PACKAGE_NAME@.init

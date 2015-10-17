@@ -24,4 +24,4 @@
 
 ESXX_INSTANCE=http
 ESXX_OPTIONS="--http 8654"
-. @sbindir@/@PACKAGE_NAME@.init
+. @libexecdir@/@PACKAGE_NAME@.init

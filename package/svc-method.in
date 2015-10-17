@@ -3,7 +3,7 @@
 . /lib/svc/share/smf_include.sh
 
 prog=@PACKAGE_NAME@
-absprog=@sbindir@/$prog
+absprog=@bindir@/$prog
 
 protocol=fcgi
 port=7654
